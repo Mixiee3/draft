@@ -51,6 +51,7 @@ public final class DocumentEditorView: NSView, NSTextViewDelegate {
     let ruleView = NSView()
     public var onTitleChange: ((String) -> Void)?
     let handle = BlockHandleView(frame: .zero)
+    public var handleView: NSView { handle }
     public var onLayout: (() -> Void)?
     /// Height reserved at the top for the host's floating controls.
     public var topInset: CGFloat = 0 { didSet { needsLayout = true } }

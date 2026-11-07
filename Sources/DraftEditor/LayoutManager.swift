@@ -47,7 +47,7 @@ public final class DraftLayoutManager: NSLayoutManager {
     }
 
     /// Union of line fragment rects for a paragraph, in container coordinates.
-    func paragraphRect(_ pr: NSRange) -> NSRect? {
+    public func paragraphRect(_ pr: NSRange) -> NSRect? {
         let gr = glyphRange(forCharacterRange: pr, actualCharacterRange: nil)
         if gr.length == 0 {
             return extraLineFragmentTextContainer != nil ? extraLineFragmentRect : nil

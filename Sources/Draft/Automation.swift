@@ -19,6 +19,8 @@ enum Automation {
             case "smoke-write": await smokeWrite()
             case "smoke-read": await smokeRead()
             case "screenshots": await screenshots()
+            case "drag-write": await dragWrite()
+            case "drag-read": dragRead()
             default: break
             }
             NSApp.terminate(nil)
@@ -247,5 +249,65 @@ enum Automation {
         try? (m.lastExportURL?.path ?? "").write(to: out.appendingPathComponent("last-export-path.txt"), atomically: true, encoding: .utf8)
         await wait(0.5)
         m.flushAll()
+    }
+
+    // MARK: Drag test through the window's real mouse-event path
+
+    static func json(_ n: Node) -> String { String(decoding: (try? DraftJSON.encode(n)) ?? Data(), as: UTF8.self) }
+
+    static func mouse(_ type: NSEvent.EventType, _ p: NSPoint, in w: NSWindow) {
+        guard let e = NSEvent.mouseEvent(with: type, location: p, modifierFlags: [], timestamp: ProcessInfo.processInfo.systemUptime,
+                                         windowNumber: w.windowNumber, context: nil, eventNumber: 0, clickCount: 1, pressure: type == .leftMouseUp ? 0 : 1) else { return }
+        w.sendEvent(e)
+    }
+
+    static func dragWrite() async {
+        guard let w = NSApp.windows.first(where: { $0.isVisible }), let id = m.createDoc(title: "Drag test") else { return }
+        await wait(0.6)
+        guard let ed = m.editors[id] else { return }
+        let c = ed.controller
+        w.makeFirstResponder(c.textView)
+        c.pastePlainForAutomation("Alpha plain\n**Bravo** bold\n- [x] Charlie done\n## Delta heading\nEcho last")
+        await wait(0.4)
+        var r: [String: String] = ["docId": id, "before": json(c.document())]
+        // Hover Alpha → handle appears; press it, drag below "Delta heading", release.
+        let alpha = c.paragraph(withId: (c.document().content ?? [])[0].id ?? "")!
+        let line = c.layout.firstLineRect(alpha)!.rect
+        let tv = c.textView
+        ed.updateHandle(at: tv.convert(NSPoint(x: 20, y: line.midY + tv.textContainerOrigin.y), to: ed.paperView))
+        let h = ed.handleView
+        let start = h.convert(NSPoint(x: h.bounds.midX, y: h.bounds.midY), to: nil)
+        let delta = c.paragraph(withId: (c.document().content ?? [])[3].id ?? "")!
+        let dRect = c.layout.paragraphRect(delta)!
+        let target = tv.convert(NSPoint(x: 40, y: dRect.maxY - 2 + tv.textContainerOrigin.y), to: nil)
+        mouse(.leftMouseDown, start, in: w)
+        for k in 1...12 {
+            let t = CGFloat(k) / 12
+            mouse(.leftMouseDragged, NSPoint(x: start.x + (target.x - start.x) * t, y: start.y + (target.y - start.y) * t), in: w)
+            try? await Task.sleep(for: .milliseconds(15))
+        }
+        mouse(.leftMouseUp, target, in: w)
+        await wait(0.3)
+        r["afterDrag"] = json(c.document())
+        r["order"] = (c.document().content ?? []).map { n in n.type == "taskList" ? "Charlie" : nodeText(n).components(separatedBy: " ").first ?? "" }.joined(separator: ",")
+        tv.undoManager?.undo()
+        r["afterUndo"] = json(c.document())
+        tv.undoManager?.redo()
+        r["afterRedo"] = json(c.document())
+        m.flushAll()
+        if let d = try? JSONSerialization.data(withJSONObject: r, options: [.sortedKeys]) { try? d.write(to: out.appendingPathComponent("drag-write.json")) }
+    }
+
+    static func dragRead() {
+        guard let d = try? Data(contentsOf: out.appendingPathComponent("drag-write.json")),
+              let r = try? JSONSerialization.jsonObject(with: d) as? [String: String], let id = r["docId"] else { return }
+        let reloaded = m.ensureDoc(id).map { json($0.content) } ?? "missing"
+        func ids(_ s: String?) -> [String] {
+            guard let s, let n = try? JSONDecoder().decode(Node.self, from: Data(s.utf8)) else { return [] }
+            var out: [String] = []; walk(n) { if let i = $0.id { out.append(i) } }; return out.sorted()
+        }
+        let res = ["idsPreserved": ids(r["before"]) == ids(r["afterDrag"]) && !ids(r["before"]).isEmpty ? "yes" : "no", "relaunchMatchesDrag": reloaded == r["afterDrag"] ? "yes" : "no", "undoRestored": r["afterUndo"] == r["before"] ? "yes" : "no",
+                   "redoMatchesDrag": r["afterRedo"] == r["afterDrag"] ? "yes" : "no", "order": r["order"] ?? "", "afterDrag": r["afterDrag"] ?? ""]
+        if let o = try? JSONSerialization.data(withJSONObject: res, options: [.prettyPrinted, .sortedKeys]) { try? o.write(to: out.appendingPathComponent("drag-result.json")) }
     }
 }
