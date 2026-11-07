@@ -89,3 +89,28 @@ extension Automation {
         save(r, "workflow-read.json")
     }
 }
+
+extension Automation {
+    /// Live network check of the opt-in features (only run on request; uses a throwaway vault).
+    static func onlineLive() async {
+        var r: [String: String] = [:]
+        m.setSettings { $0.onlineImageSearch = true; $0.linkPreviews = true }
+        let found: [WebImage] = await withCheckedContinuation { k in m.online.searchImages("lake", enabled: true) { k.resume(returning: (try? $0.get()) ?? []) } }
+        r["searchResults"] = "\(found.count)"
+        r["firstHost"] = found.first.flatMap { URL(string: $0.url)?.host } ?? ""
+        if let f = found.first {
+            let data: Data? = await withCheckedContinuation { k in m.online.download(f.url, enabled: true) { k.resume(returning: $0) } }
+            r["downloadBytes"] = "\(data?.count ?? 0)"
+            r["storedAsset"] = data.flatMap { m.storeImage(data: $0, ext: "jpg") } ?? ""
+        }
+        let p: LinkPreview? = await withCheckedContinuation { k in m.online.linkPreview(URL(string: "https://example.com")!, enabled: true) { k.resume(returning: $0) } }
+        r["previewTitle"] = p?.title ?? ""
+        let before = m.online.requests
+        m.setSettings { $0.onlineImageSearch = false; $0.linkPreviews = false }
+        _ = await withCheckedContinuation { k in m.online.searchImages("lake", enabled: m.settings.onlineImageSearch) { _ in k.resume(returning: 0) } }
+        _ = await withCheckedContinuation { k in m.online.linkPreview(URL(string: "https://example.com")!, enabled: m.settings.linkPreviews) { _ in k.resume(returning: 0) } }
+        r["requestsWhileOff"] = "\(m.online.requests - before)"
+        r["requestsTotal"] = "\(m.online.requests)"
+        save(r, "online-live.json")
+    }
+}

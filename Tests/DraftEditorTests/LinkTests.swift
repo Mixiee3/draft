@@ -134,28 +134,37 @@ final class LinkTests: XCTestCase {
         pump()
         type("typed")
         pump()
-        let before = c.document().content?.first.map(nodeText)
         host.titles["d_plan"] = "Plan B"
         c.refreshLinks()
         XCTAssertEqual(c.document().content?.first.map(nodeText), "See Plan B typed")
         XCTAssertTrue(tv.undoManager!.canUndo, "the user's history survives a title refresh")
-        tv.undoManager?.undo() // the refresh is its own step
-        XCTAssertEqual(c.document().content?.first.map(nodeText), before)
-        tv.undoManager?.undo() // then the typing, with valid ranges
+        pump(); tv.undoManager?.undo() // the user's typing (the title update rides along)
         XCTAssertEqual(c.document().content?.first.map(nodeText), "See Plan ")
+        tv.undoManager?.undo() // then the chip, with valid ranges
+        XCTAssertEqual(c.document().content?.first.map(nodeText), "See ")
     }
 
-    func testOffscreenRefreshAddsNoUndoStepAndLeavesOtherDocumentsAlone() {
+    func testOffscreenRefreshKeepsThisDocumentsHistoryWithoutAnExtraStep() {
         let other = DocumentEditorView(frame: view.frame)
         XCTAssertFalse(other.controller.textView.undoManager === tv.undoManager, "each document has its own history")
         c.insertDocLink(docId: "d_plan", title: "Plan")
+        pump()
+        type("typed")
         pump()
         view.removeFromSuperview() // off screen
         other.controller.undo.registerUndo(withTarget: self) { _ in }
         host.titles["d_plan"] = "Plan C"
         c.refreshLinks()
-        XCTAssertEqual(c.document().content?.first.map(nodeText), "See Plan C ")
-        XCTAssertFalse(c.undo.canUndo, "no Update Link Titles step to undo later")
+        pump()
+        XCTAssertEqual(c.document().content?.first.map(nodeText), "See Plan C typed")
+        XCTAssertEqual(c.undo.undoMenuItemTitle, "Undo", "the title update is never named as a step")
+        c.undo.undo()
+        XCTAssertFalse(c.document().content?.first.map(nodeText)?.contains("typed") ?? true, "one ⌘Z undoes the user's last edit")
+        XCTAssertTrue(c.undo.canUndo, "earlier history is still there")
+        c.undo.undo()
+        XCTAssertEqual(c.document().content?.first.map(nodeText), "See ", "and the edit before it")
+        c.undo.redo()
+        XCTAssertEqual(c.document().content?.first.map(nodeText), "See Plan ")
         XCTAssertTrue(other.controller.undo.canUndo, "another document's history is untouched")
     }
 

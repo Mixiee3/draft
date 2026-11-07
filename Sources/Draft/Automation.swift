@@ -36,6 +36,7 @@ enum Automation {
             case "structure-read": await structureRead()
             case "workflow-write": await workflowWrite()
             case "workflow-read": await workflowRead()
+            case "online-live": await onlineLive()
             default: break
             }
             NSApp.terminate(nil)

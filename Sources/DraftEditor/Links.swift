@@ -156,7 +156,7 @@ extension EditorController {
             // In the document being looked at, new titles are a visible, undoable step. Anywhere else
             // they are applied quietly; that document's own history is reset because its steps
             // refer to text positions the new titles shift (other documents keep theirs).
-            let quiet = afterLoad || isLoading || textView.window == nil
+            let quiet = afterLoad || isLoading
             let apply = {
                 for (r, _, _, text, _) in textEdits {
                     let a = self.storage.attributes(at: r.location, effectiveRange: nil)
@@ -166,8 +166,11 @@ extension EditorController {
             }
             if quiet {
                 isProgrammaticEdit = true; storage.beginEditing(); apply(); storage.endEditing(); isProgrammaticEdit = false
-                if !afterLoad && !isLoading { undo.removeAllActions() }
-            } else { undoGroup(apply); undo.setActionName("Update Link Titles") }
+            } else {
+                // Recorded so earlier steps keep valid positions, but never a step of its own.
+                undoGroup(apply)
+                undo.setActionName(DocumentUndoManager.silentAction)
+            }
         }
         return textChanged || any
     }
@@ -434,4 +437,25 @@ public final class MentionMenu: NSView {
         }
         NSGraphicsContext.restoreGraphicsState()
     }
+}
+
+/// A document's undo history. Link-title updates made by Draft are recorded (so earlier steps
+/// stay valid) but ride along with the user's steps: ⌘Z and ⇧⌘Z always undo or redo a real edit.
+public final class DocumentUndoManager: UndoManager {
+    public static let silentAction = "Update Link Titles"
+
+    public override func undo() {
+        let silentOnTop = undoActionName == Self.silentAction
+        super.undo()
+        if silentOnTop, canUndo, !isUndoing { super.undo() }
+        while canUndo, undoActionName == Self.silentAction, !isUndoing { super.undo() }
+    }
+
+    public override func redo() {
+        super.redo()
+        while canRedo, redoActionName == Self.silentAction, !isRedoing { super.redo() }
+    }
+
+    public override var undoMenuItemTitle: String { undoActionName == Self.silentAction ? "Undo" : super.undoMenuItemTitle }
+    public override var redoMenuItemTitle: String { redoActionName == Self.silentAction ? "Redo" : super.redoMenuItemTitle }
 }

@@ -341,7 +341,7 @@ public final class EditorController: NSObject, NSTextStorageDelegate, NSTextView
 
     /// Each document keeps its own undo history, so ⌘Z only ever changes the document in front.
     /// AppKit closes each event's undo group for every undo manager when it dispatches an event.
-    public let undo = UndoManager()
+    public let undo = DocumentUndoManager()
     public func undoManager(for view: NSTextView) -> UndoManager? { undo }
 
     public func textDidChange(_ notification: Notification) {
