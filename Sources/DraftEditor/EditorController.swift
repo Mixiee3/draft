@@ -28,6 +28,7 @@ public final class EditorController: NSObject, NSTextStorageDelegate, NSTextView
 
     public lazy var toolbar = SelectionToolbar(controller: self)
     public lazy var slash = SlashMenu(controller: self)
+    public lazy var imageBar = ImageBar(controller: self)
 
     public override init() {
         storage.addLayoutManager(layout)
@@ -110,7 +111,14 @@ public final class EditorController: NSObject, NSTextStorageDelegate, NSTextView
             case .divider: cell = DividerCell()
             case .image: cell = ImageCell()
             case .page: cell = PageCardCell()
+            case .file: cell = FileCell()
             default: cell = OpaqueCell()
+            }
+            switch a.kind {
+            case .image: cell.setAccessibilityLabel((a.node.attrs?["alt"]?.string).flatMap { $0.isEmpty ? nil : "Image: \($0)" } ?? "Image without description")
+            case .file: cell.setAccessibilityLabel("File: \(a.node.attrs?["name"]?.string ?? "attachment")")
+            case .page: cell.setAccessibilityLabel("Page: \(a.node.attrs?["title"]?.string ?? "Untitled")")
+            default: cell.setAccessibilityLabel(a.kind == .divider ? "Separator" : "Preserved block")
             }
             cell.controller = self
             a.attachmentCell = cell
@@ -288,6 +296,7 @@ public final class EditorController: NSObject, NSTextStorageDelegate, NSTextView
         selectionChangedForBlockMode()
         updateTypingAttributes()
         toolbar.update()
+        imageBar.update()
         slash.selectionChanged()
         host?.editorStateDidChange()
     }
@@ -843,12 +852,72 @@ public final class EditorController: NSObject, NSTextStorageDelegate, NSTextView
     /// Toggle a page block between card and compact page presentation.
     public func setPagePresentation(_ p: String) {
         let pr = paragraphRange(at: textView.selectedRange().location)
-        guard block(at: pr).kind == .page, let a = storage.attribute(.attachment, at: pr.location, effectiveRange: nil) as? BlockAttachment else { insertPage(presentation: p); return }
+        guard block(at: pr).kind == .page else { insertPage(presentation: p); return }
+        updateAttachment(at: pr.location) { $0[attr: "presentation"] = .string(p) }
+    }
+
+    /// Change an attachment block's node (one undo step), keeping its id and the selection.
+    public func updateAttachment(at charIndex: Int, _ change: (inout Node) -> Void) {
+        guard charIndex < storage.length, let a = storage.attribute(.attachment, at: charIndex, effectiveRange: nil) as? BlockAttachment else { return }
+        let pr = paragraphRange(at: charIndex)
         var n = a.node
-        n[attr: "presentation"] = .string(p)
-        let att = NSMutableAttributedString(attachment: BlockAttachment(kind: .page, node: n))
+        change(&n)
+        guard n != a.node else { return }
+        let sel = textView.selectedRange()
+        let att = NSMutableAttributedString(attachment: BlockAttachment(kind: a.kind, node: n))
         att.addAttribute(.draftBlock, value: block(at: pr).with(raw: .some(n)), range: NSRange(location: 0, length: 1))
-        replace(NSRange(location: pr.location, length: 1), with: att)
+        undoGroup { replace(NSRange(location: charIndex, length: 1), with: att) }
+        textView.setSelectedRange(sel)
+        imageBar.update()
+        host?.editorDidChange()
+    }
+
+    // MARK: Images and files
+
+    /// Character index of the image the selection is on, if any.
+    public var selectedImageIndex: Int? {
+        let sel = textView.selectedRange()
+        guard storage.length > 0 else { return nil }
+        let pr = paragraphRange(at: min(sel.location, storage.length - 1))
+        guard NSMaxRange(sel) <= NSMaxRange(pr), block(at: pr).kind == .image, pr.length > 0 else { return nil }
+        return pr.location
+    }
+
+    func isImageSelected(_ cell: ImageCell) -> Bool {
+        guard let i = selectedImageIndex else { return false }
+        return (storage.attribute(.attachment, at: i, effectiveRange: nil) as? NSTextAttachment)?.attachmentCell === cell
+    }
+
+    public func setImageWidth(_ fraction: Double) {
+        if let i = selectedImageIndex { updateAttachment(at: i) { $0[attr: "width"] = fraction >= 1 ? nil : .number(fraction) } }
+    }
+    public func setImageCaption(_ text: String) {
+        if let i = selectedImageIndex { updateAttachment(at: i) { $0[attr: "caption"] = text.isEmpty ? nil : .string(text) } }
+    }
+    public func setImageAlt(_ text: String) {
+        if let i = selectedImageIndex { updateAttachment(at: i) { $0[attr: "alt"] = .string(text) } }
+    }
+
+    public func insertFile(assetId: String, name: String, size: Int) {
+        insertAttachmentBlock(kind: .file, node: Node("file", attrs: ["assetId": .string(assetId), "name": .string(name), "size": .number(Double(size))]))
+    }
+
+    public func insertFileFromPicker() {
+        host?.pickFile { [weak self] f in if let f { self?.insertFile(assetId: f.assetId, name: f.name, size: f.size) } }
+    }
+
+    /// Dropped or pasted Finder files: images become image blocks, everything else file blocks.
+    func insertFiles(_ urls: [URL]) -> Bool {
+        var any = false
+        for url in urls {
+            let ext = url.pathExtension.lowercased()
+            if ["png", "jpg", "jpeg", "gif", "heic", "webp", "tiff"].contains(ext), let data = try? Data(contentsOf: url), let id = host?.storeImage(data: data, ext: ext == "jpeg" ? "jpg" : ext) {
+                insertImage(assetId: id, alt: url.deletingPathExtension().lastPathComponent); any = true
+            } else if let f = host?.storeFile(at: url) {
+                insertFile(assetId: f.assetId, name: f.name, size: f.size); any = true
+            }
+        }
+        return any
     }
 
     /// Keep page-card titles in sync with the child documents (no undo entry, no dirtying).

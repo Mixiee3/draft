@@ -1,4 +1,5 @@
 import AppKit
+import UniformTypeIdentifiers
 import DraftCore
 
 /// Services the editor needs from the app (asset storage, page lookups, navigation).
@@ -27,6 +28,12 @@ public protocol EditorHost: AnyObject {
     func appendBlocks(_ content: Node, toDocument target: String) -> Bool
     /// Undo of a move: take the blocks back out of the other document.
     func removeBlocks(_ ids: [String], fromDocument target: String)
+    /// Let the user pick a file; it is copied into the vault.
+    func pickFile(_ completion: @escaping ((assetId: String, name: String, size: Int)?) -> Void)
+    /// Store a file from disk in the vault (drag and drop, pasted Finder files).
+    func storeFile(at url: URL) -> (assetId: String, name: String, size: Int)?
+    /// Open a stored file with its original name in the default app.
+    func openAttachment(assetId: String, name: String)
 }
 
 /// Base cell: block attachments span the full text width.
@@ -110,15 +117,31 @@ final class DividerCell: BlockCell {
 
 final class ImageCell: BlockCell {
     var cached: NSImage?
+    /// Width fraction while the user drags the resize edge.
+    var liveWidth: CGFloat?
+    static let captionHeight: CGFloat = 28
+
     func image() -> NSImage? {
         if cached == nil, let id = node.attrs?["assetId"]?.string { cached = controller?.host?.image(forAsset: id) }
         return cached
     }
-    override func height(forWidth w: CGFloat) -> CGFloat {
-        guard let img = image(), img.size.width > 0 else { return 120 }
-        let scale = min(1, w / img.size.width)
-        return min(560, img.size.height * scale)
+    var widthFraction: CGFloat { liveWidth ?? CGFloat(node.attrs?["width"]?.double ?? 1) }
+    var caption: String { node.attrs?["caption"]?.string ?? "" }
+
+    /// Drawn image size inside a line of width `w`.
+    func imageSize(forWidth w: CGFloat) -> NSSize {
+        guard let img = image(), img.size.width > 0 else { return NSSize(width: w, height: 120) }
+        let target = min(img.size.width, w * min(1, max(0.15, widthFraction)))
+        let h = img.size.height * target / img.size.width
+        let capped = min(h, 640)
+        return NSSize(width: target * capped / h, height: capped)
     }
+    func imageRect(in f: NSRect) -> NSRect {
+        let s = imageSize(forWidth: f.width)
+        return NSRect(x: f.minX + (f.width - s.width) / 2, y: f.minY, width: s.width, height: s.height)
+    }
+    override func height(forWidth w: CGFloat) -> CGFloat { imageSize(forWidth: w).height + (caption.isEmpty ? 0 : Self.captionHeight) }
+
     override func draw(withFrame f: NSRect, in controlView: NSView?) {
         guard let img = image() else {
             theme.text.withAlphaComponent(0.06).setFill()
@@ -126,13 +149,78 @@ final class ImageCell: BlockCell {
             ("Image not found in vault" as NSString).draw(at: NSPoint(x: f.minX + 16, y: f.midY - 8), withAttributes: [.foregroundColor: theme.secondary, .font: NSFont.systemFont(ofSize: 13)])
             return
         }
-        let scale = min(f.width / img.size.width, f.height / img.size.height)
-        let size = NSSize(width: img.size.width * scale, height: img.size.height * scale)
-        let r = NSRect(x: f.minX, y: f.minY, width: size.width, height: size.height)
+        let r = imageRect(in: f)
         NSGraphicsContext.saveGraphicsState()
         NSBezierPath(roundedRect: r, xRadius: 10, yRadius: 10).addClip()
         img.draw(in: r, from: .zero, operation: .sourceOver, fraction: 1, respectFlipped: true, hints: nil)
         NSGraphicsContext.restoreGraphicsState()
+        if liveWidth != nil || controller?.isImageSelected(self) == true {
+            // Resize grip on the right edge.
+            theme.accentColor.setFill()
+            NSBezierPath(roundedRect: NSRect(x: r.maxX - 5, y: r.midY - 18, width: 4, height: 36), xRadius: 2, yRadius: 2).fill()
+        }
+        if !caption.isEmpty {
+            let ps = NSMutableParagraphStyle(); ps.alignment = .center; ps.lineBreakMode = .byTruncatingTail
+            (caption as NSString).draw(in: NSRect(x: f.minX, y: r.maxY + 7, width: f.width, height: Self.captionHeight - 7),
+                                       withAttributes: [.font: theme.font(size: 13, weight: .regular), .foregroundColor: theme.secondary, .paragraphStyle: ps])
+        }
+    }
+
+    override func wantsToTrackMouse(for event: NSEvent, in cellFrame: NSRect, of controlView: NSView?, atCharacterIndex charIndex: Int) -> Bool {
+        guard let v = controlView else { return false }
+        let p = v.convert(event.locationInWindow, from: nil)
+        let r = imageRect(in: cellFrame)
+        return abs(p.x - r.maxX) < 9 && p.y > r.minY && p.y < r.maxY
+    }
+
+    /// Drag the right edge to resize; the width is stored as a fraction of the text width.
+    override func trackMouse(with event: NSEvent, in cellFrame: NSRect, of controlView: NSView?, atCharacterIndex charIndex: Int, untilMouseUp flag: Bool) -> Bool {
+        guard let v = controlView, let w = v.window, let c = controller else { return false }
+        let center = cellFrame.midX
+        var e: NSEvent? = event
+        while let ev = e {
+            if ev.type == .leftMouseUp { break }
+            let x = v.convert(ev.locationInWindow, from: nil).x
+            liveWidth = min(1, max(0.15, (x - center) * 2 / cellFrame.width))
+            c.layout.invalidateLayout(forCharacterRange: NSRange(location: charIndex, length: 1), actualCharacterRange: nil)
+            v.needsDisplay = true
+            e = w.nextEvent(matching: [.leftMouseDragged, .leftMouseUp])
+        }
+        if let final = liveWidth {
+            liveWidth = nil
+            c.updateAttachment(at: charIndex) { $0[attr: "width"] = .number((Double(final) * 100).rounded() / 100) }
+        }
+        return true
+    }
+}
+
+/// A stored file: icon, name and size; click opens it in its default app.
+final class FileCell: BlockCell {
+    var name: String { node.attrs?["name"]?.string ?? "File" }
+    override func height(forWidth w: CGFloat) -> CGFloat { 58 }
+    override func wantsToTrackMouse() -> Bool { true }
+    override func trackMouse(with event: NSEvent, in cellFrame: NSRect, of controlView: NSView?, untilMouseUp flag: Bool) -> Bool {
+        if event.type == .leftMouseDown, event.clickCount >= 1, let a = node.attrs?["assetId"]?.string {
+            let n = name
+            DispatchQueue.main.async { [weak controller] in controller?.host?.openAttachment(assetId: a, name: n) }
+        }
+        return true
+    }
+    override func draw(withFrame f: NSRect, in controlView: NSView?) {
+        let r = f.insetBy(dx: 0, dy: 3)
+        let box = NSBezierPath(roundedRect: r, xRadius: 12, yRadius: 12)
+        theme.text.withAlphaComponent(theme.isDarkPage ? 0.08 : 0.035).setFill(); box.fill()
+        theme.text.withAlphaComponent(0.12).setStroke(); box.lineWidth = 1; box.stroke()
+        let ext = (name as NSString).pathExtension
+        let icon = NSWorkspace.shared.icon(for: UTType(filenameExtension: ext) ?? .data)
+        icon.draw(in: NSRect(x: r.minX + 12, y: r.midY - 17, width: 34, height: 34), from: .zero, operation: .sourceOver, fraction: 1, respectFlipped: true, hints: nil)
+        let ps = NSMutableParagraphStyle(); ps.lineBreakMode = .byTruncatingMiddle
+        (name as NSString).draw(in: NSRect(x: r.minX + 56, y: r.minY + 9, width: r.width - 140, height: 20),
+                                withAttributes: [.font: theme.font(size: 15, weight: .medium, design: .default), .foregroundColor: theme.text, .paragraphStyle: ps])
+        let size = ByteCountFormatter.string(fromByteCount: Int64(node.attrs?["size"]?.int ?? 0), countStyle: .file)
+        ("\(ext.uppercased().isEmpty ? "File" : ext.uppercased()) · \(size)" as NSString).draw(at: NSPoint(x: r.minX + 56, y: r.minY + 29),
+                                withAttributes: [.font: NSFont.systemFont(ofSize: 12), .foregroundColor: theme.secondary])
+        ("Open" as NSString).draw(at: NSPoint(x: r.maxX - 52, y: r.midY - 8), withAttributes: [.font: NSFont.systemFont(ofSize: 12.5, weight: .medium), .foregroundColor: theme.accentColor])
     }
 }
 

@@ -7,7 +7,9 @@ import DraftCore
 final class FakeHost: EditorHost {
     var pages: [String: (title: String, content: Node)] = [:]
     var active: [String: Bool] = [:]
-    func image(forAsset id: String) -> NSImage? { nil }
+    func image(forAsset id: String) -> NSImage? {
+        NSImage(size: NSSize(width: 800, height: 400), flipped: false) { r in NSColor.systemTeal.setFill(); r.fill(); return true }
+    }
     func pageInfo(docId: String) -> (title: String, excerpt: String, tint: NSColor)? { pages[docId].map { ($0.title, "", .gray) } }
     func openPage(docId: String) {}
     func createChildPage() -> (docId: String, title: String)? { nil }
@@ -23,6 +25,10 @@ final class FakeHost: EditorHost {
     func pageDocument(docId: String) -> (title: String, content: Node)? { active[docId] == true ? pages[docId] : nil }
     func link(toBlock blockId: String) -> URL? { URL(string: "draft://open?doc=d_this&block=\(blockId)") }
     var appended: [String: [Node]] = [:]
+    var opened: [String] = []
+    func pickFile(_ completion: @escaping ((assetId: String, name: String, size: Int)?) -> Void) { completion(("0123456789abcdef0123456789abcdef.pdf", "Plan.pdf", 2048)) }
+    func storeFile(at url: URL) -> (assetId: String, name: String, size: Int)? { ("0123456789abcdef0123456789abcdef.txt", url.lastPathComponent, 3) }
+    func openAttachment(assetId: String, name: String) { opened.append(name) }
     func moveTargets() -> [(id: String, title: String)] { [("d_other", "Other")] }
     func appendBlocks(_ content: Node, toDocument target: String) -> Bool { appended[target, default: []] += content.content ?? []; return true }
     func removeBlocks(_ ids: [String], fromDocument target: String) { appended[target] = appended[target]?.removingIds(Set(ids)) }

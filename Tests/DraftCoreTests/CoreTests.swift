@@ -197,3 +197,23 @@ final class RemoveBlocksTests: XCTestCase {
         XCTAssertEqual(r.content?.last?.content?.map(\.id), ["q2"])
     }
 }
+
+final class FileAssetTests: XCTestCase {
+    func testAnyExtensionIsStoredAndFilesExport() throws {
+        let dir = FileManager.default.temporaryDirectory.appendingPathComponent("draft-f-\(UUID().uuidString)")
+        defer { try? FileManager.default.removeItem(at: dir) }
+        let v = Vault(dir: dir); try v.prepare()
+        let a = try v.putAsset(Data("x".utf8), ext: "Numbers")
+        XCTAssertTrue(a.hasSuffix(".numbers"))
+        XCTAssertEqual(try v.putAsset(Data("y".utf8), ext: "").split(separator: ".").last, "bin")
+        XCTAssertNoThrow(try v.assetURL(a))
+        var d = DocFile.empty(id: "d_f", title: "")
+        d.content = Node("doc", content: [Node("file", attrs: ["id": "b_f", "assetId": .string(a), "name": "Budget 2026.numbers", "size": 1]),
+                                          Node("image", attrs: ["id": "b_i", "assetId": "abcdef0123456789.png", "alt": "Chart", "caption": "Q3 results", "width": 0.5])])
+        let r = Markdown.render(d, assetPath: { "assets/" + $0 }, pageLink: { _, _ in nil })
+        XCTAssertTrue(r.markdown.contains("[Budget 2026.numbers](assets/\(a))"))
+        XCTAssertTrue(r.markdown.contains("![Chart](assets/abcdef0123456789.png)\n*Q3 results*"))
+        XCTAssertEqual(Set(r.assets), [a, "abcdef0123456789.png"])
+        XCTAssertEqual(attachmentsOf(d.content).map(\.kind), ["file", "image"])
+    }
+}

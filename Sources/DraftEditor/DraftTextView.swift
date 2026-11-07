@@ -146,7 +146,7 @@ public final class DraftTextView: NSTextView {
         return super.writeSelection(to: pboard, type: type)
     }
 
-    public override var readablePasteboardTypes: [NSPasteboard.PasteboardType] { [EditorController.pasteboardType, .rtf, .html, .png, .tiff, .string] }
+    public override var readablePasteboardTypes: [NSPasteboard.PasteboardType] { [EditorController.pasteboardType, .fileURL, .rtf, .html, .png, .tiff, .string] }
 
     public override func readSelection(from pboard: NSPasteboard, type: NSPasteboard.PasteboardType) -> Bool {
         guard let c = controller else { return super.readSelection(from: pboard, type: type) }
@@ -157,6 +157,8 @@ public final class DraftTextView: NSTextView {
             if let d = pboard.data(forType: .png) { return c.pasteImage(d, ext: "png") }
         case .tiff:
             if let d = pboard.data(forType: .tiff), let rep = NSBitmapImageRep(data: d), let png = rep.representation(using: .png, properties: [:]) { return c.pasteImage(png, ext: "png") }
+        case .fileURL:
+            if let urls = pboard.readObjects(forClasses: [NSURL.self], options: [.urlReadingFileURLsOnly: true]) as? [URL], !urls.isEmpty { return c.insertFiles(urls) }
         case .rtf, .html:
             if let d = pboard.data(forType: type),
                let s = try? NSAttributedString(data: d, options: [.documentType: type == .rtf ? NSAttributedString.DocumentType.rtf : .html, .characterEncoding: String.Encoding.utf8.rawValue], documentAttributes: nil) {
@@ -176,6 +178,18 @@ public final class DraftTextView: NSTextView {
             return t
         }
         return super.preferredPasteboardType(from: availableTypes, restrictedToTypesFrom: allowedTypes)
+    }
+
+    public override var acceptableDragTypes: [NSPasteboard.PasteboardType] { super.acceptableDragTypes + [.fileURL] }
+
+    public override func performDragOperation(_ sender: NSDraggingInfo) -> Bool {
+        if let c = controller, let urls = sender.draggingPasteboard.readObjects(forClasses: [NSURL.self], options: [.urlReadingFileURLsOnly: true]) as? [URL], !urls.isEmpty {
+            let p = convert(sender.draggingLocation, from: nil)
+            let idx = c.layout.characterIndex(for: NSPoint(x: p.x - textContainerOrigin.x, y: p.y - textContainerOrigin.y), in: c.container, fractionOfDistanceBetweenInsertionPoints: nil)
+            setSelectedRange(NSRange(location: idx, length: 0))
+            return c.insertFiles(urls)
+        }
+        return super.performDragOperation(sender)
     }
 
     public override func paste(_ sender: Any?) {

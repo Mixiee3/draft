@@ -93,7 +93,16 @@ public enum Markdown {
                 var src = n.attrs?["src"]?.string ?? ""
                 if let a = n.attrs?["assetId"]?.string { assets.append(a); src = assetPath(a) }
                 let enc = src.addingPercentEncoding(withAllowedCharacters: .urlPathAllowed.union(.init(charactersIn: ":"))) ?? src
-                return [indent + "![\(escape(n.attrs?["alt"]?.string ?? ""))](\(enc))"]
+                var lines = [indent + "![\(escape(n.attrs?["alt"]?.string ?? ""))](\(enc))"]
+                if let cap = n.attrs?["caption"]?.string, !cap.isEmpty { lines.append(indent + "*\(escape(cap))*") }
+                if n.attrs?["width"] != nil { lossy.insert("Image sizes are not representable in Markdown.") }
+                return lines
+            case "file":
+                let name = n.attrs?["name"]?.string ?? "File"
+                guard let a = n.attrs?["assetId"]?.string else { return [indent + escape(name)] }
+                assets.append(a)
+                let p = assetPath(a)
+                return [indent + "[\(escape(name))](\(p.addingPercentEncoding(withAllowedCharacters: .urlPathAllowed) ?? p))"]
             case "pageCard":
                 let t = n.attrs?["title"]?.string ?? ""
                 let title = t.isEmpty ? "Untitled page" : t

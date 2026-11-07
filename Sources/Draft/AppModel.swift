@@ -637,6 +637,36 @@ final class AppModel: ObservableObject {
         }
     }
 
+    static let maxFileBytes = 512 * 1024 * 1024
+
+    func storeFile(at url: URL) -> (assetId: String, name: String, size: Int)? {
+        let size = (try? url.resourceValues(forKeys: [.fileSizeKey]).fileSize) ?? 0
+        guard size <= Self.maxFileBytes else { toast("“\(url.lastPathComponent)” is larger than 512 MB and was not added."); return nil }
+        do {
+            let data = try Data(contentsOf: url, options: .mappedIfSafe)
+            return (try vault.putAsset(data, ext: url.pathExtension), url.lastPathComponent, data.count)
+        } catch { toast("Could not add “\(url.lastPathComponent)”: \(error.localizedDescription)"); return nil }
+    }
+
+    func pickFile(_ completion: @escaping ((assetId: String, name: String, size: Int)?) -> Void) {
+        let p = NSOpenPanel()
+        p.allowsMultipleSelection = false
+        p.message = "Choose a file. Draft copies it into your vault."
+        p.begin { r in completion(r == .OK ? p.url.flatMap { self.storeFile(at: $0) } : nil) }
+    }
+
+    /// Opens a stored file under its original name (a read-only copy in the temporary folder).
+    func openAttachment(assetId: String, name: String) {
+        do {
+            let src = try vault.assetURL(assetId)
+            let dir = FileManager.default.temporaryDirectory.appendingPathComponent("Draft Files/\((assetId as NSString).deletingPathExtension)", isDirectory: true)
+            try FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
+            let dest = dir.appendingPathComponent(Markdown.safeFileName(name, fallback: assetId))
+            if !FileManager.default.fileExists(atPath: dest.path) { try FileManager.default.copyItem(at: src, to: dest) }
+            NSWorkspace.shared.open(dest)
+        } catch { toast("Could not open “\(name)”: \(error.localizedDescription)") }
+    }
+
     func revealVault() { NSWorkspace.shared.activateFileViewerSelecting([vault.dir]) }
 
     // MARK: Export
@@ -768,6 +798,9 @@ final class EditorHostAdapter: EditorHost {
     func setGroupedPage(_ id: String, active: Bool) { MainActor.assumeIsolated { model.setGroupedPage(id, active: active, parent: docId) } }
     func pageDocument(docId: String) -> (title: String, content: Node)? { MainActor.assumeIsolated { model.pageDocument(docId) } }
     func link(toBlock blockId: String) -> URL? { AppModel.blockLink(doc: docId, block: blockId) }
+    func pickFile(_ completion: @escaping ((assetId: String, name: String, size: Int)?) -> Void) { MainActor.assumeIsolated { model.pickFile(completion) } }
+    func storeFile(at url: URL) -> (assetId: String, name: String, size: Int)? { MainActor.assumeIsolated { model.storeFile(at: url) } }
+    func openAttachment(assetId: String, name: String) { MainActor.assumeIsolated { model.openAttachment(assetId: assetId, name: name) } }
     func moveTargets() -> [(id: String, title: String)] {
         MainActor.assumeIsolated { model.moveTargets(excluding: docId).map { ($0.id, $0.title.isEmpty ? "Untitled" : $0.title) } }
     }

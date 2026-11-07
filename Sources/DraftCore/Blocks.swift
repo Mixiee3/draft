@@ -115,6 +115,9 @@ public func attachmentsOf(_ root: Node) -> [AttachmentInfo] {
     var current = ""
     walk(root) { n in
         if let id = n.id { current = id }
+        if n.type == "file" {
+            out.append(AttachmentInfo(blockId: n.id ?? "", kind: "file", label: n.attrs?["name"]?.string ?? "File", ref: n.attrs?["assetId"]?.string ?? ""))
+        }
         if n.type == "image" {
             out.append(AttachmentInfo(blockId: n.id ?? "", kind: "image", label: n.attrs?["alt"]?.string.flatMap { $0.isEmpty ? nil : $0 } ?? "Image", ref: n.attrs?["assetId"]?.string ?? n.attrs?["src"]?.string ?? ""))
         }

@@ -72,7 +72,7 @@ public enum EditorCommands {
         EditorCommand("insert.card", "Card", "rectangle.portrait.on.rectangle.portrait", group: "Insert", keywords: ["card", "page"], run: { $0.insertPage(presentation: "card") }),
         EditorCommand("insert.image", "Image", "photo", group: "Insert", keywords: ["image", "picture", "photo"], run: { $0.insertImageFromPicker() }),
         EditorCommand("insert.divider", "Separator", "minus", group: "Insert", keywords: ["divider", "separator", "line", "hr"], run: { $0.insertDivider() }),
-        EditorCommand("insert.file", "File", "paperclip", group: "Insert", keywords: ["file", "attachment"], plannedFor: "v0.2.1", isEnabled: { _ in false }),
+        EditorCommand("insert.file", "File", "paperclip", group: "Insert", keywords: ["file", "attachment", "pdf", "document"], run: { $0.insertFileFromPicker() }),
         EditorCommand("insert.table", "Table", "tablecells", group: "Insert", keywords: ["table"], plannedFor: "v0.5", isEnabled: { _ in false }),
         EditorCommand("insert.collection", "Collection", "square.grid.3x2", group: "Insert", keywords: ["collection", "database"], plannedFor: "v0.5", isEnabled: { _ in false }),
         EditorCommand("insert.formula", "Formula", "function", group: "Insert", keywords: ["math", "equation"], plannedFor: "later", isEnabled: { _ in false }),
