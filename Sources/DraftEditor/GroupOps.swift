@@ -45,10 +45,7 @@ extension EditorController {
         let card = Node("pageCard", attrs: attrs)
         flat.replaceSubrange(r, with: [FlatBlock(info: BlockInfo(id: cardId, kind: .page, raw: card), inline: [])])
         clearBlockModeState()
-        undoGroup {
-            registerPageState(pageId, current: true)
-            rebuild(flat, select: [cardId], blockMode: true)
-        }
+        rebuild(flat, select: [cardId], blockMode: true, alsoUndo: { self.registerPageState(pageId, current: true) })
     }
 
     /// ⇧⌘G: put a nested page's blocks back in place of its card (ids kept) and move the page
@@ -71,11 +68,8 @@ extension EditorController {
         if inserted.isEmpty { inserted = [FlatBlock(info: BlockInfo(id: card.info.id), inline: [])] }
         flat.replaceSubrange(r, with: inserted)
         clearBlockModeState()
-        undoGroup {
-            host.setGroupedPage(pageId, active: false)
-            registerPageState(pageId, current: false)
-            rebuild(flat, select: inserted.map(\.info.id), blockMode: true)
-        }
+        host.setGroupedPage(pageId, active: false)
+        rebuild(flat, select: inserted.map(\.info.id), blockMode: true, alsoUndo: { self.registerPageState(pageId, current: false) })
     }
 
     /// ⌘D: copies of the selected blocks right after them, with new ids.
@@ -85,6 +79,42 @@ extension EditorController {
         flat.insert(contentsOf: copies, at: r.upperBound + 1)
         clearBlockModeState()
         rebuild(flat, select: copies.map(\.info.id), blockMode: true)
+    }
+
+    /// Move the selected blocks to the end of another document (ids kept). Undo takes them back.
+    public func moveSelectedBlocks(toDocument target: String) {
+        guard let host else { return }
+        var (flat, r) = selectedFlat
+        let moving = Array(flat[r])
+        let content = Converter.tree(from: moving)
+        guard host.appendBlocks(content, toDocument: target) else { NSSound.beep(); return }
+        let before = r.lowerBound > 0 ? flat[r.lowerBound - 1].info.id : nil
+        flat.removeSubrange(r)
+        if flat.isEmpty { flat = [FlatBlock(info: .paragraph(), inline: [])] }
+        clearBlockModeState()
+        rebuild(flat, select: before.map { [$0] } ?? [flat[0].info.id], blockMode: false,
+                alsoUndo: { self.registerMoveState(content: content, ids: moving.map(\.info.id), target: target, present: true) })
+    }
+
+    func registerMoveState(content: Node, ids: [String], target: String, present: Bool) {
+        textView.undoManager?.registerUndo(withTarget: self) { c in
+            if present { c.host?.removeBlocks(ids, fromDocument: target) } else { _ = c.host?.appendBlocks(content, toDocument: target) }
+            c.registerMoveState(content: content, ids: ids, target: target, present: !present)
+        }
+    }
+
+    /// Used by the app when blocks arrive from another document.
+    public func appendBlocks(_ content: Node) {
+        var flat = flatBlocks()
+        if flat.count == 1, flat[0].inline.isEmpty, !flat[0].info.kind.isAttachment { flat = [] }
+        let added = Converter.flatten(content)
+        rebuild(flat + added, select: [], blockMode: false)
+    }
+
+    public func removeBlocks(ids: Set<String>) {
+        var flat = flatBlocks().filter { !ids.contains($0.info.id) }
+        if flat.isEmpty { flat = [FlatBlock(info: .paragraph(), inline: [])] }
+        rebuild(flat, select: [], blockMode: false)
     }
 
     public func copyLinkToBlock() {
@@ -130,6 +160,16 @@ extension EditorController {
         item("block.copyLink", into: menu)
         item("block.group", into: menu)
         item("block.ungroup", into: menu)
+        let targets = host?.moveTargets() ?? []
+        let moveMenu = NSMenu(title: "Move to")
+        for t in targets {
+            moveMenu.addItem(ClosureMenuItem(title: t.title) { [weak self] in self?.moveSelectedBlocks(toDocument: t.id) })
+        }
+        let moveItem = NSMenuItem(title: "Move to", action: nil, keyEquivalent: "")
+        moveItem.submenu = moveMenu
+        moveItem.image = NSImage(systemSymbolName: "arrow.turn.up.right", accessibilityDescription: nil)
+        moveItem.isEnabled = !targets.isEmpty
+        menu.addItem(moveItem)
         menu.addItem(.separator())
         item("block.moveUp", into: menu)
         item("block.moveDown", into: menu)

@@ -90,7 +90,8 @@ child ids; 56 tests + smoke test (restart, trash, backups, search jump). **Not y
 - ✅ Block context menu (turn into, duplicate ⌘D, copy link, group, move, delete) on the handle and in
   the text's context menu; `draft://` block links open the doc at the block.
 - ✅ Group selected blocks into a nested page (⌘G) / ungroup (⇧⌘G), ids preserved, undoable.
-  ⬜ Move blocks to another doc.
+- ✅ Move blocks to another doc (block menu → Move to), undoable on both sides.
+- ✅ Undoing a group / ungrouping no longer leaves a page in Recently Deleted.
 - ⬜ Toggle list (`+ `), callout block, page break (`===`), strong/dotted/three-dot separators, `x ` task trigger.
 - ⬜ Cover crop/reposition (ratios, focal point) as data.
 - ⬜ Tab state across restarts (scroll + caret), back/forward stacks.

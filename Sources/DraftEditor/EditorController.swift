@@ -19,6 +19,7 @@ public final class EditorController: NSObject, NSTextStorageDelegate, NSTextView
     var trailing: BlockInfo = .paragraph() { didSet { layout.trailingBlock = trailing } }
     public private(set) var lastColor: (kind: String, hex: String)? = nil
     var isLoading = false
+    var isProgrammaticEdit = false
     var pendingTrigger: (location: Int, text: String)?
     /// Ids of blocks selected as whole units (block mode); empty when editing text.
     public internal(set) var blockSelectionIds: [String] = []
@@ -153,6 +154,8 @@ public final class EditorController: NSObject, NSTextStorageDelegate, NSTextView
     // MARK: - Undoable primitives
 
     func replace(_ range: NSRange, with s: NSAttributedString, select: NSRange? = nil) {
+        isProgrammaticEdit = true
+        defer { isProgrammaticEdit = false }
         guard textView.shouldChangeText(in: range, replacementString: s.string) else { return }
         storage.beginEditing()
         storage.replaceCharacters(in: range, with: s)
@@ -279,7 +282,9 @@ public final class EditorController: NSObject, NSTextStorageDelegate, NSTextView
         // Typing into an attachment block (image/divider/card) goes to a new paragraph instead.
         let pr = paragraphRange(at: range.location)
         let b = block(at: pr)
-        if b.kind.isAttachment && !s.isEmpty && s != "\n" && range.length == 0 && pr.length > 0 {
+        let um = textView.undoManager
+        let userTyping = !isProgrammaticEdit && !(um?.isUndoing ?? false) && !(um?.isRedoing ?? false)
+        if userTyping && b.kind.isAttachment && !s.isEmpty && s != "\n" && range.length == 0 && pr.length > 0 {
             DispatchQueue.main.async { [weak self] in self?.insertParagraphAfter(pr, text: s) }
             return false
         }

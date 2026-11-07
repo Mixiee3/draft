@@ -56,6 +56,16 @@ final class BlockOpsTests: XCTestCase {
         XCTAssertGreaterThanOrEqual(sel.location, c.paragraph(withId: "b_c")!.location)
     }
 
+    func testUndoRestoresTextRemovedRightBeforeAnAttachment() {
+        let before = c.document()
+        caret(in: "b_c")
+        c.enterBlockMode()
+        tv.deleteBackward(nil) // removes "charlie", which sits just above the separator
+        XCTAssertFalse(ids().contains("b_c"))
+        pump(); tv.undoManager?.undo()
+        XCTAssertEqual(c.document(), before, "undo must not be redirected by the attachment rule")
+    }
+
     func testMoveLastBlockUpAndFirstToBottom() {
         caret(in: "b_d")
         c.moveSelectedBlocks(by: -1)

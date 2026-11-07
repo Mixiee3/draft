@@ -404,22 +404,77 @@ final class AppModel: ObservableObject {
         return id
     }
 
+    /// Pages taken out by undoing a group (or by ungroup) are held here, not in Recently Deleted:
+    /// their content lives on in the parent, and redo puts them back.
+    private var heldPages: [String: (meta: DocMeta, doc: DocFile)] = [:]
+
     func setGroupedPage(_ id: String, active: Bool, parent: String) {
-        guard let d = ensureDoc(id) else { return }
-        let kids = cardDocIds(editors[id]?.controller.document() ?? d.content)
         if active {
-            library.restore(id)
+            if let held = heldPages.removeValue(forKey: id) {
+                library.docs[id] = held.meta
+                docs[id] = held.doc
+                do { try vault.saveDoc(held.doc) } catch { reportSaveError(error) }
+            } else {
+                library.restore(id) // pages trashed by earlier builds
+            }
             library.docs[id]?.parentDocId = parent
-            reparent(kids, to: id)
+            if let d = docs[id] { reparent(cardDocIds(d.content), to: id) }
         } else {
             saveDirtyDocs()
-            reparent(kids, to: parent) // hand nested pages back before trashing, so they stay live
-            library.trash(id)
+            guard var d = ensureDoc(id), let meta = library.docs[id] else { return }
+            if let e = editors[id] { d.content = e.controller.document() }
+            reparent(cardDocIds(d.content), to: parent) // nested pages stay live under the parent
+            heldPages[id] = (meta, d)
+            library.docs[id] = nil
+            docs[id] = nil
             editors[id] = nil
             hosts[id] = nil
+            library.tabs.removeAll { $0.view.kind == "doc" && $0.view.docId == id }
+            if !library.tabs.contains(where: { $0.id == library.activeTabId }) { library.activeTabId = library.tabs[0].id }
+            do { try vault.purgeDoc(id) } catch { reportSaveError(error) }
         }
         scheduleLibrarySave()
         editorTick &+= 1
+    }
+
+    // MARK: Moving blocks between documents
+
+    func moveTargets(excluding id: String) -> [DocMeta] {
+        Array(library.liveDocs.filter { $0.id != id }.sorted { $0.viewedAt > $1.viewedAt }.prefix(15))
+    }
+
+    /// Append top-level blocks to another document (open editor or file). Returns false if it can't.
+    func appendBlocks(_ content: Node, to target: String) -> Bool {
+        guard library.docs[target]?.deletedAt == nil, var d = ensureDoc(target) else { return false }
+        if let e = editors[target] {
+            e.controller.appendBlocks(content)
+        } else {
+            var blocks = d.content.content ?? []
+            if blocks.count == 1, blocks[0].type == "paragraph", blocks[0].content == nil { blocks = [] } // replace an empty page
+            d.content.content = blocks + (content.content ?? [])
+            d.updatedAt = nowMs()
+            docs[target] = d
+            markDocDirty(target)
+        }
+        reparent(cardDocIds(content), to: target)
+        scheduleLibrarySave()
+        return true
+    }
+
+    func removeBlocks(_ ids: [String], from target: String, returningPagesTo parent: String) {
+        guard var d = ensureDoc(target) else { return }
+        let moved = editors[target].map { $0.controller.document() } ?? d.content
+        let pages = Set(cardDocIds(moved)).subtracting(cardDocIds(moved.removingBlocks(Set(ids))))
+        if let e = editors[target] {
+            e.controller.removeBlocks(ids: Set(ids))
+        } else {
+            d.content = d.content.removingBlocks(Set(ids))
+            d.updatedAt = nowMs()
+            docs[target] = d
+            markDocDirty(target)
+        }
+        reparent(Array(pages), to: parent)
+        scheduleLibrarySave()
     }
 
     func pageDocument(_ id: String) -> (title: String, content: Node)? {
@@ -713,6 +768,22 @@ final class EditorHostAdapter: EditorHost {
     func setGroupedPage(_ id: String, active: Bool) { MainActor.assumeIsolated { model.setGroupedPage(id, active: active, parent: docId) } }
     func pageDocument(docId: String) -> (title: String, content: Node)? { MainActor.assumeIsolated { model.pageDocument(docId) } }
     func link(toBlock blockId: String) -> URL? { AppModel.blockLink(doc: docId, block: blockId) }
+    func moveTargets() -> [(id: String, title: String)] {
+        MainActor.assumeIsolated { model.moveTargets(excluding: docId).map { ($0.id, $0.title.isEmpty ? "Untitled" : $0.title) } }
+    }
+    func appendBlocks(_ content: Node, toDocument target: String) -> Bool {
+        MainActor.assumeIsolated {
+            let ok = model.appendBlocks(content, to: target)
+            if ok {
+                let n = content.content?.count ?? 0, t = model.library.docs[target]?.title ?? ""
+                model.toast("Moved \(n) block\(n == 1 ? "" : "s") to “\(t.isEmpty ? "Untitled" : t)”", action: "Open") { [model] in model.openView(.doc(target)) }
+            }
+            return ok
+        }
+    }
+    func removeBlocks(_ ids: [String], fromDocument target: String) {
+        MainActor.assumeIsolated { model.removeBlocks(ids, from: target, returningPagesTo: docId) }
+    }
     func editorDidChange() { MainActor.assumeIsolated { model.editorChanged(docId) } }
     func editorStateDidChange() { MainActor.assumeIsolated { model.editorTick &+= 1 } }
 }

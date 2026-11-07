@@ -28,7 +28,7 @@ extension EditorController {
     /// Make the document equal `flat` as ONE undo step, replacing only the paragraphs that
     /// differ (unchanged blocks, their attachments and the undo selection stay put), then select
     /// the given blocks.
-    func rebuild(_ flat: [FlatBlock], select ids: [String], blockMode: Bool) {
+    func rebuild(_ flat: [FlatBlock], select ids: [String], blockMode: Bool, alsoUndo: (() -> Void)? = nil) {
         let (s, newTrailing) = Converter.attributed(flat: flat)
         let old = flatBlocks()
         let oldParas = Self.paragraphStarts(storage), newParas = Self.paragraphStarts(s)
@@ -41,6 +41,7 @@ extension EditorController {
         let oldRange = NSRange(location: oldParas[p], length: (t > 0 ? oldParas[old.count - t] : storage.length) - oldParas[p])
         let newRange = NSRange(location: newParas[p], length: (t > 0 ? newParas[flat.count - t] : s.length) - newParas[p])
         undoGroup {
+            alsoUndo?()
             setTrailingUndoable(newTrailing)
             if oldRange.length > 0 || newRange.length > 0 { replace(oldRange, with: s.attributedSubstring(from: newRange)) }
         }

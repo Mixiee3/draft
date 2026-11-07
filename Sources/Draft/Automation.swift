@@ -55,6 +55,12 @@ enum Automation {
         let blocks = ed.controller.document().content ?? []
         ed.controller.selectBlocks(ids: [blocks[0].id!, blocks[1].id!])
         EditorCommands.command("block.group")!.run(ed.controller)
+        // Move the checklist into "Morning pages".
+        if let task = (ed.controller.document().content ?? []).first(where: { $0.type == "taskList" })?.content?.first?.id,
+           let morning = m.library.liveDocs.first(where: { $0.title == "Morning pages" }) {
+            ed.controller.selectBlocks(ids: [task])
+            ed.controller.moveSelectedBlocks(toDocument: morning.id)
+        }
         await wait(1.0)
         try? Data(id.utf8).write(to: out.appendingPathComponent("smoke-doc-id.txt"))
         // Quit immediately: the quit path itself must flush pending saves.
@@ -98,7 +104,11 @@ enum Automation {
                 result["jumpMatches"] = "\(c.findMatches.count)"
             }
             // Block link opens the document; then ⇧⌘G ungroups the page in place.
-            if let taskId = (m.ensureDoc(id)?.content.content ?? []).first(where: { $0.type == "taskList" })?.content?.first?.id,
+            if let morning = m.library.liveDocs.first(where: { $0.title == "Morning pages" }), let md = m.ensureDoc(morning.id) {
+                result["movedTo"] = docPlainText(md.content).contains("a task") ? "yes" : "no"
+                result["movedFrom"] = docPlainText(doc.content).contains("a task") ? "still here" : "gone"
+            }
+            if let taskId = (m.ensureDoc(id)?.content.content ?? []).first(where: { $0.type == "pageCard" })?.id,
                let url = AppModel.blockLink(doc: id, block: taskId) {
                 m.activateTab(m.library.tabs[0].id)
                 m.openLink(url)
@@ -111,7 +121,7 @@ enum Automation {
                 EditorCommands.command("block.ungroup")!.run(c)
                 await wait(0.3)
                 result["afterUngroup"] = (c.document().content ?? []).map(\.type).filter { $0 != "paragraph" || true }.suffix(4).joined(separator: ",")
-                result["ungroupedTrashed"] = m.library.docs[pageId]?.deletedAt != nil ? "yes" : "no"
+                result["ungroupedGone"] = m.library.docs[pageId] == nil && !m.library.trashedDocs.contains { $0.id == pageId } ? "yes" : "no"
                 result["ungroupedText"] = docPlainText(c.document())
             }
         } else { result["error"] = "document not found after restart" }

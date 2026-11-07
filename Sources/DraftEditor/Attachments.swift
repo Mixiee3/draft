@@ -21,6 +21,12 @@ public protocol EditorHost: AnyObject {
     func pageDocument(docId: String) -> (title: String, content: Node)?
     /// Stable link to a block of this document (`draft://open?doc=…&block=…`).
     func link(toBlock blockId: String) -> URL?
+    /// Documents offered by "Move to" (most recent first, this one excluded).
+    func moveTargets() -> [(id: String, title: String)]
+    /// Append top-level blocks to another document; false if it is not available.
+    func appendBlocks(_ content: Node, toDocument target: String) -> Bool
+    /// Undo of a move: take the blocks back out of the other document.
+    func removeBlocks(_ ids: [String], fromDocument target: String)
 }
 
 /// Base cell: block attachments span the full text width.

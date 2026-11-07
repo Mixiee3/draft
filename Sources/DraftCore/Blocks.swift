@@ -129,3 +129,17 @@ public func attachmentsOf(_ root: Node) -> [AttachmentInfo] {
     }
     return out
 }
+
+public extension Node {
+    /// The tree without the blocks whose ids are given; lists and quotes left empty are dropped.
+    func removingBlocks(_ ids: Set<String>) -> Node {
+        var out = self
+        out.content = content?.compactMap { child -> Node? in
+            if let id = child.id, ids.contains(id) { return nil }
+            let c = child.removingBlocks(ids)
+            let container = ["bulletList", "orderedList", "taskList", "toggleList", "blockquote", "callout"].contains(c.type)
+            return container && (c.content ?? []).isEmpty ? nil : c
+        }
+        return out
+    }
+}

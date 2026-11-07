@@ -22,6 +22,14 @@ final class FakeHost: EditorHost {
     func setGroupedPage(_ docId: String, active a: Bool) { active[docId] = a }
     func pageDocument(docId: String) -> (title: String, content: Node)? { active[docId] == true ? pages[docId] : nil }
     func link(toBlock blockId: String) -> URL? { URL(string: "draft://open?doc=d_this&block=\(blockId)") }
+    var appended: [String: [Node]] = [:]
+    func moveTargets() -> [(id: String, title: String)] { [("d_other", "Other")] }
+    func appendBlocks(_ content: Node, toDocument target: String) -> Bool { appended[target, default: []] += content.content ?? []; return true }
+    func removeBlocks(_ ids: [String], fromDocument target: String) { appended[target] = appended[target]?.removingIds(Set(ids)) }
+}
+
+extension Array where Element == Node {
+    func removingIds(_ ids: Set<String>) -> [Node] { (Node("doc", content: self).removingBlocks(ids).content) ?? [] }
 }
 
 final class GroupTests: XCTestCase {
@@ -106,12 +114,29 @@ final class GroupTests: XCTestCase {
         XCTAssertEqual(NSPasteboard.general.string(forType: .string), "draft://open?doc=d_this&block=\(b[1].id!)")
         let menu = c.blockMenu()
         XCTAssertEqual(menu.items.filter { !$0.isSeparatorItem }.map(\.title),
-                       ["Turn Into", "Duplicate Block", "Copy Link to Block", "Group into Page", "Ungroup Page", "Move Block Up", "Move Block Down", "Delete Block"])
+                       ["Turn Into", "Duplicate Block", "Copy Link to Block", "Group into Page", "Ungroup Page", "Move to", "Move Block Up", "Move Block Down", "Delete Block"])
         XCTAssertFalse(menu.item(withTitle: "Ungroup Page")!.isEnabled, "only a page can be ungrouped")
         // Turn Into → Checklist through the menu item itself
         let checklist = menu.item(withTitle: "Turn Into")!.submenu!.item(withTitle: "Checklist") as! ClosureMenuItem
         checklist.fire()
         XCTAssertEqual(blocks()[1].type, "taskList")
+    }
+
+    func testMoveBlocksToAnotherDocumentKeepsIdsAndUndoTakesThemBack() {
+        selectBlocks(["b_h", "b_t"])
+        (c.blockMenu().item(withTitle: "Move to")!.submenu!.item(withTitle: "Other") as! ClosureMenuItem).fire()
+        XCTAssertEqual(blocks().map(\.type), ["paragraph", "pageCard", "paragraph"])
+        let moved = host.appended["d_other"]!
+        XCTAssertEqual(moved.map(\.type), ["heading", "taskList"])
+        XCTAssertEqual(moved[0].id, "b_h"); XCTAssertEqual(moved[1].content?[0].id, "b_t")
+        XCTAssertEqual(moved[0].content?.last?.marks, [Mark("bold")])
+        pump()
+        tv.undoManager?.undo()
+        XCTAssertEqual(c.document(), doc)
+        XCTAssertEqual(host.appended["d_other"]?.count, 0, "undo removes them from the other document")
+        pump(); tv.undoManager?.redo()
+        XCTAssertEqual(host.appended["d_other"]?.count, 2)
+        XCTAssertEqual(blocks().count, 3)
     }
 
     func testGroupIsDisabledForEmptyLines() {

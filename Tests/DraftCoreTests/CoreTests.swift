@@ -184,3 +184,16 @@ final class StyleTests: XCTestCase {
         }
     }
 }
+
+final class RemoveBlocksTests: XCTestCase {
+    func testRemovesNestedBlocksAndEmptyContainers() {
+        let d = Node("doc", content: [
+            Node("paragraph", attrs: ["id": "a"]),
+            Node("bulletList", attrs: ["id": "l"], content: [Node("listItem", attrs: ["id": "i1"], content: [Node("paragraph", attrs: ["id": "p1"])])]),
+            Node("blockquote", attrs: ["id": "q"], content: [Node("paragraph", attrs: ["id": "q1"]), Node("paragraph", attrs: ["id": "q2"])]),
+        ])
+        let r = d.removingBlocks(["i1", "q1"])
+        XCTAssertEqual(r.content?.map(\.id), ["a", "q"], "an emptied list is dropped")
+        XCTAssertEqual(r.content?.last?.content?.map(\.id), ["q2"])
+    }
+}

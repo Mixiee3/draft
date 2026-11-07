@@ -18,9 +18,10 @@ assert r["pageTitle"] == "Persisted heading" and "survives a restart" in r["page
 assert r["pageParentOK"] == "yes", r
 assert r["bold"] == "yes", r
 assert r["style"] == "ember", r
-assert r["blocks"].startswith("pageCard,taskList"), r
+assert r["blocks"].startswith("pageCard"), r
+assert r["movedTo"] == "yes" and r["movedFrom"] == "gone", r
 assert r["linkOpened"] == "yes", r
-assert r["ungroupedTrashed"] == "yes" and "Persisted heading" in r["ungroupedText"] and "survives a restart" in r["ungroupedText"], r
+assert r["ungroupedGone"] == "yes" and "Persisted heading" in r["ungroupedText"] and "survives a restart" in r["ungroupedText"], r
 assert r["tabOpen"] == "yes", r
 assert r["trashed"] == "Trash me", r
 assert "Trash me" not in r["listed"], r
