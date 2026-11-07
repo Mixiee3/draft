@@ -25,6 +25,7 @@ public final class DraftTextView: NSTextView {
     public override func insertTab(_ sender: Any?) {
         guard let c = controller else { return super.insertTab(sender) }
         if c.slash.isOpen { c.slash.choose(); return }
+        if c.imageBar.isVisible, c.selectedImageIndex != nil { window?.makeFirstResponder(c.imageBar.size); return } // Esc returns
         if c.currentBlock.kind.isList { c.indent(); return }
         super.insertTab(sender)
     }

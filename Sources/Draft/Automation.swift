@@ -23,6 +23,7 @@ enum Automation {
             case "drag-read": dragRead()
             case "showcase": await showcase()
             case "perf": await perf()
+            case "a11y": await a11yAudit()
             default: break
             }
             NSApp.terminate(nil)
@@ -526,5 +527,50 @@ enum Automation {
         t0 = CFAbsoluteTimeGetCurrent(); let hits = m.searchHits; r["searchMs"] = ms(t0); r["searchHits"] = hits.count
         m.librarySearch = ""
         if let d = try? JSONSerialization.data(withJSONObject: r, options: [.prettyPrinted, .sortedKeys]) { try? d.write(to: out.appendingPathComponent("perf.json")) }
+    }
+
+    // MARK: Accessibility audit: every control in the window's accessibility tree has a name
+
+    static func unlabeled(_ v: NSView, into out: inout [String]) {
+        if let c = v as? NSControl, !v.isHiddenOrHasHiddenAncestor, !(v is NSTextView) {
+            let field = v as? NSTextField
+            let isInput = field.map { $0.isEditable } ?? true
+            let names = [c.accessibilityLabel(), c.accessibilityTitle(), (c as? NSButton)?.title, field?.placeholderString, c.toolTip]
+            if isInput && names.allSatisfy({ ($0 ?? "").isEmpty }) { out.append("\(Swift.type(of: c)) at \(Int(c.frame.minX)),\(Int(c.frame.minY))") }
+        }
+        for sub in v.subviews { unlabeled(sub, into: &out) }
+    }
+
+    static func a11yAudit() async {
+        guard let w = NSApp.windows.first(where: { $0.isVisible }), let id = m.createDoc(title: "A11y") else { return }
+        w.setFrame(NSRect(x: 60, y: 60, width: 1440, height: 900), display: true)
+        await wait(0.5)
+        guard let c = m.editors[id]?.controller else { return }
+        c.load(showcaseDoc())
+        let art = NSImage(size: NSSize(width: 600, height: 300), flipped: false) { r in NSColor.systemTeal.setFill(); r.fill(); return true }
+        if let png = NSBitmapImageRep(data: art.tiffRepresentation!)?.representation(using: .png, properties: [:]), let aid = m.storeImage(data: png, ext: "png") {
+            c.textView.setSelectedRange(NSRange(location: 0, length: 0))
+            c.insertImage(assetId: aid)
+            m.updateAppearance(id) { $0.cover = Cover(assetId: aid) }
+            if let i = c.selectedImageIndex ?? c.document().content?.first(where: { $0.type == "image" }).flatMap({ c.paragraph(withId: $0.id!)?.location }) {
+                c.textView.setSelectedRange(NSRange(location: i, length: 1))
+            }
+        }
+        var report: [String: [String]] = [:]
+        for (name, setup) in [("document+imageBar", { m.panel = nil }), ("format", { m.panel = .format }), ("style", { m.panel = .style }),
+                              ("info", { m.panel = .info }), ("share", { m.panel = .share }), ("cropSheet", { m.panel = nil; m.coverEditorDoc = id })] as [(String, () -> Void)] {
+            setup()
+            await wait(0.6)
+            var out: [String] = []
+            if let root = w.contentView { unlabeled(root, into: &out) }
+            report[name] = out
+        }
+        m.coverEditorDoc = nil
+        // Keyboard: Tab on a selected image moves into the image bar.
+        w.makeFirstResponder(c.textView)
+        if let i = c.document().content?.first(where: { $0.type == "image" }).flatMap({ c.paragraph(withId: $0.id!)?.location }) { c.textView.setSelectedRange(NSRange(location: i, length: 1)) }
+        c.textView.insertTab(nil)
+        report["tabIntoImageBar"] = [w.firstResponder === c.imageBar.size ? "yes" : "no: \(String(describing: w.firstResponder))"]
+        if let d = try? JSONSerialization.data(withJSONObject: report, options: [.prettyPrinted, .sortedKeys]) { try? d.write(to: out.appendingPathComponent("a11y.json")) }
     }
 }

@@ -5,7 +5,7 @@ import DraftCore
 /// controls, so Tab/Shift-Tab, Return and VoiceOver work without extra code.
 public final class ImageBar: NSView, NSTextFieldDelegate {
     unowned let controller: EditorController
-    let size = NSSegmentedControl(labels: ["S", "M", "L", "Full"], trackingMode: .selectOne, target: nil, action: nil)
+    public let size = NSSegmentedControl(labels: ["S", "M", "L", "Full"], trackingMode: .selectOne, target: nil, action: nil)
     let caption = NSTextField()
     let alt = NSTextField()
     public private(set) var isVisible = false

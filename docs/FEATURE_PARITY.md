@@ -12,7 +12,7 @@ app or screenshots) · `verified` (covered by `swift test` or `scripts/smoke.sh`
 
 Platform: all statuses are for the native macOS app. Windows: see §22.
 
-Last updated: v0.2.1 in progress (native macOS) — 2026‑11‑07.
+Last updated: v0.2.1 shipped (native macOS) — 2026‑11‑07.
 
 ## 1. Editor primitives and keyboard
 
@@ -112,7 +112,7 @@ Last updated: v0.2.1 in progress (native macOS) — 2026‑11‑07.
 | N4 | Collapse rail | — | S01 | working | — | 0.1 | ⌃⌘S; persisted |
 | N5 | Tab strip | Home + tabs, close, + | S01, S21 | verified | — | 0.1 | Open doc tab survives restart (smoke `tabOpen`) |
 | N6 | Tab state restore | Scroll/caret per tab | B§5.5 | verified | — | 0.2.1 | Each document tab stores scroll offset and selection (captured on tab switch and quit); restored once when the tab reappears after relaunch (smoke `tabState`) |
-| N7 | Back / forward | — | S01 | partial | — | 0.2 | Back within tab; forward missing |
+| N7 | Back / forward | Back button in doc | S01 | partial | L1 | 0.3 | Back returns within the tab; forward and ⌘[/⌘] history across links → v0.3 step 3 |
 | N8 | Spaces | Switcher, per-space tree | B§4, S13 | partial | — | 0.5 | One Space, renamable |
 | N9 | Folders | Create/rename/nest/delete | S21, S30 | partial | — | 0.2 | Create, rename, remove (docs → Unsorted); nesting missing |
 | N10 | Move doc to folder | Info → Move to | S41 | working | N9 | 0.1 | Info panel and card context menu |
@@ -130,7 +130,7 @@ Last updated: v0.2.1 in progress (native macOS) — 2026‑11‑07.
 | S3 | Space Search with counts + jump | One result per doc | B§H | verified | — | 0.2 | All terms, case/diacritic-insensitive, title matches first, match-count badge, highlighted snippet; Return/click opens the doc with Find in Page filled and the first match scrolled into view (`SearchTests`, smoke `jumpVisible`) |
 | S4 | Find in Page ⌘F | Rail pane, next/prev | S35, B§H | working | — | 0.1 | Highlights all, current stronger; ⌘G/⇧⌘G |
 | S5 | Replace | — | B§H | verified | S4 | 0.1 | Replace all is one undo (test) |
-| S6 | Phrase / exclusion / regex | macOS options | B§H | missing | S3 | 0.3 | — |
+| S6 | Phrase / exclusion / regex | macOS options | B§H | missing | S3 | 0.3 | `"quiet place" -draft` returns only matching docs; invalid regex shows an inline error |
 
 ## 7. Tasks, calendar, daily notes, reminders
 
@@ -138,20 +138,20 @@ Last updated: v0.2.1 in progress (native macOS) — 2026‑11‑07.
 |---|---|---|---|---|---|---|---|
 | K1 | Checklist block | `[] ` | B§G | verified | — | 0.1 | Trigger + click toggle (`testTaskTrigger…`) and smoke test |
 | K2 | Document Tasks pane | Tasks in doc | S18 | working | K1 | 0.1 | Lists, counts, toggles source block |
-| K3 | Global Tasks view | Today/Upcoming… | B§5.7 | missing | index | 0.3 | — |
-| K4 | Due dates / reminders | — | B§5.7 | missing | K3 | 0.3 | — |
-| K5 | Daily notes | One page per date | B§5.7, S33 | missing | — | 0.3 | — |
-| K6 | Calendar stream | Day cards, filters | S33 | missing | K5 | 0.3 | — |
+| K3 | Global Tasks view | Today/Upcoming/etc. | B§5.7 | missing | index | 0.3 | Inbox/Today/Upcoming/Overdue/Completed; completing a task updates its source block with one undo |
+| K4 | Due dates / reminders | Date on task | B§5.7 | missing | K3 | 0.3 | `@tomorrow` sets a due date; opt-in local notification fires once at the due time |
+| K5 | Daily notes | One page per date | B§5.7, S33 | missing | index | 0.3 | ⌘⇧D opens today; opening twice never creates two notes; previous/next day |
+| K6 | Calendar stream | Day cards, Add Task, Create Daily Note, filters | S33 | missing | K5 | 0.3 | Today highlighted; Add Task on a future day creates a dated task; filters persist |
 | K7 | Completed-task appearance | Setting | S12 | working | — | 0.1 | Strikethrough / Dimmed / Unchanged |
 
 ## 8. Tags, links, backlinks
 
 | ID | Capability | Reference behavior | Evidence | Status | Deps | Target | Acceptance check |
 |---|---|---|---|---|---|---|---|
-| G1 | Tags `#tag` | Inline, autocomplete | B§5.6, S17 | missing | index | 0.3 | Rail shows "Tags arrive in v0.3" |
-| G2 | Tag ignore rules | Hex, numbers, custom | S17 | missing | G1 | 0.3 | — |
-| G3 | Backlinks | Linking pages | B§5.6 | missing | L1 | 0.3 | — |
-| L1 | `[[` / `@` doc & block links | Picker | B§G | missing | E2 | 0.3 | — |
+| G1 | Tags `#tag` | Inline, autocomplete | B§5.6, S17 | missing | index | 0.3 | `#ideas` autocompletes; tag view lists every tagged block |
+| G2 | Tag ignore rules (hex, numeric, custom) | Settings | S17 | missing | G1 | 0.3 | `#ff0000` and `#1` ignored by default; custom rules apply on reindex |
+| G3 | Backlinks | Pages linking here | B§5.6 | missing | L1 | 0.3 | A new link appears in the target's backlinks within 1 s; click opens the source at the block |
+| L1 | Doc/block links (`[[`, `@`) | Link picker | B§G | partial | E2 | 0.3 | `draft://` block links work (E24); `[[`/`@` picker with live titles that survive rename/move → v0.3 step 2 |
 
 ## 9. Tables and collections
 
@@ -249,8 +249,8 @@ Last updated: v0.2.1 in progress (native macOS) — 2026‑11‑07.
 
 | ID | Capability | Evidence | Status | Target | Acceptance check |
 |---|---|---|---|---|---|
-| Y11 | Labels on icon-only controls | B§10 | working | 0.1 | `accessibilityLabel` on every icon button; toolbar exposes button children |
-| Y12 | Visible keyboard focus | B§10 | partial | 0.6 | Native controls + toolbar ring; SwiftUI custom chips need audit |
+| Y11 | Accessible labels on icon-only controls | B§10 | working | 0.2.1 | Draft-owned AppKit controls (image bar, cover buttons, block handle, toolbar) have names (a11y automation); `Aa` icon chips speak their command names; attachment cells carry Image/File/Page labels with alt text |
+| Y12 | Visible keyboard focus and keyboard paths | B§10 | partial | 0.6 | ⌥F10 formatting bar, Esc block mode, Tab into the image bar (a11y automation `tabIntoImageBar`), ⌘↩ toggles, crop sheet arrow keys; full audit of SwiftUI focus rings pending |
 | Y13 | Menus: arrows, Return, Esc | B§5.1 | working | 0.1 | Slash menu, Quick Open, palette |
 | Y14 | Contrast over backdrops | prompt | working | 0.1 | Built-in styles ≥ 7:1 text/page (test); controls on opaque pills |
 | Y15 | VoiceOver audit | B§12 | missing | 0.6 | Recorded VoiceOver pass |

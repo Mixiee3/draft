@@ -153,6 +153,8 @@ struct ChipButton: View {
     var isActive = false
     var isEnabled = true
     var height: CGFloat = 34
+    /// Spoken name for icon-only chips.
+    var label: String? = nil
     var action: () -> Void
     @State private var hover = false
     var body: some View {
@@ -171,7 +173,8 @@ struct ChipButton: View {
         .opacity(isEnabled ? 1 : 0.35)
         .disabled(!isEnabled)
         .onHover { hover = $0 }
-        .accessibilityLabel(title.isEmpty ? (symbol ?? "") : title)
+        .help(label ?? title)
+        .accessibilityLabel(label ?? (title.isEmpty ? (symbol ?? "") : title))
         .accessibilityAddTraits(isActive ? .isSelected : [])
     }
 }
