@@ -75,7 +75,7 @@ Last updated: v0.1 (native macOS) — 2026‑11‑07.
 | P3 | Card preview modes | Standard, emoji, book, sticky, gallery | B§D | missing | P2 | 0.4 | — |
 | P4 | Breadcrumb / back | Ancestry; back restores parent | B§5.4 | working | P1 | 0.1 | Child shows `Folder › Parent`; Back returns within tab |
 | P5 | Outline lists pages | TOC lists headings and pages | S01 | working | P1 | 0.1 | Outline shows page rows; click opens |
-| P6 | Recoverable deleted pages | Reference: nested pages not in Recently Deleted | B§B | missing | H4 | 0.2 | Draft decision: tombstone pages too |
+| P6 | Recoverable deleted pages | Reference: nested pages not in Recently Deleted | B§B | verified | H4 | 0.2 | Deleting a doc trashes its nested pages too; restore brings them back with structure; a page whose parent stays deleted returns top-level (`TrashTests`) |
 
 *Draft decision:* nested pages are child documents (`parentDocId`) referenced by a `pageCard` block.
 
@@ -197,8 +197,8 @@ Last updated: v0.1 (native macOS) — 2026‑11‑07.
 |---|---|---|---|---|---|---|---|
 | H1 | Atomic durable saves | — | B§10 | verified | — | 0.1 | No temp leftovers (`testFirstRunSaveReload…`); quit flushes (smoke test) |
 | H2 | Migrations with backup; read-only on newer schema | — | prompt | verified | — | 0.1 | `testMigrationWritesBackupFirst`, `testNewerLibraryMakesVaultReadOnly` |
-| H3 | View backups / restore | Info → View Backups | S41 | missing | — | 0.2 | Listed disabled |
-| H4 | Recently Deleted | Top-level docs | B§B | missing | — | 0.2 | Today: confirmed, permanent delete |
+| H3 | View backups / restore | Info → View Backups | S41 | verified | — | 0.2 | Automatic backup at most every 10 min while editing, 30 kept per doc; Info → View Backups → Restore (current version backed up first) (`BackupTests`, smoke `backups`) |
+| H4 | Recently Deleted | Top-level docs | B§B | verified | — | 0.2 | Delete → Recently Deleted with Undo toast; Restore / Delete Permanently / Empty; purged after 30 days with backups (`TrashTests`, smoke `trashed`) |
 | H5 | Save state indicator | Quiet | B§8 | working | — | 0.1 | "Saved / Saving… / Not saved" in document rail |
 | H6 | Unknown data preserved | — | prompt | verified | — | 0.1 | `testLibraryV0…KeepsUnknownFields`, `testUnknownNodeTypes…`, unknown block shown as preserved placeholder |
 
