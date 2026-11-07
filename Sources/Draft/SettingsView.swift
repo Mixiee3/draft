@@ -187,6 +187,7 @@ struct Overlays: View {
                     }
                 }.padding(.bottom, 24)
             }
+            .frame(maxWidth: .infinity) // centered at the bottom of the window
             .allowsHitTesting(!model.toasts.isEmpty)
         }
     }

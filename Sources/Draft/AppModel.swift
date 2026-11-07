@@ -492,7 +492,7 @@ final class AppModel: ObservableObject {
 
     func toast(_ message: String, action: String? = nil, run: (() -> Void)? = nil) {
         let t = Toast(message: message, actionLabel: action, action: run)
-        withAnimation(.easeOut(duration: 0.15)) { toasts.append(t) }
+        withAnimation(.easeOut(duration: 0.15)) { toasts = [t] } // one message at a time: a new one replaces the old
         DispatchQueue.main.asyncAfter(deadline: .now() + (action == nil ? 3.2 : 7)) {
             withAnimation { self.toasts.removeAll { $0.id == t.id } }
         }
