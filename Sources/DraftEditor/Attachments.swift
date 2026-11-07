@@ -155,7 +155,9 @@ final class ImageCell: BlockCell {
         img.draw(in: r, from: .zero, operation: .sourceOver, fraction: 1, respectFlipped: true, hints: nil)
         NSGraphicsContext.restoreGraphicsState()
         if liveWidth != nil || controller?.isImageSelected(self) == true {
-            // Resize grip on the right edge.
+            let ring = NSBezierPath(roundedRect: r.insetBy(dx: -3, dy: -3), xRadius: 12, yRadius: 12)
+            ring.lineWidth = 2.5
+            theme.accentColor.setStroke(); ring.stroke()
             theme.accentColor.setFill()
             NSBezierPath(roundedRect: NSRect(x: r.maxX - 5, y: r.midY - 18, width: 4, height: 36), xRadius: 2, yRadius: 2).fill()
         }

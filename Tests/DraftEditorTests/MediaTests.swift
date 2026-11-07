@@ -26,16 +26,19 @@ final class MediaTests: XCTestCase {
     func cell() -> ImageCell { (c.storage.attribute(.attachment, at: c.paragraph(withId: image().id!)!.location, effectiveRange: nil) as! NSTextAttachment).attachmentCell as! ImageCell }
 
     func testImageBarSizeCaptionAltAndUndo() {
+        pump()
         selectImage()
         XCTAssertTrue(c.imageBar.isVisible)
         XCTAssertFalse(c.toolbar.isVisible)
         let fullHeight = cell().height(forWidth: 600)
         c.imageBar.size.selectedSegment = 1
         c.imageBar.sizeChanged()
+        pump()
         XCTAssertEqual(image().attrs?["width"], 0.5)
         XCTAssertLessThan(cell().height(forWidth: 600), fullHeight)
         c.imageBar.caption.stringValue = "Harbour at dawn"
         c.imageBar.commit(c.imageBar.caption)
+        pump()
         XCTAssertEqual(image().attrs?["caption"], "Harbour at dawn")
         XCTAssertEqual(cell().height(forWidth: 600), cell().imageSize(forWidth: 600).height + ImageCell.captionHeight)
         c.imageBar.alt.stringValue = "Boats in fog"

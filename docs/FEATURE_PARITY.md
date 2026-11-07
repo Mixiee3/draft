@@ -176,8 +176,9 @@ Last updated: v0.2.1 in progress (native macOS) — 2026‑11‑07.
 |---|---|---|---|---|---|---|---|
 | A1 | Image block | Insert/upload | S34 | working | vault | 0.1 | Picked/pasted image copied to `assets/<sha>`; content addressing verified (`testAssetsAreContentAddressed`) |
 | A2 | Paste images | — | B§5.3 | working | A1 | 0.1 | PNG/TIFF on pasteboard → image block |
-| A3 | File attachments | — | S34 | missing | vault | 0.2 | Listed disabled |
-| A4 | Attachments pane | Images, links, files | S19 | working | A1 | 0.1 | Thumbnails and links; click jumps |
+| A3 | File attachment block | File | S34, S19 | verified | vault | 0.2.1 | Insert → File, drag a file onto the page, or paste a file copied in Finder; stored once by content hash with its original name and size; click opens it in its default app; listed in Attachments; exported as a link with the file in `assets/` (`testFilesInsertOpenPasteAndExport`, `FileAssetTests`) |
+| A7 | Image size, caption, alt text | Resize, caption | B§7 | verified | A1 | 0.2.1 | Drag the right edge or use the image bar (S/M/L/Full) to set width as a fraction of the text width; caption shown under the image and exported; alt text is the VoiceOver label and the Markdown alt; each change is one undo step (`testImageBarSizeCaptionAltAndUndo`, `testDragResize…`) |
+| A4 | Attachments pane | Images, links, files listed | S19 | working | A1 | 0.2.1 | Lists images (thumbnail), links and files; click jumps to the block |
 | A5 | Link previews | Rich link | B§H | missing | opt-in network | 0.4 | — |
 | A6 | Whiteboard / Mermaid / Formula / photo search | Insert menu | S34 | missing | — | later | Listed disabled with version |
 

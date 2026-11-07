@@ -294,6 +294,7 @@ public final class EditorController: NSObject, NSTextStorageDelegate, NSTextView
     public func textViewDidChangeSelection(_ notification: Notification) {
         guard !isLoading else { return }
         selectionChangedForBlockMode()
+        refreshSelectionStyle()
         updateTypingAttributes()
         toolbar.update()
         imageBar.update()
@@ -883,6 +884,12 @@ public final class EditorController: NSObject, NSTextStorageDelegate, NSTextView
         return pr.location
     }
 
+    /// Text selections are tinted; whole blocks and a selected image are outlined instead.
+    func refreshSelectionStyle() {
+        let outlined = isBlockMode || (selectedImageIndex != nil && textView.selectedRange().length == 1)
+        textView.selectedTextAttributes = [.backgroundColor: outlined ? NSColor.clear : theme.accentColor.withAlphaComponent(theme.isDarkPage ? 0.45 : 0.22)]
+    }
+
     func isImageSelected(_ cell: ImageCell) -> Bool {
         guard let i = selectedImageIndex else { return false }
         return (storage.attribute(.attachment, at: i, effectiveRange: nil) as? NSTextAttachment)?.attachmentCell === cell
@@ -907,7 +914,7 @@ public final class EditorController: NSObject, NSTextStorageDelegate, NSTextView
     }
 
     /// Dropped or pasted Finder files: images become image blocks, everything else file blocks.
-    func insertFiles(_ urls: [URL]) -> Bool {
+    public func insertFiles(_ urls: [URL]) -> Bool {
         var any = false
         for url in urls {
             let ext = url.pathExtension.lowercased()

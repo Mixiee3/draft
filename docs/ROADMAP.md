@@ -95,7 +95,7 @@ child ids; 56 tests + smoke test (restart, trash, backups, search jump). **Not y
 - ✅ Toggle list (`+ `, ⌘↩), callout block, page break (`===`, honored when printing), strong/dotted/three-dot separators, `x ` task trigger.
 - ⬜ Cover crop/reposition (ratios, focal point) as data.
 - ⬜ Tab state across restarts (scroll + caret), back/forward stacks.
-- ⬜ Image block: resize, caption, alt text; file attachment block (QuickLook).
+- ✅ Image block: resize (edge drag or S/M/L/Full), caption, alt text; file attachment block (picker, drag and drop, Finder paste; opens in its default app).
 - 🟡 Performance: block operations now replace only the changed paragraphs (undo selects just
   those); ⬜ measured 10k-block keystroke budget.
 

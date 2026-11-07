@@ -12,7 +12,7 @@ The reference implementation is `Sources/DraftCore`. All JSON is UTF‑8; timest
 <vault>/
   library.json            index (schemaVersion, space, folders, docs, settings, tabs)
   docs/<docId>.json       one document
-  assets/<sha256-32>.<ext> images and covers, content-addressed (png, jpg, gif, webp, heic, tiff)
+  assets/<sha256-32>.<ext> images, covers and attached files, content-addressed (extension: 1–10 lowercase letters/digits)
   backups/                copies written before any migration (never read by the app)
 ```
 
@@ -71,7 +71,8 @@ document files at any time. `parentDocId` marks a nested page.
 | `callout` | `id`, `icon` (emoji, default 💡) | paragraphs; block color comes from the paragraphs' `blockColor` |
 | `toggleList` | `id` | `toggleItem` |
 | `toggleItem` | `id`, `open` (bool; collapsed children are hidden, never dropped) | paragraph, then paragraphs or nested lists |
-| `image` | `id`, `assetId` or `src`, `alt` | — |
+| `image` | `id`, `assetId` or `src`, `alt`, `caption?`, `width?` (fraction 0.15–1 of the text width; absent = natural size up to full width) | — |
+| `file` | `id`, `assetId` (content hash + original extension), `name` (original file name), `size` (bytes) | — |
 | `pageCard` | `id`, `docId`, `title` (cached), `presentation` (`card`/`page`) | — |
 | `text` | — | `text`, `marks?` |
 | `hardBreak` | — | — |

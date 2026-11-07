@@ -104,8 +104,8 @@ extension EditorController {
         if union.length > 0, NSMaxRange(union) <= storage.length, NSMaxRange(union) > 0, ns.character(at: NSMaxRange(union) - 1) == 10 { union.length -= 1 }
         blockSelectionIds = ids
         expectedBlockSelection = union
-        textView.selectedTextAttributes = [.backgroundColor: NSColor.clear]
         textView.setSelectedRange(union)
+        refreshSelectionStyle()
         layout.invalidateDisplay(forCharacterRange: NSRange(location: 0, length: storage.length))
         toolbar.update()
         host?.editorStateDidChange()
@@ -123,7 +123,7 @@ extension EditorController {
         let sel = textView.selectedRange()
         blockSelectionIds = []
         expectedBlockSelection = nil
-        textView.selectedTextAttributes = [.backgroundColor: theme.accentColor.withAlphaComponent(theme.isDarkPage ? 0.45 : 0.22)]
+        refreshSelectionStyle()
         textView.setSelectedRange(NSRange(location: caretAtEnd ? NSMaxRange(sel) : sel.location, length: 0))
         layout.invalidateDisplay(forCharacterRange: NSRange(location: 0, length: storage.length))
         host?.editorStateDidChange()
@@ -151,7 +151,7 @@ extension EditorController {
         flat.removeSubrange(r)
         blockSelectionIds = []
         expectedBlockSelection = nil
-        textView.selectedTextAttributes = [.backgroundColor: theme.accentColor.withAlphaComponent(theme.isDarkPage ? 0.45 : 0.22)]
+        refreshSelectionStyle()
         rebuild(flat, select: next.map { [$0] } ?? [], blockMode: false)
         if let n = next, let pr = paragraph(withId: n) { textView.setSelectedRange(NSRange(location: NSMaxRange(contentRange(pr)), length: 0)) }
     }
@@ -162,7 +162,7 @@ extension EditorController {
         if textView.selectedRange() != e {
             blockSelectionIds = []
             expectedBlockSelection = nil
-            textView.selectedTextAttributes = [.backgroundColor: theme.accentColor.withAlphaComponent(theme.isDarkPage ? 0.45 : 0.22)]
+            refreshSelectionStyle()
             layout.invalidateDisplay(forCharacterRange: NSRange(location: 0, length: storage.length))
         }
     }

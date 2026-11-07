@@ -146,8 +146,8 @@ public final class DocumentEditorView: NSView, NSTextViewDelegate {
         titleView.insertionPointColor = t.text
         title_.placeholderColor = t.text.withAlphaComponent(0.28)
         controller.textView.insertionPointColor = t.text
-        controller.textView.selectedTextAttributes = [.backgroundColor: t.accentColor.withAlphaComponent(t.isDarkPage ? 0.45 : 0.22)]
-        titleView.selectedTextAttributes = controller.textView.selectedTextAttributes
+        controller.refreshSelectionStyle()
+        titleView.selectedTextAttributes = [.backgroundColor: t.accentColor.withAlphaComponent(t.isDarkPage ? 0.45 : 0.22)]
         ruleView.layer?.backgroundColor = t.text.withAlphaComponent(0.1).cgColor
         pageColor = NSColor(hex: t.pageColor)
         relayout()

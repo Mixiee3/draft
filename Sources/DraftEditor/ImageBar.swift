@@ -86,6 +86,7 @@ public final class ImageBar: NSView, NSTextFieldDelegate {
         if y < vis.minY + 8 { y = img.minY + 8 }
         let x = min(max(img.midX - barW / 2, vis.minX + 10), vis.maxX - barW - 10)
         frame = NSRect(x: x, y: y, width: barW, height: 44)
+        appearance = NSAppearance(named: controller.theme.isDarkPage ? .darkAqua : .aqua) // controls match the bar, not the app
         isHidden = false
         isVisible = true
         needsDisplay = true

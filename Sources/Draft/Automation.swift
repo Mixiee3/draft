@@ -384,5 +384,30 @@ enum Automation {
         await capture("showcase-normal")
         w.setFrame(NSRect(x: 60, y: 60, width: 720, height: 900), display: true)
         await capture("showcase-narrow")
+        // Image bar and file block.
+        guard let c = m.editors[id]?.controller else { return }
+        let art = NSImage(size: NSSize(width: 1200, height: 600), flipped: false) { r in
+            NSGradient(colors: [NSColor(hex: "#8fd3e6"), NSColor(hex: "#1f6475")])!.draw(in: r, angle: -90); return true
+        }
+        let rep = NSBitmapImageRep(data: art.tiffRepresentation!)!
+        let tmp = FileManager.default.temporaryDirectory.appendingPathComponent("Field notes.txt")
+        try? "Draft attachment".write(to: tmp, atomically: true, encoding: .utf8)
+        c.textView.setSelectedRange(NSRange(location: 0, length: 0))
+        _ = c.insertFiles([tmp])
+        if let aid = m.storeImage(data: rep.representation(using: .png, properties: [:])!, ext: "png") {
+            c.textView.setSelectedRange(NSRange(location: 0, length: 0))
+            c.insertImage(assetId: aid, alt: "Gradient study")
+            if let i = c.document().content?.first(where: { $0.type == "image" })?.id, let pr = c.paragraph(withId: i) {
+                c.textView.setSelectedRange(NSRange(location: pr.location, length: 1))
+                c.setImageCaption("A calm gradient, resized to medium")
+                c.setImageWidth(0.5)
+                w.makeFirstResponder(c.textView)
+                c.textView.scrollRangeToVisible(pr)
+            }
+        }
+        m.docRailTab = .attachments
+        await capture("media-narrow")
+        w.setFrame(NSRect(x: 60, y: 60, width: 1440, height: 900), display: true)
+        await capture("media-normal")
     }
 }
