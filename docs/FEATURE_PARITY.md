@@ -1,0 +1,284 @@
+# Feature parity and gap matrix
+
+Tracks Craft-like capabilities (the reference studied in the research brief) against Draft's
+**actual** status on macOS. It records behavior and workflow coverage, never copied assets.
+
+**Evidence keys** — `B§x`: section of `craft-inspired-notes-app-research-brief.md`. `S01`…`S42`:
+native screenshots `craft-macos-ui/NN-*.png` (kept **outside** this repo — they contain personal
+content). `?` = reference behavior not confirmed by evidence; not a parity target until verified.
+
+**Status** — `missing` · `partial` (gaps named) · `working` (implemented and exercised in the running
+app or screenshots) · `verified` (covered by `swift test` or `scripts/smoke.sh`).
+
+Platform: all statuses are for the native macOS app. Windows: see §22.
+
+Last updated: v0.1 (native macOS) — 2026‑11‑07.
+
+## 1. Editor primitives and keyboard
+
+| ID | Capability | Reference behavior | Evidence | Status | Deps | Target | Acceptance check |
+|---|---|---|---|---|---|---|---|
+| E1 | Text block as default atom | Open and type | B§1, B§5.3 | verified | — | 0.1 | New doc → typing → paragraph with id (`testTypingPersistsIntoDocument`) |
+| E2 | Stable block ids | Addressable blocks | B§4, B§B | verified | — | 0.1 | Missing/duplicate ids repaired, first wins; ids survive save/load (`BlockIdTests`, `ConverterTests`) |
+| E3 | Enter rules | Heading→paragraph; empty item exits list; split keeps first id | B§5.3 | verified | E1 | 0.1 | `testEnterAfterHeading…`, `testSplitInMiddle…`, `testListTriggersEnterAndExit` |
+| E4 | Backspace rules | Merge into previous; list item un-lists/outdents first | B§5.3 | verified | E1 | 0.1 | `testBackspaceAtStartOfBullet…`, `testBackspaceMergeKeepsPreviousBlock` |
+| E5 | Soft break | Shift+Return | B§5.3 | working | — | 0.1 | Shift+Return inserts a line break exported as `hardBreak` |
+| E6 | Undo / redo | Formatting, moves, deletes | B§8 | verified | — | 0.1 | `testToggleBold…Undo`, `testFindReplaceAllIsOneUndo` |
+| E7 | Markdown block triggers | `#`…`####`, `-`/`*`, `1.`, `[]`/`x `, `[x]`, `>`/`|`, `+ ` toggle, ``` | B§G | partial | — | 0.1→0.2 | All but `x ` and `+ ` work; `# ` undo restores literal (`testMarkdownHeadingTrigger…`) |
+| E8 | Separator triggers | `---` regular; `=--`, `.--`, `..-`, `===` page break | B§G | partial | — | 0.1→0.2 | `---` → separator (`testDividerTrigger…`); variants missing |
+| E9 | Inline Markdown | `*i*` `**b**` `~~s~~` `==h==` `` `c` `` | B§G | verified | — | 0.1 | `testInlineMarkdownBold`; typing after the delimiter is plain |
+| E10 | Equations `$$x$$` | Inline math | B§G, S06 | missing | renderer | later | `$$a^2$$` renders as formula and exports as `$$…$$` |
+| E11 | Slash menu | Filter, arrows, Return, Esc | B§5.3 | verified | E-cmds | 0.1 | `/check` + Return → checklist (`testSlashMenuInsertsChecklist`) |
+| E12 | `+` insert menu | Image, File, Code, Formula, Mermaid, Whiteboard, Table, Collection, Page Break | S34 | partial | — | 0.1→0.5 | Image/Page/Card/Separator/Code/Checklist/Quote work; others listed disabled with version |
+| E13 | Indent / outdent | Tab / Shift-Tab | B§8 | verified | — | 0.1 | `testTaskTriggerTabNestingAndToggle` |
+| E14 | Block handle + drag reorder | Gutter handle, insertion line | B§5.3, S01 | missing | E15 | 0.2 | Drag a block; one undo restores |
+| E15 | Block selection | Distinct from text selection | B§5.3 | missing | — | 0.2 | Esc selects block; ⌘C copies whole blocks |
+| E16 | Group into page ⌘G / ungroup | Tree transform | B§B, S42 | missing | E15 | 0.2 | 3 blocks → one page; child ids preserved |
+| E17 | Move up/down/top/bottom | Shortcut actions | S42 | missing | E15 | 0.2 | ⌥⌘↑ moves block, undoable |
+| E18 | Paste | Rich, plain, Markdown | B§5.3 | partial | — | 0.2 | Draft→Draft keeps blocks+marks (custom pasteboard type); images paste as blocks; plain text works; rich HTML/RTF and multi-line block splitting missing |
+| E19 | Multi-block text selection | Beta in reference | S12 | working | — | 0.1 | Drag across paragraphs selects text in all (native TextKit) |
+| E20 | IME / non-US layouts | Fixes documented | B§7, B§8 | partial | — | 0.6 | NSTextView composition works; layout matrix untested |
+| E21 | 10k-block performance | Quality gate | B§11 | missing | — | 0.2 | Synthetic 10k-block doc; keystroke < 16 ms p95 |
+| E22 | Spellcheck | Native | S11 | working | — | 0.1 | Continuous spellcheck on in editor |
+
+## 2. Inline and block formatting
+
+| ID | Capability | Reference behavior | Evidence | Status | Deps | Target | Acceptance check |
+|---|---|---|---|---|---|---|---|
+| F1 | Selection toolbar | Translucent pill above selected line | S06 | verified | — | 0.1 | Select text → bar visible (`testPaletteKeepsSelection…`); screenshot `selection-toolbar.png` |
+| F2 | Flip / clamp | Flip near top; clamp in canvas | S06 notes | verified | F1 | 0.1 | `testToolbarFlipsBelowNearTopAndClamps` |
+| F3 | Toolbar controls | Highlight▾, B, I, S, code, link, equation, @, comment, suggestions, feedback | S06 | partial | F1 | 0.1 | Highlight▾/B/I/U/S/code/link/clear work; equation (E10), @ (L1), comment (R3), suggestions (J3) not shown |
+| F4 | Active states | From selection | S06 | working | F1 | 0.1 | Bold selection shows B active (`isMarkActive`), accessibility value "on" |
+| F5 | Inline color palette in place | Clear + pastels + saturated | S07 | verified | F1 | 0.1 | ▾ swaps bar to palette; swatch applies (`testPaletteKeeps…`); `color-palette.png` |
+| F6 | Selection preserved through palette/link | — | S07 | verified | F5 | 0.1 | Selection range unchanged after choosing color (test) |
+| F7 | Keyboard access + Esc | — | prompt | partial | F1 | 0.1→0.6 | Esc dismisses (`testEscapeDismissesToolbar`); ⌥F10 focuses bar, ←/→/Return/Esc work; VoiceOver pass pending (Y15) |
+| F8 | Reapply last color ⌘⇧B | Documented | B§G | verified | F5 | 0.1 | Test applies same color to a new range |
+| F9 | Underline / strike / code marks | Inline | B§7 | working | — | 0.1 | ⌘U, ⌘⇧X, ⌘E via Format menu |
+| F10 | Text color vs highlight | Separate | B§7 | working | — | 0.1 | Palette: pastel squares = highlight, circles = text color |
+| F11 | Links | Add/edit/remove | S06 | working | — | 0.1 | ⌘K opens link field in the bar; ⌘-click opens URL externally |
+| F12 | `Aa` Titles/Content | Title, Subtitle, Heading / Strong, Body, Caption | S05 | working | cmds | 0.1 | `format-panel.png`; active state follows caret |
+| F13 | `Aa` Groups Page/Card | Turn block into page/card | S05 | partial | E16 | 0.1→0.2 | Inserts nested page or switches an existing page block's presentation; converting text blocks needs E16 |
+| F14 | `Aa` marks/lists/indent/align | Disabled when not applicable | S05 | working | — | 0.1 | Buttons use command `isEnabled` |
+| F15 | Decoration Focus / Block | Bar or filled block | S05 | working | — | 0.1 | Focus draws accent bar; Block fills background |
+| F16 | Block color | Swatch grid | S05 | working | F15 | 0.1 | Stored as `blockColor` attr, drawn by layout manager |
+| F17 | Toggle list | `+ ` | B§G, S05 | missing | — | 0.2 | Collapses children; listed disabled "planned v0.2" |
+| F18 | Callout | Block | B§7 | partial | — | 0.2 | Achievable with Block decoration + color; dedicated node missing |
+| F19 | Code block | ``` | B§7 | working | — | 0.1 | Monospace, background; Return adds lines, Return on empty last line exits; no syntax highlighting |
+| F20 | Per-block font | Format panel bottom | S05 | missing | — | 0.4 | — |
+
+## 3. Nested pages and cards
+
+| ID | Capability | Reference behavior | Evidence | Status | Deps | Target | Acceptance check |
+|---|---|---|---|---|---|---|---|
+| P1 | Nested page | Block becomes a page | B§B, B§5.4 | working | — | 0.1 | `/page` or `/card` creates child doc and opens it in place; card click opens; `nested-page.png` |
+| P2 | Card presentation | Visual treatment of same model | B§D | partial | P1 | 0.1→0.4 | Card vs page row; sizes and preview modes missing |
+| P3 | Card preview modes | Standard, emoji, book, sticky, gallery | B§D | missing | P2 | 0.4 | — |
+| P4 | Breadcrumb / back | Ancestry; back restores parent | B§5.4 | working | P1 | 0.1 | Child shows `Folder › Parent`; Back returns within tab |
+| P5 | Outline lists pages | TOC lists headings and pages | S01 | working | P1 | 0.1 | Outline shows page rows; click opens |
+| P6 | Recoverable deleted pages | Reference: nested pages not in Recently Deleted | B§B | missing | H4 | 0.2 | Draft decision: tombstone pages too |
+
+*Draft decision:* nested pages are child documents (`parentDocId`) referenced by a `pageCard` block.
+
+## 4. Themes, covers, backdrops
+
+| ID | Capability | Reference behavior | Evidence | Status | Deps | Target | Acceptance check |
+|---|---|---|---|---|---|---|---|
+| T1 | Style panel | Preview, All Styles, Tailored, Backdrop, Doc/Text color, Cover, Separator, Font, Advanced | S02 | working | — | 0.1 | `style-panel.png`; "Tailored" = overrides shown in preview name + Reset |
+| T2 | Built-in styles | 100+ presets | S03, B§C | partial | T1 | 0.1→0.4 | 7 original styles (Paper calm default; Tidepool, Ember, Meadow scenic; Citrus, Night Ink, Typewriter) |
+| T3 | Style Gallery | Searchable modal, 3 columns | S03 | working | T2 | 0.1 | `style-gallery.png`; search filters; click applies |
+| T4 | Save / default / pin styles | User styles | B§C | partial | T2 | 0.4 | "Use for new documents" works; saving custom styles missing |
+| T5 | Backdrop solid | Palette | B§C | working | — | 0.1 | Backdrop popover → Solid |
+| T6 | Backdrop gradient | Start/end/direction | B§C | partial | — | 0.4 | Presets work; editor missing |
+| T7 | Backdrop image, shuffle, upload, blur, Immersive/Faded | S04 | S04 | partial | assets | 0.1→0.4 | Original vector scenes, Shuffle, Upload, Blur, Immersive/Faded work; photo search missing |
+| T8 | Page color and text color independent | Separate layers | B§C | working | — | 0.1 | Changing one leaves the other |
+| T9 | Contrast warning / adjust | Warn + auto adjust | B§C | partial | T8 | 0.4 | Warning < 4.5:1 with one-click readable color; explained auto-adjust missing |
+| T10 | Cover image | Upload, crop, reposition, remove | B§C | partial | assets | 0.2 | Upload + remove; crop/focal UI missing (focalY stored) |
+| T11 | Separator styles | Line, tape, doodle | S02, B§C | working | — | 0.1 | Line / Dots / Tape / Wave (original artwork), document-wide |
+| T12 | Fonts System/Serif/Mono/Rounded | Families | S02, B§C | working | — | 0.1 | System font designs; document-only |
+| T13 | Shell tinted by doc style | Appearance setting | S10 | working | — | 0.1 | Rail/tabs tint (`document-ember.png`), toggle in Settings and Style panel |
+| T14 | Present mode | Info → Present | S41 | missing | — | 0.6 | Listed disabled in Info |
+| T15 | Style independent of semantics | — | B§G | verified | — | 0.1 | `testThemeChangeDoesNotChangeContent`, `testOverridesLayerOnStyle…` |
+
+## 5. Sidebar, tabs, spaces, folders
+
+| ID | Capability | Reference behavior | Evidence | Status | Deps | Target | Acceptance check |
+|---|---|---|---|---|---|---|---|
+| N1 | Full-height rail | Space, destinations, Starred, Folders, Tags, utilities | S21 | working | — | 0.1 | `library-gallery.png` (local "Stored on this Mac" card replaces plan card) |
+| N2 | Document rail + 4-segment control | Thumb, title, time; Outline/Tasks/Attachments/Find | S01, S18–20, S35 | working | — | 0.1 | `document.png`, `document-tasks-rail.png`, `document-find.png` |
+| N3 | Rail mode menu | Folders / Document; Focus mode | S08 | partial | — | 0.6 | Folders/Document switch works; Focus mode missing |
+| N4 | Collapse rail | — | S01 | working | — | 0.1 | ⌃⌘S; persisted |
+| N5 | Tab strip | Home + tabs, close, + | S01, S21 | verified | — | 0.1 | Open doc tab survives restart (smoke `tabOpen`) |
+| N6 | Tab state restore | Scroll/caret per tab | B§5.5 | partial | — | 0.2 | Editors stay alive per open tab (scroll, caret, undo kept while running); not across restart |
+| N7 | Back / forward | — | S01 | partial | — | 0.2 | Back within tab; forward missing |
+| N8 | Spaces | Switcher, per-space tree | B§4, S13 | partial | — | 0.5 | One Space, renamable |
+| N9 | Folders | Create/rename/nest/delete | S21, S30 | partial | — | 0.2 | Create, rename, remove (docs → Unsorted); nesting missing |
+| N10 | Move doc to folder | Info → Move to | S41 | working | N9 | 0.1 | Info panel and card context menu |
+| N11 | Unsorted view + empty state | Message + skeletons | S29 | working | — | 0.1 | Empty-state message and placeholder rows |
+| N12 | Starred | — | S21, S41 | working | — | 0.1 | Star in Info/context menu; shows in rail |
+| N13 | Shared with Me | Empty view | S31 | partial | R2 | 2.0 | Honest local-only empty state |
+| N14 | Drag doc to folder | — | B§5.5 | missing | — | 0.2 | — |
+
+## 6. Search, Quick Open, Find in Page
+
+| ID | Capability | Reference behavior | Evidence | Status | Deps | Target | Acceptance check |
+|---|---|---|---|---|---|---|---|
+| S1 | Library inline search | Expands in header | S26 | working | — | 0.1 | `library-search.png`; all terms must match title or text; title matches first |
+| S2 | Quick Open ⌘O | By name; create new | B§H | working | — | 0.1 | ↑/↓/Return; "Create …" row |
+| S3 | Space Search with counts + jump | One result per doc | B§H | missing | index | 0.2 | — |
+| S4 | Find in Page ⌘F | Rail pane, next/prev | S35, B§H | working | — | 0.1 | Highlights all, current stronger; ⌘G/⇧⌘G |
+| S5 | Replace | — | B§H | verified | S4 | 0.1 | Replace all is one undo (test) |
+| S6 | Phrase / exclusion / regex | macOS options | B§H | missing | S3 | 0.3 | — |
+
+## 7. Tasks, calendar, daily notes, reminders
+
+| ID | Capability | Reference behavior | Evidence | Status | Deps | Target | Acceptance check |
+|---|---|---|---|---|---|---|---|
+| K1 | Checklist block | `[] ` | B§G | verified | — | 0.1 | Trigger + click toggle (`testTaskTrigger…`) and smoke test |
+| K2 | Document Tasks pane | Tasks in doc | S18 | working | K1 | 0.1 | Lists, counts, toggles source block |
+| K3 | Global Tasks view | Today/Upcoming… | B§5.7 | missing | index | 0.3 | — |
+| K4 | Due dates / reminders | — | B§5.7 | missing | K3 | 0.3 | — |
+| K5 | Daily notes | One page per date | B§5.7, S33 | missing | — | 0.3 | — |
+| K6 | Calendar stream | Day cards, filters | S33 | missing | K5 | 0.3 | — |
+| K7 | Completed-task appearance | Setting | S12 | working | — | 0.1 | Strikethrough / Dimmed / Unchanged |
+
+## 8. Tags, links, backlinks
+
+| ID | Capability | Reference behavior | Evidence | Status | Deps | Target | Acceptance check |
+|---|---|---|---|---|---|---|---|
+| G1 | Tags `#tag` | Inline, autocomplete | B§5.6, S17 | missing | index | 0.3 | Rail shows "Tags arrive in v0.3" |
+| G2 | Tag ignore rules | Hex, numbers, custom | S17 | missing | G1 | 0.3 | — |
+| G3 | Backlinks | Linking pages | B§5.6 | missing | L1 | 0.3 | — |
+| L1 | `[[` / `@` doc & block links | Picker | B§G | missing | E2 | 0.3 | — |
+
+## 9. Tables and collections
+
+| ID | Capability | Reference behavior | Evidence | Status | Deps | Target | Acceptance check |
+|---|---|---|---|---|---|---|---|
+| C1 | Simple table | Insert menu | S34 | missing | — | 0.5 | Listed disabled |
+| C2 | Collections + field types | Records are pages | B§I | missing | — | 0.5 | — |
+| C3 | Table / Gallery / Kanban views | Shared records | B§I | missing | C2 | 0.5 | — |
+| C4 | Calc row, multi-sort, filters | — | B§I | missing | C3 | 0.5 | — |
+| C5 | CSV / frontmatter export | — | B§I | missing | C2 | 0.5 | — |
+
+## 10. Templates
+
+| ID | Capability | Reference behavior | Evidence | Status | Deps | Target | Acceptance check |
+|---|---|---|---|---|---|---|---|
+| M1 | New → From Template picker | Search + rows | S27, S28 | partial | — | 0.5 | `+` menu lists "From Template… (planned v0.5)" disabled |
+| M2 | Custom templates | Settings | S09 | missing | M1 | 0.5 | Settings shows planned state |
+
+## 11. Attachments and media
+
+| ID | Capability | Reference behavior | Evidence | Status | Deps | Target | Acceptance check |
+|---|---|---|---|---|---|---|---|
+| A1 | Image block | Insert/upload | S34 | working | vault | 0.1 | Picked/pasted image copied to `assets/<sha>`; content addressing verified (`testAssetsAreContentAddressed`) |
+| A2 | Paste images | — | B§5.3 | working | A1 | 0.1 | PNG/TIFF on pasteboard → image block |
+| A3 | File attachments | — | S34 | missing | vault | 0.2 | Listed disabled |
+| A4 | Attachments pane | Images, links, files | S19 | working | A1 | 0.1 | Thumbnails and links; click jumps |
+| A5 | Link previews | Rich link | B§H | missing | opt-in network | 0.4 | — |
+| A6 | Whiteboard / Mermaid / Formula / photo search | Insert menu | S34 | missing | — | later | Listed disabled with version |
+
+## 12. Import / export
+
+| ID | Capability | Reference behavior | Evidence | Status | Deps | Target | Acceptance check |
+|---|---|---|---|---|---|---|---|
+| X1 | Markdown + assets | Export As → Markdown | S39 | verified | — | 0.1 | `MarkdownTests`; real export inspected (nested page linked, tasks, quote, highlight) |
+| X2 | Lossless native export | — | B§10 | verified | — | 0.1 | `draft-export.json` in bundle (`testExportBundle…`) |
+| X3 | Export all | Library ⋯ | S25 | working | X1 | 0.1 | One folder, subfolders per folder |
+| X4 | PDF / Print / Word / Image / E-mail | Export panel | S39 | partial | — | 0.4 | Print works (Save as PDF from system dialog); styled PDF, Word, Image, E-mail listed with versions |
+| X5 | Import | Library ⋯ → Import | S25 | missing | — | 0.5 | Listed disabled |
+| X6 | Duplicate | Export panel | S39 | working | — | 0.1 | New ids for every block |
+| X7 | Transfer to other apps | Disabled when absent | S40 | missing | — | 1.x | Share panel explains |
+| X8 | Copy as Markdown | — | — | working | X1 | 0.1 | Share/Info → clipboard |
+
+## 13. Version history and recovery
+
+| ID | Capability | Reference behavior | Evidence | Status | Deps | Target | Acceptance check |
+|---|---|---|---|---|---|---|---|
+| H1 | Atomic durable saves | — | B§10 | verified | — | 0.1 | No temp leftovers (`testFirstRunSaveReload…`); quit flushes (smoke test) |
+| H2 | Migrations with backup; read-only on newer schema | — | prompt | verified | — | 0.1 | `testMigrationWritesBackupFirst`, `testNewerLibraryMakesVaultReadOnly` |
+| H3 | View backups / restore | Info → View Backups | S41 | missing | — | 0.2 | Listed disabled |
+| H4 | Recently Deleted | Top-level docs | B§B | missing | — | 0.2 | Today: confirmed, permanent delete |
+| H5 | Save state indicator | Quiet | B§8 | working | — | 0.1 | "Saved / Saving… / Not saved" in document rail |
+| H6 | Unknown data preserved | — | prompt | verified | — | 0.1 | `testLibraryV0…KeepsUnknownFields`, `testUnknownNodeTypes…`, unknown block shown as preserved placeholder |
+
+## 14. Publishing
+
+| ID | Capability | Reference behavior | Evidence | Status | Deps | Target | Acceptance check |
+|---|---|---|---|---|---|---|---|
+| U1 | Publish with preview + Create Link | Publish tab | S38 | partial | — | 1.x | Preview shown; Create Link disabled with plan |
+| U2 | Published content + analytics | Settings | S14 | missing | U1 | 1.x | Settings planned state |
+| U3 | Static HTML export | — | B§J | missing | X4 | 0.4 | — |
+
+## 15. Sharing, comments, collaboration
+
+| ID | Capability | Reference behavior | Evidence | Status | Deps | Target | Acceptance check |
+|---|---|---|---|---|---|---|---|
+| R1 | Share panel tabs | Share/Publish/Export/Transfer | S36, S37 | partial | — | 0.1 | All four tabs; Share explains local-only + Copy Markdown |
+| R2 | Collaborators | Viewer/editor | B§J | missing | Y2 | 2.0 | — |
+| R3 | Comments | Toolbar comment | S06, S42 | missing | — | 2.0 | — |
+| R4 | Mentions | `@` | S06 | missing | L1 | 0.3 / 2.0 | — |
+
+## 16. Sync and self-hosting
+
+| ID | Capability | Reference behavior | Evidence | Status | Deps | Target | Acceptance check |
+|---|---|---|---|---|---|---|---|
+| Y1 | Offline-first | Offline mode | B§16 | working | — | 0.1 | App contains no networking code |
+| Y2 | Multi-device sync | Cloud | — | missing | CRDT | 1.x | — |
+| Y3 | Custom vault location | External locations | S12, S16 | partial | — | 0.6 | `DRAFT_DATA_DIR`; in-app chooser missing |
+
+## 17. Settings
+
+| ID | Capability | Reference behavior | Evidence | Status | Deps | Target | Acceptance check |
+|---|---|---|---|---|---|---|---|
+| Z1 | System/Light/Dark | Previews | S10 | working | — | 0.1 | `settings-appearance-dark.png` |
+| Z2 | Accent color | Swatches | S10 | working | — | 0.1 | Recolors selection, active states |
+| Z3 | Reduce animations | Toggle | S10 | working | — | 0.1 | Disables panel/rail animations |
+| Z4 | Sound / app icon choice | Toggles | S10 | missing | — | later | — |
+| Z5 | Language & spelling | Rows | S11 | missing | I1 | 0.6 | Planned state |
+| Z6 | Advanced | Task appearance, date links, sidebar, week start | S12 | partial | — | 0.6 | Task appearance + default style work |
+| Z7 | Space settings | Avatar, name | S13 | partial | — | 0.5 | Name editable; generated avatar |
+| Z8 | Stats | Storage, docs, blocks, pages, words, reading time | S15 | working | — | 0.1 | Settings → Stats |
+| Z9 | Data location | (Draft) | prompt | working | — | 0.1 | Path, Show in Finder, Export all |
+
+## 18. Accessibility
+
+| ID | Capability | Evidence | Status | Target | Acceptance check |
+|---|---|---|---|---|---|
+| Y11 | Labels on icon-only controls | B§10 | working | 0.1 | `accessibilityLabel` on every icon button; toolbar exposes button children |
+| Y12 | Visible keyboard focus | B§10 | partial | 0.6 | Native controls + toolbar ring; SwiftUI custom chips need audit |
+| Y13 | Menus: arrows, Return, Esc | B§5.1 | working | 0.1 | Slash menu, Quick Open, palette |
+| Y14 | Contrast over backdrops | prompt | working | 0.1 | Built-in styles ≥ 7:1 text/page (test); controls on opaque pills |
+| Y15 | VoiceOver audit | B§12 | missing | 0.6 | Recorded VoiceOver pass |
+
+## 19. Narrow / mobile layouts
+
+| ID | Capability | Evidence | Status | Target | Acceptance check |
+|---|---|---|---|---|---|
+| W1 | Narrow window | B§9 | working | 0.1 | < 820 pt: rail becomes overlay; paper margins shrink; breadcrumb hides (`narrow-document.png`) |
+| W2 | iPad / iPhone | B§9 | missing | later | Apps on top of `DraftCore` |
+
+## 20. Localization
+
+| ID | Capability | Evidence | Status | Target | Acceptance check |
+|---|---|---|---|---|---|
+| I1 | String catalog | B§7 | missing | 0.6 | — |
+| I2 | Unicode titles and file names | B§7 | verified | 0.1 | `testSafeFileNameKeepsDiacritics` |
+
+## 21. Assistant and integrations (optional)
+
+| ID | Capability | Reference behavior | Evidence | Status | Target | Acceptance check |
+|---|---|---|---|---|---|---|
+| J1 | Assistant | Lower-right pill | S01 | missing | later | Not shown (no remote service in v0.1) |
+| J2 | MCP / API connections | Scenic connection view | S32 | missing | later | — |
+| J3 | Writing suggestions in toolbar | Dynamic slot | S06 | missing | later | — |
+
+## 22. Platforms
+
+| ID | Capability | Status | Target | Acceptance check |
+|---|---|---|---|---|
+| PL1 | Native macOS app (SwiftUI + AppKit/TextKit) | working | 0.1 | `scripts/build-app.sh` → `build/Draft.app`; smoke test passes |
+| PL2 | Portable format spec | working | 0.1 | `docs/FORMAT.md` matches `DraftCore` |
+| PL3 | Conformance fixtures for other implementations | missing | 0.6–0.8 | Language-neutral input/expected-output vaults |
+| PL4 | Windows app | missing | after Mac 1.0 | Reads/writes a Mac vault losslessly |
+| PL5 | Signed + notarized build | missing | 1.0 | Gatekeeper accepts download |

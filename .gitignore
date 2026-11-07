@@ -1,0 +1,12 @@
+.build/
+build/
+*.xcodeproj/xcuserdata/
+.DS_Store
+# Reference screenshots of other products must never be committed.
+craft-macos-ui/
+craft-original-screenshots/
+*craft*.png
+*.zip
+# User notes / vaults never belong in the repo.
+Vault/
+vault/

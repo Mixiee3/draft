@@ -1,0 +1,431 @@
+import SwiftUI
+import DraftCore
+import DraftEditor
+
+func relative(_ ms: Double) -> String {
+    let d = Date(timeIntervalSince1970: ms / 1000)
+    if abs(d.timeIntervalSinceNow) < 60 { return "just now" }
+    let f = RelativeDateTimeFormatter()
+    f.unitsStyle = .full
+    return f.localizedString(for: d, relativeTo: Date())
+}
+
+struct RailView: View {
+    @EnvironmentObject var model: AppModel
+    @Environment(\.tokens) var t
+    var narrow: Bool
+
+    var body: some View {
+        let docId = model.activeDocId
+        VStack(alignment: .leading, spacing: 0) {
+            HStack(spacing: 6) {
+                Spacer().frame(width: narrow ? 0 : 66) // traffic lights
+                Spacer()
+                if docId != nil {
+                    Menu {
+                        Picker("Show in sidebar", selection: $model.railShowsFolders) {
+                            Text("Document").tag(false)
+                            Text("Folders").tag(true)
+                        }.pickerStyle(.inline)
+                    } label: {
+                        Image(systemName: model.railShowsFolders ? "folder" : "list.bullet.indent")
+                    }
+                    .menuStyle(.borderlessButton).menuIndicator(.visible).fixedSize()
+                    .foregroundStyle(t.secondary).tint(t.secondary)
+                    .help("Choose what the sidebar shows")
+                }
+                IconButton(symbol: "sidebar.left", label: "Hide sidebar (⌃⌘S)") { model.setSettings { $0.railCollapsed = true } }
+            }
+            .frame(height: 38)
+            .padding(.horizontal, 8)
+            if let id = docId, !model.railShowsFolders {
+                DocumentRail(docId: id)
+            } else {
+                LibraryRail()
+            }
+        }
+        .background(RoundedRectangle(cornerRadius: Tokens.radiusPanel, style: .continuous).fill(t.rail))
+        .overlay(RoundedRectangle(cornerRadius: Tokens.radiusPanel, style: .continuous).strokeBorder(t.line, lineWidth: 0.5))
+    }
+}
+
+struct RailRow: View {
+    @Environment(\.tokens) var t
+    var icon: String
+    var title: String
+    var isSelected = false
+    var indent: CGFloat = 0
+    var trailing: AnyView? = nil
+    var action: () -> Void
+    @State private var hover = false
+    var body: some View {
+        HStack(spacing: 8) {
+            Image(systemName: icon).font(.system(size: 12.5)).frame(width: 18).foregroundStyle(t.secondary)
+            Text(title.isEmpty ? "Untitled" : title).font(.system(size: 13)).lineLimit(1).foregroundStyle(t.text)
+            Spacer(minLength: 0)
+            trailing
+        }
+        .padding(.leading, 8 + indent).padding(.trailing, 6)
+        .frame(height: 30)
+        .background(RoundedRectangle(cornerRadius: 8, style: .continuous).fill(isSelected ? t.selected : (hover ? t.hover : .clear)))
+        .contentShape(Rectangle())
+        .onHover { hover = $0 }
+        .onTapGesture(perform: action)
+        .accessibilityElement(children: .combine)
+        .accessibilityAddTraits(isSelected ? [.isButton, .isSelected] : .isButton)
+    }
+}
+
+struct SectionHeader: View {
+    @Environment(\.tokens) var t
+    var title: String
+    var action: (() -> Void)? = nil
+    var actionLabel = ""
+    var body: some View {
+        HStack {
+            Text(title).font(.system(size: 12, weight: .semibold)).foregroundStyle(t.secondary)
+            Spacer()
+            if let action { IconButton(symbol: "plus", label: actionLabel, size: 22, action: action) }
+        }
+        .padding(.horizontal, 10).padding(.top, 14).padding(.bottom, 4)
+    }
+}
+
+struct SpaceAvatar: View {
+    var name: String
+    var size: CGFloat = 22
+    var body: some View {
+        // Original generated mark: two overlapping soft shapes in the space's colors.
+        ZStack {
+            RoundedRectangle(cornerRadius: size * 0.28, style: .continuous).fill(LinearGradient(colors: [Color(hex: "#7f8cf5"), Color(hex: "#f0a37c")], startPoint: .topLeading, endPoint: .bottomTrailing))
+            Text(String(name.prefix(1)).uppercased()).font(.system(size: size * 0.5, weight: .bold, design: .rounded)).foregroundStyle(.white)
+        }.frame(width: size, height: size)
+    }
+}
+
+struct LibraryRail: View {
+    @EnvironmentObject var model: AppModel
+    @Environment(\.tokens) var t
+    @State private var renameText = ""
+
+    var body: some View {
+        let v = model.activeView
+        VStack(alignment: .leading, spacing: 0) {
+            ScrollView {
+                VStack(alignment: .leading, spacing: 1) {
+                    HStack(spacing: 8) {
+                        SpaceAvatar(name: model.library.space.name)
+                        Text(model.library.space.name).font(.system(size: 13.5, weight: .semibold)).foregroundStyle(t.text)
+                        Spacer()
+                    }.padding(.horizontal, 10).padding(.bottom, 8)
+                    RailRow(icon: "square.grid.2x2", title: "All Docs", isSelected: v.kind == "all") { model.activateTab(model.library.tabs[0].id) }
+                    RailRow(icon: "magnifyingglass", title: "Quick Open", trailing: AnyView(Text("⌘O").font(.system(size: 11)).foregroundStyle(t.tertiary))) { model.quickOpen = true }
+                    RailRow(icon: "person.2", title: "Shared with Me", isSelected: v.kind == "shared") { model.openView(ViewRef(kind: "shared")) }
+
+                    SectionHeader(title: "Starred")
+                    let starred = model.library.docs.values.filter(\.starred).sorted { $0.title < $1.title }
+                    if starred.isEmpty {
+                        Text("Star documents to keep them close").font(.system(size: 12)).italic().foregroundStyle(t.tertiary).padding(.horizontal, 10).padding(.vertical, 4)
+                    }
+                    ForEach(starred) { m in
+                        RailRow(icon: "star.fill", title: m.title, isSelected: model.activeDocId == m.id) { model.openView(.doc(m.id)) }
+                    }
+
+                    SectionHeader(title: "Folders", action: { renameText = "New Folder"; model.createFolder() }, actionLabel: "New folder (⇧⌘N)")
+                    RailRow(icon: "tray", title: "Unsorted", isSelected: v.kind == "unsorted") { model.openView(ViewRef(kind: "unsorted")) }
+                    ForEach(model.library.folders.sorted { $0.order < $1.order }) { f in
+                        folderRow(f)
+                    }
+
+                    SectionHeader(title: "Tags")
+                    Text("Tags arrive in v0.3").font(.system(size: 12)).italic().foregroundStyle(t.tertiary).padding(.horizontal, 10).padding(.vertical, 4)
+                }.padding(.horizontal, 6)
+            }
+            Spacer(minLength: 0)
+            VaultCard()
+            HStack(spacing: 2) {
+                IconButton(symbol: "gearshape", label: "Settings (⌘,)") { model.openView(ViewRef(kind: "settings", section: "appearance")) }
+                IconButton(symbol: "square.and.arrow.up.on.square", label: "Export all documents") { model.exportAll() }
+                IconButton(symbol: "folder", label: "Show data folder in Finder") { model.revealVault() }
+                Spacer()
+            }.padding(.horizontal, 10).padding(.bottom, 10)
+        }
+    }
+
+    @ViewBuilder func folderRow(_ f: Folder) -> some View {
+        let expanded = model.library.expandedFolders.contains(f.id)
+        let v = model.activeView
+        if model.renamingFolder == f.id {
+            TextField("Folder name", text: $renameText, onCommit: { model.renameFolder(f.id, renameText) })
+                .textFieldStyle(.roundedBorder).padding(.horizontal, 8)
+                .onAppear { renameText = f.name }
+                .onExitCommand { model.renamingFolder = nil }
+        } else {
+            RailRow(icon: expanded ? "folder.fill" : "folder", title: f.name, isSelected: v.kind == "folder" && v.folderId == f.id,
+                    trailing: AnyView(Button { model.toggleExpanded(f.id) } label: {
+                        Image(systemName: "chevron.right").font(.system(size: 9, weight: .bold)).rotationEffect(.degrees(expanded ? 90 : 0)).frame(width: 18, height: 18)
+                    }.buttonStyle(.plain).foregroundStyle(t.tertiary).accessibilityLabel(expanded ? "Collapse \(f.name)" : "Expand \(f.name)"))) {
+                model.openView(.folder(f.id))
+            }
+            .contextMenu {
+                Button("Rename") { renameText = f.name; model.renamingFolder = f.id }
+                Button("New Document in Folder") { model.createDoc(folderId: .some(f.id)) }
+                Divider()
+                Button("Remove Folder…", role: .destructive) { model.requestDeleteFolder(f.id) }
+            }
+            if expanded {
+                ForEach(model.library.docs.values.filter { $0.folderId == f.id && $0.parentDocId == nil }.sorted { $0.title < $1.title }) { m in
+                    RailRow(icon: "doc.text", title: m.title, isSelected: model.activeDocId == m.id, indent: 18) { model.openView(.doc(m.id)) }
+                }
+            }
+        }
+    }
+}
+
+/// Honest local-first card in place of an upgrade prompt.
+struct VaultCard: View {
+    @EnvironmentObject var model: AppModel
+    @Environment(\.tokens) var t
+    var body: some View {
+        VStack(alignment: .leading, spacing: 6) {
+            HStack(spacing: 6) {
+                Image(systemName: "internaldrive").foregroundStyle(t.accent)
+                Text("Stored on this Mac").font(.system(size: 12.5, weight: .semibold)).foregroundStyle(t.text)
+            }
+            Text("\(model.library.docs.count) documents · plain files you own. No account, no cloud.")
+                .font(.system(size: 11.5)).foregroundStyle(t.secondary).fixedSize(horizontal: false, vertical: true)
+            Button("Show in Finder") { model.revealVault() }.buttonStyle(.link).font(.system(size: 11.5))
+        }
+        .padding(12)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(RoundedRectangle(cornerRadius: 12, style: .continuous).fill(t.dark ? Color.white.opacity(0.05) : Color.white.opacity(0.7)))
+        .overlay(RoundedRectangle(cornerRadius: 12, style: .continuous).strokeBorder(t.line, lineWidth: 0.5))
+        .padding(.horizontal, 10).padding(.bottom, 8)
+    }
+}
+
+// MARK: - Document rail
+
+struct DocumentRail: View {
+    @EnvironmentObject var model: AppModel
+    @Environment(\.tokens) var t
+    let docId: String
+
+    var body: some View {
+        let meta = model.library.docs[docId]
+        let _ = model.editorTick
+        let content = model.editors[docId]?.controller.document() ?? model.docs[docId]?.content ?? Node("doc")
+        VStack(alignment: .leading, spacing: 0) {
+            HStack(spacing: 10) {
+                MiniPage(meta: meta, size: 34)
+                VStack(alignment: .leading, spacing: 2) {
+                    Text((meta?.title.isEmpty ?? true) ? "Untitled" : meta!.title).font(.system(size: 13, weight: .semibold)).lineLimit(1).foregroundStyle(t.text)
+                    HStack(spacing: 4) {
+                        Text(meta.map { "Edited " + relative($0.updatedAt) } ?? "").font(.system(size: 11.5)).foregroundStyle(t.secondary)
+                        SaveBadge()
+                    }
+                }
+            }.padding(.horizontal, 14).padding(.bottom, 12)
+
+            HStack(spacing: 2) {
+                ForEach([(DocRailTab.outline, "list.bullet", "Outline"), (.tasks, "checkmark.circle", "Tasks"), (.attachments, "paperclip", "Attachments"), (.find, "doc.text.magnifyingglass", "Find in Page (⌘F)")], id: \.0) { tab, icon, label in
+                    let on = model.docRailTab == tab
+                    Button { model.docRailTab = tab } label: {
+                        Image(systemName: icon).font(.system(size: 12.5, weight: .medium))
+                            .frame(maxWidth: .infinity, minHeight: 26)
+                            .background(Capsule(style: .continuous).fill(on ? (t.dark ? Color.white.opacity(0.16) : Color.white) : .clear).shadow(color: .black.opacity(on && !t.dark ? 0.08 : 0), radius: 2, y: 1))
+                            .contentShape(Capsule())
+                    }
+                    .buttonStyle(.plain).foregroundStyle(on ? t.text : t.secondary)
+                    .help(label).accessibilityLabel(label).accessibilityAddTraits(on ? .isSelected : [])
+                }
+            }
+            .padding(3)
+            .background(Capsule(style: .continuous).fill(t.dark ? Color.white.opacity(0.06) : Color.black.opacity(0.06)))
+            .padding(.horizontal, 12).padding(.bottom, 12)
+            .accessibilityElement(children: .contain).accessibilityLabel("Document sidebar pane")
+
+            switch model.docRailTab {
+            case .outline: OutlinePane(docId: docId, content: content)
+            case .tasks: TasksPane(docId: docId, content: content)
+            case .attachments: AttachmentsPane(docId: docId, content: content)
+            case .find: FindPane(docId: docId)
+            }
+            Spacer(minLength: 0)
+        }
+    }
+}
+
+struct SaveBadge: View {
+    @EnvironmentObject var model: AppModel
+    @Environment(\.tokens) var t
+    var body: some View {
+        switch model.saveState {
+        case "saving": Text("· Saving…").font(.system(size: 11.5)).foregroundStyle(t.tertiary)
+        case "error": Text("· Not saved").font(.system(size: 11.5, weight: .semibold)).foregroundStyle(.red)
+        default: Text("· Saved").font(.system(size: 11.5)).foregroundStyle(t.tertiary)
+        }
+    }
+}
+
+struct PaneTitle: View {
+    @Environment(\.tokens) var t
+    var title: String
+    var body: some View { Text(title).font(.system(size: 13, weight: .semibold)).foregroundStyle(t.text).padding(.horizontal, 16).padding(.bottom, 6) }
+}
+
+struct EmptyHint: View {
+    @Environment(\.tokens) var t
+    var text: String
+    var body: some View { Text(text).font(.system(size: 12)).foregroundStyle(t.secondary).padding(.horizontal, 16).fixedSize(horizontal: false, vertical: true) }
+}
+
+struct OutlinePane: View {
+    @EnvironmentObject var model: AppModel
+    @Environment(\.tokens) var t
+    let docId: String
+    let content: Node
+    var body: some View {
+        let items = outlineOf(content)
+        PaneTitle(title: "Table of Contents")
+        if items.isEmpty { EmptyHint(text: "Headings and pages in this document will appear here.") }
+        ScrollView {
+            VStack(alignment: .leading, spacing: 1) {
+                ForEach(items) { it in
+                    RailRow(icon: it.kind == "page" ? "doc.text" : "number", title: it.text, indent: CGFloat(it.kind == "page" ? 8 : (it.level - 1) * 12)) {
+                        if it.kind == "page", let d = it.docId { model.openView(.doc(d), inPlace: true) }
+                        else { model.editors[docId]?.controller.scrollTo(blockId: it.id) }
+                    }
+                }
+            }.padding(.horizontal, 6)
+        }
+    }
+}
+
+struct TasksPane: View {
+    @EnvironmentObject var model: AppModel
+    @Environment(\.tokens) var t
+    let docId: String
+    let content: Node
+    var body: some View {
+        let tasks = tasksOf(content)
+        PaneTitle(title: "Tasks")
+        if tasks.isEmpty { EmptyHint(text: "Checklist items in this document will appear here. Type [] and a space to start one.") }
+        else {
+            Text("\(tasks.filter(\.checked).count) of \(tasks.count) done").font(.system(size: 11.5)).foregroundStyle(t.secondary).padding(.horizontal, 16).padding(.bottom, 4)
+        }
+        ScrollView {
+            VStack(alignment: .leading, spacing: 2) {
+                ForEach(tasks) { task in
+                    HStack(alignment: .top, spacing: 8) {
+                        Button { model.editors[docId]?.controller.toggleTask(blockId: task.id) } label: {
+                            Image(systemName: task.checked ? "checkmark.circle.fill" : "circle").foregroundStyle(task.checked ? t.accent : t.secondary)
+                        }.buttonStyle(.plain).accessibilityLabel(task.checked ? "Mark not done" : "Mark done")
+                        Text(task.text.isEmpty ? "Empty task" : task.text).font(.system(size: 13)).foregroundStyle(task.checked ? t.tertiary : t.text)
+                            .strikethrough(task.checked).onTapGesture { model.editors[docId]?.controller.scrollTo(blockId: task.id) }
+                        Spacer()
+                    }.padding(.horizontal, 10).padding(.vertical, 5)
+                }
+            }.padding(.horizontal, 6)
+        }
+    }
+}
+
+struct AttachmentsPane: View {
+    @EnvironmentObject var model: AppModel
+    @Environment(\.tokens) var t
+    let docId: String
+    let content: Node
+    var body: some View {
+        let items = attachmentsOf(content)
+        PaneTitle(title: "Attachments")
+        if items.isEmpty { EmptyHint(text: "Images and links added to this document will appear here. Files arrive in v0.2.") }
+        ScrollView {
+            VStack(alignment: .leading, spacing: 6) {
+                ForEach(items) { a in
+                    HStack(spacing: 10) {
+                        if a.kind == "image", let img = model.image(forAsset: a.ref) {
+                            Image(nsImage: img).resizable().aspectRatio(contentMode: .fill).frame(width: 40, height: 40).clipShape(RoundedRectangle(cornerRadius: 7))
+                        } else {
+                            Image(systemName: a.kind == "link" ? "link" : "photo").frame(width: 40, height: 40).background(RoundedRectangle(cornerRadius: 7).fill(t.hover))
+                        }
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text(a.label).font(.system(size: 12.5)).lineLimit(1).foregroundStyle(t.text)
+                            Text(a.kind == "link" ? a.ref : "Image").font(.system(size: 11)).lineLimit(1).foregroundStyle(t.secondary)
+                        }
+                        Spacer()
+                    }
+                    .contentShape(Rectangle())
+                    .onTapGesture { model.editors[docId]?.controller.scrollTo(blockId: a.blockId) }
+                    .padding(.horizontal, 10)
+                }
+            }
+        }
+    }
+}
+
+struct FindPane: View {
+    @EnvironmentObject var model: AppModel
+    @Environment(\.tokens) var t
+    let docId: String
+    @State private var replacement = ""
+    @State private var showReplace = false
+    @FocusState private var focused: Bool
+
+    var body: some View {
+        let c = model.editors[docId]?.controller
+        VStack(alignment: .leading, spacing: 8) {
+            HStack {
+                Text("Find").font(.system(size: 13, weight: .semibold)).foregroundStyle(t.text)
+                Spacer()
+                Toggle("Replace", isOn: $showReplace).toggleStyle(.switch).controlSize(.mini).font(.system(size: 11.5))
+            }
+            HStack(spacing: 6) {
+                Image(systemName: "magnifyingglass").foregroundStyle(t.secondary)
+                TextField("Text in page", text: $model.findQuery)
+                    .textFieldStyle(.plain).focused($focused)
+                    .onSubmit { c?.findStep(1) }
+                    .accessibilityLabel("Find in page")
+            }
+            .padding(8)
+            .background(RoundedRectangle(cornerRadius: 9).fill(t.hover))
+            if showReplace {
+                TextField("Replace with", text: $replacement).textFieldStyle(.plain).padding(8).background(RoundedRectangle(cornerRadius: 9).fill(t.hover))
+                HStack {
+                    Button("Replace") { c?.replace(query: model.findQuery, with: replacement, all: false); model.findCount = c?.findMatches.count ?? 0 }.disabled(model.findCount == 0)
+                    Button("Replace All") { let n = c?.replace(query: model.findQuery, with: replacement, all: true) ?? 0; model.findCount = c?.findMatches.count ?? 0; model.toast("Replaced \(n) match\(n == 1 ? "" : "es")") }.disabled(model.findCount == 0)
+                }.controlSize(.small)
+            }
+            HStack {
+                Text(model.findQuery.isEmpty ? " " : (model.findCount == 0 ? "No results on page" : "\(min((c?.findIndex ?? 0) + 1, model.findCount)) of \(model.findCount)"))
+                    .font(.system(size: 12)).foregroundStyle(t.secondary)
+                Spacer()
+                IconButton(symbol: "chevron.up", label: "Previous match (⇧⌘G)", size: 24) { c?.findStep(-1); model.editorTick &+= 1 }
+                IconButton(symbol: "chevron.down", label: "Next match (⌘G)", size: 24) { c?.findStep(1); model.editorTick &+= 1 }
+            }
+        }
+        .padding(.horizontal, 14)
+        .onChange(of: model.findQuery) { _, q in model.findCount = c?.find(q) ?? 0 }
+        .onChange(of: model.findFocusNonce) { _, _ in focused = true }
+        .onAppear { focused = true; if !model.findQuery.isEmpty { model.findCount = c?.find(model.findQuery) ?? 0 } }
+        .onDisappear { c?.clearFindHighlights() }
+    }
+}
+
+/// Tiny page thumbnail tinted by the document's style.
+struct MiniPage: View {
+    var meta: DocMeta?
+    var size: CGFloat
+    var body: some View {
+        let tint = Color(hex: meta?.tint ?? "#d9d4ca")
+        RoundedRectangle(cornerRadius: size * 0.18, style: .continuous).fill(tint.opacity(0.9))
+            .overlay(
+                RoundedRectangle(cornerRadius: size * 0.1, style: .continuous).fill(Color.white.opacity(0.95))
+                    .overlay(VStack(alignment: .leading, spacing: size * 0.06) {
+                        ForEach(0..<4, id: \.self) { i in Capsule().fill(Color.black.opacity(i == 0 ? 0.35 : 0.14)).frame(width: size * (i == 0 ? 0.32 : 0.42), height: max(1, size * 0.04)) }
+                    }.padding(size * 0.1), alignment: .topLeading)
+                    .padding(size * 0.12)
+            )
+            .frame(width: size * 0.82, height: size)
+    }
+}
