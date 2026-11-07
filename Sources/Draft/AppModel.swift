@@ -213,7 +213,10 @@ final class AppModel: ObservableObject {
             replaceTabView(cur.id, view)
             return
         }
-        if let existing = library.tabs.first(where: { $0.view == view }), !newTab {
+        if view.kind == "settings", !newTab, let existing = library.tabs.first(where: { $0.view.kind == "settings" }) {
+            replaceTabView(existing.id, view)
+            library.activeTabId = existing.id
+        } else if let existing = library.tabs.first(where: { $0.view == view }), !newTab {
             library.activeTabId = existing.id
         } else if !newTab && view.kind != "doc" && cur.view.kind != "all" && cur.view.kind != "doc" {
             pushHistory(cur)

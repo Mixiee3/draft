@@ -38,7 +38,11 @@ final class TableCell: BlockCell {
         return true
     }
 
+    /// Where the table was last drawn, in text-view coordinates (the editor aligns to it).
+    var drawnFrame: NSRect?
+
     override func draw(withFrame f: NSRect, in controlView: NSView?) {
+        drawnFrame = f
         let rows = Tables.cells(node)
         let outer = NSBezierPath(roundedRect: f.insetBy(dx: 0.5, dy: 0.5), xRadius: 8, yRadius: 8)
         NSGraphicsContext.saveGraphicsState()
@@ -47,12 +51,14 @@ final class TableCell: BlockCell {
             theme.text.withAlphaComponent(theme.isDarkPage ? 0.1 : 0.045).setFill()
             NSRect(x: f.minX, y: f.minY, width: f.width, height: Self.rowHeight + 1).fill()
         }
-        theme.text.withAlphaComponent(0.13).setFill()
+        let line = theme.text.withAlphaComponent(0.13)
+        line.setFill()
+        for c in 1..<max(1, Tables.columnCount(node)) { NSRect(x: cellRect(row: 0, column: c, in: f).minX, y: f.minY, width: 1, height: f.height).fill() }
         for (r, row) in rows.enumerated() {
-            if r > 0 { NSRect(x: f.minX, y: f.minY + CGFloat(r) * Self.rowHeight + 0.5, width: f.width, height: 1).fill() }
+            // Drawing text resets the fill colour, so set it again for each line.
+            if r > 0 { line.setFill(); NSRect(x: f.minX, y: f.minY + CGFloat(r) * Self.rowHeight + 0.5, width: f.width, height: 1).fill() }
             for c in row.indices {
                 let cr = cellRect(row: r, column: c, in: f)
-                if c > 0 { NSRect(x: cr.minX, y: f.minY, width: 1, height: f.height).fill() }
                 cellText(row[c].content, theme: theme, header: r == 0).draw(with: cr.insetBy(dx: 10, dy: 8), options: [.usesLineFragmentOrigin, .truncatesLastVisibleLine])
             }
         }
@@ -102,6 +108,9 @@ public final class TableEditor: NSView, NSTextFieldDelegate {
     public func reposition() {
         guard let (_, pr) = table, let host = controller.overlayHost else { return }
         let tv = controller.textView
+        let cell = (controller.storage.attribute(.attachment, at: pr.location, effectiveRange: nil) as? BlockAttachment)?.attachmentCell as? TableCell
+        if cell?.drawnFrame == nil { tv.displayIfNeeded() }
+        if let f = cell?.drawnFrame { frame = tv.convert(f, to: host); return }
         let gr = controller.layout.glyphRange(forCharacterRange: NSRange(location: pr.location, length: 1), actualCharacterRange: nil)
         let r = controller.layout.boundingRect(forGlyphRange: gr, in: controller.container)
         frame = tv.convert(r.offsetBy(dx: tv.textContainerOrigin.x, dy: tv.textContainerOrigin.y), to: host)

@@ -476,7 +476,7 @@ struct SpaceSwitcher: View {
             }
             .padding(.horizontal, 6).frame(height: 34).contentShape(Rectangle())
         }
-        .menuStyle(.borderlessButton).menuIndicator(.hidden)
+        .menuStyle(.button).buttonStyle(.plain).menuIndicator(.hidden)
         .accessibilityLabel("Space: \(model.library.space.name). Switch or create Spaces")
         .alert("New Space", isPresented: $naming) {
             TextField("Name", text: $name)

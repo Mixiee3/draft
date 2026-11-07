@@ -27,6 +27,12 @@ final class TableTests: XCTestCase {
         let ed = c.tableEditor
         ed.begin(tableId: id, row: 0, column: 0)
         XCTAssertEqual(ed.fields.count, 3); XCTAssertEqual(ed.fields[0].count, 3)
+        let pr = c.paragraph(withId: id)!
+        let cell = (c.storage.attribute(.attachment, at: pr.location, effectiveRange: nil) as! BlockAttachment).attachmentCell as! TableCell
+        c.textView.display()
+        let drawn = c.textView.convert(try XCTUnwrap(cell.drawnFrame), to: c.overlayHost)
+        ed.reposition()
+        XCTAssertEqual(ed.frame.minY, drawn.minY, accuracy: 0.5, "fields sit exactly over the drawn cells")
         ed.fields[0][0].stringValue = "**Name**"
         ed.move(by: 1) // Tab commits and moves
         XCTAssertEqual(ed.current.column, 1)

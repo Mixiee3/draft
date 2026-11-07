@@ -132,3 +132,53 @@ extension Automation {
         save(r, "structure-read.json")
     }
 }
+
+extension Automation {
+    static func screensV05() async {
+        guard let w = NSApp.windows.first(where: { $0.isVisible }), let host = m.createDoc(title: "Reading list") else { return }
+        await wait()
+        let ed = m.editors[host]!, c = ed.controller
+        ed.focusBody(atStart: true)
+        await type("Books for the autumn, with notes.", into: c); c.textView.insertNewline(nil)
+        c.insertAttachmentBlock(kind: .table, node: Tables.parse(["| Book | Author | Pages |", "| --- | --- | --- |", "| Dune | Herbert | 412 |", "| Atlas | Mitchell | 120 |"])!); await boundary()
+        EditorCommands.command("insert.collection")!.run(c); await boundary()
+        m.flushAll()
+        let block = c.document().content?.first { $0.type == "collection" }?.id ?? ""
+        var status = ""
+        m.updateCollection(host, block, "Fields", undo: nil) { d in d.name = "Reading"; d.fields.append(CollectionField(id: "f_pages", name: "Pages", type: "number")); d.fields.append(CollectionField(id: "f_fav", name: "Favourite", type: "checkbox")); status = d.fields[0].id }
+        for (t, s, p, fav) in [("Dune", "Doing", 412.0, true), ("Atlas", "To do", 120, false), ("Zen", "Done", 300, true), ("Orbit", "To do", 220, false), ("Harbor", "Doing", 180, false)] {
+            m.addCollectionItem(host, block, title: t, values: [status: .string(s), "f_pages": .number(p), "f_fav": .bool(fav)], undo: nil)
+        }
+        m.updateCollection(host, block, "Calc", undo: nil) { $0.views[0].calc["f_pages"] = "sum"; $0.views[0].sort = [SortRule(field: "f_pages", ascending: false)] }
+        m.flushAll()
+        for theme in ["light", "dark"] {
+            m.setSettings { $0.theme = theme }
+            for (width, height, tag) in [(1440.0, 900.0, ""), (720.0, 640.0, "narrow-")] {
+                let p = tag + (theme == "dark" ? "dark-" : "")
+                w.setFrame(NSRect(x: 60, y: 60, width: width, height: height), display: true)
+                m.openView(.doc(host)); await wait(0.5)
+                await capture(p + "v05-document-table-collection")
+                if let tid = c.document().content?.first(where: { $0.type == "table" })?.id {
+                    c.tableEditor.begin(tableId: tid, row: 1, column: 1); await capture(p + "v05-table-editing"); c.tableEditor.end()
+                }
+                m.openCollection(host, block)
+                for v in m.collectionData(host, block)!.views {
+                    m.updateCollection(host, block, "View", undo: nil) { $0.activeView = v.id }
+                    await wait(0.4)
+                    await capture(p + "v05-collection-\(v.type)")
+                }
+                m.updateCollection(host, block, "View", undo: nil) { $0.activeView = $0.views[0].id }
+                m.templatePicker = true; await capture(p + "v05-template-picker"); m.templatePicker = false
+                if tag.isEmpty { m.openView(ViewRef(kind: "settings", section: "space")); await capture(p + "v05-settings-spaces")
+                    m.openView(ViewRef(kind: "settings", section: "templates")); await capture(p + "v05-settings-templates") }
+            }
+            if let d = m.collectionData(host, block), let v = d.view {
+                var fv = v; fv.filters = [FilterRule(field: "f_pages", op: "gt", value: "150"), FilterRule(field: status, op: "is", value: "Doing")]
+                await renderComponent(FilterEditor(data: d, view: fv) { _ in }, (theme == "dark" ? "dark-" : "") + "v05-filter-editor", dark: theme == "dark")
+                await renderComponent(FieldsEditor(data: d, view: v, update: { _, _ in }, updateView: { _, _ in }), (theme == "dark" ? "dark-" : "") + "v05-fields-editor", dark: theme == "dark")
+            }
+        }
+        m.setSettings { $0.theme = "light" }
+        m.flushAll()
+    }
+}

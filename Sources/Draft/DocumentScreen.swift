@@ -109,7 +109,7 @@ struct PanelBackground: View {
     @Environment(\.tokens) var t
     var body: some View {
         RoundedRectangle(cornerRadius: 18, style: .continuous)
-            .fill(t.dark ? Color(hex: "#2b2b2d").opacity(0.97) : Color(hex: "#fbfaf8").opacity(0.97))
+            .fill(t.dark ? Color(hex: "#2b2b2d") : Color(hex: "#fbfaf8"))
             .overlay(RoundedRectangle(cornerRadius: 18, style: .continuous).strokeBorder(t.dark ? Color.white.opacity(0.08) : Color.black.opacity(0.08), lineWidth: 0.5))
             .shadow(color: .black.opacity(0.16), radius: 22, y: 8)
     }
@@ -171,6 +171,7 @@ struct ChipButton: View {
                 if let symbol { Image(systemName: symbol).font(.system(size: 12.5)) }
                 if !title.isEmpty { Text(title).font(font).lineLimit(1).minimumScaleFactor(0.8) }
             }
+            .padding(.horizontal, 10)
             .frame(maxWidth: .infinity, minHeight: height)
             .background(RoundedRectangle(cornerRadius: 10, style: .continuous).fill(isActive ? t.accent.opacity(t.dark ? 0.45 : 0.16) : (hover ? t.selected : t.hover)))
             .overlay(RoundedRectangle(cornerRadius: 10, style: .continuous).strokeBorder(isActive ? t.accent.opacity(0.6) : .clear, lineWidth: 1))
