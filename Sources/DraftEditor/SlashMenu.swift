@@ -70,22 +70,29 @@ public final class SlashMenu: NSView {
         if results.isEmpty && query.count > 2 { close(); return }
         index = min(index, max(0, results.count - 1))
         if let i = results.indices.first(where: { results[$0].plannedFor == nil }), results[index].plannedFor != nil { index = i }
-        let h = min(CGFloat(results.count) * rowH + 12, 320)
-        setFrameSize(NSSize(width: 264, height: h))
         position()
         needsDisplay = true
     }
 
-    func position() {
+    public func position() {
         guard let host = controller.overlayHost else { return }
         let tv = controller.textView
         let gr = controller.layout.glyphRange(forCharacterRange: NSRange(location: anchor, length: 1), actualCharacterRange: nil)
         var r = controller.layout.boundingRect(forGlyphRange: gr, in: controller.container)
         r = tv.convert(r.offsetBy(dx: tv.textContainerOrigin.x, dy: tv.textContainerOrigin.y), to: host)
-        var y = r.maxY + 6
-        if y + frame.height > host.visibleRect.maxY - 8 { y = r.minY - frame.height - 6 }
-        let x = min(max(r.minX - 8, host.visibleRect.minX + 8), host.visibleRect.maxX - frame.width - 8)
-        setFrameOrigin(NSPoint(x: x, y: y))
+        // Open below the caret, or above when there is more room; shrink (the list scrolls) so the
+        // menu always stays inside the visible area, including in short windows.
+        let vis = host.visibleRect
+        let want = min(CGFloat(results.count) * rowH + 12, 320)
+        let below = vis.maxY - 8 - (r.maxY + 6)
+        let above = (r.minY - 6) - (vis.minY + 8)
+        let useBelow = below >= want || below >= above
+        let h = max(min(want, useBelow ? below : above), min(want, rowH * 2 + 12))
+        var y = useBelow ? r.maxY + 6 : r.minY - 6 - h
+        y = min(max(y, vis.minY + 8), max(vis.minY + 8, vis.maxY - 8 - h))
+        let x = min(max(r.minX - 8, vis.minX + 8), vis.maxX - 264 - 8)
+        frame = NSRect(x: x, y: y, width: 264, height: h)
+        scrollOffset = min(scrollOffset, max(0, CGFloat(results.count) * rowH + 12 - h))
     }
 
     func move(_ d: Int) {

@@ -84,7 +84,11 @@ public enum Converter {
     // MARK: flat -> attributed
 
     public static func attributed(from doc: Node) -> (NSAttributedString, trailing: BlockInfo) {
-        let flat = flatten(doc)
+        attributed(flat: flatten(doc))
+    }
+
+    static func attributed(flat: [FlatBlock]) -> (NSAttributedString, trailing: BlockInfo) {
+        let flat = flat.isEmpty ? [FlatBlock(info: .paragraph(), inline: [])] : flat
         let out = NSMutableAttributedString()
         for (i, b) in flat.enumerated() {
             let para = NSMutableAttributedString()

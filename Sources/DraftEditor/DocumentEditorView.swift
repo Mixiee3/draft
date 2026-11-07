@@ -43,13 +43,18 @@ public final class DocumentEditorView: NSView, NSTextViewDelegate {
     public let controller = EditorController()
     public let scrollView = NSScrollView()
     let paper = PaperView()
+    public var paperView: NSView { paper }
     let paperBackground = NSView()
     let coverView = NSImageView()
     public let titleView: NSTextView
     var title_: TitleTextView { titleView as! TitleTextView }
     let ruleView = NSView()
     public var onTitleChange: ((String) -> Void)?
+    let handle = BlockHandleView(frame: .zero)
+    public var handleView: NSView { handle }
     public var onLayout: (() -> Void)?
+    /// Height reserved at the top for the host's floating controls.
+    public var topInset: CGFloat = 0 { didSet { needsLayout = true } }
 
     public var pageColor = NSColor(hex: "#fffdf8") { didSet { paperBackground.layer?.backgroundColor = pageColor.cgColor } }
     public var coverImage: NSImage? { didSet { coverView.image = coverImage; coverView.isHidden = coverImage == nil; needsLayout = true; relayout() } }
@@ -74,8 +79,7 @@ public final class DocumentEditorView: NSView, NSTextViewDelegate {
         scrollView.contentView.drawsBackground = false
         scrollView.documentView = paper
         scrollView.translatesAutoresizingMaskIntoConstraints = true
-        scrollView.autoresizingMask = [.width, .height]
-        scrollView.frame = bounds
+        scrollView.autoresizingMask = []
         addSubview(scrollView)
         paper.owner = self
 
@@ -117,6 +121,10 @@ public final class DocumentEditorView: NSView, NSTextViewDelegate {
         tv.maxSize = NSSize(width: CGFloat.greatestFiniteMagnitude, height: CGFloat.greatestFiniteMagnitude)
         paper.addSubview(tv)
         controller.overlayHost = paper
+        handle.owner = self
+        paper.addSubview(handle)
+        paper.addSubview(handle.indicator)
+        paper.addTrackingArea(NSTrackingArea(rect: .zero, options: [.mouseMoved, .mouseEnteredAndExited, .activeInKeyWindow, .inVisibleRect], owner: self))
 
         tv.postsFrameChangedNotifications = true
         NotificationCenter.default.addObserver(self, selector: #selector(relayoutNote), name: NSView.frameDidChangeNotification, object: tv)
@@ -169,6 +177,9 @@ public final class DocumentEditorView: NSView, NSTextViewDelegate {
     }
 
     @objc func relayoutNote() { relayout() }
+
+    public override func mouseMoved(with event: NSEvent) { updateHandle(at: paper.convert(event.locationInWindow, from: nil)) }
+    public override func mouseExited(with event: NSEvent) { if !handle.isDragging { handle.isHidden = true } }
     @objc func scrolled() {
         if controller.toolbar.isVisible { controller.toolbar.position() }
         if controller.slash.isOpen { controller.slash.position() }
@@ -176,7 +187,8 @@ public final class DocumentEditorView: NSView, NSTextViewDelegate {
 
     public override func layout() {
         super.layout()
-        scrollView.frame = bounds
+        // Text scrolls only below the host's top controls, never underneath them.
+        scrollView.frame = NSRect(x: 0, y: 0, width: bounds.width, height: max(0, bounds.height - topInset))
         relayout()
     }
 
@@ -185,12 +197,13 @@ public final class DocumentEditorView: NSView, NSTextViewDelegate {
         guard !inLayout else { return }
         inLayout = true
         defer { inLayout = false }
+        if !handle.isDragging { handle.isHidden = true } // the next mouse move places it again
         let width = scrollView.contentSize.width
         guard width > 0 else { return }
         let margin: CGFloat = width < 640 ? 10 : 28
         let paperW = min(840, width - margin * 2)
         let paperX = ((width - paperW) / 2).rounded()
-        let top: CGFloat = 70
+        let top: CGFloat = topInset > 0 ? 14 : 70
         let pad: CGFloat = paperW < 560 ? 22 : (paperW < 700 ? 44 : 68)
         var y = top
         if coverImage != nil {

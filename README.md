@@ -24,11 +24,11 @@ swift run Draft               # run without bundling
 ```
 
 ```bash
-swift test                    # 34 unit/behavior tests (format, vault, migrations, export, editor)
+swift test                    # 56 tests: format, vault, migrations, export, search, trash/backups, editor, blocks, paste
 ```
 
 ```bash
-scripts/smoke.sh              # end-to-end: write via the real editor, quit, relaunch, verify
+scripts/smoke.sh              # end-to-end: edit, trash, quit, relaunch; verify content, trash, backups, search jump
 ```
 
 Your notes live in `~/Library/Application Support/Draft/Vault` (Settings → Data & Storage →

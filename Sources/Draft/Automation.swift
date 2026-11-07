@@ -17,8 +17,10 @@ enum Automation {
             try? await Task.sleep(for: .seconds(1.2))
             switch mode {
             case "smoke-write": await smokeWrite()
-            case "smoke-read": smokeRead()
+            case "smoke-read": await smokeRead()
             case "screenshots": await screenshots()
+            case "drag-write": await dragWrite()
+            case "drag-read": dragRead()
             default: break
             }
             NSApp.terminate(nil)
@@ -48,12 +50,13 @@ enum Automation {
         await type("[] a task\n", into: ed.controller)
         // Styling is stored separately from content.
         m.updateAppearance(id) { $0.styleId = "ember" }
+        if let t = m.createDoc(open: false, title: "Trash me") { m.flushAll(); m.requestDelete(t) }
         await wait(1.0)
         try? Data(id.utf8).write(to: out.appendingPathComponent("smoke-doc-id.txt"))
         // Quit immediately: the quit path itself must flush pending saves.
     }
 
-    static func smokeRead() {
+    static func smokeRead() async {
         let id = (try? String(contentsOf: out.appendingPathComponent("smoke-doc-id.txt"), encoding: .utf8)) ?? ""
         var result: [String: String] = ["docId": id]
         if let meta = m.library.docs[id], let doc = m.ensureDoc(id) {
@@ -64,6 +67,25 @@ enum Automation {
             let boldOK = (doc.content.content ?? []).contains { n in (n.content ?? []).contains { $0.text == "bold" && $0.marks == [Mark("bold")] } }
             result["bold"] = boldOK ? "yes" : "no"
             result["tabOpen"] = m.library.tabs.contains { $0.view.docId == id } ? "yes" : "no"
+            result["backups"] = "\(m.snapshots(id).count)"
+            result["trashed"] = m.library.trashedDocs.map(\.title).joined(separator: ",")
+            result["listed"] = m.docsFor(.all).map(\.title).sorted().joined(separator: ",")
+            // Search across documents and jump: long body so the match must be scrolled to.
+            if let ed = m.editors[id] ?? Optional(m.editor(for: id)) {
+                ed.controller.textView.setSelectedRange(NSRange(location: 0, length: 0))
+                ed.controller.pastePlainForAutomation(String(repeating: "Filler paragraph.\n", count: 60) + "The zeppelin keyword lives far down.")
+            }
+            m.flushAll()
+            m.activateTab(m.library.tabs[0].id)
+            m.librarySearch = "ZEPPELIN"
+            result["searchHits"] = m.searchHits.map(\.meta.title).joined(separator: ",")
+            m.openSearchResult(id)
+            await wait(1.0)
+            if let c = m.editors[id]?.controller, let r = c.findMatches.first {
+                let rect = c.layout.boundingRect(forGlyphRange: c.layout.glyphRange(forCharacterRange: r, actualCharacterRange: nil), in: c.container)
+                result["jumpVisible"] = c.textView.visibleRect.intersects(rect.offsetBy(dx: c.textView.textContainerOrigin.x, dy: c.textView.textContainerOrigin.y)) ? "yes" : "no"
+                result["jumpMatches"] = "\(c.findMatches.count)"
+            }
         } else { result["error"] = "document not found after restart" }
         if let d = try? JSONSerialization.data(withJSONObject: result, options: [.prettyPrinted, .sortedKeys]) {
             try? d.write(to: out.appendingPathComponent("smoke-result.json"))
@@ -153,15 +175,139 @@ enum Automation {
         m.openView(ViewRef(kind: "settings", section: "appearance"))
         await capture("settings-appearance-dark")
         m.setSettings { $0.theme = "light" }
-        // Narrow window
+        var checks: [String: String] = [:]
+        // Scrolled: text must start below the top controls.
+        m.setSettings { $0.libraryView = .gallery }
         m.openView(.doc(welcome.id))
-        w.setFrame(NSRect(x: 60, y: 60, width: 720, height: 860), display: true)
+        await wait(0.8)
+        if let ed = m.editors[welcome.id] {
+            ed.scrollView.contentView.scroll(to: NSPoint(x: 0, y: 260)); ed.scrollView.reflectScrolledClipView(ed.scrollView.contentView)
+            await capture("document-scrolled")
+            checks["normal.scrollTopBelowControls"] = "\(ed.bounds.height - ed.scrollView.frame.maxY)"
+            // Block selection + handle
+            let c = ed.controller
+            ed.scrollView.contentView.scroll(to: .zero)
+            w.makeFirstResponder(c.textView)
+            if let pr = c.paragraph(withId: (c.document().content ?? [])[1].id ?? "") {
+                c.textView.setSelectedRange(NSRange(location: pr.location, length: 0))
+                c.enterBlockMode(); c.stepBlockSelection(1, extend: true)
+                let r = c.layout.firstLineRect(pr)!.rect
+                ed.updateHandle(at: c.textView.convert(NSPoint(x: 10, y: r.midY + c.textView.textContainerOrigin.y), to: ed.paperView))
+                await capture("block-selection")
+                c.exitBlockMode()
+            }
+            // Backups list
+            m.flushAll()
+            m.infoTab = "backups"; m.panel = .info
+            await capture("backups-panel")
+            m.panel = nil; m.infoTab = "info"
+        }
+        // Search results
+        m.activateTab(m.library.tabs[0].id)
+        m.librarySearchOpen = true; m.librarySearch = "markdown"
+        await capture("search-results")
+        m.librarySearch = ""; m.librarySearchOpen = false
+        // Recently Deleted
+        if let morning = m.library.docs.values.first(where: { $0.title == "Morning pages" }) {
+            m.requestDelete(morning.id)
+            m.openView(ViewRef(kind: "trash"))
+            await capture("recently-deleted")
+            m.restore(morning.id)
+            m.activateTab(m.library.tabs[0].id)
+        }
+        // Narrow window: scrolled text and the slash menu at the bottom edge.
+        m.openView(.doc(welcome.id))
+        w.setFrame(NSRect(x: 60, y: 60, width: 720, height: 640), display: true)
+        await wait(0.6)
         await capture("narrow-document")
+        if let ed = m.editors[welcome.id] {
+            let c = ed.controller
+            checks["narrow.scrollTopBelowControls"] = "\(ed.bounds.height - ed.scrollView.frame.maxY)"
+            w.makeFirstResponder(c.textView)
+            c.textView.setSelectedRange(NSRange(location: (c.textView.string as NSString).length, length: 0))
+            c.textView.insertNewline(nil)
+            await type("/", into: c)
+            c.textView.scrollRangeToVisible(c.textView.selectedRange()); c.slash.position()
+            await capture("narrow-slash-menu")
+            checks["narrow.slashInside"] = ed.paperView.visibleRect.insetBy(dx: -1, dy: -1).contains(c.slash.frame) ? "yes" : "no \(c.slash.frame) \(ed.paperView.visibleRect)"
+            c.slash.close()
+            c.textView.undoManager?.undo(); c.textView.undoManager?.undo()
+            w.setFrame(NSRect(x: 60, y: 60, width: 1440, height: 900), display: true)
+            await wait(0.6)
+            c.textView.setSelectedRange(NSRange(location: (c.textView.string as NSString).length, length: 0))
+            c.textView.insertNewline(nil)
+            await type("/", into: c)
+            c.textView.scrollRangeToVisible(c.textView.selectedRange()); c.slash.position()
+            checks["normal.slashInside"] = ed.paperView.visibleRect.insetBy(dx: -1, dy: -1).contains(c.slash.frame) ? "yes" : "no"
+            await capture("slash-menu")
+            c.slash.close()
+        }
+        if let d = try? JSONSerialization.data(withJSONObject: checks, options: [.prettyPrinted, .sortedKeys]) { try? d.write(to: out.appendingPathComponent("layout-checks.json")) }
         // Export
         m.export(docIds: [welcome.id], name: "Welcome export", groupByFolder: false, to: URL(fileURLWithPath: NSTemporaryDirectory()))
         await wait(0.3)
         try? (m.lastExportURL?.path ?? "").write(to: out.appendingPathComponent("last-export-path.txt"), atomically: true, encoding: .utf8)
         await wait(0.5)
         m.flushAll()
+    }
+
+    // MARK: Drag test through the window's real mouse-event path
+
+    static func json(_ n: Node) -> String { String(decoding: (try? DraftJSON.encode(n)) ?? Data(), as: UTF8.self) }
+
+    static func mouse(_ type: NSEvent.EventType, _ p: NSPoint, in w: NSWindow) {
+        guard let e = NSEvent.mouseEvent(with: type, location: p, modifierFlags: [], timestamp: ProcessInfo.processInfo.systemUptime,
+                                         windowNumber: w.windowNumber, context: nil, eventNumber: 0, clickCount: 1, pressure: type == .leftMouseUp ? 0 : 1) else { return }
+        w.sendEvent(e)
+    }
+
+    static func dragWrite() async {
+        guard let w = NSApp.windows.first(where: { $0.isVisible }), let id = m.createDoc(title: "Drag test") else { return }
+        await wait(0.6)
+        guard let ed = m.editors[id] else { return }
+        let c = ed.controller
+        w.makeFirstResponder(c.textView)
+        c.pastePlainForAutomation("Alpha plain\n**Bravo** bold\n- [x] Charlie done\n## Delta heading\nEcho last")
+        await wait(0.4)
+        var r: [String: String] = ["docId": id, "before": json(c.document())]
+        // Hover Alpha → handle appears; press it, drag below "Delta heading", release.
+        let alpha = c.paragraph(withId: (c.document().content ?? [])[0].id ?? "")!
+        let line = c.layout.firstLineRect(alpha)!.rect
+        let tv = c.textView
+        ed.updateHandle(at: tv.convert(NSPoint(x: 20, y: line.midY + tv.textContainerOrigin.y), to: ed.paperView))
+        let h = ed.handleView
+        let start = h.convert(NSPoint(x: h.bounds.midX, y: h.bounds.midY), to: nil)
+        let delta = c.paragraph(withId: (c.document().content ?? [])[3].id ?? "")!
+        let dRect = c.layout.paragraphRect(delta)!
+        let target = tv.convert(NSPoint(x: 40, y: dRect.maxY - 2 + tv.textContainerOrigin.y), to: nil)
+        mouse(.leftMouseDown, start, in: w)
+        for k in 1...12 {
+            let t = CGFloat(k) / 12
+            mouse(.leftMouseDragged, NSPoint(x: start.x + (target.x - start.x) * t, y: start.y + (target.y - start.y) * t), in: w)
+            try? await Task.sleep(for: .milliseconds(15))
+        }
+        mouse(.leftMouseUp, target, in: w)
+        await wait(0.3)
+        r["afterDrag"] = json(c.document())
+        r["order"] = (c.document().content ?? []).map { n in n.type == "taskList" ? "Charlie" : nodeText(n).components(separatedBy: " ").first ?? "" }.joined(separator: ",")
+        tv.undoManager?.undo()
+        r["afterUndo"] = json(c.document())
+        tv.undoManager?.redo()
+        r["afterRedo"] = json(c.document())
+        m.flushAll()
+        if let d = try? JSONSerialization.data(withJSONObject: r, options: [.sortedKeys]) { try? d.write(to: out.appendingPathComponent("drag-write.json")) }
+    }
+
+    static func dragRead() {
+        guard let d = try? Data(contentsOf: out.appendingPathComponent("drag-write.json")),
+              let r = try? JSONSerialization.jsonObject(with: d) as? [String: String], let id = r["docId"] else { return }
+        let reloaded = m.ensureDoc(id).map { json($0.content) } ?? "missing"
+        func ids(_ s: String?) -> [String] {
+            guard let s, let n = try? JSONDecoder().decode(Node.self, from: Data(s.utf8)) else { return [] }
+            var out: [String] = []; walk(n) { if let i = $0.id { out.append(i) } }; return out.sorted()
+        }
+        let res = ["idsPreserved": ids(r["before"]) == ids(r["afterDrag"]) && !ids(r["before"]).isEmpty ? "yes" : "no", "relaunchMatchesDrag": reloaded == r["afterDrag"] ? "yes" : "no", "undoRestored": r["afterUndo"] == r["before"] ? "yes" : "no",
+                   "redoMatchesDrag": r["afterRedo"] == r["afterDrag"] ? "yes" : "no", "order": r["order"] ?? "", "afterDrag": r["afterDrag"] ?? ""]
+        if let o = try? JSONSerialization.data(withJSONObject: res, options: [.prettyPrinted, .sortedKeys]) { try? o.write(to: out.appendingPathComponent("drag-result.json")) }
     }
 }

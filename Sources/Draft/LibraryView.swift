@@ -12,6 +12,7 @@ struct LibraryView: View {
         case "unsorted": return "Unsorted"
         case "starred": return "Starred"
         case "shared": return "Shared with Me"
+        case "trash": return "Recently Deleted"
         case "folder": return model.folderName(view.folderId)
         default: return "All Docs"
         }
@@ -21,8 +22,12 @@ struct LibraryView: View {
         let docs = model.docsFor(view)
         VStack(spacing: 0) {
             header
-            if view.kind == "shared" {
+            if view.kind == "trash" {
+                TrashList(docs: docs)
+            } else if view.kind == "shared" {
                 EmptyLibrary(message: "Draft is local-first: nothing is shared with you yet. Sharing and collaboration are planned for v2.0, after sync (v1.x).")
+            } else if !model.librarySearch.trimmingCharacters(in: .whitespaces).isEmpty && !docs.isEmpty {
+                SearchResults(hits: model.searchHits)
             } else if docs.isEmpty {
                 EmptyLibrary(message: !model.librarySearch.isEmpty ? "No documents match “\(model.librarySearch)”." :
                                 view.kind == "unsorted" ? "Any documents you haven't moved into a folder will appear here." :
@@ -60,6 +65,7 @@ struct LibraryView: View {
             }
             Text(title).font(.system(size: 17, weight: .semibold)).foregroundStyle(t.text)
             Spacer()
+            if view.kind != "trash" && view.kind != "shared" {
             PillGroup {
                 PillButton(symbol: "rectangle.grid.2x2", label: "Gallery (⌃⌘1)", isActive: model.library.settings.libraryView == .gallery) { model.setSettings { $0.libraryView = .gallery } }
                 PillButton(symbol: "square.grid.3x3", label: "Grid (⌃⌘2)", isActive: model.library.settings.libraryView == .grid) { model.setSettings { $0.libraryView = .grid } }
@@ -84,6 +90,7 @@ struct LibraryView: View {
                 .menuStyle(.borderlessButton).menuIndicator(.hidden).fixedSize().foregroundStyle(t.pillText).tint(t.pillText).tint(t.pillText)
                 .accessibilityLabel("Sort")
             }
+            }
             PillGroup {
                 Menu {
                     Button("Export All as Markdown…") { model.exportAll() }
@@ -107,6 +114,7 @@ struct LibraryView: View {
                 TextField("Search titles and text", text: $model.librarySearch)
                     .textFieldStyle(.plain).foregroundStyle(t.pillText).focused($searchFocused).frame(width: 200)
                     .onExitCommand { model.librarySearch = ""; model.librarySearchOpen = false }
+                    .onSubmit { if let first = model.searchHits.first { model.openSearchResult(first.meta.id) } }
                     .accessibilityLabel("Search documents")
                 Button { model.librarySearch = ""; model.librarySearchOpen = false } label: { Image(systemName: "xmark.circle.fill") }
                     .buttonStyle(.plain).foregroundStyle(t.pillText.opacity(0.5)).accessibilityLabel("Close search")
@@ -183,7 +191,7 @@ struct DocCardMenu: ViewModifier {
                 }
                 Button("Export as Markdown…") { model.exportDoc(meta.id) }
                 Divider()
-                Button("Delete…", role: .destructive) { model.requestDelete(meta.id) }
+                Button("Move to Recently Deleted", role: .destructive) { model.requestDelete(meta.id) }
             }
             .accessibilityElement(children: .combine)
             .accessibilityAddTraits(.isButton)
@@ -337,5 +345,86 @@ struct ListRow: View {
         .overlay(alignment: .bottom) { Rectangle().fill(t.line).frame(height: 0.5).padding(.leading, 60) }
         .onHover { hover = $0 }
         .modifier(DocCardMenu(meta: meta))
+    }
+}
+
+/// Recently Deleted: restore or delete permanently. Items are purged after 30 days.
+struct TrashList: View {
+    @EnvironmentObject var model: AppModel
+    @Environment(\.tokens) var t
+    let docs: [DocMeta]
+    var body: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            HStack {
+                Text("Deleted documents stay here for \(Int(Library.trashRetentionDays)) days, then are removed with their backups.")
+                    .font(.system(size: 12.5)).foregroundStyle(t.secondary)
+                Spacer()
+                Button("Empty Recently Deleted…") { model.requestDeleteForever(docs.map(\.id)) }.disabled(docs.isEmpty)
+            }.padding(.horizontal, 18)
+            if docs.isEmpty {
+                EmptyLibrary(message: "Nothing here. Deleted documents and pages can be restored from this list.")
+            }
+            ScrollView {
+                VStack(spacing: 2) {
+                    ForEach(docs) { m in
+                        HStack(spacing: 12) {
+                            MiniPage(meta: m, size: 34)
+                            VStack(alignment: .leading, spacing: 2) {
+                                Text(m.title.isEmpty ? "Untitled" : m.title).font(.system(size: 13.5, weight: .medium)).foregroundStyle(t.text)
+                                Text((m.parentDocId != nil ? "Nested page · " : "") + "Deleted " + relative(m.deletedAt ?? 0) + (m.excerpt.isEmpty ? "" : " · " + m.excerpt))
+                                    .font(.system(size: 11.5)).foregroundStyle(t.tertiary).lineLimit(1)
+                            }
+                            Spacer()
+                            Button("Restore") { model.restore(m.id) }
+                            Button("Delete Permanently…", role: .destructive) { model.requestDeleteForever([m.id]) }
+                        }
+                        .padding(.horizontal, 12).padding(.vertical, 8)
+                        .background(RoundedRectangle(cornerRadius: 10).fill(t.hover.opacity(0.6)))
+                    }
+                }.padding(.horizontal, 18).padding(.bottom, 24)
+            }
+        }
+    }
+}
+
+/// One row per matching document: title, location, match count and a highlighted snippet.
+struct SearchResults: View {
+    @EnvironmentObject var model: AppModel
+    @Environment(\.tokens) var t
+    let hits: [SearchHit]
+    var body: some View {
+        ScrollView {
+            VStack(alignment: .leading, spacing: 4) {
+                Text("\(hits.count) document\(hits.count == 1 ? "" : "s") match “\(model.librarySearch)”").font(.system(size: 12.5)).foregroundStyle(t.secondary).padding(.horizontal, 12).padding(.bottom, 6)
+                ForEach(hits) { h in
+                    Button { model.openSearchResult(h.meta.id) } label: {
+                        HStack(alignment: .top, spacing: 12) {
+                            MiniPage(meta: h.meta, size: 36)
+                            VStack(alignment: .leading, spacing: 3) {
+                                HStack(spacing: 6) {
+                                    Text(h.meta.title.isEmpty ? "Untitled" : h.meta.title).font(.system(size: 13.5, weight: .semibold)).foregroundStyle(t.text)
+                                    if h.count > 0 {
+                                        Text("\(h.count)").font(.system(size: 11, weight: .bold)).foregroundStyle(Color(hex: "#3b2f00"))
+                                            .padding(.horizontal, 6).padding(.vertical, 1).background(Capsule().fill(Color(hex: "#ffd84d")))
+                                            .accessibilityLabel("\(h.count) matches")
+                                    }
+                                    Text(model.folderName(h.meta.folderId) + (h.meta.parentDocId.flatMap { model.library.docs[$0]?.title }.map { " › \($0)" } ?? ""))
+                                        .font(.system(size: 11.5)).foregroundStyle(t.tertiary)
+                                }
+                                snippet(h).font(.system(size: 12.5)).foregroundStyle(t.secondary).lineLimit(2)
+                            }
+                            Spacer()
+                        }
+                        .padding(10).contentShape(Rectangle())
+                        .background(RoundedRectangle(cornerRadius: 10).fill(t.hover.opacity(0.5)))
+                    }.buttonStyle(.plain)
+                }
+            }.padding(.horizontal, 18).padding(.bottom, 24)
+        }
+    }
+
+    func snippet(_ h: SearchHit) -> Text {
+        guard let r = h.snippetMatch else { return Text(h.snippet) }
+        return Text(String(h.snippet[..<r.lowerBound])) + Text(String(h.snippet[r])).bold().foregroundColor(t.text) + Text(String(h.snippet[r.upperBound...]))
     }
 }

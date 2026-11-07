@@ -12,7 +12,7 @@ app or screenshots) · `verified` (covered by `swift test` or `scripts/smoke.sh`
 
 Platform: all statuses are for the native macOS app. Windows: see §22.
 
-Last updated: v0.1 (native macOS) — 2026‑11‑07.
+Last updated: v0.2 (native macOS) — 2026‑11‑07.
 
 ## 1. Editor primitives and keyboard
 
@@ -31,11 +31,11 @@ Last updated: v0.1 (native macOS) — 2026‑11‑07.
 | E11 | Slash menu | Filter, arrows, Return, Esc | B§5.3 | verified | E-cmds | 0.1 | `/check` + Return → checklist (`testSlashMenuInsertsChecklist`) |
 | E12 | `+` insert menu | Image, File, Code, Formula, Mermaid, Whiteboard, Table, Collection, Page Break | S34 | partial | — | 0.1→0.5 | Image/Page/Card/Separator/Code/Checklist/Quote work; others listed disabled with version |
 | E13 | Indent / outdent | Tab / Shift-Tab | B§8 | verified | — | 0.1 | `testTaskTriggerTabNestingAndToggle` |
-| E14 | Block handle + drag reorder | Gutter handle, insertion line | B§5.3, S01 | missing | E15 | 0.2 | Drag a block; one undo restores |
-| E15 | Block selection | Distinct from text selection | B§5.3 | missing | — | 0.2 | Esc selects block; ⌘C copies whole blocks |
+| E14 | Block handle + drag reorder | Gutter handle, insertion line | B§5.3, S01 | verified | E15 | 0.2 | ⋮⋮ handle on hover; drag shows insertion line, autoscrolls; drop moves selected blocks (`testDragDropBoundaryMapping`); one undo |
+| E15 | Block selection | Distinct from text selection | B§5.3 | verified | — | 0.2 | Esc selects block, ⇧↑/↓ extend, ↑/↓ move, Delete removes, typing/Return exits; ⌘C copies blocks (`testEscSelectsBlock…`) |
 | E16 | Group into page ⌘G / ungroup | Tree transform | B§B, S42 | missing | E15 | 0.2 | 3 blocks → one page; child ids preserved |
-| E17 | Move up/down/top/bottom | Shortcut actions | S42 | missing | E15 | 0.2 | ⌥⌘↑ moves block, undoable |
-| E18 | Paste | Rich, plain, Markdown | B§5.3 | partial | — | 0.2 | Draft→Draft keeps blocks+marks (custom pasteboard type); images paste as blocks; plain text works; rich HTML/RTF and multi-line block splitting missing |
+| E17 | Move up/down/top/bottom | Shortcut actions | S42 | verified | E15 | 0.2 | ⌥⌘↑/↓, ⌃⌥⌘↑/↓; ids, marks, task state preserved; one undo each (`testMoveUpDown…`) |
+| E18 | Paste | Rich, plain, Markdown | B§5.3 | verified | — | 0.2 | Multi-line text → one block per line, Markdown recognized; RTF/HTML → headings, lists, bold/italic/underline/strike/code/links; Draft→Draft keeps blocks+marks with new ids; surrounding block keeps id; one undo (`PasteTests`, `MarkdownImportTests`) |
 | E19 | Multi-block text selection | Beta in reference | S12 | working | — | 0.1 | Drag across paragraphs selects text in all (native TextKit) |
 | E20 | IME / non-US layouts | Fixes documented | B§7, B§8 | partial | — | 0.6 | NSTextView composition works; layout matrix untested |
 | E21 | 10k-block performance | Quality gate | B§11 | missing | — | 0.2 | Synthetic 10k-block doc; keystroke < 16 ms p95 |
@@ -75,7 +75,7 @@ Last updated: v0.1 (native macOS) — 2026‑11‑07.
 | P3 | Card preview modes | Standard, emoji, book, sticky, gallery | B§D | missing | P2 | 0.4 | — |
 | P4 | Breadcrumb / back | Ancestry; back restores parent | B§5.4 | working | P1 | 0.1 | Child shows `Folder › Parent`; Back returns within tab |
 | P5 | Outline lists pages | TOC lists headings and pages | S01 | working | P1 | 0.1 | Outline shows page rows; click opens |
-| P6 | Recoverable deleted pages | Reference: nested pages not in Recently Deleted | B§B | missing | H4 | 0.2 | Draft decision: tombstone pages too |
+| P6 | Recoverable deleted pages | Reference: nested pages not in Recently Deleted | B§B | verified | H4 | 0.2 | Deleting a doc trashes its nested pages too; restore brings them back with structure; a page whose parent stays deleted returns top-level (`TrashTests`) |
 
 *Draft decision:* nested pages are child documents (`parentDocId`) referenced by a `pageCard` block.
 
@@ -124,7 +124,7 @@ Last updated: v0.1 (native macOS) — 2026‑11‑07.
 |---|---|---|---|---|---|---|---|
 | S1 | Library inline search | Expands in header | S26 | working | — | 0.1 | `library-search.png`; all terms must match title or text; title matches first |
 | S2 | Quick Open ⌘O | By name; create new | B§H | working | — | 0.1 | ↑/↓/Return; "Create …" row |
-| S3 | Space Search with counts + jump | One result per doc | B§H | missing | index | 0.2 | — |
+| S3 | Space Search with counts + jump | One result per doc | B§H | verified | — | 0.2 | All terms, case/diacritic-insensitive, title matches first, match-count badge, highlighted snippet; Return/click opens the doc with Find in Page filled and the first match scrolled into view (`SearchTests`, smoke `jumpVisible`) |
 | S4 | Find in Page ⌘F | Rail pane, next/prev | S35, B§H | working | — | 0.1 | Highlights all, current stronger; ⌘G/⇧⌘G |
 | S5 | Replace | — | B§H | verified | S4 | 0.1 | Replace all is one undo (test) |
 | S6 | Phrase / exclusion / regex | macOS options | B§H | missing | S3 | 0.3 | — |
@@ -197,8 +197,8 @@ Last updated: v0.1 (native macOS) — 2026‑11‑07.
 |---|---|---|---|---|---|---|---|
 | H1 | Atomic durable saves | — | B§10 | verified | — | 0.1 | No temp leftovers (`testFirstRunSaveReload…`); quit flushes (smoke test) |
 | H2 | Migrations with backup; read-only on newer schema | — | prompt | verified | — | 0.1 | `testMigrationWritesBackupFirst`, `testNewerLibraryMakesVaultReadOnly` |
-| H3 | View backups / restore | Info → View Backups | S41 | missing | — | 0.2 | Listed disabled |
-| H4 | Recently Deleted | Top-level docs | B§B | missing | — | 0.2 | Today: confirmed, permanent delete |
+| H3 | View backups / restore | Info → View Backups | S41 | verified | — | 0.2 | Automatic backup at most every 10 min while editing, 30 kept per doc; Info → View Backups → Restore (current version backed up first) (`BackupTests`, smoke `backups`) |
+| H4 | Recently Deleted | Top-level docs | B§B | verified | — | 0.2 | Delete → Recently Deleted with Undo toast; Restore / Delete Permanently / Empty; purged after 30 days with backups (`TrashTests`, smoke `trashed`) |
 | H5 | Save state indicator | Quiet | B§8 | working | — | 0.1 | "Saved / Saving… / Not saved" in document rail |
 | H6 | Unknown data preserved | — | prompt | verified | — | 0.1 | `testLibraryV0…KeepsUnknownFields`, `testUnknownNodeTypes…`, unknown block shown as preserved placeholder |
 
@@ -255,7 +255,7 @@ Last updated: v0.1 (native macOS) — 2026‑11‑07.
 
 | ID | Capability | Evidence | Status | Target | Acceptance check |
 |---|---|---|---|---|---|
-| W1 | Narrow window | B§9 | working | 0.1 | < 820 pt: rail becomes overlay; paper margins shrink; breadcrumb hides (`narrow-document.png`) |
+| W1 | Narrow window | B§9 | verified | 0.1 | < 820 pt: rail becomes overlay; paper margins shrink; breadcrumb hides; text starts below controls and the slash menu stays inside at 1440×900 and 720×640 (automation layout checks, `testSlashMenuStaysInsideVisibleAreaInShortWindow`) |
 | W2 | iPad / iPhone | B§9 | missing | later | Apps on top of `DraftCore` |
 
 ## 20. Localization

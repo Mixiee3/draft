@@ -19,5 +19,10 @@ assert r["bold"] == "yes", r
 assert r["style"] == "ember", r
 assert r["blocks"].startswith("heading,paragraph,taskList"), r
 assert r["tabOpen"] == "yes", r
+assert r["trashed"] == "Trash me", r
+assert "Trash me" not in r["listed"], r
+assert int(r["backups"]) >= 1, r
+assert r["searchHits"] == "Smoke test document", r
+assert r["jumpMatches"] == "1" and r["jumpVisible"] == "yes", r
 print("SMOKE TEST PASSED")
 PY

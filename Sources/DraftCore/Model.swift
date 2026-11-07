@@ -38,6 +38,8 @@ public struct DocMeta: Codable, Hashable, Identifiable, Sendable {
     public var words: Int
     public var blocks: Int
     public var tint: String
+    /// Set while the document is in Recently Deleted (its file stays on disk until purged).
+    public var deletedAt: Double?
 
     public init(id: String, title: String = "", folderId: String? = nil, parentDocId: String? = nil, createdAt: Double = nowMs(), updatedAt: Double = nowMs(), viewedAt: Double = nowMs(), starred: Bool = false, styleId: String = "paper", excerpt: String = "", searchText: String = "", words: Int = 0, blocks: Int = 0, tint: String = "#d9d4ca") {
         self.id = id; self.title = title; self.folderId = folderId; self.parentDocId = parentDocId
@@ -61,6 +63,7 @@ public struct DocMeta: Codable, Hashable, Identifiable, Sendable {
         words = try c.decodeIfPresent(Int.self, forKey: .words) ?? 0
         blocks = try c.decodeIfPresent(Int.self, forKey: .blocks) ?? 0
         tint = try c.decodeIfPresent(String.self, forKey: .tint) ?? "#d9d4ca"
+        deletedAt = try c.decodeIfPresent(Double.self, forKey: .deletedAt)
     }
 }
 

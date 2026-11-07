@@ -6,6 +6,7 @@ public final class DraftTextView: NSTextView {
     public var placeholder = "Start writing, or type / to insert a block"
 
     public override func insertNewline(_ sender: Any?) {
+        if let c = controller, c.isBlockMode { c.exitBlockMode(caretAtEnd: true); return }
         if NSEvent.modifierFlags.contains(.shift) { insertText(Chars.lineBreak, replacementRange: selectedRange()); return }
         if controller?.handleNewline() != true { super.insertNewline(sender) }
     }
@@ -13,9 +14,11 @@ public final class DraftTextView: NSTextView {
     public override func insertNewlineIgnoringFieldEditor(_ sender: Any?) { insertText(Chars.lineBreak, replacementRange: selectedRange()) }
 
     public override func deleteBackward(_ sender: Any?) {
+        if let c = controller, c.isBlockMode { c.deleteSelectedBlocks(); return }
         if controller?.handleDeleteBackward() != true { super.deleteBackward(sender) }
     }
     public override func deleteForward(_ sender: Any?) {
+        if let c = controller, c.isBlockMode { c.deleteSelectedBlocks(); return }
         if controller?.handleDeleteForward() != true { super.deleteForward(sender) }
     }
 
@@ -47,6 +50,20 @@ public final class DraftTextView: NSTextView {
         guard let c = controller else { return }
         if c.slash.isOpen { c.slash.close(); return }
         if c.toolbar.isVisible { c.toolbar.dismissForCurrentSelection(); return }
+        // Esc toggles between editing text and selecting whole blocks.
+        if c.isBlockMode { c.exitBlockMode() } else { c.enterBlockMode() }
+    }
+
+    public override func moveUp(_ sender: Any?) { if let c = controller, c.isBlockMode { c.stepBlockSelection(-1, extend: false) } else { super.moveUp(sender) } }
+    public override func moveDown(_ sender: Any?) { if let c = controller, c.isBlockMode { c.stepBlockSelection(1, extend: false) } else { super.moveDown(sender) } }
+    public override func moveUpAndModifySelection(_ sender: Any?) { if let c = controller, c.isBlockMode { c.stepBlockSelection(-1, extend: true) } else { super.moveUpAndModifySelection(sender) } }
+    public override func moveDownAndModifySelection(_ sender: Any?) { if let c = controller, c.isBlockMode { c.stepBlockSelection(1, extend: true) } else { super.moveDownAndModifySelection(sender) } }
+
+    public override func insertText(_ string: Any, replacementRange: NSRange) {
+        // Typing while blocks are selected returns to text editing at the end of the selection
+        // instead of replacing whole blocks.
+        if let c = controller, c.isBlockMode { c.exitBlockMode(caretAtEnd: true); super.insertText(string, replacementRange: selectedRange()); return }
+        super.insertText(string, replacementRange: replacementRange)
     }
 
     public override func keyDown(with event: NSEvent) {
@@ -104,7 +121,7 @@ public final class DraftTextView: NSTextView {
         return super.writeSelection(to: pboard, type: type)
     }
 
-    public override var readablePasteboardTypes: [NSPasteboard.PasteboardType] { [EditorController.pasteboardType, .png, .tiff, .string] }
+    public override var readablePasteboardTypes: [NSPasteboard.PasteboardType] { [EditorController.pasteboardType, .rtf, .html, .png, .tiff, .string] }
 
     public override func readSelection(from pboard: NSPasteboard, type: NSPasteboard.PasteboardType) -> Bool {
         guard let c = controller else { return super.readSelection(from: pboard, type: type) }
@@ -115,12 +132,13 @@ public final class DraftTextView: NSTextView {
             if let d = pboard.data(forType: .png) { return c.pasteImage(d, ext: "png") }
         case .tiff:
             if let d = pboard.data(forType: .tiff), let rep = NSBitmapImageRep(data: d), let png = rep.representation(using: .png, properties: [:]) { return c.pasteImage(png, ext: "png") }
-        case .string:
-            if let s = pboard.string(forType: .string) {
-                // Plain-text paste keeps the current block and marks.
-                insertText(s.replacingOccurrences(of: "\r\n", with: "\n"), replacementRange: selectedRange())
-                return true
+        case .rtf, .html:
+            if let d = pboard.data(forType: type),
+               let s = try? NSAttributedString(data: d, options: [.documentType: type == .rtf ? NSAttributedString.DocumentType.rtf : .html, .characterEncoding: String.Encoding.utf8.rawValue], documentAttributes: nil) {
+                c.pasteRich(s); return true
             }
+        case .string:
+            if let s = pboard.string(forType: .string) { c.pastePlain(s); return true }
         default: break
         }
         return super.readSelection(from: pboard, type: type)

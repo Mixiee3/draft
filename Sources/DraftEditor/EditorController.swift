@@ -20,6 +20,9 @@ public final class EditorController: NSObject, NSTextStorageDelegate, NSTextView
     public private(set) var lastColor: (kind: String, hex: String)? = nil
     var isLoading = false
     var pendingTrigger: (location: Int, text: String)?
+    /// Ids of blocks selected as whole units (block mode); empty when editing text.
+    public internal(set) var blockSelectionIds: [String] = []
+    var expectedBlockSelection: NSRange?
 
     public lazy var toolbar = SelectionToolbar(controller: self)
     public lazy var slash = SlashMenu(controller: self)
@@ -32,6 +35,7 @@ public final class EditorController: NSObject, NSTextStorageDelegate, NSTextView
         textView = DraftTextView(frame: NSRect(x: 0, y: 0, width: 640, height: 400), textContainer: container)
         super.init()
         textView.controller = self
+        layout.selectedBlockIds = { [weak self] in self?.blockSelectionIds ?? [] }
         textView.delegate = self
         storage.delegate = self
         textView.isRichText = true
@@ -263,6 +267,7 @@ public final class EditorController: NSObject, NSTextStorageDelegate, NSTextView
 
     public func textViewDidChangeSelection(_ notification: Notification) {
         guard !isLoading else { return }
+        selectionChangedForBlockMode()
         updateTypingAttributes()
         toolbar.update()
         slash.selectionChanged()
@@ -864,15 +869,6 @@ public final class EditorController: NSObject, NSTextStorageDelegate, NSTextView
         let last = (sub.length > 0 ? sub.attribute(.draftBlock, at: sub.length - 1, effectiveRange: nil) as? BlockInfo : nil) ?? .paragraph()
         let node = Converter.document(from: sub, trailing: last)
         return try? DraftJSON.encode(node)
-    }
-
-    func pasteFragment(_ data: Data) -> Bool {
-        guard let node = try? JSONDecoder().decode(Node.self, from: data) else { return false }
-        let (s, _) = Converter.attributed(from: reId(node))
-        let sel = textView.selectedRange()
-        replace(sel, with: s, select: NSRange(location: sel.location + s.length, length: 0))
-        dedupeAll()
-        return true
     }
 
     func pasteImage(_ data: Data, ext: String) -> Bool {
