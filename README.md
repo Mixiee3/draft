@@ -24,7 +24,7 @@ swift run Draft               # run without bundling
 ```
 
 ```bash
-swift test                    # 111 tests: format, vault, index, links, tags, dates, styles, HTML/site export, online parsing, editor, blocks, paste, grouping, media
+swift test                    # 126 tests: format, schema 2 migration, vault, index, links, tags, dates, styles, tables, collections, import, HTML/site export, online parsing, editor, blocks, paste, grouping, media, cursor
 ```
 
 ```bash
@@ -45,6 +45,14 @@ scripts/style-test.sh         # saved styles, block fonts, cards, separators; st
 
 ```bash
 scripts/drag-test.sh          # drags a block with mouse events posted through the app; checks undo, redo, relaunch
+```
+
+```bash
+scripts/structure-test.sh     # tables and collections: views, sort, sums, Kanban drag undo, CSV round trip; 1,000-item open and scroll
+```
+
+```bash
+scripts/workflow-test.sh      # Spaces, templates, Draft JSON and Markdown import round trips
 ```
 
 Your notes live in `~/Library/Application Support/Draft/Vault` (Settings → Data & Storage →
