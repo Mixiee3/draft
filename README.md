@@ -24,7 +24,7 @@ swift run Draft               # run without bundling
 ```
 
 ```bash
-swift test                    # 77 tests: format, vault, migrations, export, search, trash/backups, editor, blocks, paste, grouping, media, toggles, crop
+swift test                    # 99 tests: format, vault, index, links, tags, dates, search, trash/backups, editor, blocks, paste, grouping, media
 ```
 
 ```bash
@@ -32,11 +32,15 @@ scripts/smoke.sh              # end-to-end: edit, group, trash, quit, relaunch; 
 ```
 
 ```bash
-scripts/perf.sh               # opens a 10,000-block document and checks editing budgets
+scripts/perf.sh               # opens a 10,000-block document and checks editing and index-rebuild budgets
 ```
 
 ```bash
-scripts/drag-test.sh          # drags a block with mouse events through the window; checks undo, redo, relaunch
+scripts/links-test.sh         # links, backlinks, tasks, daily notes: write, relaunch, delete index/ and relaunch
+```
+
+```bash
+scripts/drag-test.sh          # drags a block with mouse events posted through the app; checks undo, redo, relaunch
 ```
 
 Your notes live in `~/Library/Application Support/Draft/Vault` (Settings → Data & Storage →

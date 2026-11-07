@@ -14,6 +14,8 @@ The reference implementation is `Sources/DraftCore`. All JSON is UTF‑8; timest
   docs/<docId>.json       one document
   assets/<sha256-32>.<ext> images, covers and attached files, content-addressed (extension: 1–10 lowercase letters/digits)
   backups/                copies written before any migration (never read by the app)
+  history/<docId>/<ms>.json automatic local backups of a document (≤ 1 per 10 min, 30 kept)
+  index/index.json        derived link/tag/task index (safe to delete; rebuilt on launch)
 ```
 
 ## Rules for every implementation
@@ -44,7 +46,13 @@ The reference implementation is `Sources/DraftCore`. All JSON is UTF‑8; timest
 ```
 
 Document tabs may carry `scrollY`, `selStart`, `selLength` (where the user was; optional). `DocMeta.deletedAt`
-marks a document in Recently Deleted.
+marks a document in Recently Deleted. `DocMeta.dailyDate` (`yyyy-MM-dd`, optional) marks a daily note;
+there is at most one live document per date.
+
+Settings added in schema 1 (all optional, defaults in parentheses): `weekStart` (0 = system, 1 = Sunday,
+2 = Monday), `dayStartHour` (0), `showDailyNotes` (true), `dailyTemplateId`, `tagColors`
+(`{lowercased tag: "#hex"}`), `tagRules` (`{ignoreHex: true, ignoreNumeric: true, custom: []}`),
+`reminders` (false), `reminderHour` (9), `calendarEvents` (false).
 
 `excerpt`, `searchText`, `words`, `blocks`, `tint` are **derived** and may be rebuilt from the
 document files at any time. `parentDocId` marks a nested page.
@@ -81,7 +89,29 @@ document files at any time. `parentDocId` marks a nested page.
 | `hardBreak` | — | — |
 
 Marks: `bold`, `italic`, `underline`, `strike`, `code`, `highlight {color}`, `textStyle {color}`,
-`link {href}`.
+`link {href}`, `docLink {docId, blockId?}`, `date {date}`.
+
+- **`docLink`** marks the text of a link chip. `docId` is the linked document; `blockId`, when
+  present, makes it a block reference. The text is a cached title: readers show the target's current
+  title (or the block's text) and may rewrite the text. If `blockId` is no longer in `docId`, look it
+  up in the other documents (blocks keep their ids when moved or grouped). A target that cannot be
+  found is shown as missing; the mark is kept so the link works again if the target returns.
+- **`date`** marks a date chip; `date` is `yyyy-MM-dd` or `yyyy-MM-ddTHH:mm` (local time). The text
+  is a cached label (Today, Tomorrow, Nov 12).
+- **Tags** are plain text: `#` + a letter, digit or `_`, then letters, digits, `_`, `-`, `/`, not
+  preceded by a letter, digit, `#`, `&`, `/` or `\`. Hex colors (`#fff`, `#a1b2c3`), numbers (`#12`) and
+  the custom words in `tagRules` are not tags. Text in `code`, `link`, `docLink` and `date` marks and
+  in code blocks never contains tags.
+- **Task due date**: an optional `due` attribute on `taskItem`, else the first `date` mark in the
+  task's first paragraph, else the `dailyDate` of the document holding it.
+- Older builds keep `docLink` and `date` text as plain text with the unknown mark preserved.
+
+### index/index.json (derived)
+
+`{"version": 1, "rules": "<tag rules key>", "entries": {docId: {"updatedAt", "daily?", "links": [{block,
+doc, target?, text}], "tags": [{tag, block, text}], "tasks": [{block, text, checked, due?}], "blocks":
+[{id, text, heading?}]}}}`. An entry is current when its `updatedAt` and `daily` equal the document's
+metadata; anything else is re-indexed from `docs/`. Building the index never writes a document.
 
 `cover.crop` is the visible part of the original image, normalized to 0…1 of its width and height
 (absent: a 3:1 band centered on `focalY`). `cover.ratio` is the user's choice (`original`, `16:9`,
@@ -97,6 +127,7 @@ defined by palettes in `Styles.swift`; `asset:<file>` refers to an uploaded back
 
 ## Export bundle
 
-`<Title>/` with one `.md` per document (nested pages linked relatively), `assets/`, and
+`<Title>/` with one `.md` per document (nested pages and `docLink` chips to exported documents linked
+relatively; dates written as `yyyy-MM-dd`), `assets/`, and
 `draft-export.json` (`{"format":"draft-export","formatVersion":1,"docs":[…],"metas":[…]}`) — the
 lossless native copy. Markdown is CommonMark plus `==highlight==` and `- [ ]` tasks.

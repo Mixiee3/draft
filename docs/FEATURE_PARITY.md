@@ -12,7 +12,7 @@ app or screenshots) · `verified` (covered by `swift test` or `scripts/smoke.sh`
 
 Platform: all statuses are for the native macOS app. Windows: see §22.
 
-Last updated: v0.2.1 shipped (native macOS) — 2026‑11‑07.
+Last updated: v0.3 shipped (native macOS) — 2026‑11‑07.
 
 ## 1. Editor primitives and keyboard
 
@@ -36,7 +36,7 @@ Last updated: v0.2.1 shipped (native macOS) — 2026‑11‑07.
 | E16 | Group into page ⌘G / ungroup ⇧⌘G | Tree transform | B§B, S42 | verified | E15 | 0.2.1 | First block becomes the page title and the card keeps its id; other blocks keep ids, marks, checkboxes; nested pages move along; undo/ungroup set the page aside (not into Recently Deleted) and redo restores it; ungroup restores the original blocks exactly (`GroupTests`, smoke `pageTitle`/`ungroupedGone`) |
 | E23 | Block context menu | Turn into, duplicate, copy link, group, move, delete | S42, B§5.4 | verified | E15 | 0.2.1 | Right-click/⌃-click on the ⋮⋮ handle or Block submenu in the text menu; items run shared commands (`testDuplicateAndCopyLinkAndMenu`) |
 | E24 | Block links `draft://open?doc=…&block=…` | Copy link to block | B§5.6 | verified | E2 | 0.2.1 | Copy Link to Block; opening the link (from Draft or another app) opens the doc at that block (smoke `linkOpened`) |
-| E25 | Move blocks to another document | Move to new Document(s) / Move to Daily Note | S42 | verified | E15 | 0.2.1 | Block menu → Move to (15 most recent docs); blocks keep ids and marks; nested pages are re-parented; undo takes them back from the target; survives relaunch (`testMoveBlocksToAnotherDocument…`, smoke `movedTo`) — “to new document” and “to daily note” are v0.3 |
+| E25 | Move blocks to another document | Move to new Document(s) / Move to Daily Note | S42 | verified | E15 | 0.3 | Block menu → Move to: New Document (⌥⌘N), Today’s Daily Note, or one of 15 recent docs; blocks keep ids and marks; new document / daily note leave a page card; one undo takes them back (`testMoveToNewDocumentAndTodayLeaveCards`, smoke `movedTo`) |
 | E17 | Move up/down/top/bottom | Shortcut actions | S42 | verified | E15 | 0.2 | ⌥⌘↑/↓, ⌃⌥⌘↑/↓; ids, marks, task state preserved; one undo each (`testMoveUpDown…`) |
 | E18 | Paste | Rich, plain, Markdown | B§5.3 | verified | — | 0.2 | Multi-line text → one block per line, Markdown recognized; RTF/HTML → headings, lists, bold/italic/underline/strike/code/links; Draft→Draft keeps blocks+marks with new ids; surrounding block keeps id; one undo (`PasteTests`, `MarkdownImportTests`) |
 | E19 | Multi-block text selection | Beta in reference | S12 | working | — | 0.1 | Drag across paragraphs selects text in all (native TextKit) |
@@ -112,7 +112,7 @@ Last updated: v0.2.1 shipped (native macOS) — 2026‑11‑07.
 | N4 | Collapse rail | — | S01 | working | — | 0.1 | ⌃⌘S; persisted |
 | N5 | Tab strip | Home + tabs, close, + | S01, S21 | verified | — | 0.1 | Open doc tab survives restart (smoke `tabOpen`) |
 | N6 | Tab state restore | Scroll/caret per tab | B§5.5 | verified | — | 0.2.1 | Each document tab stores scroll offset and selection (captured on tab switch and quit); restored once when the tab reappears after relaunch (smoke `tabState`) |
-| N7 | Back / forward | Back button in doc | S01 | partial | L1 | 0.3 | Back returns within the tab; forward and ⌘[/⌘] history across links → v0.3 step 3 |
+| N7 | Back / forward | Back button in doc | S01 | verified | L1 | 0.3 | ⌘[ / ⌘] (Go menu) per tab with scroll per entry; follow → back → forward (links test) |
 | N8 | Spaces | Switcher, per-space tree | B§4, S13 | partial | — | 0.5 | One Space, renamable |
 | N9 | Folders | Create/rename/nest/delete | S21, S30 | partial | — | 0.2 | Create, rename, remove (docs → Unsorted); nesting missing |
 | N10 | Move doc to folder | Info → Move to | S41 | working | N9 | 0.1 | Info panel and card context menu |
@@ -126,11 +126,11 @@ Last updated: v0.2.1 shipped (native macOS) — 2026‑11‑07.
 | ID | Capability | Reference behavior | Evidence | Status | Deps | Target | Acceptance check |
 |---|---|---|---|---|---|---|---|
 | S1 | Library inline search | Expands in header | S26 | verified | — | 0.2 | All terms, case/diacritic-insensitive; documents longer than the 50,000-character index are searched in full (`testLongDocumentsAreSearchedPastTheIndexLimit`, perf `searchHits`) |
-| S2 | Quick Open ⌘O | By name; create new | B§H | working | — | 0.1 | ↑/↓/Return; "Create …" row |
+| S2 | Quick Open ⌘O | By name; create new | B§H | working | — | 0.3 | Documents by name, then blocks containing every typed word (from the index), then "Create …" (`v03-quick-open.png`) |
 | S3 | Space Search with counts + jump | One result per doc | B§H | verified | — | 0.2 | All terms, case/diacritic-insensitive, title matches first, match-count badge, highlighted snippet; Return/click opens the doc with Find in Page filled and the first match scrolled into view (`SearchTests`, smoke `jumpVisible`) |
 | S4 | Find in Page ⌘F | Rail pane, next/prev | S35, B§H | working | — | 0.1 | Highlights all, current stronger; ⌘G/⇧⌘G |
 | S5 | Replace | — | B§H | verified | S4 | 0.1 | Replace all is one undo (test) |
-| S6 | Phrase / exclusion / regex | macOS options | B§H | missing | S3 | 0.3 | `"quiet place" -draft` returns only matching docs; invalid regex shows an inline error |
+| S6 | Phrase / exclusion / regex | macOS options | B§H | verified | S3 | 0.3 | `"red bag"` exact, `train -vienna` excludes, `.*` toggle for regex; invalid regex → red field + inline error (`testSearchOptions`, `v03-search-regex-error.png`) |
 
 ## 7. Tasks, calendar, daily notes, reminders
 
@@ -138,20 +138,20 @@ Last updated: v0.2.1 shipped (native macOS) — 2026‑11‑07.
 |---|---|---|---|---|---|---|---|
 | K1 | Checklist block | `[] ` | B§G | verified | — | 0.1 | Trigger + click toggle (`testTaskTrigger…`) and smoke test |
 | K2 | Document Tasks pane | Tasks in doc | S18 | working | K1 | 0.1 | Lists, counts, toggles source block |
-| K3 | Global Tasks view | Today/Upcoming/etc. | B§5.7 | missing | index | 0.3 | Inbox/Today/Upcoming/Overdue/Completed; completing a task updates its source block with one undo |
-| K4 | Due dates / reminders | Date on task | B§5.7 | missing | K3 | 0.3 | `@tomorrow` sets a due date; opt-in local notification fires once at the due time |
-| K5 | Daily notes | One page per date | B§5.7, S33 | missing | index | 0.3 | ⌘⇧D opens today; opening twice never creates two notes; previous/next day |
-| K6 | Calendar stream | Day cards, Add Task, Create Daily Note, filters | S33 | missing | K5 | 0.3 | Today highlighted; Add Task on a future day creates a dated task; filters persist |
+| K3 | Global Tasks view | Today/Upcoming/etc. | B§5.7 | verified | index | 0.3 | Inbox/Today/Upcoming/Overdue/Completed with counts; completing updates the source block (editor and file) and one undo reverts it (links test) |
+| K4 | Due dates / reminders | Date on task | B§5.7 | partial | K3 | 0.3 | `@tomorrow` chip sets the due date; reminders opt-in, one pending notification per due task, removed when turned off (bundled-app probe). Real permission prompt not exercised; due-date picker and times → v0.4 |
+| K5 | Daily notes | One page per date | B§5.7, S33 | verified | index | 0.3 | ⇧⌘D opens today; opening twice never creates two notes (also after relaunch); previous/next/Today in the top bar; template; start-of-day setting (links test, `LinkingTests`) |
+| K6 | Calendar stream | Day cards, Add Task, Create Daily Note, filters | S33 | partial | K5 | 0.3 | Today highlighted; Add Task on a future day creates a task due that day (links test); All/Tasks/Notes + Completed filters; optional calendar events (permission-gated). Filters don’t persist yet → v0.4 |
 | K7 | Completed-task appearance | Setting | S12 | working | — | 0.1 | Strikethrough / Dimmed / Unchanged |
 
 ## 8. Tags, links, backlinks
 
 | ID | Capability | Reference behavior | Evidence | Status | Deps | Target | Acceptance check |
 |---|---|---|---|---|---|---|---|
-| G1 | Tags `#tag` | Inline, autocomplete | B§5.6, S17 | missing | index | 0.3 | `#ideas` autocompletes; tag view lists every tagged block |
-| G2 | Tag ignore rules (hex, numeric, custom) | Settings | S17 | missing | G1 | 0.3 | `#ff0000` and `#1` ignored by default; custom rules apply on reindex |
-| G3 | Backlinks | Pages linking here | B§5.6 | missing | L1 | 0.3 | A new link appears in the target's backlinks within 1 s; click opens the source at the block |
-| L1 | Doc/block links (`[[`, `@`) | Link picker | B§G | partial | E2 | 0.3 | `draft://` block links work (E24); `[[`/`@` picker with live titles that survive rename/move → v0.3 step 2 |
+| G1 | Tags `#tag` | Inline, autocomplete | B§5.6, S17 | verified | index | 0.3 | `#` picker lists existing tags with counts; colored inline; sidebar Tags list; tag view lists every tagged block; per-tag color (`LinkTests`, `v03-tag-view.png`) |
+| G2 | Tag ignore rules (hex, numeric, custom) | Settings | S17 | verified | G1 | 0.3 | `#fff`, `#a1b2c3`, `#1` ignored by default; custom words in Settings → Tags; changing rules re-indexes (`testTagRules`, `testRefreshIsIncremental…`) |
+| G3 | Backlinks | Pages linking here | B§5.6 | verified | L1 | 0.3 | Rail segment, grouped by source document, one row per block; appears 0.52 s after the link is typed; click opens the source at the block (links test) |
+| L1 | Doc/block links (`[[`, `@`) | Link picker | B§G | verified | E2 | 0.3 | `[[` documents, nested pages, blocks, "New document"; `@` dates and documents; chips keep live titles through rename, move, group, relaunch and index rebuild; missing targets shown struck through and recover; relative links in Markdown export (links test, `LinkTests`) |
 
 ## 9. Tables and collections
 
@@ -240,9 +240,10 @@ Last updated: v0.2.1 shipped (native macOS) — 2026‑11‑07.
 | Z3 | Reduce animations | Toggle | S10 | working | — | 0.1 | Disables panel/rail animations |
 | Z4 | Sound / app icon choice | Toggles | S10 | missing | — | later | — |
 | Z5 | Language & spelling | Rows | S11 | missing | I1 | 0.6 | Planned state |
-| Z6 | Advanced | Task appearance, date links, sidebar, week start | S12 | partial | — | 0.6 | Task appearance + default style work |
+| Z6 | Advanced | Task appearance, date links, sidebar, week start | S12 | partial | — | 0.6 | Week start, start of day, Rebuild Index (Settings → Advanced); task appearance; date-link display setting → v0.4; sidebar customization → v0.6 |
 | Z7 | Space settings | Avatar, name | S13 | partial | — | 0.5 | Name editable; generated avatar |
 | Z8 | Stats | Storage, docs, blocks, pages, words, reading time | S15 | working | — | 0.1 | Settings → Stats |
+| Z10 | Daily notes & tasks, Tags settings | Daily notes, reminders, calendar events; tag rules and colors | S12, S17, S25 | working | K5, G2 | 0.3 | `v03-settings-daily.png`, `v03-settings-tags.png` |
 | Z9 | Data location | (Draft) | prompt | working | — | 0.1 | Path, Show in Finder, Export all |
 
 ## 18. Accessibility
