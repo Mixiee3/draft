@@ -320,7 +320,7 @@ enum Automation {
     static func mouse(_ type: NSEvent.EventType, _ p: NSPoint, in w: NSWindow) {
         guard let e = NSEvent.mouseEvent(with: type, location: p, modifierFlags: [], timestamp: ProcessInfo.processInfo.systemUptime,
                                          windowNumber: w.windowNumber, context: nil, eventNumber: 0, clickCount: 1, pressure: type == .leftMouseUp ? 0 : 1) else { return }
-        w.sendEvent(e)
+        NSApp.postEvent(e, atStart: false) // through the app queue, like real input (event monitors, tracking loops)
     }
 
     static func dragWrite() async {
@@ -527,6 +527,9 @@ enum Automation {
         m.activateTab(m.library.tabs[0].id)
         m.librarySearch = "Paragraph 7771:"
         t0 = CFAbsoluteTimeGetCurrent(); let hits = m.searchHits; r["searchMs"] = ms(t0); r["searchHits"] = hits.count
+        // Index rebuilt from disk (index/ deleted), the whole vault including the 10k-block document.
+        m.flushAll(); try? FileManager.default.removeItem(at: m.vault.dir.appendingPathComponent("index"))
+        t0 = CFAbsoluteTimeGetCurrent(); m.index = VaultIndex(); m.refreshIndex(); r["indexRebuildMs"] = ms(t0)
         m.librarySearch = ""
         if let d = try? JSONSerialization.data(withJSONObject: r, options: [.prettyPrinted, .sortedKeys]) { try? d.write(to: out.appendingPathComponent("perf.json")) }
     }

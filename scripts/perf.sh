@@ -11,7 +11,7 @@ python3 -I - "$W/perf.json" <<'PY'
 import json, sys
 r = json.load(open(sys.argv[1]))
 # keystroke p95 and toggle are bounded by TextKit 1 contiguous relayout below the edit (see ROADMAP v0.8)
-budget = {"keystrokeMs.p50": 16, "keystrokeMs.p95": 40, "returnMs.p95": 33, "moveMs.p95": 100, "toggleMs": 200, "saveMs": 500, "openMs": 2500, "searchMs": 500}
+budget = {"keystrokeMs.p50": 16, "keystrokeMs.p95": 40, "returnMs.p95": 33, "moveMs.p95": 100, "toggleMs": 200, "saveMs": 500, "openMs": 2500, "searchMs": 500, "indexRebuildMs": 3000}
 fail = []
 for k, limit in budget.items():
     v = r

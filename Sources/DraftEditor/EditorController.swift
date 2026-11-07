@@ -38,6 +38,8 @@ public final class EditorController: NSObject, NSTextStorageDelegate, NSTextView
         layout.addTextContainer(container)
         textView = DraftTextView(frame: NSRect(x: 0, y: 0, width: 640, height: 400), textContainer: container)
         super.init()
+        _ = Self.eventBoundary
+        Self.liveControllers.add(self)
         textView.controller = self
         layout.delegate = self
         layout.selectedBlockIds = { [weak self] in self?.blockSelectionIds ?? [] }
@@ -334,6 +336,14 @@ public final class EditorController: NSObject, NSTextStorageDelegate, NSTextView
     /// Each document keeps its own undo history; edits made by the app in one document
     /// (link titles, moved blocks) never touch another document's history.
     public let undo = UndoManager()
+    private static let liveControllers = NSHashTable<EditorController>.weakObjects()
+    /// AppKit ends the window undo manager's per-event group at every event; ours need the same,
+    /// or typing, a paste and a drag would undo as one step. Level 1 = only that event group is
+    /// open, never a group an action is still building.
+    private static let eventBoundary: Any? = NSEvent.addLocalMonitorForEvents(matching: .any) { e in
+        for c in liveControllers.allObjects where c.undo.groupingLevel == 1 { c.undo.endUndoGrouping() }
+        return e
+    }
     public func undoManager(for view: NSTextView) -> UndoManager? { undo }
 
     public func textDidChange(_ notification: Notification) {
