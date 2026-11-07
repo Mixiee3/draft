@@ -67,8 +67,8 @@ sharing, publishing (need a proven local format — v1.x/v2.0); signing/notariza
 
 **Theme.** Single-document writing that feels finished and safe.
 
-- ⬜ Block gutter: hover handle, drag reorder with insertion line, block selection (Esc), block menu
-  (turn into, duplicate, copy link, delete); Move up/down (⌥⌘↑/↓).
+- ✅ Block gutter handle, drag reorder with insertion line, block selection (Esc, ⇧↑/↓), delete,
+  Move up/down/top/bottom (⌥⌘↑/↓). ⬜ Block context menu (turn into, duplicate, copy link).
 - ⬜ Group selected blocks into a page (⌘G) / ungroup; move blocks to another doc.
 - ⬜ Toggle list (`+ `), callout block, page break (`===`), strong/dotted/three-dot separators, `x ` task trigger.
 - ⬜ Rich paste from other apps (HTML/RTF → blocks), Markdown paste, multi-line plain paste that splits blocks.

@@ -31,10 +31,10 @@ Last updated: v0.1 (native macOS) — 2026‑11‑07.
 | E11 | Slash menu | Filter, arrows, Return, Esc | B§5.3 | verified | E-cmds | 0.1 | `/check` + Return → checklist (`testSlashMenuInsertsChecklist`) |
 | E12 | `+` insert menu | Image, File, Code, Formula, Mermaid, Whiteboard, Table, Collection, Page Break | S34 | partial | — | 0.1→0.5 | Image/Page/Card/Separator/Code/Checklist/Quote work; others listed disabled with version |
 | E13 | Indent / outdent | Tab / Shift-Tab | B§8 | verified | — | 0.1 | `testTaskTriggerTabNestingAndToggle` |
-| E14 | Block handle + drag reorder | Gutter handle, insertion line | B§5.3, S01 | missing | E15 | 0.2 | Drag a block; one undo restores |
-| E15 | Block selection | Distinct from text selection | B§5.3 | missing | — | 0.2 | Esc selects block; ⌘C copies whole blocks |
+| E14 | Block handle + drag reorder | Gutter handle, insertion line | B§5.3, S01 | verified | E15 | 0.2 | ⋮⋮ handle on hover; drag shows insertion line, autoscrolls; drop moves selected blocks (`testDragDropBoundaryMapping`); one undo |
+| E15 | Block selection | Distinct from text selection | B§5.3 | verified | — | 0.2 | Esc selects block, ⇧↑/↓ extend, ↑/↓ move, Delete removes, typing/Return exits; ⌘C copies blocks (`testEscSelectsBlock…`) |
 | E16 | Group into page ⌘G / ungroup | Tree transform | B§B, S42 | missing | E15 | 0.2 | 3 blocks → one page; child ids preserved |
-| E17 | Move up/down/top/bottom | Shortcut actions | S42 | missing | E15 | 0.2 | ⌥⌘↑ moves block, undoable |
+| E17 | Move up/down/top/bottom | Shortcut actions | S42 | verified | E15 | 0.2 | ⌥⌘↑/↓, ⌃⌥⌘↑/↓; ids, marks, task state preserved; one undo each (`testMoveUpDown…`) |
 | E18 | Paste | Rich, plain, Markdown | B§5.3 | partial | — | 0.2 | Draft→Draft keeps blocks+marks (custom pasteboard type); images paste as blocks; plain text works; rich HTML/RTF and multi-line block splitting missing |
 | E19 | Multi-block text selection | Beta in reference | S12 | working | — | 0.1 | Drag across paragraphs selects text in all (native TextKit) |
 | E20 | IME / non-US layouts | Fixes documented | B§7, B§8 | partial | — | 0.6 | NSTextView composition works; layout matrix untested |

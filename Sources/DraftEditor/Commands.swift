@@ -81,6 +81,12 @@ public enum EditorCommands {
         EditorCommand("mark.link", "Link…", "link", group: "Format", shortcut: "⌘K", key: "k", modifiers: [.command], isEnabled: { $0.textView.selectedRange().length > 0 },
                       run: { c in c.toolbar.update(); c.toolbar.openLink() }),
         EditorCommand("mark.reapply", "Reapply Last Color", "paintbrush.pointed", group: "Format", shortcut: "⌘⇧B", key: "b", modifiers: [.command, .shift], isEnabled: { $0.lastColor != nil }, run: { $0.reapplyLastColor() }),
+        EditorCommand("block.moveUp", "Move Block Up", "arrow.up", group: "Blocks", shortcut: "⌥⌘↑", key: "up", modifiers: [.command, .option], run: { $0.moveSelectedBlocks(by: -1) }),
+        EditorCommand("block.moveDown", "Move Block Down", "arrow.down", group: "Blocks", shortcut: "⌥⌘↓", key: "down", modifiers: [.command, .option], run: { $0.moveSelectedBlocks(by: 1) }),
+        EditorCommand("block.moveTop", "Move Block to Top", "arrow.up.to.line", group: "Blocks", shortcut: "⌃⌥⌘↑", key: "up", modifiers: [.command, .option, .control], run: { $0.moveSelectedBlocksToEdge(top: true) }),
+        EditorCommand("block.moveBottom", "Move Block to Bottom", "arrow.down.to.line", group: "Blocks", shortcut: "⌃⌥⌘↓", key: "down", modifiers: [.command, .option, .control], run: { $0.moveSelectedBlocksToEdge(top: false) }),
+        EditorCommand("block.select", "Select Block", "rectangle.dashed", group: "Blocks", shortcut: "Esc", run: { c in c.isBlockMode ? c.exitBlockMode() : c.enterBlockMode() }),
+        EditorCommand("block.delete", "Delete Block", "trash", group: "Blocks", isEnabled: { $0.isBlockMode }, run: { $0.deleteSelectedBlocks() }),
         EditorCommand("block.indent", "Indent", "increase.indent", group: "Format", shortcut: "⇥", isEnabled: { $0.canIndent }, run: { $0.indent() }),
         EditorCommand("block.outdent", "Outdent", "decrease.indent", group: "Format", shortcut: "⇧⇥", isEnabled: { $0.canOutdent }, run: { $0.outdent() }),
     ]

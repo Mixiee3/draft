@@ -49,6 +49,7 @@ public final class DocumentEditorView: NSView, NSTextViewDelegate {
     var title_: TitleTextView { titleView as! TitleTextView }
     let ruleView = NSView()
     public var onTitleChange: ((String) -> Void)?
+    let handle = BlockHandleView(frame: .zero)
     public var onLayout: (() -> Void)?
     /// Height reserved at the top for the host's floating controls.
     public var topInset: CGFloat = 0 { didSet { needsLayout = true } }
@@ -118,6 +119,10 @@ public final class DocumentEditorView: NSView, NSTextViewDelegate {
         tv.maxSize = NSSize(width: CGFloat.greatestFiniteMagnitude, height: CGFloat.greatestFiniteMagnitude)
         paper.addSubview(tv)
         controller.overlayHost = paper
+        handle.owner = self
+        paper.addSubview(handle)
+        paper.addSubview(handle.indicator)
+        paper.addTrackingArea(NSTrackingArea(rect: .zero, options: [.mouseMoved, .mouseEnteredAndExited, .activeInKeyWindow, .inVisibleRect], owner: self))
 
         tv.postsFrameChangedNotifications = true
         NotificationCenter.default.addObserver(self, selector: #selector(relayoutNote), name: NSView.frameDidChangeNotification, object: tv)
@@ -170,6 +175,9 @@ public final class DocumentEditorView: NSView, NSTextViewDelegate {
     }
 
     @objc func relayoutNote() { relayout() }
+
+    public override func mouseMoved(with event: NSEvent) { updateHandle(at: paper.convert(event.locationInWindow, from: nil)) }
+    public override func mouseExited(with event: NSEvent) { if !handle.isDragging { handle.isHidden = true } }
     @objc func scrolled() {
         if controller.toolbar.isVisible { controller.toolbar.position() }
         if controller.slash.isOpen { controller.slash.position() }

@@ -11,6 +11,8 @@ public final class DraftLayoutManager: NSLayoutManager {
     private var numbersValid = false
     /// Block for the trailing empty paragraph (has no characters).
     var trailingBlock: BlockInfo = .paragraph()
+    /// Block ids shown as selected units.
+    var selectedBlockIds: () -> [String] = { [] }
 
     func invalidateNumbers() { numbersValid = false }
 
@@ -111,6 +113,11 @@ public final class DraftLayoutManager: NSLayoutManager {
                 let color = b.blockColor.map { NSColor(hex: $0, alpha: theme.isDarkPage ? 0.28 : 0.22) } ?? theme.text.withAlphaComponent(0.06)
                 color.setFill()
                 NSBezierPath(roundedRect: bg, xRadius: 10, yRadius: 10).fill()
+            }
+            if selectedBlockIds().contains(b.id) {
+                let bg = NSRect(x: origin.x - 8, y: r.minY - 3, width: width + 16, height: r.height + 6)
+                theme.accentColor.withAlphaComponent(theme.isDarkPage ? 0.3 : 0.14).setFill()
+                NSBezierPath(roundedRect: bg, xRadius: 8, yRadius: 8).fill()
             }
             if b.decoration == "focus" {
                 let x = origin.x + (b.kind.isList ? EditorTheme.listIndent * CGFloat(b.indent) : 0) + 2
