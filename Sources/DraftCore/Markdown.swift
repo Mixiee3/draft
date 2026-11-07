@@ -76,6 +76,13 @@ public enum Markdown {
                 return [indent + String(repeating: "#", count: lvl) + " " + inline(n.content, &lossy)]
             case "blockquote":
                 return blocks(n.content ?? [], "").map { indent + ($0.isEmpty ? ">" : "> " + $0) }
+            case "callout":
+                lossy.insert("Callouts are exported as quotes with their icon.")
+                var lines = blocks(n.content ?? [], "")
+                if !lines.isEmpty { lines[0] = (n.attrs?["icon"]?.string ?? "💡") + " " + lines[0] }
+                return lines.map { indent + ($0.isEmpty ? ">" : "> " + $0) }
+            case "pageBreak":
+                return [indent + "<div style=\"page-break-after: always\"></div>"]
             case "codeBlock":
                 let lang = n.attrs?["language"]?.string ?? ""
                 let text = (n.content ?? []).map { $0.text ?? "" }.joined()
@@ -97,7 +104,8 @@ public enum Markdown {
                     return [indent + "[\(escape(title))](\(enc))"]
                 }
                 return [indent + "**\(escape(title))**"]
-            case "bulletList", "orderedList", "taskList":
+            case "bulletList", "orderedList", "taskList", "toggleList":
+                if n.type == "toggleList" { lossy.insert("Toggle lists are exported as bulleted lists (always expanded).") }
                 var lines: [String] = []
                 var num = n.attrs?["start"]?.int ?? 1
                 for item in n.content ?? [] {

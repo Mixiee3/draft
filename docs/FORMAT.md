@@ -1,5 +1,9 @@
 # Draft vault format (schema 1)
 
+Schema 1 grows only by **additive** node types and optional attributes. A Draft that does not know
+a node type keeps it verbatim and shows it as a preserved placeholder, so older builds never lose
+newer content; the schema number changes only for changes that need a migration.
+
 This is the contract every Draft implementation (macOS today, Windows later) reads and writes.
 The reference implementation is `Sources/DraftCore`. All JSON is UTF‑8; timestamps are Unix epoch
 **milliseconds**; ids are `[A-Za-z0-9_-]{1,64}`.
@@ -62,7 +66,11 @@ document files at any time. `parentDocId` marks a nested page.
 | `codeBlock` | `id`, `language?` | one text node, `\n` line breaks |
 | `bulletList` / `orderedList` (`start`) / `taskList` | `id` | `listItem` / `taskItem` |
 | `listItem` / `taskItem` (`checked`) | `id`, `blockColor?`, `decoration?` | paragraph, then paragraphs or nested lists |
-| `horizontalRule` | `id` | — (look comes from the document's separator style) |
+| `horizontalRule` | `id`, `variant?` (`strong` / `dotted` / `dots`; absent = the document's separator style) | — |
+| `pageBreak` | `id` | — (starts a new page when printing) |
+| `callout` | `id`, `icon` (emoji, default 💡) | paragraphs; block color comes from the paragraphs' `blockColor` |
+| `toggleList` | `id` | `toggleItem` |
+| `toggleItem` | `id`, `open` (bool; collapsed children are hidden, never dropped) | paragraph, then paragraphs or nested lists |
 | `image` | `id`, `assetId` or `src`, `alt` | — |
 | `pageCard` | `id`, `docId`, `title` (cached), `presentation` (`card`/`page`) | — |
 | `text` | — | `text`, `marks?` |

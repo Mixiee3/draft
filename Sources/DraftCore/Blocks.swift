@@ -3,9 +3,9 @@ import Foundation
 /// Node types that are blocks and therefore carry a stable `id` attribute.
 public let blockTypes: Set<String> = [
     "paragraph", "heading", "blockquote", "codeBlock", "horizontalRule", "bulletList", "orderedList",
-    "listItem", "taskList", "taskItem", "image", "pageCard",
+    "listItem", "taskList", "taskItem", "toggleList", "toggleItem", "callout", "pageBreak", "image", "file", "pageCard",
 ]
-let containerListTypes: Set<String> = ["bulletList", "orderedList", "taskList"]
+let containerListTypes: Set<String> = ["bulletList", "orderedList", "taskList", "toggleList", "callout"]
 
 /// Give every block a unique id. Existing ids are kept; only missing ids and *duplicates* get
 /// new ones, and the first occurrence of an id always wins.
@@ -57,7 +57,7 @@ public struct DocStats: Equatable { public var words: Int; public var chars: Int
 public func docStats(_ root: Node) -> DocStats {
     let text = docPlainText(root)
     var blocks = 0
-    walk(root) { n in if blockTypes.contains(n.type) && !containerListTypes.contains(n.type) && n.type != "listItem" && n.type != "taskItem" { blocks += 1 } }
+    walk(root) { n in if blockTypes.contains(n.type) && !containerListTypes.contains(n.type) && n.type != "listItem" && n.type != "taskItem" && n.type != "toggleItem" { blocks += 1 } }
     let words = text.split(whereSeparator: { $0.isWhitespace }).count
     return DocStats(words: words, chars: text.replacingOccurrences(of: "\n", with: "").count, blocks: blocks)
 }

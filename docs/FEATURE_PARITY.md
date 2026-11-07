@@ -24,12 +24,12 @@ Last updated: v0.2.1 in progress (native macOS) — 2026‑11‑07.
 | E4 | Backspace rules | Merge into previous; list item un-lists/outdents first | B§5.3 | verified | E1 | 0.1 | `testBackspaceAtStartOfBullet…`, `testBackspaceMergeKeepsPreviousBlock` |
 | E5 | Soft break | Shift+Return | B§5.3 | working | — | 0.1 | Shift+Return inserts a line break exported as `hardBreak` |
 | E6 | Undo / redo | Formatting, moves, deletes | B§8 | verified | — | 0.1 | `testToggleBold…Undo`, `testFindReplaceAllIsOneUndo` |
-| E7 | Markdown block triggers | `#`…`####`, `-`/`*`, `1.`, `[]`/`x `, `[x]`, `>`/`|`, `+ ` toggle, ``` | B§G | partial | — | 0.1→0.2 | All but `x ` and `+ ` work; `# ` undo restores literal (`testMarkdownHeadingTrigger…`) |
-| E8 | Separator triggers | `---` regular; `=--`, `.--`, `..-`, `===` page break | B§G | partial | — | 0.1→0.2 | `---` → separator (`testDividerTrigger…`); variants missing |
+| E7 | Markdown block triggers | `#`…`####`, `-`/`*`, `1.`, `[]`/`x `, `[x]`, `>`/`|`, `+ ` toggle, ``` | B§G | verified | — | 0.2.1 | All listed triggers convert; undo restores the literal text (`testMarkdownHeadingTrigger…`, `testXTriggerMakesTask`, toggle test) |
+| E8 | Separator triggers | `---` regular; `=--` strong, `.--` dotted, `..-` three-dot, `===` page break | B§G | verified | — | 0.2.1 | Each trigger creates the matching separator or page break (`testSeparatorVariantsAndPageBreak`); page breaks start a new page when printing / saving PDF |
 | E9 | Inline Markdown | `*i*` `**b**` `~~s~~` `==h==` `` `c` `` | B§G | verified | — | 0.1 | `testInlineMarkdownBold`; typing after the delimiter is plain |
 | E10 | Equations `$$x$$` | Inline math | B§G, S06 | missing | renderer | later | `$$a^2$$` renders as formula and exports as `$$…$$` |
 | E11 | Slash menu | Filter, arrows, Return, Esc | B§5.3 | verified | E-cmds | 0.1 | `/check` + Return → checklist (`testSlashMenuInsertsChecklist`) |
-| E12 | `+` insert menu | Image, File, Code, Formula, Mermaid, Whiteboard, Table, Collection, Page Break | S34 | partial | — | 0.1→0.5 | Image/Page/Card/Separator/Code/Checklist/Quote work; others listed disabled with version |
+| E12 | `+` insert menu | Image, File, Code, Formula, Mermaid, Whiteboard, Table, Collection, Page Break | S34 | partial | — | 0.2.1→0.5 | Image, File, Page, Card, Separator, Page Break, Code, Checklist, Quote work; Table/Collection (v0.5), Formula/Whiteboard (later) listed disabled with version |
 | E13 | Indent / outdent | Tab / Shift-Tab | B§8 | verified | — | 0.1 | `testTaskTriggerTabNestingAndToggle` |
 | E14 | Block handle + drag reorder | Gutter handle, insertion line | B§5.3, S01 | verified | E15 | 0.2 | ⋮⋮ handle on hover; drag shows insertion line, autoscrolls; drop moves selected blocks (`testDragDropBoundaryMapping`); one undo |
 | E15 | Block selection | Distinct from text selection | B§5.3 | verified | — | 0.2 | Esc selects block, ⇧↑/↓ extend, ↑/↓ move, Delete removes, typing/Return exits; ⌘C copies blocks (`testEscSelectsBlock…`) |
@@ -64,8 +64,8 @@ Last updated: v0.2.1 in progress (native macOS) — 2026‑11‑07.
 | F14 | `Aa` marks/lists/indent/align | Disabled when not applicable | S05 | working | — | 0.1 | Buttons use command `isEnabled` |
 | F15 | Decoration Focus / Block | Bar or filled block | S05 | working | — | 0.1 | Focus draws accent bar; Block fills background |
 | F16 | Block color | Swatch grid | S05 | working | F15 | 0.1 | Stored as `blockColor` attr, drawn by layout manager |
-| F17 | Toggle list | `+ ` | B§G, S05 | missing | — | 0.2 | Collapses children; listed disabled "planned v0.2" |
-| F18 | Callout | Block | B§7 | partial | — | 0.2 | Achievable with Block decoration + color; dedicated node missing |
+| F17 | Toggle list | `+ ` | B§G, S05 | verified | — | 0.2.1 | ▶/▼ marker (click or ⌘↩) collapses children, which are hidden from layout but kept in the file (`open` attr); caret skips hidden text; undoable; survives reload (`testToggleCollapse…`) |
+| F18 | Callout | Block | B§7 | verified | — | 0.2.1 | Slash / `Aa` → Callout; icon + tinted box spanning its paragraphs; Return continues, empty Return exits; block color applies; exports as a quote with the icon (`testCalloutContinuesExits…`) |
 | F19 | Code block | ``` | B§7 | working | — | 0.1 | Monospace, background; Return adds lines, Return on empty last line exits; no syntax highlighting |
 | F20 | Per-block font | Format panel bottom | S05 | missing | — | 0.4 | — |
 

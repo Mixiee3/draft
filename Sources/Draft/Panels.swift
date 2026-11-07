@@ -43,6 +43,7 @@ struct FormatPanel: View {
                     }
                     HStack(spacing: 6) {
                         chip("block.quote", "Quote", symbol: "text.quote")
+                        chip("block.callout", "Callout", symbol: "lightbulb")
                         chip("block.code", "Code", symbol: "curlybraces")
                     }
                 }

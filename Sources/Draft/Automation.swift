@@ -21,6 +21,7 @@ enum Automation {
             case "screenshots": await screenshots()
             case "drag-write": await dragWrite()
             case "drag-read": dragRead()
+            case "showcase": await showcase()
             default: break
             }
             NSApp.terminate(nil)
@@ -351,5 +352,37 @@ enum Automation {
         let res = ["idsPreserved": ids(r["before"]) == ids(r["afterDrag"]) && !ids(r["before"]).isEmpty ? "yes" : "no", "relaunchMatchesDrag": reloaded == r["afterDrag"] ? "yes" : "no", "undoRestored": r["afterUndo"] == r["before"] ? "yes" : "no",
                    "redoMatchesDrag": r["afterRedo"] == r["afterDrag"] ? "yes" : "no", "order": r["order"] ?? "", "afterDrag": r["afterDrag"] ?? ""]
         if let o = try? JSONSerialization.data(withJSONObject: res, options: [.prettyPrinted, .sortedKeys]) { try? o.write(to: out.appendingPathComponent("drag-result.json")) }
+    }
+
+    // MARK: Visual check of block types (normal + narrow)
+
+    static func showcaseDoc() -> Node {
+        func p(_ t: String) -> Node { Node("paragraph", content: [.text(t)]) }
+        return ensureBlockIds(Node("doc", content: [
+            p("Block types in Draft v0.2.1."),
+            Node("callout", attrs: ["icon": "💡"], content: [p("Callouts hold a tip or a warning."), p("They can span several paragraphs.")]),
+            Node("toggleList", content: [
+                Node("toggleItem", attrs: ["open": true], content: [p("An open toggle"), Node("bulletList", content: [Node("listItem", content: [p("Its child is visible")])])]),
+                Node("toggleItem", attrs: ["open": false], content: [p("A collapsed toggle"), Node("bulletList", content: [Node("listItem", content: [p("Hidden child")])])]),
+            ]),
+            Node("taskList", content: [Node("taskItem", attrs: ["checked": false], content: [p("Typed with “x ”")])]),
+            p("Regular separator"), Node("horizontalRule"),
+            p("Strong"), Node("horizontalRule", attrs: ["variant": "strong"]),
+            p("Dotted"), Node("horizontalRule", attrs: ["variant": "dotted"]),
+            p("Three dots"), Node("horizontalRule", attrs: ["variant": "dots"]),
+            p("Next comes a page break"), Node("pageBreak"),
+            p("End."),
+        ]))
+    }
+
+    static func showcase() async {
+        guard let w = NSApp.windows.first(where: { $0.isVisible }), let id = m.createDoc(title: "Block showcase") else { return }
+        m.updateAppearance(id) { $0.styleId = ProcessInfo.processInfo.environment["DRAFT_STYLE"] ?? "paper" }
+        w.setFrame(NSRect(x: 60, y: 60, width: 1440, height: 900), display: true)
+        await wait(0.6)
+        m.editors[id]?.controller.load(showcaseDoc())
+        await capture("showcase-normal")
+        w.setFrame(NSRect(x: 60, y: 60, width: 720, height: 900), display: true)
+        await capture("showcase-narrow")
     }
 }

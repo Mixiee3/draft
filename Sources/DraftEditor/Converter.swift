@@ -37,34 +37,38 @@ public enum Converter {
         (n.attrs?["blockColor"]?.string, n.attrs?["decoration"]?.string.flatMap { $0 == "none" ? nil : $0 }, n.attrs?["textAlign"]?.string.flatMap { $0 == "left" ? nil : $0 })
     }
 
-    static func flattenNode(_ n: Node, indent: Int, into out: inout [FlatBlock], quoteId: String? = nil) {
+    static func flattenNode(_ n: Node, indent: Int, into out: inout [FlatBlock], quoteId: String? = nil, container: (kind: BlockKind, icon: String?)? = nil) {
         let (color, deco, align) = styleAttrs(n)
         let id = n.id ?? newId("b_")
         switch n.type {
         case "paragraph":
             let caption = n.attrs?["variant"]?.string == "caption" ? "caption" : nil
-            out.append(FlatBlock(info: BlockInfo(id: id, kind: quoteId != nil ? .quote : .paragraph, variant: caption, blockColor: color, decoration: deco, align: align, containerId: quoteId), inline: n.content ?? []))
+            out.append(FlatBlock(info: BlockInfo(id: id, kind: quoteId != nil ? (container?.kind ?? .quote) : .paragraph, variant: caption, blockColor: color, decoration: deco, align: align, icon: container?.icon, containerId: quoteId), inline: n.content ?? []))
         case "heading":
             out.append(FlatBlock(info: BlockInfo(id: id, kind: .heading, level: max(1, min(4, n.attrs?["level"]?.int ?? 1)), blockColor: color, decoration: deco, align: align), inline: n.content ?? []))
         case "blockquote":
             for c in n.content ?? [] { flattenNode(c, indent: indent, into: &out, quoteId: id) }
+        case "callout":
+            for c in n.content ?? [] { flattenNode(c, indent: indent, into: &out, quoteId: id, container: (.callout, n.attrs?["icon"]?.string ?? "💡")) }
         case "codeBlock":
             let text = (n.content ?? []).map { $0.text ?? "" }.joined()
             out.append(FlatBlock(info: BlockInfo(id: id, kind: .code, language: n.attrs?["language"]?.string), inline: text.isEmpty ? [] : [.text(text)]))
-        case "horizontalRule":
+        case "horizontalRule", "pageBreak":
             out.append(FlatBlock(info: BlockInfo(id: id, kind: .divider, raw: n), inline: []))
+        case "file":
+            out.append(FlatBlock(info: BlockInfo(id: id, kind: .file, raw: n), inline: []))
         case "image":
             out.append(FlatBlock(info: BlockInfo(id: id, kind: .image, raw: n), inline: []))
         case "pageCard":
             out.append(FlatBlock(info: BlockInfo(id: id, kind: .page, raw: n), inline: []))
-        case "bulletList", "orderedList", "taskList":
-            let kind: BlockKind = n.type == "bulletList" ? .bullet : n.type == "orderedList" ? .ordered : .task
+        case "bulletList", "orderedList", "taskList", "toggleList":
+            let kind: BlockKind = n.type == "bulletList" ? .bullet : n.type == "orderedList" ? .ordered : n.type == "toggleList" ? .toggle : .task
             for (i, item) in (n.content ?? []).enumerated() {
                 let (ic, idc, ia) = styleAttrs(item)
                 let children = item.content ?? []
                 let first = children.first
                 let firstIsPara = first?.type == "paragraph"
-                out.append(FlatBlock(info: BlockInfo(id: item.id ?? newId("b_"), kind: kind, indent: indent, checked: item.attrs?["checked"]?.bool ?? false,
+                out.append(FlatBlock(info: BlockInfo(id: item.id ?? newId("b_"), kind: kind, indent: indent, checked: kind == .toggle ? (item.attrs?["open"]?.bool ?? true) : (item.attrs?["checked"]?.bool ?? false),
                                                      start: i == 0 && kind == .ordered ? (n.attrs?["start"]?.int ?? 1) : nil, blockColor: ic, decoration: idc, align: ia ?? (firstIsPara ? styleAttrs(first!).2 : nil),
                                                      innerId: firstIsPara ? first?.id : nil, containerId: id),
                                      inline: firstIsPara ? (first?.content ?? []) : []))
@@ -205,7 +209,7 @@ public enum Converter {
             if let l = i.language { attrs["language"] = .string(l) }
             let text = b.inline.map { $0.text ?? "" }.joined()
             return Node("codeBlock", attrs: attrs, content: text.isEmpty ? nil : [.text(text)])
-        case .divider, .image, .page, .opaque:
+        case .divider, .image, .page, .file, .opaque:
             var n = i.raw ?? Node(i.kind == .divider ? "horizontalRule" : "paragraph")
             // Unknown nodes are preserved verbatim; known attachment blocks keep a stable id.
             if i.kind != .opaque || n.id != nil { n[attr: "id"] = .string(i.id) }
@@ -222,7 +226,7 @@ public enum Converter {
         return Node("doc", content: nodes.isEmpty ? [Node("paragraph", attrs: ["id": .string(newId("b_"))])] : nodes)
     }
 
-    static func listType(_ k: BlockKind) -> String { k == .bullet ? "bulletList" : k == .ordered ? "orderedList" : "taskList" }
+    static func listType(_ k: BlockKind) -> String { k == .bullet ? "bulletList" : k == .ordered ? "orderedList" : k == .toggle ? "toggleList" : "taskList" }
 
     static func parseSeq(_ bs: [FlatBlock], _ i: inout Int, indent: Int, top: Bool) -> [Node] {
         var nodes: [Node] = []
@@ -252,9 +256,10 @@ public enum Converter {
                     }
                     var itemAttrs: [String: JSONValue] = ["id": .string(item.info.id)]
                     if kind == .task { itemAttrs["checked"] = .bool(item.info.checked) }
+                    if kind == .toggle { itemAttrs["open"] = .bool(item.info.checked) }
                     if let c = item.info.blockColor { itemAttrs["blockColor"] = .string(c) }
                     if let d = item.info.decoration { itemAttrs["decoration"] = .string(d) }
-                    items.append(Node(kind == .task ? "taskItem" : "listItem", attrs: itemAttrs, content: children))
+                    items.append(Node(kind == .task ? "taskItem" : kind == .toggle ? "toggleItem" : "listItem", attrs: itemAttrs, content: children))
                 }
                 if items.isEmpty { // stray continuation: treat as plain paragraph
                     nodes.append(Node("paragraph", attrs: ["id": .string(b.info.id)], content: b.inline.isEmpty ? nil : b.inline)); i += 1
@@ -264,16 +269,19 @@ public enum Converter {
                 if !top, i < bs.count, !(bs[i].info.kind.isList && bs[i].info.indent >= indent) { return nodes }
             } else {
                 if !top { return nodes }
-                if b.info.kind == .quote {
+                if b.info.kind == .quote || b.info.kind == .callout {
+                    let kind = b.info.kind
                     let qid = b.info.containerId ?? newId("b_")
                     var paras: [Node] = []
-                    while i < bs.count, bs[i].info.kind == .quote, (bs[i].info.containerId ?? qid) == qid {
+                    while i < bs.count, bs[i].info.kind == kind, (bs[i].info.containerId ?? qid) == qid {
                         let q = bs[i]; i += 1
                         var p = blockNode(FlatBlock(info: q.info.with(kind: .paragraph), inline: q.inline))
                         p.attrs?["id"] = .string(q.info.id)
                         paras.append(p)
                     }
-                    nodes.append(Node("blockquote", attrs: ["id": .string(qid)], content: paras))
+                    var attrs: [String: JSONValue] = ["id": .string(qid)]
+                    if kind == .callout { attrs["icon"] = .string(b.info.icon ?? "💡") }
+                    nodes.append(Node(kind == .quote ? "blockquote" : "callout", attrs: attrs, content: paras))
                 } else {
                     nodes.append(blockNode(b)); i += 1
                 }

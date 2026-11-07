@@ -47,11 +47,30 @@ class BlockCell: NSTextAttachmentCell {
 
 /// Separator: semantic `horizontalRule`; its look comes from the document style.
 final class DividerCell: BlockCell {
-    override func height(forWidth w: CGFloat) -> CGFloat { theme.separator == "tape" ? 30 : 22 }
+    var variant: String? { node.attrs?["variant"]?.string }
+    override func height(forWidth w: CGFloat) -> CGFloat { node.type == "pageBreak" ? 30 : (variant == nil && theme.separator == "tape" ? 30 : 22) }
     override func draw(withFrame f: NSRect, in controlView: NSView?) {
         let midY = f.midY
         let c = theme.text
-        switch theme.separator {
+        if node.type == "pageBreak" {
+            let p = NSBezierPath(); p.move(to: NSPoint(x: f.minX, y: midY)); p.line(to: NSPoint(x: f.maxX, y: midY))
+            p.setLineDash([6, 5], count: 2, phase: 0); p.lineWidth = 1
+            c.withAlphaComponent(0.3).setStroke(); p.stroke()
+            let label = "Page break" as NSString
+            let a: [NSAttributedString.Key: Any] = [.font: NSFont.systemFont(ofSize: 11, weight: .medium), .foregroundColor: theme.secondary]
+            let sz = label.size(withAttributes: a)
+            let pill = NSRect(x: f.midX - sz.width / 2 - 8, y: midY - sz.height / 2 - 2, width: sz.width + 16, height: sz.height + 4)
+            NSColor(hex: theme.pageColor).setFill(); NSBezierPath(roundedRect: pill, xRadius: pill.height / 2, yRadius: pill.height / 2).fill()
+            label.draw(at: NSPoint(x: pill.minX + 8, y: pill.minY + 2), withAttributes: a)
+            return
+        }
+        switch variant ?? theme.separator {
+        case "strong":
+            c.withAlphaComponent(0.55).setFill()
+            NSBezierPath(roundedRect: NSRect(x: f.minX, y: midY - 1.25, width: f.width, height: 2.5), xRadius: 1.25, yRadius: 1.25).fill()
+        case "dots":
+            c.withAlphaComponent(0.45).setFill()
+            for i in -1...1 { NSBezierPath(ovalIn: NSRect(x: f.midX + CGFloat(i) * 16 - 2.5, y: midY - 2.5, width: 5, height: 5)).fill() }
         case "dotted":
             c.withAlphaComponent(0.35).setFill()
             var x = f.minX + 4
