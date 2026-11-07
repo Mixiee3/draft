@@ -96,8 +96,12 @@ child ids; 56 tests + smoke test (restart, trash, backups, search jump). **Not y
 - ✅ Cover crop/reposition (Original, 16:9, 2:1, 3:1, 4:3, Free; keyboard nudging) stored as data.
 - ✅ Tab state across restarts (scroll + caret). ⬜ Back/forward stacks (moved to v0.3 with links).
 - ✅ Image block: resize (edge drag or S/M/L/Full), caption, alt text; file attachment block (picker, drag and drop, Finder paste; opens in its default app).
-- 🟡 Performance: block operations now replace only the changed paragraphs (undo selects just
-  those); ⬜ measured 10k-block keystroke budget.
+- ✅ Performance pass with `scripts/perf.sh` (10,000 blocks, real app). Fixed: per-keystroke whole-window
+  SwiftUI re-renders and full-document conversions (131 → 7 ms p50), full ID scans on Return
+  (114 → 13 ms), block moves via direct paragraph cut/insert (382 → 14 ms), forced full layout on
+  height changes, and search of text beyond the 50,000-character index.
+  🟡 Known limits (TextKit 1 contiguous layout): keystrokes that change wrapping (~20 ms p95) and
+  toggles near the top of a 10k-block doc (~120 ms) relayout everything below → v0.8.
 
 **Gate.** 10,000-block document keystroke latency < 16 ms p95 on M1; every new block type
 round-trips through Markdown export and import.
@@ -140,6 +144,9 @@ collection scrolls at 60 fps; a Kanban drag is one undoable record update.
 - ⬜ Remaining settings: shortcuts sheet, week start, sidebar customization; Focus mode; Present mode.
 
 ## v0.8 — "Trust" (macOS)
+
+- ⬜ Layout scaling for very long documents: bounded relayout (e.g. TextKit 2 or chunked layout) so
+  wrapping changes and toggles stay under 16 ms at 10,000 blocks; a separate search index.
 
 - ⬜ Version history UI with diffs; vault integrity checker; orphan-asset GC (with confirmation).
 - ⬜ Optional encryption at rest; performance budgets enforced in CI.

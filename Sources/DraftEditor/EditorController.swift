@@ -216,7 +216,9 @@ public final class EditorController: NSObject, NSTextStorageDelegate, NSTextView
         let last = ns.paragraphRange(for: NSRange(location: max(start, endLoc - (endLoc > start ? 1 : 0)), length: 0))
         let range = NSUnionRange(first, last)
         if editedMask.contains(.editedCharacters) {
-            normalizeBlocks(in: range, fullDedupe: range != first)
+            // Splits and merges can only duplicate a neighbor's id (checked in normalizeBlocks);
+            // a full scan is needed only when several paragraphs arrive at once.
+            normalizeBlocks(in: range, fullDedupe: blockCount(in: range) > 2)
             assignCells(in: range)
         }
         Styler.restyle(textStorage, range: range, theme: theme)
@@ -250,6 +252,12 @@ public final class EditorController: NSObject, NSTextStorageDelegate, NSTextView
             loc = NSMaxRange(pr)
         }
         if fullDedupe { dedupeAll() }
+    }
+
+    func blockCount(in r: NSRange) -> Int {
+        var n = 0, loc = r.location
+        while loc < NSMaxRange(r), n <= 3 { loc = NSMaxRange(ns.paragraphRange(for: NSRange(location: loc, length: 0))); n += 1 }
+        return n
     }
 
     func dedupeAll() {

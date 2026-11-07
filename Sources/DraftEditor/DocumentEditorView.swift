@@ -244,10 +244,8 @@ public final class DocumentEditorView: NSView, NSTextViewDelegate {
         if abs(tv.frame.width - innerW) > 0.5 || tv.frame.minX != paperX + pad || tv.frame.minY != y {
             tv.frame = NSRect(x: paperX + pad, y: y, width: innerW, height: tv.frame.height)
         }
-        controller.layout.ensureLayout(for: controller.container)
-        let used = controller.layout.usedRect(for: controller.container).height + controller.layout.extraLineFragmentRect.height
-        let bodyH = max(used + 8, 160)
-        if abs(tv.frame.height - bodyH) > 0.5 { tv.setFrameSize(NSSize(width: innerW, height: bodyH)) }
+        // The text view sizes itself; forcing a full layout here cost ~90 ms per height change in a 10k-block document.
+        if tv.frame.height < 160 { tv.setFrameSize(NSSize(width: innerW, height: 160)) }
         let paperBottom = tv.frame.maxY + 90
         paper.paperRect = NSRect(x: paperX, y: top, width: paperW, height: paperBottom - top)
         paperBackground.frame = paper.paperRect

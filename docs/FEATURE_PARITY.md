@@ -41,7 +41,7 @@ Last updated: v0.2.1 in progress (native macOS) — 2026‑11‑07.
 | E18 | Paste | Rich, plain, Markdown | B§5.3 | verified | — | 0.2 | Multi-line text → one block per line, Markdown recognized; RTF/HTML → headings, lists, bold/italic/underline/strike/code/links; Draft→Draft keeps blocks+marks with new ids; surrounding block keeps id; one undo (`PasteTests`, `MarkdownImportTests`) |
 | E19 | Multi-block text selection | Beta in reference | S12 | working | — | 0.1 | Drag across paragraphs selects text in all (native TextKit) |
 | E20 | IME / non-US layouts | Fixes documented | B§7, B§8 | partial | — | 0.6 | NSTextView composition works; layout matrix untested |
-| E21 | 10k-block performance | Quality gate | B§11 | missing | — | 0.2 | Synthetic 10k-block doc; keystroke < 16 ms p95 |
+| E21 | 10k-block performance | Quality gate | B§11 | partial | — | 0.2.1→0.8 | `scripts/perf.sh` (10,000 blocks, real app): keystroke 7 ms p50 / ~20 ms p95, Return ~13 ms, block move ~14 ms, save ~0.3 s, open ~2.1 s, search past the index limit ~0.15 s. Limits: a keystroke that changes line wrapping and a toggle near the top (~120 ms) relayout everything below (TextKit 1 contiguous layout; non-contiguous layout mis-measures collapsed toggles) |
 | E22 | Spellcheck | Native | S11 | working | — | 0.1 | Continuous spellcheck on in editor |
 
 ## 2. Inline and block formatting
@@ -125,7 +125,7 @@ Last updated: v0.2.1 in progress (native macOS) — 2026‑11‑07.
 
 | ID | Capability | Reference behavior | Evidence | Status | Deps | Target | Acceptance check |
 |---|---|---|---|---|---|---|---|
-| S1 | Library inline search | Expands in header | S26 | working | — | 0.1 | `library-search.png`; all terms must match title or text; title matches first |
+| S1 | Library inline search | Expands in header | S26 | verified | — | 0.2 | All terms, case/diacritic-insensitive; documents longer than the 50,000-character index are searched in full (`testLongDocumentsAreSearchedPastTheIndexLimit`, perf `searchHits`) |
 | S2 | Quick Open ⌘O | By name; create new | B§H | working | — | 0.1 | ↑/↓/Return; "Create …" row |
 | S3 | Space Search with counts + jump | One result per doc | B§H | verified | — | 0.2 | All terms, case/diacritic-insensitive, title matches first, match-count badge, highlighted snippet; Return/click opens the doc with Find in Page filled and the first match scrolled into view (`SearchTests`, smoke `jumpVisible`) |
 | S4 | Find in Page ⌘F | Rail pane, next/prev | S35, B§H | working | — | 0.1 | Highlights all, current stronger; ⌘G/⇧⌘G |

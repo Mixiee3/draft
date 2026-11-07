@@ -109,7 +109,7 @@ final class AppModel: ObservableObject {
 
     func markDocDirty(_ id: String) {
         dirtyDocs.insert(id)
-        saveState = "saving"
+        if saveState != "saving" { saveState = "saving" } // publish only real changes: every publish re-renders the window
         docTimer?.invalidate()
         docTimer = Timer.scheduledTimer(withTimeInterval: 0.5, repeats: false) { _ in Task { @MainActor in self.saveDirtyDocs() } }
     }
@@ -123,7 +123,7 @@ final class AppModel: ObservableObject {
 
     private func saveDocNow(_ id: String) {
         guard var d = docs[id] else { return }
-        if let ed = editors[id] { d.content = ed.controller.document() }
+        if let ed = editors[id] { d.content = ed.controller.document(); d.updatedAt = nowMs() }
         docs[id] = d
         do {
             try vault.saveDoc(d)
@@ -313,9 +313,7 @@ final class AppModel: ObservableObject {
     var activeController: EditorController? { activeEditor?.controller }
 
     func editorChanged(_ id: String) {
-        docs[id]?.updatedAt = nowMs()
         markDocDirty(id)
-        editorTick &+= 1
     }
 
     /// The cover as shown: the stored crop (or the default band) cut from the original image.
@@ -794,7 +792,11 @@ final class AppModel: ObservableObject {
         return list
     }
 
-    var searchHits: [SearchHit] { Search.hits(librarySearch, in: library.liveDocs) }
+    var searchHits: [SearchHit] {
+        Search.hits(librarySearch, in: library.liveDocs) { [self] m in
+            (editors[m.id]?.controller.document() ?? ensureDoc(m.id)?.content).map(docPlainText)
+        }
+    }
 
     /// Open a search result and land on the first match: Find in Page is pre-filled, so every
     /// match is highlighted and the first one is scrolled into view.
@@ -872,5 +874,6 @@ final class EditorHostAdapter: EditorHost {
         MainActor.assumeIsolated { model.removeBlocks(ids, from: target, returningPagesTo: docId) }
     }
     func editorDidChange() { MainActor.assumeIsolated { model.editorChanged(docId) } }
-    func editorStateDidChange() { MainActor.assumeIsolated { model.editorTick &+= 1 } }
+    /// Only panels that mirror the caret's formatting need live updates.
+    func editorStateDidChange() { MainActor.assumeIsolated { if model.panel == .format || model.panel == .info { model.editorTick &+= 1 } } }
 }

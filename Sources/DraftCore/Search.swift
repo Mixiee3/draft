@@ -19,11 +19,17 @@ public enum Search {
         query.split(whereSeparator: { $0.isWhitespace }).map(String.init)
     }
 
-    public static func hits(_ query: String, in docs: [DocMeta]) -> [SearchHit] {
+    /// Length of the index text kept per document in library.json.
+    public static let indexLimit = 50_000
+
+    /// `fullText` supplies the complete text of documents whose index text was cut at `indexLimit`.
+    public static func hits(_ query: String, in docs: [DocMeta], fullText: ((DocMeta) -> String?)? = nil) -> [SearchHit] {
         let ts = terms(query)
         guard !ts.isEmpty else { return [] }
         var out: [SearchHit] = []
-        for m in docs where ts.allSatisfy({ m.searchText.range(of: $0, options: options) != nil || m.title.range(of: $0, options: options) != nil }) {
+        for var m in docs {
+            if m.searchText.count >= indexLimit, let full = fullText?(m) { m.searchText = m.title + "\n" + full }
+            guard ts.allSatisfy({ m.searchText.range(of: $0, options: options) != nil || m.title.range(of: $0, options: options) != nil }) else { continue }
             let body = bodyText(m)
             let count = ts.reduce(0) { $0 + occurrences(of: $1, in: body) }
             let titleMatch = ts.contains { m.title.range(of: $0, options: options) != nil }

@@ -11,7 +11,9 @@ extension EditorController {
     func blockIndex(at loc: Int) -> Int {
         let end = min(loc, storage.length)
         var n = 0
-        ns.enumerateSubstrings(in: NSRange(location: 0, length: end), options: [.byComposedCharacterSequences]) { s, _, _, _ in if s == "\n" { n += 1 } }
+        var buf = [unichar](repeating: 0, count: end)
+        ns.getCharacters(&buf, range: NSRange(location: 0, length: end))
+        for ch in buf where ch == 10 { n += 1 }
         return n
     }
 
@@ -51,14 +53,46 @@ extension EditorController {
         host?.editorDidChange()
     }
 
+    /// Cut-and-insert of whole paragraphs with their attributes (ids, marks, attachments travel
+    /// as they are). Handles moves that don't touch the last paragraph; returns false otherwise.
+    func fastMove(_ range: ClosedRange<Int>, to boundary: Int) -> Bool {
+        let starts = Self.paragraphStarts(storage)
+        let len = storage.length
+        guard len > 0, ns.character(at: len - 1) != 10 else { return false } // trailing empty block: use the general path
+        let last = starts.count - 1
+        guard range.upperBound < last, boundary <= last, boundary >= 0 else { return false }
+        if boundary >= range.lowerBound && boundary <= range.upperBound + 1 { return true }
+        let seg = NSRange(location: starts[range.lowerBound], length: starts[range.upperBound + 1] - starts[range.lowerBound])
+        let moving = storage.attributedSubstring(from: seg)
+        let ids = (range.lowerBound...range.upperBound).compactMap { i -> String? in (storage.attribute(.draftBlock, at: starts[i], effectiveRange: nil) as? BlockInfo)?.id }
+        let wasBlockMode = isBlockMode
+        clearBlockModeState()
+        undoGroup {
+            if boundary > range.upperBound {
+                let dest = starts[boundary] - seg.length
+                replace(seg, with: NSAttributedString())
+                replace(NSRange(location: dest, length: 0), with: moving)
+            } else {
+                replace(seg, with: NSAttributedString())
+                replace(NSRange(location: starts[boundary], length: 0), with: moving)
+            }
+        }
+        if wasBlockMode { selectBlocks(ids: ids) }
+        else if let first = ids.first, let pr = paragraph(withId: first) { textView.setSelectedRange(NSRange(location: pr.location, length: 0)) }
+        textView.scrollRangeToVisible(textView.selectedRange())
+        host?.editorDidChange()
+        return true
+    }
+
     /// Start offset of every paragraph, plus one for the empty trailing paragraph when the text
     /// ends with a newline (matching `Converter.flat`).
     static func paragraphStarts(_ s: NSAttributedString) -> [Int] {
         let ns = s.string as NSString
-        var out: [Int] = []
-        var loc = 0
-        while loc < ns.length { out.append(loc); loc = NSMaxRange(ns.paragraphRange(for: NSRange(location: loc, length: 0))) }
-        if ns.length == 0 || ns.character(at: ns.length - 1) == 10 { out.append(ns.length) }
+        var buf = [unichar](repeating: 0, count: ns.length)
+        ns.getCharacters(&buf, range: NSRange(location: 0, length: ns.length))
+        var out: [Int] = [0]
+        for (i, ch) in buf.enumerated() where ch == 10 || ch == 0x2029 { out.append(i + 1) }
+        if out.last == ns.length && ns.length > 0 && buf[ns.length - 1] != 10 { out.removeLast() }
         return out
     }
 
@@ -70,6 +104,7 @@ extension EditorController {
 
     /// Move blocks a...b so they start at boundary `to` (0…count, measured before removal).
     public func moveBlocks(_ range: ClosedRange<Int>, to boundary: Int) {
+        if fastMove(range, to: boundary) { return }
         var flat = flatBlocks()
         guard range.upperBound < flat.count, boundary >= 0, boundary <= flat.count else { return }
         if boundary >= range.lowerBound && boundary <= range.upperBound + 1 { return } // no-op
@@ -82,14 +117,14 @@ extension EditorController {
 
     public func moveSelectedBlocks(by delta: Int) {
         let r = selectedBlockRange
-        let count = flatBlocks().count
+        let count = Self.paragraphStarts(storage).count
         if delta < 0 { guard r.lowerBound > 0 else { NSSound.beep(); return }; moveBlocks(r, to: r.lowerBound - 1) }
         else { guard r.upperBound < count - 1 else { NSSound.beep(); return }; moveBlocks(r, to: r.upperBound + 2) }
     }
 
     public func moveSelectedBlocksToEdge(top: Bool) {
         let r = selectedBlockRange
-        moveBlocks(r, to: top ? 0 : flatBlocks().count)
+        moveBlocks(r, to: top ? 0 : Self.paragraphStarts(storage).count)
     }
 
     // MARK: Block selection mode

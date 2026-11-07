@@ -32,6 +32,10 @@ scripts/smoke.sh              # end-to-end: edit, group, trash, quit, relaunch; 
 ```
 
 ```bash
+scripts/perf.sh               # opens a 10,000-block document and checks editing budgets
+```
+
+```bash
 scripts/drag-test.sh          # drags a block with mouse events through the window; checks undo, redo, relaunch
 ```
 

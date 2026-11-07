@@ -22,6 +22,7 @@ enum Automation {
             case "drag-write": await dragWrite()
             case "drag-read": dragRead()
             case "showcase": await showcase()
+            case "perf": await perf()
             default: break
             }
             NSApp.terminate(nil)
@@ -444,5 +445,86 @@ enum Automation {
         m.coverEditorDoc = id
         await capture("cover-crop-sheet")
         m.coverEditorDoc = nil
+    }
+
+    // MARK: Performance (10,000 blocks)
+
+    static func bigDoc(_ n: Int) -> Node {
+        var blocks: [Node] = []
+        func p(_ t: String, _ marks: [Mark]? = nil) -> Node { Node("paragraph", content: [.text(t, marks: marks)]) }
+        var i = 0
+        while blocks.count < n {
+            switch i % 10 {
+            case 0: blocks.append(Node("heading", attrs: ["level": 2], content: [.text("Section \(i / 10)")]))
+            case 1, 2, 3: blocks.append(p("Paragraph \(i): a sentence of ordinary length to make lines wrap like real notes do in a long document."))
+            case 4: blocks.append(Node("bulletList", content: (0..<3).map { k in Node("listItem", content: [p("Bullet \(i).\(k) with some text")]) }))
+            case 5: blocks.append(Node("taskList", content: [Node("taskItem", attrs: ["checked": .bool(i % 20 == 5)], content: [p("Task \(i)")])]))
+            case 6: blocks.append(p("Bold and highlighted ", [Mark("bold")]))
+            case 7: blocks.append(Node("orderedList", attrs: ["start": 1], content: (0..<2).map { k in Node("listItem", content: [p("Step \(k)")]) }))
+            case 8: blocks.append(Node("toggleList", content: [Node("toggleItem", attrs: ["open": .bool(i % 40 != 8)], content: [p("Toggle \(i)"), Node("bulletList", content: [Node("listItem", content: [p("inside")])])])]))
+            default: blocks.append(Node("blockquote", content: [p("A quote \(i)")]))
+            }
+            i += 1
+        }
+        return ensureBlockIds(Node("doc", content: blocks))
+    }
+
+    static func ms(_ t0: CFAbsoluteTime) -> Double { ((CFAbsoluteTimeGetCurrent() - t0) * 1000 * 10).rounded() / 10 }
+    static func settle() async { await Task.yield(); await MainActor.run { RunLoop.main.run(mode: .default, before: Date()) }; await Task.yield() }
+    static func stats(_ xs: [Double]) -> [String: Double] {
+        let s = xs.sorted()
+        return ["p50": s[s.count / 2], "p95": s[min(s.count - 1, Int(Double(s.count) * 0.95))], "max": s.last ?? 0]
+    }
+
+    static func perf() async {
+        guard let w = NSApp.windows.first(where: { $0.isVisible }) else { return }
+        w.setFrame(NSRect(x: 60, y: 60, width: 1440, height: 900), display: true)
+        var r: [String: Any] = [:]
+        let content = bigDoc(10_000)
+        let id = newId("d_")
+        var doc = DocFile.empty(id: id, title: "Ten thousand blocks")
+        doc.content = content
+        try? m.vault.saveDoc(doc)
+        var meta = DocMeta(id: id); meta.applyDerived(from: doc)
+        m.library.docs[id] = meta
+        r["blocks"] = docStats(content).blocks
+        var t0 = CFAbsoluteTimeGetCurrent()
+        m.openView(.doc(id))
+        await settle()
+        guard let ed = m.editors[id] else { return }
+        ed.layoutSubtreeIfNeeded()
+        r["openMs"] = ms(t0)
+        let c = ed.controller, tv = c.textView
+        w.makeFirstResponder(tv)
+        let mid = c.paragraphRange(at: (tv.string as NSString).length / 2)
+        tv.setSelectedRange(NSRange(location: NSMaxRange(mid) - 1, length: 0))
+        tv.scrollRangeToVisible(tv.selectedRange())
+        await settle()
+        var keys: [Double] = []
+        for ch in "quick typing in the middle of a long document" {
+            t0 = CFAbsoluteTimeGetCurrent()
+            tv.insertText(String(ch), replacementRange: tv.selectedRange())
+            await settle()
+            keys.append(ms(t0))
+        }
+        r["keystrokeMs"] = stats(keys)
+        var enters: [Double] = []
+        for _ in 0..<10 {
+            t0 = CFAbsoluteTimeGetCurrent(); tv.insertNewline(nil); await settle(); enters.append(ms(t0))
+            tv.insertText("x", replacementRange: tv.selectedRange()); await settle()
+        }
+        r["returnMs"] = stats(enters)
+        var moves: [Double] = []
+        for _ in 0..<5 { t0 = CFAbsoluteTimeGetCurrent(); c.moveSelectedBlocks(by: 1); await settle(); moves.append(ms(t0)) }
+        r["moveMs"] = stats(moves)
+        if let tp = (0..<(tv.string as NSString).length).lazy.map({ c.paragraphRange(at: $0) }).first(where: { c.block(at: $0).kind == .toggle }) {
+            t0 = CFAbsoluteTimeGetCurrent(); c.toggleOpen(at: tp); await settle(); r["toggleMs"] = ms(t0)
+        }
+        t0 = CFAbsoluteTimeGetCurrent(); m.flushAll(); r["saveMs"] = ms(t0)
+        m.activateTab(m.library.tabs[0].id)
+        m.librarySearch = "Paragraph 7771:"
+        t0 = CFAbsoluteTimeGetCurrent(); let hits = m.searchHits; r["searchMs"] = ms(t0); r["searchHits"] = hits.count
+        m.librarySearch = ""
+        if let d = try? JSONSerialization.data(withJSONObject: r, options: [.prettyPrinted, .sortedKeys]) { try? d.write(to: out.appendingPathComponent("perf.json")) }
     }
 }
