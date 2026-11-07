@@ -140,17 +140,18 @@ final class LinkTests: XCTestCase {
         XCTAssertEqual(c.document().content?.first.map(nodeText), "See Plan ")
     }
 
-    func testOffscreenDocumentWaitsUntilShown() {
+    func testOffscreenRefreshAddsNoUndoStepAndLeavesOtherDocumentsAlone() {
+        let other = DocumentEditorView(frame: view.frame)
+        XCTAssertFalse(other.controller.textView.undoManager === tv.undoManager, "each document has its own history")
         c.insertDocLink(docId: "d_plan", title: "Plan")
         pump()
-        let w = window
-        view.removeFromSuperview()
+        view.removeFromSuperview() // off screen
+        other.controller.undo.registerUndo(withTarget: self) { _ in }
         host.titles["d_plan"] = "Plan C"
         c.refreshLinks()
-        XCTAssertEqual(c.document().content?.first.map(nodeText), "See Plan ", "no text changes while its undo steps live in a window it isn't in")
-        w?.contentView = view
-        c.refreshLinks()
         XCTAssertEqual(c.document().content?.first.map(nodeText), "See Plan C ")
+        XCTAssertFalse(c.undo.canUndo, "no Update Link Titles step to undo later")
+        XCTAssertTrue(other.controller.undo.canUndo, "another document's history is untouched")
     }
 
     func testBackspaceRemovesWholeChipAndClickOpensIt() {

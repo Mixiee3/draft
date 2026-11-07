@@ -105,8 +105,7 @@ extension EditorController {
         return false
     }
 
-    /// Bring link titles, block-reference locations and date labels up to date. In a shown
-    /// document, title changes are their own undo step and no history is cleared.
+    /// Bring link titles, block-reference locations and date labels up to date.
     @discardableResult
     public func refreshLinks(afterLoad: Bool = false) -> Bool {
         guard let h = linkHost, storage.length > 0 else { return false }
@@ -137,27 +136,24 @@ extension EditorController {
         }
         storage.endEditing()
         isProgrammaticEdit = false
-        // Title text changes go through the undo stack so earlier undo steps keep valid ranges.
         let textEdits = sorted.filter { $0.3 != nil && ns.substring(with: $0.0) != $0.3 }
         if !textEdits.isEmpty {
-            // Off screen, this document's undo steps still sit in the window's history, so its text
-            // waits until it is shown (DocumentScreen refreshes on appear).
-            if !afterLoad && !isLoading && textView.window == nil { return any }
             textChanged = true
-            // Just loaded: no history yet, so refresh silently without dirtying the file.
-            let direct = afterLoad || isLoading
+            // In the document being looked at, new titles are a visible, undoable step. Anywhere else
+            // they are applied quietly; that document's own history is reset because its steps
+            // refer to text positions the new titles shift (other documents keep theirs).
+            let quiet = afterLoad || isLoading || textView.window == nil
             let apply = {
                 for (r, _, _, text, _) in textEdits {
                     let a = self.storage.attributes(at: r.location, effectiveRange: nil)
-                    if direct {
-                        self.storage.replaceCharacters(in: r, with: NSAttributedString(string: text!, attributes: a))
-                    } else {
-                        self.replace(r, with: NSAttributedString(string: text!, attributes: a))
-                    }
+                    if quiet { self.storage.replaceCharacters(in: r, with: NSAttributedString(string: text!, attributes: a)) }
+                    else { self.replace(r, with: NSAttributedString(string: text!, attributes: a)) }
                 }
             }
-            if direct { isProgrammaticEdit = true; storage.beginEditing(); apply(); storage.endEditing(); isProgrammaticEdit = false }
-            else { undoGroup(apply); textView.undoManager?.setActionName("Update Link Titles") }
+            if quiet {
+                isProgrammaticEdit = true; storage.beginEditing(); apply(); storage.endEditing(); isProgrammaticEdit = false
+                if !afterLoad && !isLoading { undo.removeAllActions() }
+            } else { undoGroup(apply); undo.setActionName("Update Link Titles") }
         }
         return textChanged || any
     }
