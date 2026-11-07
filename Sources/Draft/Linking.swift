@@ -8,7 +8,7 @@ import DraftEditor
 /// Links, tags, daily notes, tasks across documents and reminders.
 extension AppModel {
     var settings: DraftCore.Settings { library.settings }
-    var liveIds: Set<String> { Set(library.docs.values.lazy.filter { $0.deletedAt == nil }.map(\.id)) }
+    var liveIds: Set<String> { Set(library.liveDocs.map(\.id)) }
     var todayKey: String { Day.today(now: clock(), startHour: settings.dayStartHour) }
 
     func docTitle(_ id: String) -> String {

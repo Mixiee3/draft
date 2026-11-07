@@ -197,7 +197,7 @@ struct DocCardMenu: ViewModifier {
                 Button("Duplicate") { model.duplicate(meta.id) }
                 Menu("Move to") {
                     Button("Unsorted") { model.move(meta.id, to: nil) }
-                    ForEach(model.library.folders) { f in Button(f.name) { model.move(meta.id, to: f.id) } }
+                    ForEach(model.library.spaceFolders) { f in Button(f.name) { model.move(meta.id, to: f.id) } }
                 }
                 Button("Export as Markdown…") { model.exportDoc(meta.id) }
                 Divider()

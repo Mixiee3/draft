@@ -1,11 +1,15 @@
 import Foundation
 
-public let librarySchemaVersion = 1
+public let librarySchemaVersion = 2
 public let docSchemaVersion = 1
 
 public struct Space: Codable, Hashable, Sendable {
     public var id: String
     public var name: String
+    /// Tabs of this Space while another Space is active.
+    public var tabs: [Tab]?
+    public var activeTabId: String?
+    public init(id: String, name: String) { self.id = id; self.name = name }
 }
 
 public struct Folder: Codable, Hashable, Identifiable, Sendable {
@@ -15,8 +19,9 @@ public struct Folder: Codable, Hashable, Identifiable, Sendable {
     public var color: String?
     public var order: Double
     public var createdAt: Double
-    public init(id: String = newId("f_"), name: String, parentId: String? = nil, color: String? = nil, order: Double = 0, createdAt: Double = nowMs()) {
-        self.id = id; self.name = name; self.parentId = parentId; self.color = color; self.order = order; self.createdAt = createdAt
+    public var spaceId: String?
+    public init(id: String = newId("f_"), name: String, parentId: String? = nil, color: String? = nil, order: Double = 0, createdAt: Double = nowMs(), spaceId: String? = nil) {
+        self.id = id; self.name = name; self.parentId = parentId; self.color = color; self.order = order; self.createdAt = createdAt; self.spaceId = spaceId
     }
 }
 
@@ -42,6 +47,10 @@ public struct DocMeta: Codable, Hashable, Identifiable, Sendable {
     public var deletedAt: Double?
     /// Set on daily notes: the day (`yyyy-MM-dd`) the note belongs to.
     public var dailyDate: String?
+    /// The Space the document belongs to (schema 2).
+    public var spaceId: String?
+    /// Saved as a template: hidden from the library, offered by New → From Template.
+    public var template: String?
 
     public init(id: String, title: String = "", folderId: String? = nil, parentDocId: String? = nil, createdAt: Double = nowMs(), updatedAt: Double = nowMs(), viewedAt: Double = nowMs(), starred: Bool = false, styleId: String = "paper", excerpt: String = "", searchText: String = "", words: Int = 0, blocks: Int = 0, tint: String = "#d9d4ca") {
         self.id = id; self.title = title; self.folderId = folderId; self.parentDocId = parentDocId
@@ -67,6 +76,8 @@ public struct DocMeta: Codable, Hashable, Identifiable, Sendable {
         tint = try c.decodeIfPresent(String.self, forKey: .tint) ?? "#d9d4ca"
         deletedAt = try c.decodeIfPresent(Double.self, forKey: .deletedAt)
         dailyDate = try c.decodeIfPresent(String.self, forKey: .dailyDate)
+        spaceId = try c.decodeIfPresent(String.self, forKey: .spaceId)
+        template = try c.decodeIfPresent(String.self, forKey: .template)
     }
 }
 
@@ -164,7 +175,9 @@ public struct Settings: Codable, Hashable, Sendable {
 
 public struct Library: Codable, Hashable, Sendable {
     public var schemaVersion: Int
+    /// The active Space (also listed in `spaces`).
     public var space: Space
+    public var spaces: [Space] = []
     public var folders: [Folder]
     public var docs: [String: DocMeta]
     public var settings: Settings
@@ -176,7 +189,7 @@ public struct Library: Codable, Hashable, Sendable {
     public var extra: [String: JSONValue] = [:]
 
     enum CodingKeys: String, CodingKey, CaseIterable {
-        case schemaVersion, space, folders, docs, settings, tabs, activeTabId, expandedFolders, userStyles
+        case schemaVersion, space, spaces, folders, docs, settings, tabs, activeTabId, expandedFolders, userStyles
     }
 
     public init(schemaVersion: Int, space: Space, folders: [Folder], docs: [String: DocMeta], settings: Settings, tabs: [Tab], activeTabId: String?, expandedFolders: [String]) {
@@ -195,6 +208,8 @@ public struct Library: Codable, Hashable, Sendable {
         activeTabId = try c.decodeIfPresent(String.self, forKey: .activeTabId)
         expandedFolders = try c.decodeIfPresent([String].self, forKey: .expandedFolders) ?? []
         userStyles = (try? c.decodeIfPresent([UserStyle].self, forKey: .userStyles)) ?? []
+        spaces = try c.decodeIfPresent([Space].self, forKey: .spaces) ?? [space]
+        if !spaces.contains(where: { $0.id == space.id }) { spaces.insert(space, at: 0) }
         extra = try d.unknownFields(known: Set(CodingKeys.allCases.map(\.rawValue)))
     }
 
@@ -203,6 +218,7 @@ public struct Library: Codable, Hashable, Sendable {
         var c = e.container(keyedBy: CodingKeys.self)
         try c.encode(schemaVersion, forKey: .schemaVersion)
         try c.encode(space, forKey: .space)
+        try c.encode(spaces, forKey: .spaces)
         try c.encode(folders, forKey: .folders)
         try c.encode(docs, forKey: .docs)
         try c.encode(settings, forKey: .settings)
@@ -214,7 +230,10 @@ public struct Library: Codable, Hashable, Sendable {
 
     public static func empty() -> Library {
         let home = Tab(view: .all)
-        return Library(schemaVersion: librarySchemaVersion, space: Space(id: newId("s_"), name: "My Space"), folders: [], docs: [:], settings: Settings(), tabs: [home], activeTabId: home.id, expandedFolders: [])
+        let s = Space(id: newId("s_"), name: "My Space")
+        var lib = Library(schemaVersion: librarySchemaVersion, space: s, folders: [], docs: [:], settings: Settings(), tabs: [home], activeTabId: home.id, expandedFolders: [])
+        lib.spaces = [s]
+        return lib
     }
 }
 

@@ -120,6 +120,8 @@ final class AppModel: ObservableObject {
         libTimer = Timer.scheduledTimer(withTimeInterval: 0.4, repeats: false) { _ in Task { @MainActor in self.saveLibraryNow() } }
     }
 
+    func saveLibraryNowIfNeeded() { saveLibraryNow() }
+
     private func saveLibraryNow() {
         libTimer?.invalidate()
         guard libDirty else { return }
@@ -413,6 +415,7 @@ final class AppModel: ObservableObject {
         let doc = DocFile.empty(id: id, title: title, styleId: library.settings.defaultStyleId)
         docs[id] = doc
         var meta = DocMeta(id: id, folderId: fid, parentDocId: parentDocId)
+        meta.spaceId = library.space.id
         meta.applyDerived(from: doc)
         library.docs[id] = meta
         do { try vault.saveDoc(doc) } catch { reportSaveError(error) }
@@ -564,6 +567,7 @@ final class AppModel: ObservableObject {
         doc.content = content
         docs[id] = doc
         var meta = DocMeta(id: id, folderId: pm.folderId, parentDocId: nested ? parent : nil)
+        meta.spaceId = pm.spaceId ?? library.space.id
         meta.applyDerived(from: doc)
         library.docs[id] = meta
         reparent(cardDocIds(content), to: id)
@@ -731,7 +735,7 @@ final class AppModel: ObservableObject {
 
     @discardableResult
     func createFolder() -> String {
-        let f = Folder(name: "New Folder", order: Double(library.folders.count))
+        let f = Folder(name: "New Folder", order: Double(library.spaceFolders.count), spaceId: library.space.id)
         library.folders.append(f)
         renamingFolder = f.id
         scheduleLibrarySave()
@@ -783,7 +787,11 @@ final class AppModel: ObservableObject {
 
     func renameSpace(_ n: String) {
         let t = n.trimmingCharacters(in: .whitespaces)
-        if !t.isEmpty { library.space.name = t; scheduleLibrarySave() }
+        if !t.isEmpty {
+            library.space.name = t
+            if let i = library.spaces.firstIndex(where: { $0.id == library.space.id }) { library.spaces[i].name = t }
+            scheduleLibrarySave()
+        }
     }
 
     // MARK: Toasts

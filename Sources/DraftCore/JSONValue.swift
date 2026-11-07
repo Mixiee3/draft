@@ -39,6 +39,7 @@ public enum JSONValue: Codable, Hashable, Sendable {
     public var int: Int? { double.map { Int($0) } }
     public var bool: Bool? { if case .bool(let b) = self { return b }; return nil }
     public var object: [String: JSONValue]? { if case .object(let o) = self { return o }; return nil }
+    public var items: [JSONValue]? { if case .array(let a) = self { return a }; return nil }
 }
 
 extension JSONValue: ExpressibleByStringLiteral, ExpressibleByIntegerLiteral, ExpressibleByBooleanLiteral, ExpressibleByFloatLiteral {

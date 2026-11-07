@@ -408,7 +408,7 @@ struct InfoPanel: View {
                             action("play.rectangle", "Present — planned", enabled: false) {}
                             Menu {
                                 Button("Unsorted") { model.move(docId, to: nil) }
-                                ForEach(model.library.folders) { f in Button(f.name) { model.move(docId, to: f.id) } }
+                                ForEach(model.library.spaceFolders) { f in Button(f.name) { model.move(docId, to: f.id) } }
                             } label: { Label("Move to…", systemImage: "arrow.turn.up.right") }
                             .menuStyle(.borderlessButton).padding(.horizontal, 10).frame(height: 30)
                             action(m.starred ? "star.slash" : "star", m.starred ? "Unstar Document" : "Star Document") { model.toggleStar(docId) }

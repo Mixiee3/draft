@@ -67,6 +67,12 @@ public final class Vault: @unchecked Sendable {
         do {
             let (lib, migrated, from) = try Migrations.migrateLibrary(data)
             if migrated {
+                // Never migrate on trust: a dry run must show nothing but the intended change.
+                let report = try Migrations.dryRun(vault: dir)
+                guard report.ok else {
+                    readOnlyReason = "Draft did not update this vault because a check found a difference (\(report.differences.first ?? "")). Nothing was changed."
+                    throw MigrationError(message: readOnlyReason!)
+                }
                 try backup("library.v\(from).json", data)
                 try Vault.writeAtomic(try DraftJSON.encode(lib, pretty: true), to: libraryURL)
             }

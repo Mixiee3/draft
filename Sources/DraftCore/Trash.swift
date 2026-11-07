@@ -12,8 +12,12 @@ public extension Library {
         return out
     }
 
-    var liveDocs: [DocMeta] { docs.values.filter { $0.deletedAt == nil } }
-    var trashedDocs: [DocMeta] { docs.values.filter { $0.deletedAt != nil } }
+    /// Documents of the active Space (templates excluded).
+    var liveDocs: [DocMeta] { docs.values.filter { $0.deletedAt == nil && inSpace($0) && $0.template == nil } }
+    var trashedDocs: [DocMeta] { docs.values.filter { $0.deletedAt != nil && inSpace($0) } }
+    var templates: [DocMeta] { docs.values.filter { $0.deletedAt == nil && $0.template != nil } }
+    func inSpace(_ m: DocMeta) -> Bool { (m.spaceId ?? spaces.first?.id ?? space.id) == space.id }
+    var spaceFolders: [Folder] { folders.filter { ($0.spaceId ?? spaces.first?.id ?? space.id) == space.id } }
 
     /// Trash a document and its live descendants; closes their tabs. Returns trashed ids.
     @discardableResult
