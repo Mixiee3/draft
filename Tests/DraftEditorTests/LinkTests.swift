@@ -93,7 +93,7 @@ final class LinkTests: XCTestCase {
         type("@tom")
         XCTAssertEqual(c.mention.results.first?.value, "2026-11-08")
         tv.insertNewline(nil)
-        XCTAssertEqual(inline()[1].text, "Tomorrow")
+        XCTAssertEqual(inline()[1].text, Day.chipLabel("2026-11-08", today: "2026-11-07"), "chips store a stable label")
         XCTAssertEqual(inline()[1].marks, [Mark("date", attrs: ["date": "2026-11-08"])])
         type("#wo")
         XCTAssertEqual(c.mention.trigger, "#")
@@ -181,6 +181,22 @@ final class LinkTests: XCTestCase {
         XCTAssertTrue(c.setTaskChecked(blockId: "b_t", checked: true))
         XCTAssertEqual(c.document().content?.first?.content?.first?.attrs?["checked"], .bool(true))
         XCTAssertFalse(c.setTaskChecked(blockId: "b_nope", checked: true))
+    }
+
+    func testDueDateFromEditorAndPlainDateStyle() {
+        c.load(Node("doc", content: [Node("taskList", attrs: ["id": "b_l"], content: [Node("taskItem", attrs: ["id": "b_t", "checked": false], content: [Node("paragraph", attrs: ["id": "b_tp"], content: [.text("call")])])])]))
+        XCTAssertTrue(c.setTaskDue(blockId: "b_t", due: "2026-11-09T15:00"))
+        let p = c.document().content?.first?.content?.first?.content?.first
+        XCTAssertEqual(p?.content?.last?.marks, [Mark("date", attrs: ["date": "2026-11-09T15:00"])])
+        XCTAssertTrue(p?.content?.last?.text?.hasSuffix("15:00") ?? false)
+        pump(); tv.undoManager?.undo()
+        XCTAssertEqual(c.document().content?.first?.content?.first?.content?.first?.content?.map(\.text), ["call"], "one undo removes the date")
+        tv.undoManager?.redo()
+        let at = (tv.string as NSString).range(of: "15:00").location
+        XCTAssertNotNil(c.storage.attribute(.backgroundColor, at: at, effectiveRange: nil), "chip style")
+        var th = c.theme; th.dateChips = false; c.theme = th
+        XCTAssertNil(c.storage.attribute(.backgroundColor, at: at, effectiveRange: nil), "plain text style")
+        XCTAssertEqual(c.document().content?.first?.content?.first?.content?.first?.content?.last?.marks?.first?.type, "date", "the stored date is unchanged")
     }
 
     func testMoveToNewDocumentAndTodayLeaveCards() {

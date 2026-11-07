@@ -19,6 +19,8 @@ public struct EditorTheme: Equatable {
     public var completedTasks: String = "strike"
     public var tagRules = TagRules()
     public var tagColors: [String: String] = [:]
+    /// Settings → Advanced → Dates: chips (true) or plain text.
+    public var dateChips = true
 
     public init() {}
     public func tagColor(_ tag: String) -> NSColor { NSColor(hex: tagColors[tag.lowercased()] ?? Tags.defaultColor(tag)) }
@@ -138,7 +140,9 @@ public enum Styler {
                 } else if code && b.kind != .code {
                     attrs[.backgroundColor] = theme.text.withAlphaComponent(0.07)
                 }
-                if a[.draftDocLink] != nil || a[.draftDate] != nil {
+                if a[.draftDate] != nil && a[.draftDocLink] == nil && !theme.dateChips {
+                    attrs[.underlineStyle] = nil
+                } else if a[.draftDocLink] != nil || a[.draftDate] != nil {
                     let missing = a[.draftLinkMissing] != nil
                     fg = missing ? theme.secondary : theme.accentColor
                     attrs[.backgroundColor] = (missing ? theme.text : theme.accentColor).withAlphaComponent(theme.isDarkPage ? 0.22 : 0.1)

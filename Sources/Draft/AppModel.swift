@@ -63,6 +63,9 @@ final class AppModel: ObservableObject {
     var forward: [String: [HistEntry]] = [:]
     var lastIndexSeconds = 0.0
     var linkRefreshTimer: Timer?
+    var dayTimer: Timer?
+    var watchedDay = ""
+    var clock: () -> Date = Date.init // replaced only by automation checks
     let reminders = ReminderScheduler()
 
     let vault = Vault(dir: Vault.defaultURL())
@@ -96,6 +99,7 @@ final class AppModel: ObservableObject {
             let expired = lib.expiredTrash()
             if !expired.isEmpty { deleteForever(expired) }
             loadIndex()
+            startDayWatch()
             if activeView.kind == "doc", let id = activeView.docId { _ = ensureDoc(id) }
             ready = true
         } catch let e as NewerSchemaError {
@@ -368,6 +372,7 @@ final class AppModel: ObservableObject {
         var t = EditorTheme(tokens: Styles.resolve(doc.appearance), completedTasks: library.settings.completedTasks)
         t.tagRules = library.settings.tagRules
         t.tagColors = library.settings.tagColors
+        t.dateChips = library.settings.dateStyle != "text"
         return t
     }
 
@@ -724,7 +729,7 @@ final class AppModel: ObservableObject {
         let before = library.settings
         f(&library.settings)
         let now = library.settings
-        if before.completedTasks != now.completedTasks || before.tagRules != now.tagRules || before.tagColors != now.tagColors {
+        if before.completedTasks != now.completedTasks || before.tagRules != now.tagRules || before.tagColors != now.tagColors || before.dateStyle != now.dateStyle {
             for (id, e) in editors { if let d = docs[id] { e.theme = theme(for: d) } }
         }
         if before.tagRules != now.tagRules { saveDirtyDocs(); refreshIndex() }

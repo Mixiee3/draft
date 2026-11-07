@@ -123,6 +123,10 @@ public struct Settings: Codable, Hashable, Sendable {
     public var reminders: Bool = false
     public var reminderHour: Int = 9
     public var calendarEvents: Bool = false
+    /// "chip" or "text": how date mentions look in documents.
+    public var dateStyle: String = "chip"
+    public var calendarFilter: String = "all" // all | tasks | notes
+    public var calendarShowCompleted: Bool = false
 
     public init() {}
 
@@ -147,6 +151,9 @@ public struct Settings: Codable, Hashable, Sendable {
         reminders = try c.decodeIfPresent(Bool.self, forKey: .reminders) ?? def.reminders
         reminderHour = try c.decodeIfPresent(Int.self, forKey: .reminderHour) ?? def.reminderHour
         calendarEvents = try c.decodeIfPresent(Bool.self, forKey: .calendarEvents) ?? def.calendarEvents
+        dateStyle = try c.decodeIfPresent(String.self, forKey: .dateStyle) ?? def.dateStyle
+        calendarFilter = try c.decodeIfPresent(String.self, forKey: .calendarFilter) ?? def.calendarFilter
+        calendarShowCompleted = try c.decodeIfPresent(Bool.self, forKey: .calendarShowCompleted) ?? def.calendarShowCompleted
     }
 }
 

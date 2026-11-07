@@ -69,7 +69,7 @@ extension EditorController {
     }
 
     public func insertDate(_ day: String, replacing range: NSRange? = nil) {
-        insertChip(.draftDate, value: day, text: Day.label(day, today: linkHost?.todayKey() ?? Day.today()), replacing: range ?? textView.selectedRange())
+        insertChip(.draftDate, value: day, text: Day.chipLabel(day, today: linkHost?.todayKey() ?? Day.today()), replacing: range ?? textView.selectedRange())
     }
 
     /// The chip (link or date) covering `loc`.
@@ -123,7 +123,7 @@ extension EditorController {
         }
         storage.enumerateAttribute(.draftDate, in: all) { v, r, _ in
             guard let v = v as? String else { return }
-            edits.append((r, .draftDate, v, Day.label(String(v.prefix(10)), today: today), false))
+            edits.append((r, .draftDate, v, Day.chipLabel(v, today: today), false))
         }
         var textChanged = false, any = false
         let sorted = edits.sorted(by: { $0.0.location > $1.0.location })
@@ -156,6 +156,20 @@ extension EditorController {
             } else { undoGroup(apply); undo.setActionName("Update Link Titles") }
         }
         return textChanged || any
+    }
+
+    /// Set or clear a task's due date (one undo step in this document).
+    @discardableResult
+    public func setTaskDue(blockId: String, due: String?) -> Bool {
+        let today = linkHost?.todayKey() ?? Day.today()
+        var flat = flatBlocks()
+        guard let i = flat.firstIndex(where: { $0.info.id == blockId && $0.info.kind == .task }),
+              let n = Converter.tree(from: [flat[i]]).content?.first?.content?.first, let id = n.id,
+              let changed = Node("doc", content: [n]).settingTaskDue(id, due: due, label: Day.chipLabel(due ?? "", today: today)) else { return false }
+        flat[i].inline = changed.content?.first?.content?.first?.content ?? []
+        rebuild(flat, select: [], blockMode: false)
+        undo.setActionName(due == nil ? "Clear Due Date" : "Set Due Date")
+        return true
     }
 
     /// Check or uncheck a task from outside the editor (Tasks view). The caller owns undo.

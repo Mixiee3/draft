@@ -168,6 +168,11 @@ struct SettingsView: View {
                 Picker("", selection: bind(\.weekStart)) { Text("System setting").tag(0); Text("Sunday").tag(1); Text("Monday").tag(2) }.pickerStyle(.segmented).labelsHidden()
                 Text("Used by Calendar and by dates such as @next monday.").font(.system(size: 12)).foregroundStyle(t.secondary)
             }
+            group("Dates in documents") {
+                Picker("", selection: bind(\.dateStyle)) { Text("Chips").tag("chip"); Text("Plain text").tag("text") }.pickerStyle(.segmented).labelsHidden()
+                Text("Only the look changes; the dates themselves stay the same. Type @ and a day, e.g. @tomorrow 3pm.")
+                    .font(.system(size: 12)).foregroundStyle(t.secondary)
+            }
             group("A new day starts at") {
                 Picker("", selection: bind(\.dayStartHour)) { ForEach(0..<7) { h in Text(String(format: "%02d:00", h)).tag(h) } }.labelsHidden().frame(width: 120)
                 Text("Before this hour, Today and ⇧⌘D still mean the previous day — handy if you write after midnight.")

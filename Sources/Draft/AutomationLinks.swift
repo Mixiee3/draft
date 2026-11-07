@@ -99,6 +99,34 @@ extension Automation {
             r["undoSteps"] = um.canUndo ? "more" : "one"
             r["uncheckedAfterUndo"] = ((try? m.vault.loadDoc(a)) ?? nil).map { $0.content.settingTask(task.task.block, checked: false) == $0.content } == true ? "yes" : "no"
         }
+        // Due date with a time from the Tasks view: chip in the source, reminder at that time, one undo.
+        if let task = m.index.tasks(live: m.liveIds).first(where: { $0.doc == a }) {
+            let due = Day.add(today, days: 2) + "T15:30"
+            let um2 = UndoManager(); um2.groupsByEvent = false
+            um2.beginUndoGrouping(); m.setTaskDue(a, task.task.block, due: due, undo: um2); um2.endUndoGrouping()
+            let fileDue = ((try? m.vault.loadDoc(a)) ?? nil).map { VaultIndex.entry(for: $0, daily: nil, rules: TagRules()).tasks.first { $0.block == task.task.block }?.due ?? "" } ?? ""
+            r["dueTimeInFile"] = fileDue == due ? "yes" : fileDue
+            let plan = Reminders.plan(m.index.tasks(live: m.liveIds).map(\.task), hour: 9).first { $0.id == "task-" + task.task.block }
+            r["reminderAtTime"] = plan.map { Calendar.current.component(.hour, from: $0.fire) == 15 && Calendar.current.component(.minute, from: $0.fire) == 30 ? "yes" : "\($0.fire)" } ?? "none"
+            um2.undo()
+            let after = ((try? m.vault.loadDoc(a)) ?? nil).map { VaultIndex.entry(for: $0, daily: nil, rules: TagRules()).tasks.first { $0.block == task.task.block }?.due } ?? nil
+            r["dueUndone"] = after == task.task.due && !um2.canUndo ? "yes" : "\(String(describing: after))"
+        }
+        // Date style: plain text changes only the look.
+        func dates() -> String { var o = ""; walk(ca.document()) { n in if let d = n.marks?.first(where: { $0.type == "date" }) { o += "\(n.text ?? "")=\(d.attrs?["date"]?.string ?? "");" } }; return o + docPlainText(ca.document()) }
+        let before = dates()
+        m.setSettings { $0.dateStyle = "text" }
+        r["dateStyleKeepsContent"] = before == dates() && ca.theme.dateChips == false ? "yes" : "no"
+        m.setSettings { $0.dateStyle = "chip" }
+        // Calendar filters persist (checked after relaunch).
+        m.setSettings { $0.calendarFilter = "tasks"; $0.calendarShowCompleted = true }
+        // Midnight while idle: the day watch picks up a new day.
+        r["dayTimer"] = (m.dayTimer?.isValid ?? false) && (m.dayTimer?.timeInterval ?? 99) <= 30 ? "yes" : "no"
+        let tomorrowTask = m.tasks(.upcoming).first { $0.task.dueDay == Day.add(today, days: 1) }?.task.block
+        m.clock = { Date().addingTimeInterval(86_400) }
+        let rolled = m.checkDayChange()
+        r["rollover"] = rolled && tomorrowTask != nil && m.tasks(.today).contains { $0.task.block == tomorrowTask } ? "yes" : "no rolled=\(rolled) task=\(String(describing: tomorrowTask))"
+        m.clock = Date.init; m.checkDayChange()
         // Missing target, then restore.
         if let cdoc = m.createDoc(open: false, title: "Gamma") {
             ca.insertDocLink(docId: cdoc, title: "Gamma")
@@ -145,6 +173,7 @@ extension Automation {
         r["dailySame"] = m.dailyNote(m.todayKey, create: true) == w["dailyId"] ? "yes" : "no"
         r["dailyCount"] = "\(m.library.liveDocs.filter { $0.dailyDate == m.todayKey }.count)"
         r["futureTask"] = m.tasks(on: w["futureDay"] ?? "").first?.task.text ?? ""
+        r["calendarFilters"] = "\(m.settings.calendarFilter),\(m.settings.calendarShowCompleted)"
         save(r, ProcessInfo.processInfo.environment["DRAFT_RESULT"] ?? "links-read.json")
     }
 

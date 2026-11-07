@@ -61,6 +61,18 @@ public enum Day {
     }
 }
 
+public extension Day {
+    /// Label stored in a date chip. Absolute, so it never needs rewriting when the day changes:
+    /// "Mon 9 Nov", "Mon 9 Nov 2027", "Mon 9 Nov 14:30".
+    static func chipLabel(_ value: String, today: String, cal: Calendar = .current) -> String {
+        let key = String(value.prefix(10))
+        guard let d = date(key, cal: cal) else { return value }
+        let f = DateFormatter(); f.calendar = cal; f.timeZone = cal.timeZone
+        f.setLocalizedDateFormatFromTemplate(key.prefix(4) == today.prefix(4) ? "EEEdMMM" : "EEEdMMMyyyy")
+        return f.string(from: d) + (value.count > 10 ? " " + String(value.suffix(5)) : "")
+    }
+}
+
 /// Natural-language dates typed after `@`: today, tomorrow, yesterday, (this|next) monday,
 /// monday, next week, next month, in 3 days, in 2 weeks, 2026-11-12, nov 12, 12 november.
 public enum DateParse {
@@ -76,7 +88,30 @@ public enum DateParse {
         return months.firstIndex { $0.hasPrefix(w) }.map { $0 + 1 }
     }
 
+    static let timePattern = try! NSRegularExpression(pattern: #"(?:^|\s+)(?:at\s+)?(\d{1,2})(?::(\d{2}))?\s*(am|pm)?$"#)
+
+    /// A date with an optional time: "tomorrow 3pm", "fri at 14:30", "nov 12 9:00" → `yyyy-MM-ddTHH:mm`.
     public static func parse(_ raw: String, today: String, weekStart: Int = 0, cal: Calendar = .current) -> String? {
+        let low = raw.lowercased().trimmingCharacters(in: .whitespaces)
+        let ns = low as NSString
+        if let m = timePattern.firstMatch(in: low, range: NSRange(location: 0, length: ns.length)),
+           m.range(at: 2).location != NSNotFound || m.range(at: 3).location != NSNotFound {
+            var h = Int(ns.substring(with: m.range(at: 1))) ?? -1
+            let min = m.range(at: 2).location != NSNotFound ? Int(ns.substring(with: m.range(at: 2))) ?? -1 : 0
+            if m.range(at: 3).location != NSNotFound {
+                guard (1...12).contains(h) else { return nil }
+                let pm = ns.substring(with: m.range(at: 3)) == "pm"
+                h = h % 12 + (pm ? 12 : 0)
+            }
+            guard (0...23).contains(h), (0...59).contains(min) else { return nil }
+            let rest = ns.substring(to: m.range.location).trimmingCharacters(in: .whitespaces)
+            guard let day = rest.isEmpty ? today : parseDay(rest, today: today, weekStart: weekStart, cal: cal) else { return nil }
+            return day + String(format: "T%02d:%02d", h, min)
+        }
+        return parseDay(raw, today: today, weekStart: weekStart, cal: cal)
+    }
+
+    static func parseDay(_ raw: String, today: String, weekStart: Int = 0, cal: Calendar = .current) -> String? {
         let s = raw.lowercased().trimmingCharacters(in: .whitespaces).replacingOccurrences(of: ",", with: " ")
         let w = s.split(separator: " ").map(String.init)
         guard !w.isEmpty else { return nil }
@@ -398,6 +433,35 @@ public enum Reminders {
 
 public extension Node {
     /// The tree with task item `id` checked or unchecked; nil when there is no such task.
+    /// The tree with task `id` due at `due` (a date chip in its first paragraph, replacing any
+    /// existing one); `due == nil` removes the date. Nil when there is no such task.
+    func settingTaskDue(_ id: String, due: String?, label: String) -> Node? {
+        var found = false
+        func visit(_ n: Node) -> Node {
+            var out = n
+            if n.type == "taskItem", n.id == id, var items = n.content, let pi = items.firstIndex(where: { $0.type == "paragraph" }) {
+                var inline = (items[pi].content ?? []).filter { !($0.marks ?? []).contains { $0.type == "date" } }
+                while let last = inline.last, last.type == "text", let t = last.text, t.hasSuffix(" ") {
+                    let trimmed = String(t.dropLast()); inline.removeLast()
+                    if !trimmed.isEmpty { var l = last; l.text = trimmed; inline.append(l); break }
+                }
+                if let due {
+                    if !inline.isEmpty { inline.append(.text(" ")) }
+                    inline.append(.text(label, marks: [Mark("date", attrs: ["date": .string(due)])]))
+                }
+                items[pi].content = inline.isEmpty ? nil : inline
+                out.content = items
+                out.attrs?["due"] = nil
+                found = true
+                return out
+            }
+            out.content = n.content?.map(visit)
+            return out
+        }
+        let r = visit(self)
+        return found ? r : nil
+    }
+
     func settingTask(_ id: String, checked: Bool) -> Node? {
         var found = false
         func visit(_ n: Node) -> Node {
