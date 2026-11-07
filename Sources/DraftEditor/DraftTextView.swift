@@ -121,7 +121,7 @@ public final class DraftTextView: NSTextView {
         return super.writeSelection(to: pboard, type: type)
     }
 
-    public override var readablePasteboardTypes: [NSPasteboard.PasteboardType] { [EditorController.pasteboardType, .png, .tiff, .string] }
+    public override var readablePasteboardTypes: [NSPasteboard.PasteboardType] { [EditorController.pasteboardType, .rtf, .html, .png, .tiff, .string] }
 
     public override func readSelection(from pboard: NSPasteboard, type: NSPasteboard.PasteboardType) -> Bool {
         guard let c = controller else { return super.readSelection(from: pboard, type: type) }
@@ -132,12 +132,13 @@ public final class DraftTextView: NSTextView {
             if let d = pboard.data(forType: .png) { return c.pasteImage(d, ext: "png") }
         case .tiff:
             if let d = pboard.data(forType: .tiff), let rep = NSBitmapImageRep(data: d), let png = rep.representation(using: .png, properties: [:]) { return c.pasteImage(png, ext: "png") }
-        case .string:
-            if let s = pboard.string(forType: .string) {
-                // Plain-text paste keeps the current block and marks.
-                insertText(s.replacingOccurrences(of: "\r\n", with: "\n"), replacementRange: selectedRange())
-                return true
+        case .rtf, .html:
+            if let d = pboard.data(forType: type),
+               let s = try? NSAttributedString(data: d, options: [.documentType: type == .rtf ? NSAttributedString.DocumentType.rtf : .html, .characterEncoding: String.Encoding.utf8.rawValue], documentAttributes: nil) {
+                c.pasteRich(s); return true
             }
+        case .string:
+            if let s = pboard.string(forType: .string) { c.pastePlain(s); return true }
         default: break
         }
         return super.readSelection(from: pboard, type: type)

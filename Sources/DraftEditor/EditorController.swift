@@ -871,15 +871,6 @@ public final class EditorController: NSObject, NSTextStorageDelegate, NSTextView
         return try? DraftJSON.encode(node)
     }
 
-    func pasteFragment(_ data: Data) -> Bool {
-        guard let node = try? JSONDecoder().decode(Node.self, from: data) else { return false }
-        let (s, _) = Converter.attributed(from: reId(node))
-        let sel = textView.selectedRange()
-        replace(sel, with: s, select: NSRange(location: sel.location + s.length, length: 0))
-        dedupeAll()
-        return true
-    }
-
     func pasteImage(_ data: Data, ext: String) -> Bool {
         guard let id = host?.storeImage(data: data, ext: ext) else { return false }
         insertImage(assetId: id)

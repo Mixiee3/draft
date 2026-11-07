@@ -35,7 +35,7 @@ Last updated: v0.1 (native macOS) — 2026‑11‑07.
 | E15 | Block selection | Distinct from text selection | B§5.3 | verified | — | 0.2 | Esc selects block, ⇧↑/↓ extend, ↑/↓ move, Delete removes, typing/Return exits; ⌘C copies blocks (`testEscSelectsBlock…`) |
 | E16 | Group into page ⌘G / ungroup | Tree transform | B§B, S42 | missing | E15 | 0.2 | 3 blocks → one page; child ids preserved |
 | E17 | Move up/down/top/bottom | Shortcut actions | S42 | verified | E15 | 0.2 | ⌥⌘↑/↓, ⌃⌥⌘↑/↓; ids, marks, task state preserved; one undo each (`testMoveUpDown…`) |
-| E18 | Paste | Rich, plain, Markdown | B§5.3 | partial | — | 0.2 | Draft→Draft keeps blocks+marks (custom pasteboard type); images paste as blocks; plain text works; rich HTML/RTF and multi-line block splitting missing |
+| E18 | Paste | Rich, plain, Markdown | B§5.3 | verified | — | 0.2 | Multi-line text → one block per line, Markdown recognized; RTF/HTML → headings, lists, bold/italic/underline/strike/code/links; Draft→Draft keeps blocks+marks with new ids; surrounding block keeps id; one undo (`PasteTests`, `MarkdownImportTests`) |
 | E19 | Multi-block text selection | Beta in reference | S12 | working | — | 0.1 | Drag across paragraphs selects text in all (native TextKit) |
 | E20 | IME / non-US layouts | Fixes documented | B§7, B§8 | partial | — | 0.6 | NSTextView composition works; layout matrix untested |
 | E21 | 10k-block performance | Quality gate | B§11 | missing | — | 0.2 | Synthetic 10k-block doc; keystroke < 16 ms p95 |
