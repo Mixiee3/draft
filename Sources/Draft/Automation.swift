@@ -31,6 +31,7 @@ enum Automation {
             case "style-write": await styleWrite()
             case "style-read": await styleRead()
             case "screens-v04": await screensV04()
+            case "polish": await polish()
             default: break
             }
             NSApp.terminate(nil)

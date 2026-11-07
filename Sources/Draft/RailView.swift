@@ -19,7 +19,7 @@ struct RailView: View {
         let docId = model.activeDocId
         VStack(alignment: .leading, spacing: 0) {
             HStack(spacing: 6) {
-                Spacer().frame(width: narrow ? 0 : 66) // traffic lights
+                Spacer().frame(width: narrow ? 0 : 76) // window buttons
                 Spacer()
                 if docId != nil {
                     Menu {
@@ -36,7 +36,7 @@ struct RailView: View {
                 }
                 IconButton(symbol: "sidebar.left", label: "Hide sidebar (⌃⌘S)") { model.setSettings { $0.railCollapsed = true } }
             }
-            .frame(height: 38)
+            .frame(height: WindowChrome.height - 16)
             .padding(.horizontal, 8)
             if let id = docId, !model.railShowsFolders {
                 DocumentRail(docId: id).id(id)

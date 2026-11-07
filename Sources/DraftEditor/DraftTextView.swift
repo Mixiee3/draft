@@ -130,8 +130,52 @@ public final class DraftTextView: NSTextView {
         }
     }
 
-    public override func resetCursorRects() {
-        super.resetCursorRects()
+    // MARK: Cursor
+
+    /// I-beam only over editable text; a pointing hand over things that act on click (checkboxes,
+    /// toggles, link chips, tags); the arrow over cards, images, margins and empty space.
+    public func cursor(at p: NSPoint) -> NSCursor {
+        guard let c = controller, isEditable else { return .arrow }
+        let cp = NSPoint(x: p.x - textContainerOrigin.x, y: p.y - textContainerOrigin.y)
+        guard cp.x >= -2, cp.x <= c.container.size.width + 2 else { return .arrow }
+        if c.storage.length == 0 { return cp.y < 40 && cp.y > -4 ? .iBeam : .arrow }
+        let gi = c.layout.glyphIndex(for: cp, in: c.container, fractionOfDistanceThroughGlyph: nil)
+        var line = c.layout.lineFragmentRect(forGlyphAt: gi, effectiveRange: nil)
+        let extra = c.layout.extraLineFragmentRect
+        if !extra.isEmpty, cp.y >= extra.minY { line = extra }
+        guard cp.y >= line.minY - 1, cp.y <= line.maxY + 1 else { return .arrow }
+        let idx = line == extra ? c.storage.length : c.layout.characterIndexForGlyph(at: gi)
+        let pr = c.paragraphRange(at: idx)
+        if let box = c.layout.checkboxRect(forParagraphAt: pr), box.insetBy(dx: -5, dy: -5).contains(cp) { return .pointingHand }
+        if let box = c.layout.toggleRect(forParagraphAt: pr), box.insetBy(dx: -5, dy: -5).contains(cp) { return .pointingHand }
+        if c.block(at: pr).kind.isAttachment { return .arrow }
+        if idx < c.storage.length, c.chipRange(at: idx) != nil || c.tagRange(at: idx) != nil {
+            let gr = c.layout.glyphRange(forCharacterRange: NSRange(location: idx, length: 1), actualCharacterRange: nil)
+            if c.layout.boundingRect(forGlyphRange: gr, in: c.container).insetBy(dx: -1, dy: -2).contains(cp) { return .pointingHand }
+        }
+        return .iBeam
+    }
+
+    func updateCursor(_ event: NSEvent) {
+        guard let w = window, w.isKeyWindow || w.isMainWindow else { return }
+        cursor(at: convert(event.locationInWindow, from: nil)).set()
+    }
+
+    private var cursorArea: NSTrackingArea?
+    public override func updateTrackingAreas() {
+        super.updateTrackingAreas()
+        if let a = cursorArea { removeTrackingArea(a) }
+        let a = NSTrackingArea(rect: .zero, options: [.mouseMoved, .cursorUpdate, .mouseEnteredAndExited, .activeInKeyWindow, .inVisibleRect], owner: self, userInfo: nil)
+        addTrackingArea(a)
+        cursorArea = a
+    }
+    public override func resetCursorRects() {} // the cursor follows the content under the pointer instead
+    public override func cursorUpdate(with event: NSEvent) { updateCursor(event) }
+    public override func mouseMoved(with event: NSEvent) { super.mouseMoved(with: event); updateCursor(event) }
+    public override func mouseExited(with event: NSEvent) { super.mouseExited(with: event); NSCursor.arrow.set() }
+    public override func viewDidMoveToWindow() {
+        super.viewDidMoveToWindow()
+        if window == nil { NSCursor.arrow.set() } // leaving a tab never leaves an I-beam behind
     }
 
     // Placeholder for an empty document.

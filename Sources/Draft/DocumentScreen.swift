@@ -75,7 +75,7 @@ struct DocumentScreen: View {
                         }
                     }
                 } label: { Image(systemName: "plus").font(.system(size: 13, weight: .bold)).frame(width: 30, height: 30) }
-                .menuStyle(.borderlessButton).menuIndicator(.hidden).fixedSize()
+                .menuStyle(.borderlessButton).menuIndicator(.hidden).frame(width: 32, height: 30)
                 .foregroundStyle(Color(hex: "#2a2622")).tint(Color(hex: "#2a2622"))
                 .accessibilityLabel("Insert block")
             }

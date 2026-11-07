@@ -59,7 +59,7 @@ struct LibraryView: View {
                     Divider()
                     Button("New Folder") { model.createFolder() }
                 } label: { Image(systemName: "plus").font(.system(size: 14, weight: .semibold)).frame(width: 30, height: 30) }
-                .menuStyle(.borderlessButton).menuIndicator(.hidden).fixedSize()
+                .menuStyle(.borderlessButton).menuIndicator(.hidden).frame(width: 32, height: 30)
                 .foregroundStyle(t.pillText).tint(t.pillText)
                 .accessibilityLabel("Create")
             }
@@ -87,7 +87,7 @@ struct LibraryView: View {
                         }
                     }
                 } label: { Image(systemName: "arrow.up.arrow.down").frame(width: 30, height: 30) }
-                .menuStyle(.borderlessButton).menuIndicator(.hidden).fixedSize().foregroundStyle(t.pillText).tint(t.pillText).tint(t.pillText)
+                .menuStyle(.borderlessButton).menuIndicator(.hidden).frame(width: 32, height: 30).foregroundStyle(t.pillText).tint(t.pillText)
                 .accessibilityLabel("Sort")
             }
             }
@@ -99,7 +99,7 @@ struct LibraryView: View {
                     Divider()
                     Button("Stats") { model.openView(ViewRef(kind: "settings", section: "stats")) }
                 } label: { Image(systemName: "ellipsis").frame(width: 30, height: 30) }
-                .menuStyle(.borderlessButton).menuIndicator(.hidden).fixedSize().foregroundStyle(t.pillText).tint(t.pillText).tint(t.pillText)
+                .menuStyle(.borderlessButton).menuIndicator(.hidden).frame(width: 32, height: 30).foregroundStyle(t.pillText).tint(t.pillText)
                 .accessibilityLabel("More")
             }
             searchPill

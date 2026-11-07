@@ -240,6 +240,8 @@ extension EditorController {
 /// The `[[` (documents, pages, blocks), `@` (dates and documents) and `#` (tags) picker.
 /// Typing filters, ↑/↓ move, Return/Tab choose, Esc dismisses and keeps the typed text.
 public final class MentionMenu: NSView {
+    public override func resetCursorRects() { addCursorRect(bounds, cursor: .arrow) }
+    public override func cursorUpdate(with event: NSEvent) { NSCursor.arrow.set() }
     unowned let controller: EditorController
     public private(set) var isOpen = false
     public private(set) var trigger = ""

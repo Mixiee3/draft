@@ -4,6 +4,8 @@ import DraftCore
 /// The `/` insert menu: filterable with typed text, ↑/↓ to move, Return/Tab to choose,
 /// Esc to dismiss (the typed text stays). Unavailable commands are listed with their version.
 public final class SlashMenu: NSView {
+    public override func resetCursorRects() { addCursorRect(bounds, cursor: .arrow) }
+    public override func cursorUpdate(with event: NSEvent) { NSCursor.arrow.set() }
     unowned let controller: EditorController
     public private(set) var isOpen = false
     var anchor = 0

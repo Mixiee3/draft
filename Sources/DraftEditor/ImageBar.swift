@@ -4,6 +4,8 @@ import DraftCore
 /// Floating controls for the selected image: size, caption and alt text. Standard AppKit
 /// controls, so Tab/Shift-Tab, Return and VoiceOver work without extra code.
 public final class ImageBar: NSView, NSTextFieldDelegate {
+    public override func resetCursorRects() { addCursorRect(bounds, cursor: .arrow) }
+    public override func cursorUpdate(with event: NSEvent) { NSCursor.arrow.set() }
     unowned let controller: EditorController
     public let size = NSSegmentedControl(labels: ["S", "M", "L", "Full"], trackingMode: .selectOne, target: nil, action: nil)
     let caption = NSTextField()

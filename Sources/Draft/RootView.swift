@@ -39,10 +39,10 @@ struct RootView: View {
                                 .transition(.move(edge: .leading))
                         }
                         VStack(spacing: 0) {
-                            TabStrip(leadingInset: showRail ? 8 : 78, showRailButton: !showRail, onRail: {
+                            TabStrip(leadingInset: showRail ? 8 : 92, showRailButton: !showRail, onRail: {
                                 if narrow { railOverlay.toggle() } else { model.setSettings { $0.railCollapsed = false } }
                             })
-                            .frame(height: 46)
+                            .frame(height: WindowChrome.height)
                             MainContent()
                                 .clipShape(RoundedRectangle(cornerRadius: Tokens.radiusPanel, style: .continuous))
                                 .padding(.leading, showRail ? 8 : 8).padding(.trailing, 8).padding(.bottom, 8)
@@ -67,8 +67,32 @@ struct RootView: View {
         .animation(model.library.settings.reduceMotion ? nil : .easeOut(duration: 0.18), value: model.library.settings.railCollapsed)
         .onAppear { if !model.ready && model.fatal == nil { model.boot() } }
         .onOpenURL { model.openLink($0) }
+        .background(WindowChrome())
         .ignoresSafeArea()
     }
+}
+
+/// A transparent unified toolbar area: macOS then places the window buttons with room around
+/// them (and keeps them right in full screen), on the same line as the sidebar and tab strip.
+struct WindowChrome: NSViewRepresentable {
+    static let height: CGFloat = 52
+    final class V: NSView {
+        override func viewDidMoveToWindow() {
+            guard let w = window else { return }
+            w.titlebarAppearsTransparent = true
+            w.titleVisibility = .hidden
+            w.styleMask.insert(.fullSizeContentView)
+            if w.toolbar == nil {
+                let t = NSToolbar(identifier: "draft.window")
+                t.showsBaselineSeparator = false
+                t.allowsUserCustomization = false
+                w.toolbar = t
+            }
+            w.toolbarStyle = .unified
+        }
+    }
+    func makeNSView(context: Context) -> NSView { V() }
+    func updateNSView(_ nsView: NSView, context: Context) {}
 }
 
 struct FatalView: View {
