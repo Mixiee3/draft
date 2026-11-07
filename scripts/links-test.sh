@@ -36,11 +36,15 @@ assert w["missingShown"] == "yes" and w["missingCleared"] == "yes", w
 assert w["followed"] == "yes" and w["back"] == "yes" and w["forward"] == "yes", w
 assert w["exportLink"] == "yes", w["exportLink"]
 assert int(w["reminderPlan"]) >= 1, w
+assert w["dueTimeInFile"] == "yes" and w["reminderAtTime"] == "yes" and w["dueUndone"] == "yes", w
+assert w["dateStyleKeepsContent"] == "yes", w
+assert w["dayTimer"] == "yes" and w["rollover"] == "yes", w
 for r in (a, b):
     assert r["chip"] == "Beta renamed", r
     assert r["blockRefDoc"] == w["nestedPage"] and r["blockLocation"] == w["nestedPage"], r
     assert r["dailySame"] == "yes" and r["dailyCount"] == "1", r
     assert r["futureTask"] == "Water plants", r
+    assert r["calendarFilters"] == "tasks,true", r
 for k in ("backlinks", "tags", "buckets", "blockLocation"):
     assert a[k] == b[k], (k, a[k], b[k])
 assert sys.argv[2] == sys.argv[3], "rebuilding the index changed a document file"

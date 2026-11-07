@@ -34,6 +34,11 @@ public protocol LinkHost: AnyObject {
     func createDocument(title: String, content: Node) -> String?
     /// Today's daily note, created on demand.
     func dailyNoteId(create: Bool) -> String?
+    /// The linked document's cover (or a picture of its backdrop) for gallery cards.
+    func pageCover(docId: String) -> NSImage?
+    /// Settings → Online → Link previews (off by default).
+    func wantsLinkPreviews() -> Bool
+    func fetchLinkPreview(_ url: URL, _ done: @escaping (LinkPreview?) -> Void)
 }
 
 public extension LinkHost {
@@ -46,6 +51,9 @@ public extension LinkHost {
     func todayKey() -> String { Day.today() }
     func createDocument(title: String, content: Node) -> String? { nil }
     func dailyNoteId(create: Bool) -> String? { nil }
+    func pageCover(docId: String) -> NSImage? { nil }
+    func wantsLinkPreviews() -> Bool { false }
+    func fetchLinkPreview(_ url: URL, _ done: @escaping (LinkPreview?) -> Void) { done(nil) }
 }
 
 extension EditorController {
@@ -69,7 +77,7 @@ extension EditorController {
     }
 
     public func insertDate(_ day: String, replacing range: NSRange? = nil) {
-        insertChip(.draftDate, value: day, text: Day.label(day, today: linkHost?.todayKey() ?? Day.today()), replacing: range ?? textView.selectedRange())
+        insertChip(.draftDate, value: day, text: Day.chipLabel(day, today: linkHost?.todayKey() ?? Day.today()), replacing: range ?? textView.selectedRange())
     }
 
     /// The chip (link or date) covering `loc`.
@@ -105,8 +113,7 @@ extension EditorController {
         return false
     }
 
-    /// Bring link titles, block-reference locations and date labels up to date. In a shown
-    /// document, title changes are their own undo step and no history is cleared.
+    /// Bring link titles, block-reference locations and date labels up to date.
     @discardableResult
     public func refreshLinks(afterLoad: Bool = false) -> Bool {
         guard let h = linkHost, storage.length > 0 else { return false }
@@ -124,7 +131,7 @@ extension EditorController {
         }
         storage.enumerateAttribute(.draftDate, in: all) { v, r, _ in
             guard let v = v as? String else { return }
-            edits.append((r, .draftDate, v, Day.label(String(v.prefix(10)), today: today), false))
+            edits.append((r, .draftDate, v, Day.chipLabel(v, today: today), false))
         }
         var textChanged = false, any = false
         let sorted = edits.sorted(by: { $0.0.location > $1.0.location })
@@ -137,29 +144,71 @@ extension EditorController {
         }
         storage.endEditing()
         isProgrammaticEdit = false
-        // Title text changes go through the undo stack so earlier undo steps keep valid ranges.
         let textEdits = sorted.filter { $0.3 != nil && ns.substring(with: $0.0) != $0.3 }
         if !textEdits.isEmpty {
-            // Off screen, this document's undo steps still sit in the window's history, so its text
-            // waits until it is shown (DocumentScreen refreshes on appear).
-            if !afterLoad && !isLoading && textView.window == nil { return any }
             textChanged = true
-            // Just loaded: no history yet, so refresh silently without dirtying the file.
-            let direct = afterLoad || isLoading
+            // In the document being looked at, new titles are a visible, undoable step. Anywhere else
+            // they are applied quietly; that document's own history is reset because its steps
+            // refer to text positions the new titles shift (other documents keep theirs).
+            let quiet = afterLoad || isLoading || textView.window == nil
             let apply = {
                 for (r, _, _, text, _) in textEdits {
                     let a = self.storage.attributes(at: r.location, effectiveRange: nil)
-                    if direct {
-                        self.storage.replaceCharacters(in: r, with: NSAttributedString(string: text!, attributes: a))
-                    } else {
-                        self.replace(r, with: NSAttributedString(string: text!, attributes: a))
-                    }
+                    if quiet { self.storage.replaceCharacters(in: r, with: NSAttributedString(string: text!, attributes: a)) }
+                    else { self.replace(r, with: NSAttributedString(string: text!, attributes: a)) }
                 }
             }
-            if direct { isProgrammaticEdit = true; storage.beginEditing(); apply(); storage.endEditing(); isProgrammaticEdit = false }
-            else { undoGroup(apply); textView.undoManager?.setActionName("Update Link Titles") }
+            if quiet {
+                isProgrammaticEdit = true; storage.beginEditing(); apply(); storage.endEditing(); isProgrammaticEdit = false
+                if !afterLoad && !isLoading { undo.removeAllActions() }
+            } else { undoGroup(apply); undo.setActionName("Update Link Titles") }
         }
         return textChanged || any
+    }
+
+    /// A pasted web address becomes a preview card; the title and summary arrive later and fill
+    /// it in place (no extra undo step). Without them it is still a working link.
+    func insertLinkPreview(_ u: URL) {
+        let site = (u.host ?? "").replacingOccurrences(of: "www.", with: "")
+        insertAttachmentBlock(kind: .bookmark, node: Node("linkPreview", attrs: ["url": .string(u.absoluteString), "title": .string(site), "site": .string(site)]))
+        guard let id = paragraphIdOfLastBookmark(url: u.absoluteString) else { return }
+        linkHost?.fetchLinkPreview(u) { [weak self] p in
+            guard let self, let p else { return }
+            self.fillLinkPreview(blockId: id, p)
+        }
+    }
+
+    func paragraphIdOfLastBookmark(url: String) -> String? {
+        var found: String?
+        storage.enumerateAttribute(.attachment, in: NSRange(location: 0, length: storage.length)) { v, r, _ in
+            if let a = v as? BlockAttachment, a.kind == .bookmark, a.node.attrs?["url"]?.string == url, r.location <= textView.selectedRange().location { found = a.node.id }
+        }
+        return found
+    }
+
+    public func fillLinkPreview(blockId: String, _ p: LinkPreview) {
+        guard let pr = paragraph(withId: blockId), pr.length > 0, let a = storage.attribute(.attachment, at: pr.location, effectiveRange: nil) as? BlockAttachment, a.kind == .bookmark else { return }
+        a.node[attr: "title"] = .string(p.title)
+        a.node[attr: "site"] = .string(p.site)
+        if let s = p.summary { a.node[attr: "summary"] = .string(s) }
+        storage.addAttribute(.draftBlock, value: block(at: pr).with(raw: .some(a.node)), range: pr)
+        layout.invalidateLayout(forCharacterRange: pr, actualCharacterRange: nil)
+        textView.needsDisplay = true
+        host?.editorDidChange()
+    }
+
+    /// Set or clear a task's due date (one undo step in this document).
+    @discardableResult
+    public func setTaskDue(blockId: String, due: String?) -> Bool {
+        let today = linkHost?.todayKey() ?? Day.today()
+        var flat = flatBlocks()
+        guard let i = flat.firstIndex(where: { $0.info.id == blockId && $0.info.kind == .task }),
+              let n = Converter.tree(from: [flat[i]]).content?.first?.content?.first, let id = n.id,
+              let changed = Node("doc", content: [n]).settingTaskDue(id, due: due, label: Day.chipLabel(due ?? "", today: today)) else { return false }
+        flat[i].inline = changed.content?.first?.content?.first?.content ?? []
+        rebuild(flat, select: [], blockMode: false)
+        undo.setActionName(due == nil ? "Clear Due Date" : "Set Due Date")
+        return true
     }
 
     /// Check or uncheck a task from outside the editor (Tasks view). The caller owns undo.

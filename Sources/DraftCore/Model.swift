@@ -123,6 +123,13 @@ public struct Settings: Codable, Hashable, Sendable {
     public var reminders: Bool = false
     public var reminderHour: Int = 9
     public var calendarEvents: Bool = false
+    /// "chip" or "text": how date mentions look in documents.
+    public var dateStyle: String = "chip"
+    public var calendarFilter: String = "all" // all | tasks | notes
+    public var calendarShowCompleted: Bool = false
+    /// Network features; both off unless the user turns them on.
+    public var onlineImageSearch: Bool = false
+    public var linkPreviews: Bool = false
 
     public init() {}
 
@@ -147,6 +154,11 @@ public struct Settings: Codable, Hashable, Sendable {
         reminders = try c.decodeIfPresent(Bool.self, forKey: .reminders) ?? def.reminders
         reminderHour = try c.decodeIfPresent(Int.self, forKey: .reminderHour) ?? def.reminderHour
         calendarEvents = try c.decodeIfPresent(Bool.self, forKey: .calendarEvents) ?? def.calendarEvents
+        dateStyle = try c.decodeIfPresent(String.self, forKey: .dateStyle) ?? def.dateStyle
+        calendarFilter = try c.decodeIfPresent(String.self, forKey: .calendarFilter) ?? def.calendarFilter
+        calendarShowCompleted = try c.decodeIfPresent(Bool.self, forKey: .calendarShowCompleted) ?? def.calendarShowCompleted
+        onlineImageSearch = try c.decodeIfPresent(Bool.self, forKey: .onlineImageSearch) ?? def.onlineImageSearch
+        linkPreviews = try c.decodeIfPresent(Bool.self, forKey: .linkPreviews) ?? def.linkPreviews
     }
 }
 
@@ -159,11 +171,12 @@ public struct Library: Codable, Hashable, Sendable {
     public var tabs: [Tab]
     public var activeTabId: String?
     public var expandedFolders: [String]
+    public var userStyles: [UserStyle] = []
     /// Unknown top-level fields, preserved verbatim.
     public var extra: [String: JSONValue] = [:]
 
     enum CodingKeys: String, CodingKey, CaseIterable {
-        case schemaVersion, space, folders, docs, settings, tabs, activeTabId, expandedFolders
+        case schemaVersion, space, folders, docs, settings, tabs, activeTabId, expandedFolders, userStyles
     }
 
     public init(schemaVersion: Int, space: Space, folders: [Folder], docs: [String: DocMeta], settings: Settings, tabs: [Tab], activeTabId: String?, expandedFolders: [String]) {
@@ -181,6 +194,7 @@ public struct Library: Codable, Hashable, Sendable {
         tabs = try c.decodeIfPresent([Tab].self, forKey: .tabs) ?? []
         activeTabId = try c.decodeIfPresent(String.self, forKey: .activeTabId)
         expandedFolders = try c.decodeIfPresent([String].self, forKey: .expandedFolders) ?? []
+        userStyles = (try? c.decodeIfPresent([UserStyle].self, forKey: .userStyles)) ?? []
         extra = try d.unknownFields(known: Set(CodingKeys.allCases.map(\.rawValue)))
     }
 
@@ -195,6 +209,7 @@ public struct Library: Codable, Hashable, Sendable {
         try c.encode(tabs, forKey: .tabs)
         try c.encodeIfPresent(activeTabId, forKey: .activeTabId)
         try c.encode(expandedFolders, forKey: .expandedFolders)
+        if !userStyles.isEmpty { try c.encode(userStyles, forKey: .userStyles) }
     }
 
     public static func empty() -> Library {

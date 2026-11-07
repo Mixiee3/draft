@@ -47,7 +47,7 @@ struct SettingsView: View {
             }
             group("Default style for new documents") {
                 Picker("", selection: Binding(get: { model.library.settings.defaultStyleId }, set: { v in model.setSettings { $0.defaultStyleId = v } })) {
-                    ForEach(Styles.builtIn) { Text($0.name).tag($0.id) }
+                    ForEach(Styles.all) { Text($0.name).tag($0.id) }
                 }.labelsHidden()
             }
             group("Keyboard") {
@@ -168,9 +168,20 @@ struct SettingsView: View {
                 Picker("", selection: bind(\.weekStart)) { Text("System setting").tag(0); Text("Sunday").tag(1); Text("Monday").tag(2) }.pickerStyle(.segmented).labelsHidden()
                 Text("Used by Calendar and by dates such as @next monday.").font(.system(size: 12)).foregroundStyle(t.secondary)
             }
+            group("Dates in documents") {
+                Picker("", selection: bind(\.dateStyle)) { Text("Chips").tag("chip"); Text("Plain text").tag("text") }.pickerStyle(.segmented).labelsHidden()
+                Text("Only the look changes; the dates themselves stay the same. Type @ and a day, e.g. @tomorrow 3pm.")
+                    .font(.system(size: 12)).foregroundStyle(t.secondary)
+            }
             group("A new day starts at") {
                 Picker("", selection: bind(\.dayStartHour)) { ForEach(0..<7) { h in Text(String(format: "%02d:00", h)).tag(h) } }.labelsHidden().frame(width: 120)
                 Text("Before this hour, Today and ⇧⌘D still mean the previous day — handy if you write after midnight.")
+                    .font(.system(size: 12)).foregroundStyle(t.secondary).fixedSize(horizontal: false, vertical: true)
+            }
+            group("Online (off by default)") {
+                Toggle("Search openly licensed images online (Openverse) from the backdrop picker", isOn: bind(\.onlineImageSearch))
+                Toggle("Show previews for pasted web links", isOn: bind(\.linkPreviews))
+                Text("Draft works fully offline. These send your search words or the pasted address to that website, only when you use them. Nothing else ever leaves this Mac.")
                     .font(.system(size: 12)).foregroundStyle(t.secondary).fixedSize(horizontal: false, vertical: true)
             }
             group("Index") {

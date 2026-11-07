@@ -19,6 +19,7 @@ Legend: ✅ done · 🟡 partial · ⬜ not started
 
 ### Change log of this plan
 
+- **2026‑11‑08** — v0.4 shipped; v0.5 planned in full with carried-forward checks.
 - **2026‑11‑07** — v0.3 shipped; v0.4 expanded with the items deferred from v0.3.
 - **2026‑11‑07** — Architecture change (not a scope reset): the Electron prototype was replaced by a
   native macOS app. Kept: data model, layer separation, styles, migrations design, export rules,
@@ -157,40 +158,71 @@ drag, links and perf scripts pass.
   a person); both start in "not determined" and are requested only from Settings.
 - VoiceOver itself was not run; the picker exposes a menu with labelled, selectable items (tested).
 
-## v0.4 — "Style studio" (macOS)
+## v0.4 — "Style studio" (macOS) ✅ shipped
 
 **Theme.** Make documents look the way you want and export them the way they look.
 
-| # | Feature | Status | Acceptance check |
+| # | Feature | Status | Acceptance check (result) |
 |---|---|---|---|
-| 1 | Save, duplicate, rename and delete user styles; pin and set default; preview before apply (T4) | 🟡 partial ("Use for new documents" ✅) | Save the current look as "Studio", apply it to another document, relaunch: both render identically; deleting a style in use falls back to its base without touching content |
-| 2 | More original style presets | ⬜ planned | At least 5 new presets, all original artwork; each passes the 4.5:1 text-contrast check |
-| 3 | Gradient editor: start/end colors, direction (T6) | 🟡 partial (presets ✅) | Dragging the angle updates the backdrop live; the gradient round-trips through the file and export |
-| 4 | Image backdrop library + opt-in search provider | ⬜ planned | Works fully offline with the bundled library; the search provider is off by default and asks before any network request |
-| 5 | Per-instance doodle/tape variation | ⬜ planned | Two tape separators in one document look different and keep their look after relaunch |
-| 6 | Contrast auto-adjust with explanation (T9) | 🟡 partial (warning + one-click fix ✅) | Choosing low-contrast text offers an adjusted color with the before/after ratio stated |
-| 7 | Per-block font (F20) | ⬜ planned | A block set to Mono stays Mono after restyling the document, in export and after relaunch |
-| 8 | Card sizes (compact/medium/feature) and preview modes (standard, icon, gallery) (P3) | ⬜ planned | Size and mode are stored on the card, shown in the editor and kept by Markdown/JSON export |
-| 9 | Styled PDF and HTML export with "use style" toggle; image export (X4) | 🟡 partial (Print → PDF ✅) | The same document renders consistently in editor, HTML and PDF (visual diff within tolerance) |
-| 10 | Static HTML site export (U3) | ⬜ planned | Exporting a folder writes an offline site whose links between pages (including `docLink` chips) all resolve |
-| 11 | Link previews for web links (A5, opt-in network) | ⬜ planned | Off by default; when on, a pasted URL becomes a preview card that still exports as a plain link |
-| 12 | Calendar filters persist (deferred from v0.3 step 8) | 🟡 partial | All/Tasks/Notes and Completed survive tab switches and relaunch |
-| 13 | Date display setting: chip or plain text (S12, deferred from v0.3 step 13) | 🟡 partial (chips ✅) | Switching to plain text re-renders every date without changing stored dates |
-| 14 | Task due-date picker and due times (deferred polish from v0.3 step 9) | 🟡 partial (`@` dates ✅) | A date/time popover on a task sets a `date` chip with a time; its reminder fires at that time |
-| 15 | Midnight rollover of Today/Overdue (deferred from v0.3 limitations) | 🟡 partial | With the app idle across the day start, Today and Overdue update within a minute |
+| 1 | Saved user styles: save, duplicate, rename, pin, delete, use for new documents; gallery with live preview before Apply | ✅ | "Studio" saved from one document and applied to another renders identically after relaunch; deleting a style in use falls back to its base and content is unchanged (`scripts/style-test.sh`, `StyleStudioTests`) |
+| 2 | Original presets | ✅ | 6 new (Linen, Aurora, Graphite, Sorbet, Harbor, Orchard; 13 in all), every one ≥ 4.5:1 text contrast (`testPresetsAreReadable…`) |
+| 3 | Gradient editor (start/end color, direction) | ✅ | Angle and colors update live, survive relaunch, and appear in the HTML export (`linear-gradient(130deg, #112233, #ddeeff)`, style test) |
+| 4 | Backdrop library + opt-in online search | 🟡 | Library: 12 original vector scenes, fully offline ✅. Online search (Openverse) is off by default, refuses with no request while off, and asks before the first search ✅; a real search against the live service was not exercised in automation |
+| 5 | Varied separators | ✅ | Two tape separators in one document differ (angle, length, offset) and keep their look after relaunch (stable per block id; style test, `testSeparatorVariation…`) |
+| 6 | Contrast auto-adjust with explanation | ✅ | Low contrast shows "Adjust text color (2.2:1 → 4.6:1)", keeping the hue (`testReadableColorKeepsHue…`, `v04-contrast-adjust.png`) |
+| 7 | Per-block font | ✅ | A Mono block stays Mono after the document font changes, after relaunch and in HTML export; code blocks stay mono; one undo (`StyleEditorTests`, style test) |
+| 8 | Card sizes (compact/medium/feature) and previews (standard/icon/gallery) | ✅ | Stored on the card, drawn in the editor, kept in JSON and HTML export, one undo (`testCardSizeAndPreview…`, style test) |
+| 9 | Styled PDF, HTML and PNG export with "Use document style" | ✅ | PDF and PNG are made from the same HTML; page color sampled in the editor, the PNG and the PDF matches the style within 5%; PDF text is real text and page breaks paginate (style test). Not a full-image diff |
+| 10 | Offline static site | ✅ | 8 pages, 15 local links and assets all resolve, no scripts or remote resources (style test, `testSiteLinksAllResolve`) |
+| 11 | Web-link previews (opt-in) | 🟡 | Off by default: a pasted URL stays text and nothing is requested ✅; when on, a card appears, fills in without an undo step and exports as a plain link ✅ (unit test with a stand-in fetch); a real fetch was not exercised |
+| 12 | Calendar filters persist | ✅ | All/Tasks/Notes and Completed survive relaunch (links test) |
+| 13 | Dates as chips or plain text | ✅ | Switching changes only the look; stored dates identical (links test, `testDueDateFromEditor…`) |
+| 14 | Task due dates and times | ✅ | Date/time picker and `@tomorrow 3pm` write a date chip; the reminder is scheduled at that time; one undo (links test) |
+| 15 | Today/Overdue roll over while idle | ✅ | Checked every 20 s; with the clock moved past the day start, tomorrow's task moves to Today (links test) |
 
-**Gate.** Same document renders consistently in editor, HTML and PDF; every style change is undoable
-and never touches content.
+Also fixed: each document keeps its **own undo history** (⌘Z never edits a document you aren't looking at);
+an off-screen document that receives new link titles gets **no extra undo step**; style changes
+are **undoable** (a drag of the same control is one step); date chips store a stable label ("Mon 9 Nov")
+instead of words like "Tomorrow" that went stale at midnight.
+
+**Release gate (met).** Editor, HTML and PDF agree on page color and text (sampled), every style
+change is undoable and never touches content, v0.3 vaults open unchanged (vault written by the v0.3
+build read by v0.4: content, style, trash and backups intact). 111 unit tests; smoke, drag, links,
+style/export and perf scripts pass (keystroke p95 ≈ 22–24 ms, index rebuild 0.8 s on 10,000 blocks).
+
+**Not tested.** The macOS Allow/Don't Allow prompts for notifications and calendars (computer use was
+not available to click them; scheduling and cancelling was checked in the bundled app). VoiceOver itself
+(not run; the automated label audit only inspects AppKit views and does not cover it). Real network
+requests for image search and link previews.
+
+**Known limitations.** When a document that is not on screen receives new link titles, its own undo
+history is reset (its old steps would point at shifted text). Word export remains "later".
 
 ## v0.5 — "Structure" (macOS)
 
-- ⬜ Collections in documents (field types incl. select/date/relation), items are pages.
-- ⬜ Table → gallery → Kanban views with per-view sort/filter/group/visibility; calculations; CSV export.
-- ⬜ Simple tables. Templates (save as template, picker with categories). Import (Markdown folder,
-  HTML, OPML, Draft JSON). Multiple Spaces.
+**Theme.** Structured information inside documents: collections with views, simple tables,
+templates, import, and more than one Space.
 
-**Data risk.** Biggest schema change → migration 1→2 with a dry-run validator. **Gate.** 1,000-row
-collection scrolls at 60 fps; a Kanban drag is one undoable record update.
+| # | Feature | Status | Acceptance check |
+|---|---|---|---|
+| 1 | Schema 2 migration with a dry-run validator (backup first, never in place) | ⬜ planned | Migrating a copy of a v0.4 vault reports zero differences in text, ids, styles and links; the original is untouched and a backup exists |
+| 2 | Simple tables (rows × columns of rich text, add/remove/reorder, keyboard navigation) (C1) | ⬜ planned | Tab/⇧Tab move between cells; ⌥⌘↓ adds a row; one undo per edit; round-trips Markdown tables |
+| 3 | Collections: fields (text, number, select, multi-select, date, checkbox, relation, URL); items are pages (C2) | ⬜ planned | A 1,000-item collection opens in < 1 s; each item opens as a page and keeps its id after relaunch |
+| 4 | Views: table, gallery, Kanban per collection; per-view sort, filter, group, visible fields (C3) | ⬜ planned | Switching views keeps each view's own settings after relaunch; 1,000-row table scrolls at 60 fps |
+| 5 | Kanban drag between groups | ⬜ planned | A drag changes exactly one field of one record and is one undo |
+| 6 | Calculations row, multi-sort, compound filters (C4) | ⬜ planned | Sum/average/count/empty match a hand-computed fixture; filters combine with AND/OR |
+| 7 | CSV and frontmatter export of collections (C5) | ⬜ planned | Exported CSV re-imports to the same values; Markdown pages carry fields as YAML frontmatter |
+| 8 | Templates: save a document as a template, New → From Template picker with categories (M1, M2) | ⬜ planned | A template creates documents with fresh block ids and its style; editing the template never changes earlier documents |
+| 9 | Import: Markdown folder, HTML, OPML, Draft JSON (X5) | ⬜ planned | Importing Draft's own export reproduces documents, styles, links and folders; Markdown links between files become doc links |
+| 10 | Multiple Spaces with switcher and per-Space settings (N8, Z7) | ⬜ planned | Two Spaces keep separate trees, tags and indexes; switching Spaces never loses unsaved text |
+| 11 | Carried: real-network check of online image search and link previews (v0.4 #4, #11) | 🟡 partial | With the features turned on, one search and one preview against the live services succeed, and turning them off stops all requests |
+| 12 | Carried: exercise the notification and calendar permission prompts in the bundled app | 🟡 partial | Allow → one notification at the due time and events appear; Don't Allow → settings turn back off with an explanation |
+| 13 | Carried: run VoiceOver through Calendar, Tasks, pickers, Style Gallery and export | ⬜ planned | Every control is announced with a name and role; the `[[` picker and Style Gallery are fully usable without a pointer |
+| 14 | Carried: keep an off-screen document's undo history when its link titles change | 🟡 partial (no extra undo step ✅) | After a rename elsewhere, ⌘Z in the linking document still undoes its earlier edits |
+
+**Data risk.** The biggest schema change so far → migration 1→2 with a dry-run validator.
+**Gate.** 1,000-row collection scrolls at 60 fps; a Kanban drag is one undoable record update;
+v0.4 vaults migrate losslessly.
 
 ## v0.6 — "Every window" (macOS + iPad-ready core)
 
@@ -252,6 +284,6 @@ Assistant (opt-in, bring-your-own or local model, never required); local API/MCP
 
 ## Next smallest coherent slice (prioritized by user value)
 
-*(updated after v0.3)* — start v0.4 with user styles (1) and per-block font (7), which share the
-style model, then styled HTML/PDF export (9–10) so the "renders the same everywhere" gate can be
-measured early. The small v0.3 carry-overs (12–15) fit between them.
+*(updated after v0.4)* — start v0.5 with the schema 2 migration and validator (1), then simple
+tables (2) as the first structured block, then collections and views (3–5). The carried checks
+(11–13) need a person at the Mac and can run any time.

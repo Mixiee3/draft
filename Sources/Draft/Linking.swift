@@ -1,4 +1,5 @@
 import AppKit
+import SwiftUI
 import EventKit
 import UserNotifications
 import DraftCore
@@ -8,7 +9,7 @@ import DraftEditor
 extension AppModel {
     var settings: DraftCore.Settings { library.settings }
     var liveIds: Set<String> { Set(library.docs.values.lazy.filter { $0.deletedAt == nil }.map(\.id)) }
-    var todayKey: String { Day.today(startHour: settings.dayStartHour) }
+    var todayKey: String { Day.today(now: clock(), startHour: settings.dayStartHour) }
 
     func docTitle(_ id: String) -> String {
         let t = library.docs[id]?.title ?? ""
@@ -168,6 +169,38 @@ extension AppModel {
         undo?.setActionName(checked ? "Complete Task" : "Reopen Task")
     }
 
+    /// Set or clear a task's due date (and time) in its source document; one undo on `undo` reverts it.
+    func setTaskDue(_ docId: String, _ blockId: String, due: String?, undo: UndoManager?) {
+        let old = index.entries[docId]?.tasks.first { $0.block == blockId }?.due
+        var ok = false
+        if let e = editors[docId] { ok = e.controller.setTaskDue(blockId: blockId, due: due) }
+        else if var d = ensureDoc(docId), let c = d.content.settingTaskDue(blockId, due: due, label: Day.chipLabel(due ?? "", today: todayKey)) {
+            d.content = c; d.updatedAt = nowMs(); docs[docId] = d; markDocDirty(docId); ok = true
+        }
+        guard ok else { toast("That task is no longer in “\(docTitle(docId))”."); return }
+        saveDirtyDocs()
+        undo?.registerUndo(withTarget: self) { m in MainActor.assumeIsolated { m.setTaskDue(docId, blockId, due: old, undo: undo) } }
+        undo?.setActionName(due == nil ? "Clear Due Date" : "Set Due Date")
+    }
+
+    /// Today, Overdue and date labels follow the clock even while the app sits idle: checked every
+    /// 20 s, so a new day (after the start-of-day hour) shows within a minute.
+    func startDayWatch() {
+        watchedDay = todayKey
+        dayTimer?.invalidate()
+        dayTimer = Timer.scheduledTimer(withTimeInterval: 20, repeats: true) { _ in Task { @MainActor in self.checkDayChange() } }
+        dayTimer?.tolerance = 5
+    }
+
+    @discardableResult
+    func checkDayChange() -> Bool {
+        guard todayKey != watchedDay else { return false }
+        watchedDay = todayKey
+        indexTick &+= 1
+        if settings.reminders { syncReminders() }
+        return true
+    }
+
     /// Add a task to a day: it goes into that day's daily note, so it is due that day.
     func addTask(_ text: String, on day: String) {
         let t = text.trimmingCharacters(in: .whitespacesAndNewlines)
@@ -195,6 +228,10 @@ extension AppModel {
     }
 
     // MARK: Tags
+
+    func settingBinding<V>(_ k: WritableKeyPath<DraftCore.Settings, V>) -> Binding<V> {
+        Binding(get: { self.library.settings[keyPath: k] }, set: { v in self.setSettings { $0[keyPath: k] = v } })
+    }
 
     func tagColor(_ tag: String) -> String { settings.tagColors[tag.lowercased()] ?? Tags.defaultColor(tag) }
     func setTagColor(_ tag: String, _ hex: String?) { setSettings { $0.tagColors[tag.lowercased()] = hex } }
@@ -295,6 +332,9 @@ extension EditorHostAdapter: LinkHost {
     func createDocument(title: String, content: Node) -> String? {
         MainActor.assumeIsolated { model.createNestedPage(parent: docId, title: title, content: content, nested: false) }
     }
+    func pageCover(docId: String) -> NSImage? { MainActor.assumeIsolated { model.ensureDoc(docId).flatMap { model.coverImage($0.appearance.cover) } } }
+    func wantsLinkPreviews() -> Bool { MainActor.assumeIsolated { model.settings.linkPreviews } }
+    func fetchLinkPreview(_ url: URL, _ done: @escaping (LinkPreview?) -> Void) { MainActor.assumeIsolated { model.online.linkPreview(url, enabled: model.settings.linkPreviews, done) } }
     func dailyNoteId(create: Bool) -> String? {
         MainActor.assumeIsolated {
             let id = model.dailyNote(model.todayKey, create: create)

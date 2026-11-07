@@ -6,6 +6,20 @@ public struct StyleDef: Hashable, Identifiable, Sendable {
     public var tokens: StyleTokens
 }
 
+/// A style the user saved. `base` is the built-in style it started from; documents using a
+/// deleted user style fall back to it.
+public struct UserStyle: Codable, Hashable, Identifiable, Sendable {
+    public var id: String
+    public var name: String
+    public var base: String
+    public var tokens: StyleTokens
+    public var pinned: Bool?
+    public var createdAt: Double
+    public init(id: String = newId("u_"), name: String, base: String, tokens: StyleTokens, pinned: Bool? = nil, createdAt: Double = nowMs()) {
+        self.id = id; self.name = name; self.base = base; self.tokens = tokens; self.pinned = pinned; self.createdAt = createdAt
+    }
+}
+
 /// Original Draft styles: a calm default first, then expressive and scenic ones.
 public enum Styles {
     public static let builtIn: [StyleDef] = [
@@ -16,9 +30,26 @@ public enum Styles {
         StyleDef(id: "citrus", name: "Citrus", tokens: StyleTokens(backdrop: Backdrop(kind: "gradient", from: "#ffd36e", to: "#ff8a5c", angle: 135), pageColor: "#fffdf6", textColor: "#2b2214", accent: "#e0752e", font: "system", separator: "tape", shellTint: "#fbead0")),
         StyleDef(id: "nightink", name: "Night Ink", tokens: StyleTokens(backdrop: Backdrop(kind: "image", image: "night", blur: false, effect: "immersive"), pageColor: "#20223a", textColor: "#ebe8f6", accent: "#a99cff", font: "serif", separator: "dotted", shellTint: "#2a2b44")),
         StyleDef(id: "typewriter", name: "Typewriter", tokens: StyleTokens(backdrop: Backdrop(kind: "solid", color: "#d9dde3"), pageColor: "#ffffff", textColor: "#1d1f22", accent: "#3a6ea5", font: "mono", separator: "dotted", shellTint: "#eceef1")),
+        StyleDef(id: "linen", name: "Linen", tokens: StyleTokens(backdrop: Backdrop(kind: "solid", color: "#e7dccb"), pageColor: "#fbf6ec", textColor: "#3a2f24", accent: "#a0643a", font: "serif", separator: "dots", shellTint: "#efe6d8")),
+        StyleDef(id: "aurora", name: "Aurora", tokens: StyleTokens(backdrop: Backdrop(kind: "image", image: "aurora", blur: false, effect: "immersive"), pageColor: "#f6fbf9", textColor: "#13241f", accent: "#2b9a7a", font: "system", separator: "wave", shellTint: "#d9eee7")),
+        StyleDef(id: "graphite", name: "Graphite", tokens: StyleTokens(backdrop: Backdrop(kind: "solid", color: "#2b2d31"), pageColor: "#1c1d20", textColor: "#e6e4df", accent: "#e0a64f", font: "system", separator: "line", shellTint: "#26272b")),
+        StyleDef(id: "sorbet", name: "Sorbet", tokens: StyleTokens(backdrop: Backdrop(kind: "gradient", from: "#f6b3c8", to: "#b9c6ff", angle: 160), pageColor: "#fffafc", textColor: "#2e2133", accent: "#c0508a", font: "rounded", separator: "tape", shellTint: "#f6e3ef")),
+        StyleDef(id: "harbor", name: "Harbor", tokens: StyleTokens(backdrop: Backdrop(kind: "image", image: "harbor", blur: true, effect: "immersive"), pageColor: "#f7f9fc", textColor: "#18222e", accent: "#2f6fb0", font: "serif", separator: "line", shellTint: "#dfe7f1")),
+        StyleDef(id: "orchard", name: "Orchard", tokens: StyleTokens(backdrop: Backdrop(kind: "image", image: "orchard", blur: false, effect: "faded"), pageColor: "#fffdf5", textColor: "#2a2416", accent: "#c26a2a", font: "rounded", separator: "dotted", shellTint: "#f3ead5")),
     ]
 
-    public static func style(_ id: String) -> StyleDef { builtIn.first { $0.id == id } ?? builtIn[0] }
+    /// The user's saved styles; kept in step with library.json by the app.
+    nonisolated(unsafe) public static var user: [UserStyle] = []
+
+    /// Built-in styles followed by saved ones (pinned first).
+    public static var all: [StyleDef] {
+        builtIn + user.sorted { ($0.pinned == true ? 0 : 1, $0.createdAt) < ($1.pinned == true ? 0 : 1, $1.createdAt) }.map { StyleDef(id: $0.id, name: $0.name, tokens: $0.tokens) }
+    }
+
+    public static func style(_ id: String) -> StyleDef {
+        if let u = user.first(where: { $0.id == id }) { return StyleDef(id: u.id, name: u.name, tokens: u.tokens) }
+        return builtIn.first { $0.id == id } ?? builtIn[0]
+    }
 
     /// Style tokens with the document's sparse overrides applied.
     public static func resolve(_ a: DocumentAppearance) -> StyleTokens {
@@ -56,7 +87,7 @@ public struct ScenePalette: Hashable, Sendable {
 }
 
 public enum Scenes {
-    public static let order = ["lagoon", "dusk", "meadow", "ridge", "fog", "night"]
+    public static let order = ["lagoon", "dusk", "meadow", "ridge", "fog", "night", "aurora", "dunes", "harbor", "orchard", "snowfield", "canyon"]
     public static let all: [String: (name: String, seed: Double, palette: ScenePalette)] = [
         "lagoon": ("Lagoon", 1, ScenePalette(sky: ("#8fd3e6", "#e8f6f4"), sun: "#fff6d8", layers: ["#7cc4cf", "#4fa6b6", "#2f8597", "#1f6475"], dots: "#ffffff")),
         "dusk": ("Dusk", 2, ScenePalette(sky: ("#f06a4a", "#f9c79a"), sun: "#fff1c9", layers: ["#f19a7b", "#e0715d", "#c5524b", "#8e3a42"], dots: "#fff4ea")),
@@ -64,6 +95,12 @@ public enum Scenes {
         "ridge": ("Ridge", 4, ScenePalette(sky: ("#a9b5e8", "#efe6f4"), sun: "#fff3f7", layers: ["#b3a6dd", "#8f86c9", "#6b66ad", "#4b4a86"], dots: "#ffffff")),
         "fog": ("Fog", 5, ScenePalette(sky: ("#dfe3e8", "#f6f5f2"), sun: "#ffffff", layers: ["#d3d8de", "#c2c8d0", "#aeb6c0", "#9aa3ae"], dots: "#ffffff")),
         "night": ("Night", 6, ScenePalette(sky: ("#151a33", "#3b3568"), sun: "#f5e9c9", layers: ["#2c2a55", "#232247", "#1b1a39", "#13132b"], dots: "#c9c4ff")),
+        "aurora": ("Aurora", 7, ScenePalette(sky: ("#0f2a3a", "#3fbf9a"), sun: "#d7fff0", layers: ["#1d4e57", "#173f48", "#11313a", "#0b232b"], dots: "#bff7e2")),
+        "dunes": ("Dunes", 8, ScenePalette(sky: ("#f7c98b", "#fbe9c8"), sun: "#fff7e0", layers: ["#e8b77c", "#d79b60", "#bf7f4a", "#9c6238"], dots: "#fff3dc")),
+        "harbor": ("Harbor", 9, ScenePalette(sky: ("#9ec3e6", "#eaf1f8"), sun: "#fffaf0", layers: ["#7fa8cf", "#5b88b6", "#3f6b9a", "#2a4f78"], dots: "#ffffff")),
+        "orchard": ("Orchard", 10, ScenePalette(sky: ("#f9d8b0", "#fdf3e1"), sun: "#fff8e6", layers: ["#c9d98a", "#a9c06a", "#86a24f", "#64803c"], dots: "#ffe3c4")),
+        "snowfield": ("Snowfield", 11, ScenePalette(sky: ("#cfe0f2", "#f8fbff"), sun: "#ffffff", layers: ["#e6eef7", "#d7e3f0", "#c4d4e6", "#aec3da"], dots: "#ffffff")),
+        "canyon": ("Canyon", 12, ScenePalette(sky: ("#f0a36b", "#f8d9b8"), sun: "#fff0d6", layers: ["#d9784d", "#bf5d3c", "#9c4632", "#743226"], dots: "#ffe6cf")),
     ]
 }
 
@@ -86,4 +123,33 @@ public enum ColorMath {
         return (max(la, lb) + 0.05) / (min(la, lb) + 0.05)
     }
     public static func isDark(_ hex: String) -> Bool { luminance(hex) < 0.22 }
+
+    public static func hex(_ r: Double, _ g: Double, _ b: Double) -> String {
+        String(format: "#%02x%02x%02x", Int((min(1, max(0, r)) * 255).rounded()), Int((min(1, max(0, g)) * 255).rounded()), Int((min(1, max(0, b)) * 255).rounded()))
+    }
+
+    /// The text color nearest to `text` (same hue, moved toward black or white) that reaches
+    /// `target` contrast on `page`; returns it with the new ratio.
+    public static func readable(_ text: String, on page: String, target: Double = 4.5) -> (hex: String, ratio: Double) {
+        if contrast(text, page) >= target { return (text, contrast(text, page)) }
+        let (r, g, b) = rgb(text)
+        let toward = isDark(page) ? 1.0 : 0.0
+        for i in 1...100 {
+            let t = Double(i) / 100
+            let c = hex(r + (toward - r) * t, g + (toward - g) * t, b + (toward - b) * t)
+            if contrast(c, page) >= target { return (c, contrast(c, page)) }
+        }
+        let c = toward == 1 ? "#ffffff" : "#000000"
+        return (c, contrast(c, page))
+    }
+}
+
+/// Stable per-block variation (hand-made look): the same id always gives the same values.
+public enum Variation {
+    /// A value in 0..<1 for `id` and `salt` (FNV-1a).
+    public static func unit(_ id: String, _ salt: Int = 0) -> Double {
+        var h: UInt64 = 0xcbf29ce484222325
+        for b in (id + "#\(salt)").utf8 { h ^= UInt64(b); h = h &* 0x100000001b3 }
+        return Double(h % 10_000) / 10_000
+    }
 }

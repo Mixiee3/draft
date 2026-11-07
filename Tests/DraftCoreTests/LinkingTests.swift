@@ -48,6 +48,29 @@ final class LinkingTests: XCTestCase {
         XCTAssertEqual(done.settingTask("b_t1", checked: false), d)
     }
 
+    func testTimesAndChipLabelsAndDueEditing() {
+        let today = "2026-11-07"
+        func p(_ s: String) -> String? { DateParse.parse(s, today: today, weekStart: 2, cal: cal) }
+        XCTAssertEqual(p("tomorrow 3pm"), "2026-11-08T15:00")
+        XCTAssertEqual(p("fri at 14:30"), "2026-11-13T14:30")
+        XCTAssertEqual(p("nov 12 9:05"), "2026-11-12T09:05")
+        XCTAssertEqual(p("12am"), "2026-11-07T00:00")
+        XCTAssertEqual(p("nov 12"), "2026-11-12", "a bare number is a day, not a time")
+        XCTAssertNil(p("tomorrow 25:00")); XCTAssertNil(p("13pm"))
+        XCTAssertTrue(Day.chipLabel("2026-11-09", today: today, cal: cal).contains("9"))
+        XCTAssertTrue(Day.chipLabel("2026-11-09T14:30", today: today, cal: cal).hasSuffix("14:30"))
+        XCTAssertTrue(Day.chipLabel("2027-01-03", today: today, cal: cal).contains("2027"))
+        XCTAssertEqual(Day.chipLabel("2026-11-09", today: today, cal: cal), Day.chipLabel("2026-11-09", today: "2026-11-09", cal: cal), "the stored label doesn't change with the day")
+        let d = sampleDoc().content
+        let due = d.settingTaskDue("b_t3", due: "2026-11-09T09:00", label: "Mon 9 Nov 09:00")!
+        let e = VaultIndex.entry(for: DocFile(id: "x", title: "", content: due, appearance: DocumentAppearance(styleId: "paper"), createdAt: 0, updatedAt: 0), daily: nil, rules: TagRules())
+        XCTAssertEqual(e.tasks[2].due, "2026-11-09T09:00")
+        let moved = due.settingTaskDue("b_t3", due: "2026-11-10", label: "Tue 10 Nov")!
+        XCTAssertEqual(VaultIndex.entry(for: DocFile(id: "x", title: "", content: moved, appearance: DocumentAppearance(styleId: "paper"), createdAt: 0, updatedAt: 0), daily: nil, rules: TagRules()).tasks[2].due, "2026-11-10", "replaces, never adds a second date")
+        XCTAssertEqual(moved.settingTaskDue("b_t3", due: nil, label: ""), d, "clearing restores the original task")
+        XCTAssertNil(d.settingTaskDue("b_p", due: nil, label: ""))
+    }
+
     func testTagRules() {
         let r = TagRules(custom: ["#todo"])
         XCTAssertFalse(r.allows("fff")); XCTAssertFalse(r.allows("A1B2C3")); XCTAssertFalse(r.allows("42")); XCTAssertFalse(r.allows("TODO"))

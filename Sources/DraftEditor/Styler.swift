@@ -19,6 +19,8 @@ public struct EditorTheme: Equatable {
     public var completedTasks: String = "strike"
     public var tagRules = TagRules()
     public var tagColors: [String: String] = [:]
+    /// Settings → Advanced → Dates: chips (true) or plain text.
+    public var dateChips = true
 
     public init() {}
     public func tagColor(_ tag: String) -> NSColor { NSColor(hex: tagColors[tag.lowercased()] ?? Tags.defaultColor(tag)) }
@@ -32,9 +34,12 @@ public struct EditorTheme: Equatable {
     public var accentColor: NSColor { NSColor(hex: accent) }
     public var isDarkPage: Bool { ColorMath.isDark(pageColor) }
 
-    public var design: NSFontDescriptor.SystemDesign {
-        switch font { case "serif": return .serif; case "rounded": return .rounded; case "mono": return .monospaced; default: return .default }
+    public var design: NSFontDescriptor.SystemDesign { Self.design(font) }
+    public static func design(_ f: String) -> NSFontDescriptor.SystemDesign {
+        switch f { case "serif": return .serif; case "rounded": return .rounded; case "mono": return .monospaced; default: return .default }
     }
+    /// The design for a block: code is always mono, a block font wins over the document's.
+    public func design(for b: BlockInfo) -> NSFontDescriptor.SystemDesign? { b.kind == .code ? .monospaced : b.font.map(Self.design) }
 
     public func font(size: CGFloat, weight: NSFont.Weight, design: NSFontDescriptor.SystemDesign? = nil, bold: Bool = false, italic: Bool = false) -> NSFont {
         let base = NSFont.systemFont(ofSize: size, weight: bold ? max(weight, .bold) : weight)
@@ -60,7 +65,7 @@ public struct EditorTheme: Equatable {
 
     public func baseFont(_ b: BlockInfo) -> NSFont {
         let m = metrics(b)
-        return font(size: m.size, weight: m.weight, design: b.kind == .code ? .monospaced : nil)
+        return font(size: m.size, weight: m.weight, design: design(for: b))
     }
 
     public static let listIndent: CGFloat = 26
@@ -120,7 +125,7 @@ public enum Styler {
                 let bold = a[.draftBold] != nil
                 let italic = a[.draftItalic] != nil
                 let code = a[.draftCode] != nil
-                var font = theme.font(size: m.size, weight: m.weight, design: b.kind == .code ? .monospaced : nil, bold: bold, italic: italic)
+                var font = theme.font(size: m.size, weight: m.weight, design: theme.design(for: b), bold: bold, italic: italic)
                 if code && b.kind != .code { font = theme.font(size: m.size * 0.88, weight: bold ? .semibold : .regular, design: .monospaced) }
                 attrs[.font] = font
                 var fg = b.variant == "caption" ? theme.secondary : theme.text
@@ -138,7 +143,9 @@ public enum Styler {
                 } else if code && b.kind != .code {
                     attrs[.backgroundColor] = theme.text.withAlphaComponent(0.07)
                 }
-                if a[.draftDocLink] != nil || a[.draftDate] != nil {
+                if a[.draftDate] != nil && a[.draftDocLink] == nil && !theme.dateChips {
+                    attrs[.underlineStyle] = nil
+                } else if a[.draftDocLink] != nil || a[.draftDate] != nil {
                     let missing = a[.draftLinkMissing] != nil
                     fg = missing ? theme.secondary : theme.accentColor
                     attrs[.backgroundColor] = (missing ? theme.text : theme.accentColor).withAlphaComponent(theme.isDarkPage ? 0.22 : 0.1)

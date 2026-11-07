@@ -29,6 +29,7 @@ struct TaskRow: View {
     let doc: String
     let task: IndexedTask
     var showDue = true
+    @State private var duePicker = false
     var body: some View {
         HStack(alignment: .firstTextBaseline, spacing: 10) {
             Button { model.setTask(doc, task.block, checked: !task.checked, undo: undo) } label: {
@@ -41,13 +42,16 @@ struct TaskRow: View {
                 HStack(spacing: 6) {
                     if showDue, let d = task.dueDay {
                         let overdue = !task.checked && d < model.todayKey
-                        Label(Day.label(d, today: model.todayKey) + (task.due!.count > 10 ? " " + String(task.due!.suffix(5)) : ""), systemImage: "calendar")
+                        Label(Day.label(d, today: model.todayKey) + (task.due!.count > 10 ? " " + String(task.due!.suffix(5)) : ""), systemImage: task.due!.count > 10 ? "clock" : "calendar")
                             .foregroundStyle(overdue ? Color.red : t.secondary)
                     }
                     Text(model.docTitle(doc)).foregroundStyle(t.tertiary)
                 }.font(.system(size: 11.5)).labelStyle(.titleAndIcon)
             }
             Spacer(minLength: 0)
+            Button { duePicker = true } label: { Image(systemName: "calendar.badge.clock").foregroundStyle(t.secondary) }
+                .buttonStyle(.plain).help("Due date").accessibilityLabel("Set due date for “\(task.text)”")
+                .popover(isPresented: $duePicker, arrowEdge: .trailing) { DuePicker(doc: doc, task: task) }
         }
         .padding(.horizontal, 12).padding(.vertical, 7)
         .background(RoundedRectangle(cornerRadius: 10, style: .continuous).fill(t.card))
@@ -105,8 +109,6 @@ struct CalendarView: View {
     @Environment(\.tokens) var t
     @ObservedObject var events = CalendarEvents.shared
     let focus: String?
-    @State private var filter = "all"
-    @State private var showCompleted = false
     @State private var before = 7
     @State private var after = 30
 
@@ -116,16 +118,16 @@ struct CalendarView: View {
         let days = (-before...after).map { Day.add(today, days: $0) }
         VStack(spacing: 0) {
             PlannerHeader(title: "Calendar", symbol: "calendar") {
-                Picker("Show", selection: $filter) { Text("All").tag("all"); Text("Tasks").tag("tasks"); Text("Notes").tag("notes") }
+                Picker("Show", selection: model.settingBinding(\.calendarFilter)) { Text("All").tag("all"); Text("Tasks").tag("tasks"); Text("Notes").tag("notes") }
                     .pickerStyle(.segmented).labelsHidden().fixedSize().accessibilityLabel("Show")
-                Toggle("Completed", isOn: $showCompleted).toggleStyle(.checkbox).foregroundStyle(t.secondary)
+                Toggle("Completed", isOn: model.settingBinding(\.calendarShowCompleted)).toggleStyle(.checkbox).foregroundStyle(t.secondary)
                 PillGroup { PillButton(symbol: "sun.max", label: "Today (⇧⌘D)", text: "Today") { model.openDaily() } }
             }
             ScrollViewReader { proxy in
                 ScrollView {
                     LazyVStack(alignment: .leading, spacing: 10) {
                         Button("Show earlier days") { before += 14 }.buttonStyle(.link).padding(.leading, 4)
-                        ForEach(days, id: \.self) { d in DayCard(day: d, filter: filter, showCompleted: showCompleted).id(d) }
+                        ForEach(days, id: \.self) { d in DayCard(day: d, filter: model.settings.calendarFilter, showCompleted: model.settings.calendarShowCompleted).id(d) }
                         Button("Show later days") { after += 30 }.buttonStyle(.link).padding(.leading, 4)
                     }
                     .padding(.horizontal, 18).padding(.bottom, 24).frame(maxWidth: 760)
@@ -271,6 +273,41 @@ struct BacklinksPane: View {
                     }
                 }
             }.padding(.horizontal, 6)
+        }
+    }
+}
+
+/// Due date and optional time for a task; writes a date chip into the source block.
+struct DuePicker: View {
+    @EnvironmentObject var model: AppModel
+    @Environment(\.undoManager) var undo
+    @Environment(\.dismiss) var dismiss
+    let doc: String
+    let task: IndexedTask
+    @State private var date = Date()
+    @State private var withTime = false
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            DatePicker("Due", selection: $date, displayedComponents: [.date]).datePickerStyle(.graphical).labelsHidden()
+            Toggle("Time", isOn: $withTime)
+            if withTime { DatePicker("Time", selection: $date, displayedComponents: [.hourAndMinute]).labelsHidden() }
+            HStack {
+                if task.due != nil { Button("Remove Date", role: .destructive) { model.setTaskDue(doc, task.block, due: nil, undo: undo); dismiss() } }
+                Spacer()
+                Button("Set") {
+                    let f = DateFormatter(); f.locale = Locale(identifier: "en_US_POSIX"); f.dateFormat = withTime ? "yyyy-MM-dd'T'HH:mm" : "yyyy-MM-dd"
+                    model.setTaskDue(doc, task.block, due: f.string(from: date), undo: undo); dismiss()
+                }.keyboardShortcut(.defaultAction)
+            }
+        }
+        .padding(14).frame(width: 260)
+        .onAppear {
+            if let d = task.due {
+                let f = DateFormatter(); f.locale = Locale(identifier: "en_US_POSIX"); f.dateFormat = d.count > 10 ? "yyyy-MM-dd'T'HH:mm" : "yyyy-MM-dd"
+                if let v = f.date(from: d) { date = v }
+                withTime = d.count > 10
+            } else if let v = Day.date(model.todayKey) { date = v }
         }
     }
 }

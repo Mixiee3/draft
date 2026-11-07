@@ -3,7 +3,7 @@ import Foundation
 /// Node types that are blocks and therefore carry a stable `id` attribute.
 public let blockTypes: Set<String> = [
     "paragraph", "heading", "blockquote", "codeBlock", "horizontalRule", "bulletList", "orderedList",
-    "listItem", "taskList", "taskItem", "toggleList", "toggleItem", "callout", "pageBreak", "image", "file", "pageCard",
+    "listItem", "taskList", "taskItem", "toggleList", "toggleItem", "callout", "pageBreak", "image", "file", "pageCard", "linkPreview",
 ]
 let containerListTypes: Set<String> = ["bulletList", "orderedList", "taskList", "toggleList", "callout"]
 
@@ -117,6 +117,10 @@ public func attachmentsOf(_ root: Node) -> [AttachmentInfo] {
         if let id = n.id { current = id }
         if n.type == "file" {
             out.append(AttachmentInfo(blockId: n.id ?? "", kind: "file", label: n.attrs?["name"]?.string ?? "File", ref: n.attrs?["assetId"]?.string ?? ""))
+        }
+        if n.type == "linkPreview", let u = n.attrs?["url"]?.string, !links.contains(u) {
+            links.insert(u)
+            out.append(AttachmentInfo(blockId: n.id ?? "", kind: "link", label: n.attrs?["title"]?.string ?? u, ref: u))
         }
         if n.type == "image" {
             out.append(AttachmentInfo(blockId: n.id ?? "", kind: "image", label: n.attrs?["alt"]?.string.flatMap { $0.isEmpty ? nil : $0 } ?? "Image", ref: n.attrs?["assetId"]?.string ?? n.attrs?["src"]?.string ?? ""))
