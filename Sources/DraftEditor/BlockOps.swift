@@ -25,17 +25,40 @@ extension EditorController {
         return a...max(a, blockIndex(at: endLoc))
     }
 
-    /// Replace the whole document with `flat` as ONE undo step, then select the given blocks.
+    /// Make the document equal `flat` as ONE undo step, replacing only the paragraphs that
+    /// differ (unchanged blocks, their attachments and the undo selection stay put), then select
+    /// the given blocks.
     func rebuild(_ flat: [FlatBlock], select ids: [String], blockMode: Bool) {
         let (s, newTrailing) = Converter.attributed(flat: flat)
+        let old = flatBlocks()
+        let oldParas = Self.paragraphStarts(storage), newParas = Self.paragraphStarts(s)
+        func same(_ a: FlatBlock, _ b: FlatBlock) -> Bool { a.info.isEqual(b.info) && a.inline == b.inline }
+        // Common leading/trailing paragraphs (a prefix paragraph must end with a newline in both).
+        var p = 0
+        while p < min(old.count, flat.count) - 1, same(old[p], flat[p]) { p += 1 }
+        var t = 0
+        while t < min(old.count, flat.count) - p, same(old[old.count - 1 - t], flat[flat.count - 1 - t]) { t += 1 }
+        let oldRange = NSRange(location: oldParas[p], length: (t > 0 ? oldParas[old.count - t] : storage.length) - oldParas[p])
+        let newRange = NSRange(location: newParas[p], length: (t > 0 ? newParas[flat.count - t] : s.length) - newParas[p])
         undoGroup {
             setTrailingUndoable(newTrailing)
-            replace(NSRange(location: 0, length: storage.length), with: s)
+            if oldRange.length > 0 || newRange.length > 0 { replace(oldRange, with: s.attributedSubstring(from: newRange)) }
         }
         if blockMode { selectBlocks(ids: ids) }
         else if let first = ids.first, let pr = paragraph(withId: first) { textView.setSelectedRange(NSRange(location: pr.location, length: 0)) }
         textView.scrollRangeToVisible(textView.selectedRange())
         host?.editorDidChange()
+    }
+
+    /// Start offset of every paragraph, plus one for the empty trailing paragraph when the text
+    /// ends with a newline (matching `Converter.flat`).
+    static func paragraphStarts(_ s: NSAttributedString) -> [Int] {
+        let ns = s.string as NSString
+        var out: [Int] = []
+        var loc = 0
+        while loc < ns.length { out.append(loc); loc = NSMaxRange(ns.paragraphRange(for: NSRange(location: loc, length: 0))) }
+        if ns.length == 0 || ns.character(at: ns.length - 1) == 10 { out.append(ns.length) }
+        return out
     }
 
     func setTrailingUndoable(_ b: BlockInfo) {

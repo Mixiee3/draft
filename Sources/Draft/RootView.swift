@@ -66,6 +66,7 @@ struct RootView: View {
         .tint(t.accent)
         .animation(model.library.settings.reduceMotion ? nil : .easeOut(duration: 0.18), value: model.library.settings.railCollapsed)
         .onAppear { if !model.ready && model.fatal == nil { model.boot() } }
+        .onOpenURL { model.openLink($0) }
         .ignoresSafeArea()
     }
 }

@@ -93,6 +93,17 @@ public final class DraftTextView: NSTextView {
         super.mouseDown(with: event)
     }
 
+    /// The text's context menu starts with the Block menu.
+    public override func menu(for event: NSEvent) -> NSMenu? {
+        let menu = super.menu(for: event) ?? NSMenu()
+        guard let c = controller else { return menu }
+        let block = NSMenuItem(title: "Block", action: nil, keyEquivalent: "")
+        block.submenu = c.blockMenu()
+        menu.insertItem(block, at: 0)
+        menu.insertItem(.separator(), at: 1)
+        return menu
+    }
+
     public override func resetCursorRects() {
         super.resetCursorRects()
     }

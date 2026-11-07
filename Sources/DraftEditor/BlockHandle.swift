@@ -36,6 +36,7 @@ final class BlockHandleView: NSView {
     override func resetCursorRects() { addCursorRect(bounds, cursor: .openHand) }
 
     override func mouseDown(with event: NSEvent) {
+        if event.modifierFlags.contains(.control) { showMenu(event); return }
         guard let c = owner?.controller else { return }
         dragStart = event.locationInWindow
         let flat = c.flatBlocks()
@@ -61,6 +62,23 @@ final class BlockHandleView: NSView {
             indicator.isHidden = false
         }
         needsDisplay = true
+    }
+
+    override func rightMouseDown(with event: NSEvent) { showMenu(event) }
+    override func menu(for event: NSEvent) -> NSMenu? { selectForMenu(); return owner?.controller.blockMenu() }
+
+    func selectForMenu() {
+        guard let c = owner?.controller else { return }
+        let flat = c.flatBlocks()
+        guard flat.indices.contains(blockIndex) else { return }
+        if !c.blockSelectionIds.contains(flat[blockIndex].info.id) { c.selectBlocks(ids: [flat[blockIndex].info.id]) }
+        window?.makeFirstResponder(c.textView)
+    }
+
+    func showMenu(_ event: NSEvent) {
+        selectForMenu()
+        guard let menu = owner?.controller.blockMenu() else { return }
+        NSMenu.popUpContextMenu(menu, with: event, for: self)
     }
 
     override func mouseUp(with event: NSEvent) {

@@ -12,7 +12,7 @@ app or screenshots) · `verified` (covered by `swift test` or `scripts/smoke.sh`
 
 Platform: all statuses are for the native macOS app. Windows: see §22.
 
-Last updated: v0.2 (native macOS) — 2026‑11‑07.
+Last updated: v0.2.1 in progress (native macOS) — 2026‑11‑07.
 
 ## 1. Editor primitives and keyboard
 
@@ -33,7 +33,9 @@ Last updated: v0.2 (native macOS) — 2026‑11‑07.
 | E13 | Indent / outdent | Tab / Shift-Tab | B§8 | verified | — | 0.1 | `testTaskTriggerTabNestingAndToggle` |
 | E14 | Block handle + drag reorder | Gutter handle, insertion line | B§5.3, S01 | verified | E15 | 0.2 | ⋮⋮ handle on hover; drag shows insertion line, autoscrolls; drop moves selected blocks (`testDragDropBoundaryMapping`); one undo |
 | E15 | Block selection | Distinct from text selection | B§5.3 | verified | — | 0.2 | Esc selects block, ⇧↑/↓ extend, ↑/↓ move, Delete removes, typing/Return exits; ⌘C copies blocks (`testEscSelectsBlock…`) |
-| E16 | Group into page ⌘G / ungroup | Tree transform | B§B, S42 | missing | E15 | 0.2 | 3 blocks → one page; child ids preserved |
+| E16 | Group into page ⌘G / ungroup ⇧⌘G | Tree transform | B§B, S42 | verified | E15 | 0.2.1 | First block becomes the page title and the card keeps its id; other blocks keep ids, marks, checkboxes; nested pages move along; undo/redo trash/restore the page; ungroup restores the original blocks exactly (`GroupTests`, smoke `pageTitle`/`ungroupedTrashed`) |
+| E23 | Block context menu | Turn into, duplicate, copy link, group, move, delete | S42, B§5.4 | verified | E15 | 0.2.1 | Right-click/⌃-click on the ⋮⋮ handle or Block submenu in the text menu; items run shared commands (`testDuplicateAndCopyLinkAndMenu`) |
+| E24 | Block links `draft://open?doc=…&block=…` | Copy link to block | B§5.6 | verified | E2 | 0.2.1 | Copy Link to Block; opening the link (from Draft or another app) opens the doc at that block (smoke `linkOpened`) |
 | E17 | Move up/down/top/bottom | Shortcut actions | S42 | verified | E15 | 0.2 | ⌥⌘↑/↓, ⌃⌥⌘↑/↓; ids, marks, task state preserved; one undo each (`testMoveUpDown…`) |
 | E18 | Paste | Rich, plain, Markdown | B§5.3 | verified | — | 0.2 | Multi-line text → one block per line, Markdown recognized; RTF/HTML → headings, lists, bold/italic/underline/strike/code/links; Draft→Draft keeps blocks+marks with new ids; surrounding block keeps id; one undo (`PasteTests`, `MarkdownImportTests`) |
 | E19 | Multi-block text selection | Beta in reference | S12 | working | — | 0.1 | Drag across paragraphs selects text in all (native TextKit) |
@@ -57,7 +59,7 @@ Last updated: v0.2 (native macOS) — 2026‑11‑07.
 | F10 | Text color vs highlight | Separate | B§7 | working | — | 0.1 | Palette: pastel squares = highlight, circles = text color |
 | F11 | Links | Add/edit/remove | S06 | working | — | 0.1 | ⌘K opens link field in the bar; ⌘-click opens URL externally |
 | F12 | `Aa` Titles/Content | Title, Subtitle, Heading / Strong, Body, Caption | S05 | working | cmds | 0.1 | `format-panel.png`; active state follows caret |
-| F13 | `Aa` Groups Page/Card | Turn block into page/card | S05 | partial | E16 | 0.1→0.2 | Inserts nested page or switches an existing page block's presentation; converting text blocks needs E16 |
+| F13 | `Aa` Groups Page/Card | Turn block into page/card | S05 | working | E16 | 0.2.1 | Page/Card switches a page block's presentation or inserts a new page; existing blocks become a page with ⌘G |
 | F14 | `Aa` marks/lists/indent/align | Disabled when not applicable | S05 | working | — | 0.1 | Buttons use command `isEnabled` |
 | F15 | Decoration Focus / Block | Bar or filled block | S05 | working | — | 0.1 | Focus draws accent bar; Block fills background |
 | F16 | Block color | Swatch grid | S05 | working | F15 | 0.1 | Stored as `blockColor` attr, drawn by layout manager |

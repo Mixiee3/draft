@@ -12,6 +12,15 @@ public protocol EditorHost: AnyObject {
     func open(url: URL)
     func editorDidChange()
     func editorStateDidChange()
+    /// Create a nested page of this document that holds `content` (block ids kept); returns its id.
+    func createGroupedPage(title: String, content: Node) -> String?
+    /// Undo/redo of grouping: `false` sends the page to Recently Deleted and hands its nested
+    /// pages back to this document; `true` brings it back.
+    func setGroupedPage(_ docId: String, active: Bool)
+    /// Current title and content of a nested page (for ungroup).
+    func pageDocument(docId: String) -> (title: String, content: Node)?
+    /// Stable link to a block of this document (`draft://open?doc=…&block=…`).
+    func link(toBlock blockId: String) -> URL?
 }
 
 /// Base cell: block attachments span the full text width.

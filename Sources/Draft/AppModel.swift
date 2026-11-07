@@ -376,6 +376,71 @@ final class AppModel: ObservableObject {
         scheduleLibrarySave()
     }
 
+    // MARK: Grouped pages and block links
+
+    func cardDocIds(_ n: Node) -> [String] {
+        var out: [String] = []
+        walk(n) { if $0.type == "pageCard", let d = $0.attrs?["docId"]?.string { out.append(d) } }
+        return out
+    }
+
+    func reparent(_ ids: [String], to parent: String) {
+        for k in ids where library.docs[k] != nil { library.docs[k]?.parentDocId = parent }
+    }
+
+    /// New nested page of `parent` holding `content` exactly as given (block ids kept).
+    func createNestedPage(parent: String, title: String, content: Node) -> String? {
+        guard let pm = library.docs[parent], readOnly == nil else { return nil }
+        let id = newId("d_")
+        var doc = DocFile.empty(id: id, title: title, styleId: docs[parent]?.appearance.styleId ?? library.settings.defaultStyleId)
+        doc.content = content
+        docs[id] = doc
+        var meta = DocMeta(id: id, folderId: pm.folderId, parentDocId: parent)
+        meta.applyDerived(from: doc)
+        library.docs[id] = meta
+        reparent(cardDocIds(content), to: id) // pages that moved along now live under the new page
+        do { try vault.saveDoc(doc) } catch { reportSaveError(error) }
+        scheduleLibrarySave()
+        return id
+    }
+
+    func setGroupedPage(_ id: String, active: Bool, parent: String) {
+        guard let d = ensureDoc(id) else { return }
+        let kids = cardDocIds(editors[id]?.controller.document() ?? d.content)
+        if active {
+            library.restore(id)
+            library.docs[id]?.parentDocId = parent
+            reparent(kids, to: id)
+        } else {
+            saveDirtyDocs()
+            reparent(kids, to: parent) // hand nested pages back before trashing, so they stay live
+            library.trash(id)
+            editors[id] = nil
+            hosts[id] = nil
+        }
+        scheduleLibrarySave()
+        editorTick &+= 1
+    }
+
+    func pageDocument(_ id: String) -> (title: String, content: Node)? {
+        guard let d = ensureDoc(id), library.docs[id]?.deletedAt == nil else { return nil }
+        return (d.title, editors[id]?.controller.document() ?? d.content)
+    }
+
+    nonisolated static func blockLink(doc: String, block: String) -> URL? { URL(string: "draft://open?doc=\(doc)&block=\(block)") }
+
+    /// Opens `draft://open?doc=…&block=…` links (from Copy Link to Block, other apps, or links in notes).
+    func openLink(_ url: URL) {
+        guard url.scheme == "draft", let q = URLComponents(url: url, resolvingAgainstBaseURL: false)?.queryItems,
+              let doc = q.first(where: { $0.name == "doc" })?.value, library.docs[doc] != nil else {
+            toast("This Draft link points to a document that isn't in this vault."); return
+        }
+        openView(.doc(doc))
+        if let block = q.first(where: { $0.name == "block" })?.value {
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) { [weak self] in self?.editors[doc]?.controller.scrollTo(blockId: block) }
+        }
+    }
+
     // MARK: Backups
 
     func snapshots(_ id: String) -> [Snapshot] { vault.snapshots(id) }
@@ -639,7 +704,15 @@ final class EditorHostAdapter: EditorHost {
     }
     func pickImage(_ completion: @escaping (String?) -> Void) { MainActor.assumeIsolated { model.pickImage(completion) } }
     func storeImage(data: Data, ext: String) -> String? { MainActor.assumeIsolated { model.storeImage(data: data, ext: ext) } }
-    func open(url: URL) { NSWorkspace.shared.open(url) }
+    func open(url: URL) {
+        if url.scheme == "draft" { MainActor.assumeIsolated { model.openLink(url) } } else { NSWorkspace.shared.open(url) }
+    }
+    func createGroupedPage(title: String, content: Node) -> String? {
+        MainActor.assumeIsolated { model.createNestedPage(parent: docId, title: title, content: content) }
+    }
+    func setGroupedPage(_ id: String, active: Bool) { MainActor.assumeIsolated { model.setGroupedPage(id, active: active, parent: docId) } }
+    func pageDocument(docId: String) -> (title: String, content: Node)? { MainActor.assumeIsolated { model.pageDocument(docId) } }
+    func link(toBlock blockId: String) -> URL? { AppModel.blockLink(doc: docId, block: blockId) }
     func editorDidChange() { MainActor.assumeIsolated { model.editorChanged(docId) } }
     func editorStateDidChange() { MainActor.assumeIsolated { model.editorTick &+= 1 } }
 }

@@ -344,7 +344,7 @@ struct AttachmentsPane: View {
     var body: some View {
         let items = attachmentsOf(content)
         PaneTitle(title: "Attachments")
-        if items.isEmpty { EmptyHint(text: "Images and links added to this document will appear here. Files arrive in v0.2.") }
+        if items.isEmpty { EmptyHint(text: "Images and links added to this document will appear here. Files arrive in v0.2.1.") }
         ScrollView {
             VStack(alignment: .leading, spacing: 6) {
                 ForEach(items) { a in
