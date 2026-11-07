@@ -52,7 +52,13 @@ there is at most one live document per date.
 Settings added in schema 1 (all optional, defaults in parentheses): `weekStart` (0 = system, 1 = Sunday,
 2 = Monday), `dayStartHour` (0), `showDailyNotes` (true), `dailyTemplateId`, `tagColors`
 (`{lowercased tag: "#hex"}`), `tagRules` (`{ignoreHex: true, ignoreNumeric: true, custom: []}`),
-`reminders` (false), `reminderHour` (9), `calendarEvents` (false).
+`reminders` (false), `reminderHour` (9), `calendarEvents` (false), `dateStyle` (`chip`/`text`), `calendarFilter`
+(`all`/`tasks`/`notes`), `calendarShowCompleted` (false), `onlineImageSearch` (false), `linkPreviews` (false).
+
+`userStyles` (top-level, optional; written only when non-empty): `[{id: "u_…", name, base: "<built-in id>",
+tokens: {…appearance tokens…}, pinned?, createdAt}]`. A document's `appearance.styleId` may name a user
+style; if it is missing, readers use the built-in style `paper` (Draft itself moves documents to
+`base` when a style is deleted).
 
 `excerpt`, `searchText`, `words`, `blocks`, `tint` are **derived** and may be rebuilt from the
 document files at any time. `parentDocId` marks a nested page.
@@ -71,7 +77,7 @@ document files at any time. `parentDocId` marks a nested page.
 
 | type | attrs | content |
 |---|---|---|
-| `paragraph` | `id`, `variant?`=`"caption"`, `blockColor?`, `decoration?` (`focus`/`block`), `textAlign?` | inline |
+| `paragraph` | `id`, `variant?`=`"caption"`, `blockColor?`, `decoration?` (`focus`/`block`), `textAlign?`, `font?` (`system`/`serif`/`mono`/`rounded`; also on `heading`, `listItem`, `taskItem`, `toggleItem`) | inline |
 | `heading` | `id`, `level` 1 Title · 2 Subtitle · 3 Heading · 4 Strong | inline |
 | `blockquote` | `id` | paragraphs |
 | `codeBlock` | `id`, `language?` | one text node, `\n` line breaks |
@@ -84,7 +90,8 @@ document files at any time. `parentDocId` marks a nested page.
 | `toggleItem` | `id`, `open` (bool; collapsed children are hidden, never dropped) | paragraph, then paragraphs or nested lists |
 | `image` | `id`, `assetId` or `src`, `alt`, `caption?`, `width?` (fraction 0.15–1 of the text width; absent = natural size up to full width) | — |
 | `file` | `id`, `assetId` (content hash + original extension), `name` (original file name), `size` (bytes) | — |
-| `pageCard` | `id`, `docId`, `title` (cached), `presentation` (`card`/`page`) | — |
+| `pageCard` | `id`, `docId`, `title` (cached), `presentation` (`card`/`page`), `size?` (`compact`/`medium`/`feature`), `preview?` (`standard`/`icon`/`gallery`) | — |
+| `linkPreview` | `id`, `url`, `title`, `summary?`, `site?` (filled from the page when link previews are on) | — |
 | `text` | — | `text`, `marks?` |
 | `hardBreak` | — | — |
 
@@ -97,7 +104,8 @@ Marks: `bold`, `italic`, `underline`, `strike`, `code`, `highlight {color}`, `te
   up in the other documents (blocks keep their ids when moved or grouped). A target that cannot be
   found is shown as missing; the mark is kept so the link works again if the target returns.
 - **`date`** marks a date chip; `date` is `yyyy-MM-dd` or `yyyy-MM-ddTHH:mm` (local time). The text
-  is a cached label (Today, Tomorrow, Nov 12).
+  is a cached absolute label ("Mon 9 Nov", "Mon 9 Nov 15:00"); builds before v0.4 wrote relative words,
+  which readers replace on load.
 - **Tags** are plain text: `#` + a letter, digit or `_`, then letters, digits, `_`, `-`, `/`, not
   preceded by a letter, digit, `#`, `&`, `/` or `\`. Hex colors (`#fff`, `#a1b2c3`), numbers (`#12`) and
   the custom words in `tagRules` are not tags. Text in `code`, `link`, `docLink` and `date` marks and
@@ -130,4 +138,10 @@ defined by palettes in `Styles.swift`; `asset:<file>` refers to an uploaded back
 `<Title>/` with one `.md` per document (nested pages and `docLink` chips to exported documents linked
 relatively; dates written as `yyyy-MM-dd`), `assets/`, and
 `draft-export.json` (`{"format":"draft-export","formatVersion":1,"docs":[…],"metas":[…]}`) — the
-lossless native copy. Markdown is CommonMark plus `==highlight==` and `- [ ]` tasks.
+lossless native copy. Markdown is CommonMark plus `==highlight==` and `- [ ]` tasks; `linkPreview`
+becomes a plain `[title](url)` link.
+
+Styled exports (v0.4): one `.html` per document with inline CSS from its style (or neutral with
+"Use document style" off), `assets/`, and `backdrop.png` for scenic backdrops; PDF and PNG are
+rendered from that HTML. A website export adds `index.html`, one page per document (nested pages
+included) and `backdrops/`; every link between pages is relative and nothing loads from the network.

@@ -24,7 +24,7 @@ swift run Draft               # run without bundling
 ```
 
 ```bash
-swift test                    # 99 tests: format, vault, index, links, tags, dates, search, trash/backups, editor, blocks, paste, grouping, media
+swift test                    # 111 tests: format, vault, index, links, tags, dates, styles, HTML/site export, online parsing, editor, blocks, paste, grouping, media
 ```
 
 ```bash
@@ -37,6 +37,10 @@ scripts/perf.sh               # opens a 10,000-block document and checks editing
 
 ```bash
 scripts/links-test.sh         # links, backlinks, tasks, daily notes: write, relaunch, delete index/ and relaunch
+```
+
+```bash
+scripts/style-test.sh         # saved styles, block fonts, cards, separators; styled PDF/HTML/PNG and an offline site
 ```
 
 ```bash

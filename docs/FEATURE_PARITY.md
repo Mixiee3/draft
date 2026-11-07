@@ -12,7 +12,7 @@ app or screenshots) · `verified` (covered by `swift test` or `scripts/smoke.sh`
 
 Platform: all statuses are for the native macOS app. Windows: see §22.
 
-Last updated: v0.3 shipped (native macOS) — 2026‑11‑07.
+Last updated: v0.4 shipped (native macOS) — 2026‑11‑08.
 
 ## 1. Editor primitives and keyboard
 
@@ -67,7 +67,7 @@ Last updated: v0.3 shipped (native macOS) — 2026‑11‑07.
 | F17 | Toggle list | `+ ` | B§G, S05 | verified | — | 0.2.1 | ▶/▼ marker (click or ⌘↩) collapses children, which are hidden from layout but kept in the file (`open` attr); caret skips hidden text; undoable; survives reload (`testToggleCollapse…`) |
 | F18 | Callout | Block | B§7 | verified | — | 0.2.1 | Slash / `Aa` → Callout; icon + tinted box spanning its paragraphs; Return continues, empty Return exits; block color applies; exports as a quote with the icon (`testCalloutContinuesExits…`) |
 | F19 | Code block | ``` | B§7 | working | — | 0.1 | Monospace, background; Return adds lines, Return on empty last line exits; no syntax highlighting |
-| F20 | Per-block font | Format panel bottom | S05 | missing | — | 0.4 | — |
+| F20 | Per-block font | Format panel bottom | S05 | verified | — | 0.4 | Format → Block Font (Doc/System/Serif/Mono/Rounded) and Format menu; wins over the document font; code stays mono; HTML export; one undo (`StyleEditorTests`, style test) |
 
 ## 3. Nested pages and cards
 
@@ -75,7 +75,7 @@ Last updated: v0.3 shipped (native macOS) — 2026‑11‑07.
 |---|---|---|---|---|---|---|---|
 | P1 | Nested page | Block becomes a page | B§B, B§5.4 | working | — | 0.1 | `/page` or `/card` creates child doc and opens it in place; card click opens; `nested-page.png` |
 | P2 | Card presentation | Visual treatment of same model | B§D | partial | P1 | 0.1→0.4 | Card vs page row; sizes and preview modes missing |
-| P3 | Card preview modes | Standard, emoji, book, sticky, gallery | B§D | missing | P2 | 0.4 | — |
+| P3 | Card preview modes | Standard, emoji, book, sticky, gallery | B§D | verified | P2 | 0.4 | Sizes compact/medium/feature and previews standard/icon (monogram)/gallery (cover); stored on the card, exported (`testCardSizeAndPreview…`, style test). Emoji/book/sticky looks not built |
 | P4 | Breadcrumb / back | Ancestry; back restores parent | B§5.4 | working | P1 | 0.1 | Child shows `Folder › Parent`; Back returns within tab |
 | P5 | Outline lists pages | TOC lists headings and pages | S01 | working | P1 | 0.1 | Outline shows page rows; click opens |
 | P6 | Recoverable deleted pages | Reference: nested pages not in Recently Deleted | B§B | verified | H4 | 0.2 | Deleting a doc trashes its nested pages too; restore brings them back with structure; a page whose parent stays deleted returns top-level (`TrashTests`) |
@@ -87,14 +87,14 @@ Last updated: v0.3 shipped (native macOS) — 2026‑11‑07.
 | ID | Capability | Reference behavior | Evidence | Status | Deps | Target | Acceptance check |
 |---|---|---|---|---|---|---|---|
 | T1 | Style panel | Preview, All Styles, Tailored, Backdrop, Doc/Text color, Cover, Separator, Font, Advanced | S02 | working | — | 0.1 | `style-panel.png`; "Tailored" = overrides shown in preview name + Reset |
-| T2 | Built-in styles | 100+ presets | S03, B§C | partial | T1 | 0.1→0.4 | 7 original styles (Paper calm default; Tidepool, Ember, Meadow scenic; Citrus, Night Ink, Typewriter) |
-| T3 | Style Gallery | Searchable modal, 3 columns | S03 | working | T2 | 0.1 | `style-gallery.png`; search filters; click applies |
-| T4 | Save / default / pin styles | User styles | B§C | partial | T2 | 0.4 | "Use for new documents" works; saving custom styles missing |
+| T2 | Built-in styles | 100+ presets | S03, B§C | working | T1 | 0.4 | 13 original styles (6 new in v0.4), all ≥ 4.5:1 contrast (`testPresetsAreReadable…`) |
+| T3 | Style Gallery | Searchable modal, 3 columns | S03 | working | T2 | 0.4 | My Styles + Draft Styles, search, live preview pane with contrast and Apply (`v04-style-gallery.png`) |
+| T4 | Save / default / pin styles | User styles | B§C | verified | T2 | 0.4 | Save, duplicate, rename, pin, delete (falls back to base), use for new documents; survives relaunch (style test, `StyleStudioTests`) |
 | T5 | Backdrop solid | Palette | B§C | working | — | 0.1 | Backdrop popover → Solid |
-| T6 | Backdrop gradient | Start/end/direction | B§C | partial | — | 0.4 | Presets work; editor missing |
-| T7 | Backdrop image, shuffle, upload, blur, Immersive/Faded | S04 | S04 | partial | assets | 0.1→0.4 | Original vector scenes, Shuffle, Upload, Blur, Immersive/Faded work; photo search missing |
+| T6 | Backdrop gradient | Start/end/direction | B§C | verified | — | 0.4 | Start/End color wells and direction slider, live; round-trips and exports (style test) |
+| T7 | Backdrop image, shuffle, upload, blur, Immersive/Faded | S04 | S04 | partial | assets | 0.4 | 12 original offline scenes, Shuffle, Upload, Blur, Immersive/Faded; opt-in Openverse search (off by default, asks first) — live search not exercised (`v04-backdrop-library.png`) |
 | T8 | Page color and text color independent | Separate layers | B§C | working | — | 0.1 | Changing one leaves the other |
-| T9 | Contrast warning / adjust | Warn + auto adjust | B§C | partial | T8 | 0.4 | Warning < 4.5:1 with one-click readable color; explained auto-adjust missing |
+| T9 | Contrast warning / adjust | Warn + auto adjust | B§C | verified | T8 | 0.4 | Warning < 4.5:1 with "Adjust text color (x:1 → y:1)", hue kept (`testReadableColor…`, `v04-contrast-adjust.png`) |
 | T10 | Cover image | Upload, crop ratios, reposition, remove | B§C | verified | assets | 0.2.1 | Upload; hover pencil/X (also Style → Crop…/Remove); crop sheet with Original, 16:9, 2:1, 3:1, 4:3, Free, drag to move, corner to resize, arrow keys; the crop is stored as a rect + ratio, never baked into the image (`CoverCropTests`; visual check at 1440 and 720 pt) |
 | T11 | Separator styles | Line, tape, doodle | S02, B§C | working | — | 0.1 | Line / Dots / Tape / Wave (original artwork), document-wide |
 | T12 | Fonts System/Serif/Mono/Rounded | Families | S02, B§C | working | — | 0.1 | System font designs; document-only |
@@ -139,9 +139,9 @@ Last updated: v0.3 shipped (native macOS) — 2026‑11‑07.
 | K1 | Checklist block | `[] ` | B§G | verified | — | 0.1 | Trigger + click toggle (`testTaskTrigger…`) and smoke test |
 | K2 | Document Tasks pane | Tasks in doc | S18 | working | K1 | 0.1 | Lists, counts, toggles source block |
 | K3 | Global Tasks view | Today/Upcoming/etc. | B§5.7 | verified | index | 0.3 | Inbox/Today/Upcoming/Overdue/Completed with counts; completing updates the source block (editor and file) and one undo reverts it (links test) |
-| K4 | Due dates / reminders | Date on task | B§5.7 | partial | K3 | 0.3 | `@tomorrow` chip sets the due date; reminders opt-in, one pending notification per due task, removed when turned off (bundled-app probe). Real permission prompt not exercised; due-date picker and times → v0.4 |
+| K4 | Due dates / reminders | Date on task | B§5.7 | partial | K3 | 0.4 | `@tomorrow 3pm` and the Tasks date/time picker set the due date; reminder scheduled at that time; one undo (links test). Real permission prompt not exercised |
 | K5 | Daily notes | One page per date | B§5.7, S33 | verified | index | 0.3 | ⇧⌘D opens today; opening twice never creates two notes (also after relaunch); previous/next/Today in the top bar; template; start-of-day setting (links test, `LinkingTests`) |
-| K6 | Calendar stream | Day cards, Add Task, Create Daily Note, filters | S33 | partial | K5 | 0.3 | Today highlighted; Add Task on a future day creates a task due that day (links test); All/Tasks/Notes + Completed filters; optional calendar events (permission-gated). Filters don’t persist yet → v0.4 |
+| K6 | Calendar stream | Day cards, Add Task, Create Daily Note, filters | S33 | verified | K5 | 0.4 | Today highlighted; Add Task on a future day is due that day; filters persist across relaunch; Today/Overdue roll over while idle (links test) |
 | K7 | Completed-task appearance | Setting | S12 | working | — | 0.1 | Strikethrough / Dimmed / Unchanged |
 
 ## 8. Tags, links, backlinks
@@ -179,7 +179,7 @@ Last updated: v0.3 shipped (native macOS) — 2026‑11‑07.
 | A3 | File attachment block | File | S34, S19 | verified | vault | 0.2.1 | Insert → File, drag a file onto the page, or paste a file copied in Finder; stored once by content hash with its original name and size; click opens it in its default app; listed in Attachments; exported as a link with the file in `assets/` (`testFilesInsertOpenPasteAndExport`, `FileAssetTests`) |
 | A7 | Image size, caption, alt text | Resize, caption | B§7 | verified | A1 | 0.2.1 | Drag the right edge or use the image bar (S/M/L/Full) to set width as a fraction of the text width; caption shown under the image and exported; alt text is the VoiceOver label and the Markdown alt; each change is one undo step (`testImageBarSizeCaptionAltAndUndo`, `testDragResize…`) |
 | A4 | Attachments pane | Images, links, files listed | S19 | working | A1 | 0.2.1 | Lists images (thumbnail), links and files; click jumps to the block |
-| A5 | Link previews | Rich link | B§H | missing | opt-in network | 0.4 | — |
+| A5 | Link previews | Rich link | B§H | partial | opt-in network | 0.4 | Off by default (no request); when on, a pasted URL becomes a card that fills in without an undo step and exports as a plain link (unit test with a stand-in fetch). Live fetch not exercised |
 | A6 | Whiteboard / Mermaid / Formula / photo search | Insert menu | S34 | missing | — | later | Listed disabled with version |
 
 ## 12. Import / export
@@ -189,7 +189,7 @@ Last updated: v0.3 shipped (native macOS) — 2026‑11‑07.
 | X1 | Markdown + assets | Export As → Markdown | S39 | verified | — | 0.1 | `MarkdownTests`; real export inspected (nested page linked, tasks, quote, highlight) |
 | X2 | Lossless native export | — | B§10 | verified | — | 0.1 | `draft-export.json` in bundle (`testExportBundle…`) |
 | X3 | Export all | Library ⋯ | S25 | working | X1 | 0.1 | One folder, subfolders per folder |
-| X4 | PDF / Print / Word / Image / E-mail | Export panel | S39 | partial | — | 0.4 | Print works (Save as PDF from system dialog); styled PDF, Word, Image, E-mail listed with versions |
+| X4 | PDF / Print / Word / Image / E-mail | Export panel | S39 | verified | — | 0.4 | PDF (paged), HTML and PNG with "Use document style"; page color and text agree with the editor (style test). Word later, E-mail v1.x |
 | X5 | Import | Library ⋯ → Import | S25 | missing | — | 0.5 | Listed disabled |
 | X6 | Duplicate | Export panel | S39 | working | — | 0.1 | New ids for every block |
 | X7 | Transfer to other apps | Disabled when absent | S40 | missing | — | 1.x | Share panel explains |
@@ -212,7 +212,7 @@ Last updated: v0.3 shipped (native macOS) — 2026‑11‑07.
 |---|---|---|---|---|---|---|---|
 | U1 | Publish with preview + Create Link | Publish tab | S38 | partial | — | 1.x | Preview shown; Create Link disabled with plan |
 | U2 | Published content + analytics | Settings | S14 | missing | U1 | 1.x | Settings planned state |
-| U3 | Static HTML export | — | B§J | missing | X4 | 0.4 | — |
+| U3 | Static HTML export | — | B§J | verified | X4 | 0.4 | Website of all documents: index + one page each, relative links and assets all resolve, offline (style test) |
 
 ## 15. Sharing, comments, collaboration
 
@@ -240,7 +240,7 @@ Last updated: v0.3 shipped (native macOS) — 2026‑11‑07.
 | Z3 | Reduce animations | Toggle | S10 | working | — | 0.1 | Disables panel/rail animations |
 | Z4 | Sound / app icon choice | Toggles | S10 | missing | — | later | — |
 | Z5 | Language & spelling | Rows | S11 | missing | I1 | 0.6 | Planned state |
-| Z6 | Advanced | Task appearance, date links, sidebar, week start | S12 | partial | — | 0.6 | Week start, start of day, Rebuild Index (Settings → Advanced); task appearance; date-link display setting → v0.4; sidebar customization → v0.6 |
+| Z6 | Advanced | Task appearance, date links, sidebar, week start | S12 | partial | — | 0.6 | Week start, start of day, dates as chips/plain text, Online (off by default), Rebuild Index; sidebar customization → v0.6 |
 | Z7 | Space settings | Avatar, name | S13 | partial | — | 0.5 | Name editable; generated avatar |
 | Z8 | Stats | Storage, docs, blocks, pages, words, reading time | S15 | working | — | 0.1 | Settings → Stats |
 | Z10 | Daily notes & tasks, Tags settings | Daily notes, reminders, calendar events; tag rules and colors | S12, S17, S25 | working | K5, G2 | 0.3 | `v03-settings-daily.png`, `v03-settings-tags.png` |
