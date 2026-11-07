@@ -583,6 +583,31 @@ enum Automation {
             report[name] = out
         }
         m.coverEditorDoc = nil
+        c.textView.setSelectedRange(NSRange(location: (c.textView.string as NSString).length, length: 0))
+        EditorCommands.command("insert.table")!.run(c); await boundary()
+        EditorCommands.command("insert.collection")!.run(c); await boundary()
+        m.flushAll()
+        if let tid = c.document().content?.first(where: { $0.type == "table" })?.id {
+            c.tableEditor.begin(tableId: tid, row: 0, column: 0); await wait(0.3)
+            var out: [String] = []; if let root = w.contentView { unlabeled(root, into: &out) }; report["tableEditor"] = out
+            c.tableEditor.end()
+        }
+        if let block = c.document().content?.first(where: { $0.type == "collection" })?.id {
+            m.addCollectionItem(id, block, title: "One", values: [:], undo: nil)
+            m.openCollection(id, block)
+            for v in m.collectionData(id, block)?.views ?? [] {
+                m.updateCollection(id, block, "View", undo: nil) { $0.activeView = v.id }
+                await wait(0.5)
+                var out: [String] = []; if let root = w.contentView { unlabeled(root, into: &out) }; report["collection-" + v.type] = out
+            }
+        }
+        for (name, setup, done) in [("templatePicker", { m.templatePicker = true }, { m.templatePicker = false }),
+                                    ("settingsSpaces", { m.openView(ViewRef(kind: "settings", section: "space")) }, {})] as [(String, () -> Void, () -> Void)] {
+            setup(); await wait(0.5)
+            var out: [String] = []; if let root = w.contentView { unlabeled(root, into: &out) }; report[name] = out
+            done()
+        }
+        m.openView(.doc(id)); await wait(0.4)
         // Keyboard: Tab on a selected image moves into the image bar.
         w.makeFirstResponder(c.textView)
         if let i = c.document().content?.first(where: { $0.type == "image" }).flatMap({ c.paragraph(withId: $0.id!)?.location }) { c.textView.setSelectedRange(NSRange(location: i, length: 1)) }
