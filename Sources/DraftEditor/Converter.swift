@@ -63,6 +63,10 @@ public enum Converter {
             out.append(FlatBlock(info: BlockInfo(id: id, kind: .page, raw: n), inline: []))
         case "linkPreview":
             out.append(FlatBlock(info: BlockInfo(id: id, kind: .bookmark, raw: n), inline: []))
+        case "table":
+            out.append(FlatBlock(info: BlockInfo(id: id, kind: .table, raw: n), inline: []))
+        case "collection":
+            out.append(FlatBlock(info: BlockInfo(id: id, kind: .collection, raw: n), inline: []))
         case "bulletList", "orderedList", "taskList", "toggleList":
             let kind: BlockKind = n.type == "bulletList" ? .bullet : n.type == "orderedList" ? .ordered : n.type == "toggleList" ? .toggle : .task
             for (i, item) in (n.content ?? []).enumerated() {
@@ -221,7 +225,7 @@ public enum Converter {
             if let l = i.language { attrs["language"] = .string(l) }
             let text = b.inline.map { $0.text ?? "" }.joined()
             return Node("codeBlock", attrs: attrs, content: text.isEmpty ? nil : [.text(text)])
-        case .divider, .image, .page, .file, .bookmark, .opaque:
+        case .divider, .image, .page, .file, .bookmark, .table, .collection, .opaque:
             var n = i.raw ?? Node(i.kind == .divider ? "horizontalRule" : "paragraph")
             // Unknown nodes are preserved verbatim; known attachment blocks keep a stable id.
             if i.kind != .opaque || n.id != nil { n[attr: "id"] = .string(i.id) }

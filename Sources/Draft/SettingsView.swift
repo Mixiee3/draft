@@ -11,7 +11,7 @@ struct SettingsView: View {
         ("appearance", "Appearance", "paintpalette", nil), ("editor", "Editor", "text.cursor", nil), ("space", "Space", "square.on.circle", nil),
         ("daily", "Daily Notes & Tasks", "calendar", nil), ("tags", "Tags", "number", nil), ("advanced", "Advanced", "slider.horizontal.3", nil),
         ("stats", "Stats", "chart.bar", nil), ("data", "Data & Storage", "internaldrive", nil), ("about", "About Draft", "info.circle", nil),
-        ("templates", "Templates", "doc.on.doc", "v0.5"), ("published", "Published Content", "globe", "v1.x"), ("language", "Language & Spelling", "globe.europe.africa", "v0.6"),
+        ("templates", "Templates", "doc.on.doc", nil), ("published", "Published Content", "globe", "v1.x"), ("language", "Language & Spelling", "globe.europe.africa", "v0.6"),
     ]
 
     var body: some View {
@@ -61,9 +61,26 @@ struct SettingsView: View {
                     TextField("Space name", text: $spaceName, onCommit: { model.renameSpace(spaceName) }).textFieldStyle(.roundedBorder)
                     Button("Save") { model.renameSpace(spaceName) }
                 }.onAppear { spaceName = model.library.space.name }
-                Text("Multiple Spaces arrive in v0.5.").font(.system(size: 11.5)).foregroundStyle(t.tertiary)
+            }
+            group("All Spaces") {
+                ForEach(model.library.spaces, id: \.id) { s in
+                    HStack {
+                        SpaceAvatar(name: s.id == model.library.space.id ? model.library.space.name : s.name, size: 24)
+                        Text(s.id == model.library.space.id ? model.library.space.name : s.name)
+                        if s.id == model.library.space.id { Text("current").font(.system(size: 11)).foregroundStyle(t.tertiary) }
+                        Spacer()
+                        if s.id != model.library.space.id {
+                            Button("Switch") { model.switchSpace(s.id) }
+                            Button("Delete") { model.deleteSpace(s.id) }.disabled(!model.spaceIsEmpty(s.id))
+                                .help(model.spaceIsEmpty(s.id) ? "Delete this empty Space" : "Move or delete its documents first")
+                        }
+                    }.font(.system(size: 13))
+                }
+                Button("New Space…") { model.createSpace("New Space") }
+                Text("Each Space has its own folders, documents, tags, tasks and tabs. Templates and styles are shared.").font(.system(size: 11.5)).foregroundStyle(t.tertiary)
             }
         case "daily": daily
+        case "templates": templates
         case "tags": tags
         case "advanced": advanced
         case "stats": stats
@@ -160,6 +177,26 @@ struct SettingsView: View {
     func saveIgnore() {
         let words = ignoreText.split(separator: ",").map { $0.trimmingCharacters(in: CharacterSet(charactersIn: "# ")) }.filter { !$0.isEmpty }
         model.setSettings { $0.tagRules.custom = words }
+    }
+
+    var templates: some View {
+        VStack(alignment: .leading, spacing: 22) {
+            group("Your templates") {
+                if model.library.templates.isEmpty { Text("None yet. Open a document, then Info → Actions → Save as Template.").foregroundStyle(t.secondary) }
+                ForEach(model.library.templates.sorted { $0.title < $1.title }) { m in
+                    HStack {
+                        Text(model.docTitle(m.id)); Text(m.template ?? "").foregroundStyle(t.tertiary)
+                        Spacer()
+                        Button("Edit") { model.openView(.doc(m.id)) }
+                        Button("Delete") { model.deleteTemplate(m.id) }
+                    }.font(.system(size: 13))
+                }
+            }
+            group("Built in") {
+                ForEach(BuiltInTemplates.all) { b in HStack { Text(b.title); Text(b.category).foregroundStyle(t.tertiary); Spacer() }.font(.system(size: 13)) }
+                Button("New from Template…") { model.templatePicker = true }
+            }
+        }
     }
 
     var advanced: some View {
@@ -279,6 +316,7 @@ struct Overlays: View {
     var body: some View {
         ZStack {
             if model.quickOpen { QuickOpen() }
+            if model.templatePicker { TemplatePicker() }
             if let c = model.confirm { ConfirmDialog(req: c) }
             VStack {
                 Spacer()

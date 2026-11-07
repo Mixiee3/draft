@@ -135,3 +135,12 @@ extension EditorController {
         insertFragment(flat.map { FlatBlock(info: $0.info.with(id: newId("b_")), inline: $0.inline) })
     }
 }
+
+/// An HTML page as document content (headings, lists, marks, links).
+public enum HTMLImport {
+    public static func document(_ data: Data) -> Node? {
+        guard let s = try? NSAttributedString(data: data, options: [.documentType: NSAttributedString.DocumentType.html, .characterEncoding: String.Encoding.utf8.rawValue], documentAttributes: nil) else { return nil }
+        let flat = RichImport.blocks(from: s)
+        return flat.isEmpty ? nil : ensureBlockIds(Converter.tree(from: flat))
+    }
+}

@@ -1,6 +1,6 @@
-# Draft vault format (schema 1)
+# Draft vault format (schema 2)
 
-Schema 1 grows only by **additive** node types and optional attributes. A Draft that does not know
+The schema grows only by **additive** node types and optional attributes. A Draft that does not know
 a node type keeps it verbatim and shows it as a preserved placeholder, so older builds never lose
 newer content; the schema number changes only for changes that need a migration.
 
@@ -10,7 +10,7 @@ The reference implementation is `Sources/DraftCore`. All JSON is UTF‑8; timest
 
 ```
 <vault>/
-  library.json            index (schemaVersion, space, folders, docs, settings, tabs)
+  library.json            index (schemaVersion, space, spaces, folders, docs, settings, tabs)
   docs/<docId>.json       one document
   assets/<sha256-32>.<ext> images, covers and attached files, content-addressed (extension: 1–10 lowercase letters/digits)
   backups/                copies written before any migration (never read by the app)
@@ -24,7 +24,9 @@ The reference implementation is `Sources/DraftCore`. All JSON is UTF‑8; timest
 2. **Never drop unknown data**: unknown top-level keys of `library.json` / document files, unknown
    node types and unknown attributes must be written back unchanged.
 3. **Schema versions**: if `schemaVersion` is higher than supported, open read-only and refuse to
-   write. When migrating, write the original into `backups/` first.
+   write. When migrating, write the original into `backups/` first, run the migration on an
+   in-memory copy and compare it with the original (titles, styles, folders, parents, trash state,
+   block ids, text, links); write only if nothing differs, otherwise stay read-only.
 4. **Block ids** are stable. On load, a block without an id or with a duplicate id gets a new one;
    the first occurrence of an id always keeps it.
 
@@ -32,10 +34,11 @@ The reference implementation is `Sources/DraftCore`. All JSON is UTF‑8; timest
 
 ```json
 {
-  "schemaVersion": 1,
+  "schemaVersion": 2,
   "space": { "id": "s_…", "name": "My Space" },
-  "folders": [{ "id": "f_…", "name": "Getting Started", "parentId": null, "color": "#5b6cf0", "order": 0, "createdAt": 0 }],
-  "docs": { "d_…": { "id": "d_…", "title": "…", "folderId": "f_…", "parentDocId": null,
+  "spaces": [{ "id": "s_…", "name": "My Space", "tabs": [ … ], "activeTabId": "t_…" }],
+  "folders": [{ "id": "f_…", "spaceId": "s_…", "name": "Getting Started", "parentId": null, "color": "#5b6cf0", "order": 0, "createdAt": 0 }],
+  "docs": { "d_…": { "id": "d_…", "spaceId": "s_…", "title": "…", "folderId": "f_…", "parentDocId": null,
                      "createdAt": 0, "updatedAt": 0, "viewedAt": 0, "starred": false, "styleId": "paper",
                      "excerpt": "…", "searchText": "…", "words": 0, "blocks": 0, "tint": "#…" } },
   "settings": { "theme": "system", "accent": "#5b6cf0", "useDocStyleForApp": true, "…": "…" },
@@ -44,6 +47,14 @@ The reference implementation is `Sources/DraftCore`. All JSON is UTF‑8; timest
   "expandedFolders": ["f_…"]
 }
 ```
+
+**Spaces (schema 2).** `space` is the active Space; `spaces` lists all of them, each with the tabs it
+had open when it was last left (`tabs`, `activeTabId`; the active Space's live tabs are the top-level
+`tabs`). Folders and documents belong to the Space in `spaceId`. Tags, tasks and the sidebar are per
+Space; user styles and templates are shared. `DocMeta.template` (a category name) marks a saved
+template; templates are listed in every Space. **Migration 1 → 2** sets `spaceId` on every folder and
+document to the existing Space and adds `spaces: [space]`; the original is kept as
+`backups/<time>-library.v1.json`.
 
 Document tabs may carry `scrollY`, `selStart`, `selLength` (where the user was; optional). `DocMeta.deletedAt`
 marks a document in Recently Deleted. `DocMeta.dailyDate` (`yyyy-MM-dd`, optional) marks a daily note;
@@ -92,6 +103,10 @@ document files at any time. `parentDocId` marks a nested page.
 | `file` | `id`, `assetId` (content hash + original extension), `name` (original file name), `size` (bytes) | — |
 | `pageCard` | `id`, `docId`, `title` (cached), `presentation` (`card`/`page`), `size?` (`compact`/`medium`/`feature`), `preview?` (`standard`/`icon`/`gallery`) | — |
 | `linkPreview` | `id`, `url`, `title`, `summary?`, `site?` (filled from the page when link previews are on) | — |
+| `table` | `id` | `tableRow` (the first row is the header) |
+| `tableRow` | — | `tableCell` |
+| `tableCell` | — | inline (text with marks) |
+| `collection` | `id`, `data` (below) | — |
 | `text` | — | `text`, `marks?` |
 | `hardBreak` | — | — |
 
@@ -113,6 +128,25 @@ Marks: `bold`, `italic`, `underline`, `strike`, `code`, `highlight {color}`, `te
 - **Task due date**: an optional `due` attribute on `taskItem`, else the first `date` mark in the
   task's first paragraph, else the `dailyDate` of the document holding it.
 - Older builds keep `docLink` and `date` text as plain text with the unknown mark preserved.
+
+### Collections
+
+`collection.data` is `{name, fields, views, activeView?, items}`:
+
+- `fields`: `[{id, name, type, options?}]`, `type` one of `text`, `number`, `select`, `multiSelect`,
+  `date`, `checkbox`, `relation`, `url`; `options` lists select choices.
+- `views`: `[{id, name, type: table|gallery|kanban, sort: [{field, ascending}], filters: [{id, field,
+  op, value?}], match: all|any, groupBy?, visible?: [fieldId], calc: {fieldId: count|empty|filled|sum|average|min|max|checked}}]`.
+  Filter `op`: `is`, `isNot`, `contains`, `isEmpty`, `isNotEmpty`, `gt`, `lt`, `before`, `after`, `checked`,
+  `unchecked`. The field id `title` means the item's page title.
+- `items`: `[{id, docId, values: {fieldId: value}}]`. Each item is a page: `docId` is a document whose
+  `parentDocId` is the document holding the collection; its title is the item's name. Values are
+  strings (`text`, `select`, `url`, `date` as `yyyy-MM-dd`), numbers, booleans (`checkbox`) or arrays
+  of strings (`multiSelect`; `relation` holds document ids).
+
+Markdown export writes a collection as a table of its active view, and each item page with its
+values as YAML frontmatter. A collection's CSV has a `Name` column plus one column per field
+(multi-values joined with `; `).
 
 ### index/index.json (derived)
 
@@ -137,8 +171,9 @@ defined by palettes in `Styles.swift`; `asset:<file>` refers to an uploaded back
 
 `<Title>/` with one `.md` per document (nested pages and `docLink` chips to exported documents linked
 relatively; dates written as `yyyy-MM-dd`), `assets/`, and
-`draft-export.json` (`{"format":"draft-export","formatVersion":1,"docs":[…],"metas":[…]}`) — the
-lossless native copy. Markdown is CommonMark plus `==highlight==` and `- [ ]` tasks; `linkPreview`
+`draft-export.json` (`{"format":"draft-export","formatVersion":1,"docs":[…],"metas":[…],"folders":[…],"styles":[…]}`) — the
+lossless native copy. Importing it gives clashing document and folder ids new ones and rewrites every
+reference (page cards, doc links, collection items). Markdown is CommonMark plus `==highlight==` and `- [ ]` tasks; `linkPreview`
 becomes a plain `[title](url)` link.
 
 Styled exports (v0.4): one `.html` per document with inline CSS from its style (or neutral with

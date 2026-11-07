@@ -388,11 +388,18 @@ struct InfoPanel: View {
     @Environment(\.tokens) var t
     let docId: String
     @Binding var tab: String
+    @State private var savingTemplate = false
+    @State private var templateCategory = "General"
 
     var body: some View {
         let m = model.library.docs[docId]
         VStack(alignment: .leading, spacing: 12) {
             PanelHeader(title: "Info")
+                .alert("Save as Template", isPresented: $savingTemplate) {
+                    TextField("Category", text: $templateCategory)
+                    Button("Save") { model.saveAsTemplate(docId, category: templateCategory) }
+                    Button("Cancel", role: .cancel) {}
+                } message: { Text("A copy becomes a template in New → From Template. Later edits to either don't change the other.") }
             Picker("Info", selection: $tab) { Text("Page Info").tag("info"); Text("Actions").tag("actions") }.pickerStyle(.segmented).labelsHidden()
             ScrollView {
                 if tab == "info", let m {
@@ -408,11 +415,12 @@ struct InfoPanel: View {
                             action("play.rectangle", "Present — planned", enabled: false) {}
                             Menu {
                                 Button("Unsorted") { model.move(docId, to: nil) }
-                                ForEach(model.library.folders) { f in Button(f.name) { model.move(docId, to: f.id) } }
+                                ForEach(model.library.spaceFolders) { f in Button(f.name) { model.move(docId, to: f.id) } }
                             } label: { Label("Move to…", systemImage: "arrow.turn.up.right") }
                             .menuStyle(.borderlessButton).padding(.horizontal, 10).frame(height: 30)
                             action(m.starred ? "star.slash" : "star", m.starred ? "Unstar Document" : "Star Document") { model.toggleStar(docId) }
                             action("plus.square.on.square", "Duplicate") { model.duplicate(docId) }
+                            action("doc.badge.gearshape", model.library.docs[docId]?.template != nil ? "This is a template" : "Save as Template…", enabled: model.library.docs[docId]?.template == nil) { templateCategory = "General"; savingTemplate = true }
                             action("square.and.arrow.up", "Export as Markdown…") { model.exportDoc(docId) }
                             action("clock.arrow.circlepath", "View Backups (\(model.snapshots(docId).count))") { tab = "backups" }
                             action("trash", "Move to Recently Deleted", destructive: true) { model.requestDelete(docId) }

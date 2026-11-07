@@ -19,7 +19,7 @@ struct RailView: View {
         let docId = model.activeDocId
         VStack(alignment: .leading, spacing: 0) {
             HStack(spacing: 6) {
-                Spacer().frame(width: narrow ? 0 : 66) // traffic lights
+                Spacer().frame(width: narrow ? 0 : 76) // window buttons
                 Spacer()
                 if docId != nil {
                     Menu {
@@ -36,7 +36,7 @@ struct RailView: View {
                 }
                 IconButton(symbol: "sidebar.left", label: "Hide sidebar (⌃⌘S)") { model.setSettings { $0.railCollapsed = true } }
             }
-            .frame(height: 38)
+            .frame(height: WindowChrome.height - 16)
             .padding(.horizontal, 8)
             if let id = docId, !model.railShowsFolders {
                 DocumentRail(docId: id).id(id)
@@ -114,11 +114,7 @@ struct LibraryRail: View {
         VStack(alignment: .leading, spacing: 0) {
             ScrollView {
                 VStack(alignment: .leading, spacing: 1) {
-                    HStack(spacing: 8) {
-                        SpaceAvatar(name: model.library.space.name)
-                        Text(model.library.space.name).font(.system(size: 13.5, weight: .semibold)).foregroundStyle(t.text)
-                        Spacer()
-                    }.padding(.horizontal, 10).padding(.bottom, 8)
+                    SpaceSwitcher().padding(.horizontal, 4).padding(.bottom, 6)
                     RailRow(icon: "square.grid.2x2", title: "All Docs", isSelected: v.kind == "all") { model.activateTab(model.library.tabs[0].id) }
                     RailRow(icon: "magnifyingglass", title: "Quick Open", trailing: AnyView(Text("⌘O").font(.system(size: 11)).foregroundStyle(t.tertiary))) { model.quickOpen = true }
                     RailRow(icon: "person.2", title: "Shared with Me", isSelected: v.kind == "shared") { model.openView(ViewRef(kind: "shared")) }
@@ -141,7 +137,7 @@ struct LibraryRail: View {
 
                     SectionHeader(title: "Folders", action: { renameText = "New Folder"; model.createFolder() }, actionLabel: "New folder (⇧⌘N)")
                     RailRow(icon: "tray", title: "Unsorted", isSelected: v.kind == "unsorted") { model.openView(ViewRef(kind: "unsorted")) }
-                    ForEach(model.library.folders.sorted { $0.order < $1.order }) { f in
+                    ForEach(model.library.spaceFolders.sorted { $0.order < $1.order }) { f in
                         folderRow(f)
                     }
 
@@ -450,5 +446,42 @@ struct MiniPage: View {
                     .padding(size * 0.12)
             )
             .frame(width: size * 0.82, height: size)
+    }
+}
+
+/// The Space name in the sidebar is a menu: switch Spaces, create one, or open its settings.
+struct SpaceSwitcher: View {
+    @EnvironmentObject var model: AppModel
+    @Environment(\.tokens) var t
+    @State private var naming = false
+    @State private var name = ""
+    var body: some View {
+        Menu {
+            Section("Spaces") {
+                ForEach(model.library.spaces, id: \.id) { s in
+                    Button { model.switchSpace(s.id) } label: {
+                        if s.id == model.library.space.id { Label(s.name, systemImage: "checkmark") } else { Text(s.id == model.library.space.id ? model.library.space.name : s.name) }
+                    }
+                }
+            }
+            Divider()
+            Button("New Space…") { name = ""; naming = true }
+            Button("Space Settings…") { model.openView(ViewRef(kind: "settings", section: "space")) }
+        } label: {
+            HStack(spacing: 8) {
+                SpaceAvatar(name: model.library.space.name)
+                Text(model.library.space.name).font(.system(size: 13.5, weight: .semibold)).foregroundStyle(t.text).lineLimit(1)
+                Image(systemName: "chevron.up.chevron.down").font(.system(size: 9, weight: .semibold)).foregroundStyle(t.tertiary)
+                Spacer(minLength: 0)
+            }
+            .padding(.horizontal, 6).frame(height: 34).contentShape(Rectangle())
+        }
+        .menuStyle(.button).buttonStyle(.plain).menuIndicator(.hidden)
+        .accessibilityLabel("Space: \(model.library.space.name). Switch or create Spaces")
+        .alert("New Space", isPresented: $naming) {
+            TextField("Name", text: $name)
+            Button("Create") { model.createSpace(name) }
+            Button("Cancel", role: .cancel) {}
+        } message: { Text("A Space has its own folders, documents, tags and tasks.") }
     }
 }

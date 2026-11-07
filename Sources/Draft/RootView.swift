@@ -39,10 +39,10 @@ struct RootView: View {
                                 .transition(.move(edge: .leading))
                         }
                         VStack(spacing: 0) {
-                            TabStrip(leadingInset: showRail ? 8 : 78, showRailButton: !showRail, onRail: {
+                            TabStrip(leadingInset: showRail ? 8 : 92, showRailButton: !showRail, onRail: {
                                 if narrow { railOverlay.toggle() } else { model.setSettings { $0.railCollapsed = false } }
                             })
-                            .frame(height: 46)
+                            .frame(height: WindowChrome.height)
                             MainContent()
                                 .clipShape(RoundedRectangle(cornerRadius: Tokens.radiusPanel, style: .continuous))
                                 .padding(.leading, showRail ? 8 : 8).padding(.trailing, 8).padding(.bottom, 8)
@@ -67,8 +67,32 @@ struct RootView: View {
         .animation(model.library.settings.reduceMotion ? nil : .easeOut(duration: 0.18), value: model.library.settings.railCollapsed)
         .onAppear { if !model.ready && model.fatal == nil { model.boot() } }
         .onOpenURL { model.openLink($0) }
+        .background(WindowChrome())
         .ignoresSafeArea()
     }
+}
+
+/// A transparent unified toolbar area: macOS then places the window buttons with room around
+/// them (and keeps them right in full screen), on the same line as the sidebar and tab strip.
+struct WindowChrome: NSViewRepresentable {
+    static let height: CGFloat = 52
+    final class V: NSView {
+        override func viewDidMoveToWindow() {
+            guard let w = window else { return }
+            w.titlebarAppearsTransparent = true
+            w.titleVisibility = .hidden
+            w.styleMask.insert(.fullSizeContentView)
+            if w.toolbar == nil {
+                let t = NSToolbar(identifier: "draft.window")
+                t.showsBaselineSeparator = false
+                t.allowsUserCustomization = false
+                w.toolbar = t
+            }
+            w.toolbarStyle = .unified
+        }
+    }
+    func makeNSView(context: Context) -> NSView { V() }
+    func updateNSView(_ nsView: NSView, context: Context) {}
 }
 
 struct FatalView: View {
@@ -98,6 +122,7 @@ struct MainContent: View {
             case "tasks": TasksView(section: v.section).id(v)
             case "calendar": CalendarView(focus: v.section).id(v)
             case "tag": TagView(tag: v.section ?? "").id(v)
+            case "collection": CollectionScreen(docId: v.docId ?? "", blockId: v.section ?? "").id(v)
             default: LibraryView(view: v)
             }
         }
@@ -125,6 +150,7 @@ struct TabStrip: View {
         case "tasks": return "Tasks"
         case "calendar": return "Calendar"
         case "tag": return "#" + (v.section ?? "")
+        case "collection": return model.collectionData(v.docId ?? "", v.section ?? "")?.name ?? "Collection"
         case "folder": return model.folderName(v.folderId)
         case "doc": let s = model.library.docs[v.docId ?? ""]?.title ?? ""; return s.isEmpty ? "Untitled" : s
         default: return ""
@@ -142,6 +168,7 @@ struct TabStrip: View {
         case "tasks": return "checklist"
         case "calendar": return "calendar"
         case "tag": return "number"
+        case "collection": return "square.grid.3x2"
         case "folder": return "folder"
         default: return "doc.text"
         }

@@ -24,6 +24,12 @@ public enum MarkdownImport {
                 out.append(Node("codeBlock", attrs: lang.isEmpty ? nil : ["language": .string(lang)], content: t.isEmpty ? nil : [.text(t)]))
                 continue
             }
+            if trimmed.hasPrefix("|"), i + 1 < lines.count {
+                var j = i
+                var tl: [String] = []
+                while j < lines.count, lines[j].trimmingCharacters(in: .whitespaces).hasPrefix("|") { tl.append(lines[j]); j += 1 }
+                if let t = Tables.parse(tl) { out.append(t); i = j; continue }
+            }
             if ["---", "***", "___"].contains(trimmed) { out.append(Node("horizontalRule")); i += 1; continue }
             if let m = match(#"^(#{1,6})\s+(.*)$"#, trimmed) {
                 out.append(Node("heading", attrs: ["level": .number(Double(min(4, m[1].count)))], content: nonEmpty(inline(m[2]))))

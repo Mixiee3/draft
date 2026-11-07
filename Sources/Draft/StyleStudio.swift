@@ -174,3 +174,45 @@ struct StyleGallery: View {
         model.styleGallery = false
     }
 }
+
+/// Spaces: separate trees of folders and documents (with their own tags, tasks and tabs).
+extension AppModel {
+    func createSpace(_ name: String) {
+        let n = name.trimmingCharacters(in: .whitespaces)
+        let s = Space(id: newId("s_"), name: n.isEmpty ? "New Space" : n)
+        library.spaces.append(s)
+        switchSpace(s.id)
+    }
+
+    /// Everything is saved before the switch; each Space keeps its own tabs.
+    func switchSpace(_ id: String) {
+        guard id != library.space.id, let target = library.spaces.first(where: { $0.id == id }) else { return }
+        flushAll()
+        if let i = library.spaces.firstIndex(where: { $0.id == library.space.id }) {
+            library.spaces[i].tabs = library.tabs
+            library.spaces[i].activeTabId = library.activeTabId
+            library.spaces[i].name = library.space.name
+        }
+        library.space = target
+        var tabs = target.tabs ?? []
+        tabs.removeAll { $0.view.kind == "doc" && library.docs[$0.view.docId ?? ""].map { library.inSpace($0) && $0.deletedAt == nil } != true }
+        if tabs.first?.view.kind != "all" { tabs.insert(Tab(view: .all), at: 0) }
+        library.tabs = tabs
+        library.activeTabId = tabs.contains { $0.id == target.activeTabId } ? target.activeTabId : tabs[0].id
+        panel = nil
+        librarySearch = ""
+        scheduleLibrarySave()
+        saveLibraryNowIfNeeded()
+        indexTick &+= 1
+        toast("Switched to \(target.name)")
+    }
+
+    func deleteSpace(_ id: String) {
+        guard library.spaces.count > 1, id != library.space.id, !library.docs.values.contains(where: { ($0.spaceId ?? library.spaces.first?.id) == id }) else { return }
+        library.spaces.removeAll { $0.id == id }
+        library.folders.removeAll { $0.spaceId == id }
+        scheduleLibrarySave()
+    }
+
+    func spaceIsEmpty(_ id: String) -> Bool { !library.docs.values.contains { ($0.spaceId ?? library.spaces.first?.id) == id } }
+}

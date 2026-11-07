@@ -3,7 +3,7 @@ import Foundation
 /// Node types that are blocks and therefore carry a stable `id` attribute.
 public let blockTypes: Set<String> = [
     "paragraph", "heading", "blockquote", "codeBlock", "horizontalRule", "bulletList", "orderedList",
-    "listItem", "taskList", "taskItem", "toggleList", "toggleItem", "callout", "pageBreak", "image", "file", "pageCard", "linkPreview",
+    "listItem", "taskList", "taskItem", "toggleList", "toggleItem", "callout", "pageBreak", "image", "file", "pageCard", "linkPreview", "table", "tableRow", "tableCell", "collection",
 ]
 let containerListTypes: Set<String> = ["bulletList", "orderedList", "taskList", "toggleList", "callout"]
 
@@ -47,6 +47,8 @@ public func docPlainText(_ root: Node) -> String {
     var lines: [String] = []
     walk(root) { n in
         if ["paragraph", "heading", "codeBlock"].contains(n.type) { lines.append(nodeText(n)) }
+        if n.type == "tableRow" { lines.append((n.content ?? []).map(nodeText).joined(separator: "\t")) }
+        if n.type == "collection", let c = CollectionData(node: n) { lines.append(c.name) }
         if n.type == "pageCard" { lines.append(n.attrs?["title"]?.string ?? "") }
     }
     return lines.joined(separator: "\n")

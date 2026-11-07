@@ -19,6 +19,7 @@ Legend: ✅ done · 🟡 partial · ⬜ not started
 
 ### Change log of this plan
 
+- **2026‑11‑08** — v0.5 shipped; v0.6 planned in full with the carried permission and VoiceOver checks.
 - **2026‑11‑08** — v0.4 shipped; v0.5 planned in full with carried-forward checks.
 - **2026‑11‑07** — v0.3 shipped; v0.4 expanded with the items deferred from v0.3.
 - **2026‑11‑07** — Architecture change (not a scope reset): the Electron prototype was replaced by a
@@ -198,40 +199,52 @@ requests for image search and link previews.
 **Known limitations.** When a document that is not on screen receives new link titles, its own undo
 history is reset (its old steps would point at shifted text). Word export remains "later".
 
-## v0.5 — "Structure" (macOS)
+## v0.5 — "Structure" (macOS) ✅ shipped
 
 **Theme.** Structured information inside documents: collections with views, simple tables,
-templates, import, and more than one Space.
+templates, import, and more than one Space. Started with a polish pass (window buttons, cursor,
+glass formatting bar; before/after in `docs/screenshots/polish/`).
 
-| # | Feature | Status | Acceptance check |
+| # | Feature | Status | Acceptance check (result) |
 |---|---|---|---|
-| 1 | Schema 2 migration with a dry-run validator (backup first, never in place) | ⬜ planned | Migrating a copy of a v0.4 vault reports zero differences in text, ids, styles and links; the original is untouched and a backup exists |
-| 2 | Simple tables (rows × columns of rich text, add/remove/reorder, keyboard navigation) (C1) | ⬜ planned | Tab/⇧Tab move between cells; ⌥⌘↓ adds a row; one undo per edit; round-trips Markdown tables |
-| 3 | Collections: fields (text, number, select, multi-select, date, checkbox, relation, URL); items are pages (C2) | ⬜ planned | A 1,000-item collection opens in < 1 s; each item opens as a page and keeps its id after relaunch |
-| 4 | Views: table, gallery, Kanban per collection; per-view sort, filter, group, visible fields (C3) | ⬜ planned | Switching views keeps each view's own settings after relaunch; 1,000-row table scrolls at 60 fps |
-| 5 | Kanban drag between groups | ⬜ planned | A drag changes exactly one field of one record and is one undo |
-| 6 | Calculations row, multi-sort, compound filters (C4) | ⬜ planned | Sum/average/count/empty match a hand-computed fixture; filters combine with AND/OR |
-| 7 | CSV and frontmatter export of collections (C5) | ⬜ planned | Exported CSV re-imports to the same values; Markdown pages carry fields as YAML frontmatter |
-| 8 | Templates: save a document as a template, New → From Template picker with categories (M1, M2) | ⬜ planned | A template creates documents with fresh block ids and its style; editing the template never changes earlier documents |
-| 9 | Import: Markdown folder, HTML, OPML, Draft JSON (X5) | ⬜ planned | Importing Draft's own export reproduces documents, styles, links and folders; Markdown links between files become doc links |
-| 10 | Multiple Spaces with switcher and per-Space settings (N8, Z7) | ⬜ planned | Two Spaces keep separate trees, tags and indexes; switching Spaces never loses unsaved text |
-| 11 | Carried: real-network check of online image search and link previews (v0.4 #4, #11) | 🟡 partial | With the features turned on, one search and one preview against the live services succeed, and turning them off stops all requests |
-| 12 | Carried: exercise the notification and calendar permission prompts in the bundled app | 🟡 partial | Allow → one notification at the due time and events appear; Don't Allow → settings turn back off with an explanation |
-| 13 | Carried: run VoiceOver through Calendar, Tasks, pickers, Style Gallery and export | ⬜ planned | Every control is announced with a name and role; the `[[` picker and Style Gallery are fully usable without a pointer |
-| 14 | Carried: keep an off-screen document's undo history when its link titles change | 🟡 partial (no extra undo step ✅) | After a rename elsewhere, ⌘Z in the linking document still undoes its earlier edits |
+| 1 | Schema 2 migration with a dry-run validator (backup first, never in place) | ✅ | A vault written by the v0.4 build, copied and opened by v0.5: dry run reports no differences, `backups/…-library.v1.json` is byte-identical to the original, every document and folder is in the Space, trash, folders and saved styles unchanged; smoke and style reads give identical results on both builds. A failing dry run leaves the vault read-only (`SchemaTwoTests`) |
+| 2 | Simple tables (C1) | ✅ | Tab/⇧Tab/Return move between cells, ⌥⌘↓ adds a row, ⌥⌘→ a column; one undo per committed cell; Markdown pipe tables round-trip (`TableTests`, `StructureTests`). Partial: no column reordering, plain text inside cells |
+| 3 | Collections: 8 field types; items are pages (C2) | ✅ | 1,000 items open in 83–116 ms; items open as pages and keep ids after relaunch (`scripts/structure-test.sh`). Partial: the relation picker lists the first 40 documents, no search |
+| 4 | Views: table, gallery, Kanban; per-view sort, filter, group, visible fields (C3) | ✅ | Each view keeps its own settings after relaunch; 1,000-row table scroll p95 4–5 ms at a fast trackpad speed (budget 16.7) |
+| 5 | Kanban drag between groups | ✅ | One drag changes one value of one record; one undo restores it (structure test). VoiceOver users get "Move to" actions on cards |
+| 6 | Calculations row, multi-sort, AND/OR filters (C4) | ✅ | Sum of the fixture = 832 as hand-computed; sort by pages descending gives Dune, Zen, Atlas (structure test, `StructureTests`) |
+| 7 | CSV and frontmatter export (C5) | ✅ | Exported CSV re-imports into a second collection with the same values; item pages carry YAML frontmatter |
+| 8 | Templates (M1, M2) | ✅ | 5 original built-ins plus saved templates with categories; new documents get fresh block ids and the template's style; editing a template never changes documents made from it (workflow test) |
+| 9 | Import: Markdown folder, HTML, OPML, Draft JSON (X5) | ✅ | Draft's own export re-imported reproduces documents, links, style and folder; links between Markdown files become doc links; clashing ids are remapped (workflow test, `ImportTests`) |
+| 10 | Multiple Spaces (N8, Z7) | ✅ | Two Spaces keep separate trees, tags and tabs; switching never loses unsaved text; tabs come back per Space after relaunch (workflow test). Partial: settings other than the name are shared by all Spaces |
+| 11 | Carried: live image search and link previews | ✅ | Opt-in on: 18 Openverse results, one image (224 KB) downloaded into assets; preview of example.com read its title; off: zero requests (`online-live` automation) |
+| 12 | Carried: notification and calendar permission prompts | ⬜ not tested | Computer use was not available to click the macOS prompts; moved to v0.6 |
+| 13 | Carried: VoiceOver pass | ⬜ not tested | VoiceOver was not available to drive; moved to v0.6. The label audit now also covers the table editor, collection views, template picker and Space settings, but it only inspects AppKit views |
+| 14 | Carried: keep an off-screen document's undo history when link titles change | ✅ | The title refresh rides along as a silent step; after a rename elsewhere, ⌘Z in the linking document still undoes its earlier edits (`LinkTests`) |
 
-**Data risk.** The biggest schema change so far → migration 1→2 with a dry-run validator.
-**Gate.** 1,000-row collection scrolls at 60 fps; a Kanban drag is one undoable record update;
-v0.4 vaults migrate losslessly.
+**Release gate (met).** 126 unit tests (67 editor, 59 core); smoke, drag, links, style/export,
+structure and workflow scripts pass; perf passes (keystroke p95 ≈ 22–23 ms; return p95 12–24 ms, one
+run of three hit 38 ms against a 33 ms budget). v0.4 vaults migrate losslessly (check above).
+
+**Not tested.** The macOS permission prompts and VoiceOver itself (see 12 and 13).
 
 ## v0.6 — "Every window" (macOS + iPad-ready core)
 
-(Week start / start-of-day settings moved to v0.3 for daily notes and the calendar.)
-
-- ⬜ VoiceOver audit and fixes; full keyboard path for every panel; automated accessibility checks.
-- ⬜ Localization (String Catalogs), two non-English locales; spelling language setting.
-- ⬜ Keyboard layout (AZERTY/QWERTZ/Dvorak) and IME composition test matrix.
-- ⬜ Remaining settings: shortcuts sheet, week start, sidebar customization; Focus mode; Present mode.
+| # | Feature | Status | Acceptance check |
+|---|---|---|---|
+| 1 | Carried: VoiceOver pass through Calendar, Tasks, `[[` and `#` pickers, Style Gallery, export, tables, collections, template picker, Space switcher | ⬜ planned | Every control is announced with a name and role; pickers, Style Gallery and Kanban moves work without a pointer |
+| 2 | Carried: notification and calendar permission prompts | ⬜ planned | Allow → one notification at the due time and events appear; Don't Allow → the setting turns back off with an explanation |
+| 3 | Automated accessibility check of SwiftUI screens from a separate process (Accessibility API client) | ⬜ planned | Lists every unnamed button, menu and field on each main screen; zero on release. (An in-process walk of the tree was tried in v0.5 and is unreliable: SwiftUI builds the tree only for a connected assistive client) |
+| 4 | Full keyboard path for every panel; visible focus rings (Y12) | 🟡 partial | Every panel, popover and sheet can be opened, used and closed from the keyboard; focus is always visible |
+| 5 | Localization with String Catalogs, two non-English locales; spelling language setting | ⬜ planned | Both locales show no English UI strings and no clipped labels at normal and narrow widths |
+| 6 | Keyboard layouts (AZERTY, QWERTZ, Dvorak) and IME composition matrix | ⬜ planned | Shortcuts work on each layout; Japanese and Chinese composition never commits early or splits blocks |
+| 7 | Shortcuts sheet | ⬜ planned | Lists every menu shortcut; searchable; matches the menus (test compares them) |
+| 8 | Sidebar customization | ⬜ planned | Sections can be hidden and reordered; the choice survives relaunch |
+| 9 | Focus mode | ⬜ planned | Hides chrome and dims all but the current block; Esc returns; typing latency stays within budget |
+| 10 | Present mode | ⬜ planned | Headings split slides; arrow keys move; works full screen on a second display |
+| 11 | From v0.5: relation picker search; table column reordering and rich text in cells | ⬜ planned | Relation picker finds any document by title; a column drag is one undo; bold/links in a cell survive Markdown round-trip |
+| 12 | From v0.5: per-Space settings beyond the name (theme, daily notes, tag rules) | ⬜ planned | Two Spaces keep different settings after relaunch; switching applies them without a restart |
+| 13 | Perf: steady return-key latency | ⬜ planned | Return p95 under 33 ms in 10 consecutive perf runs |
 
 ## v0.8 — "Trust" (macOS)
 
@@ -284,6 +297,6 @@ Assistant (opt-in, bring-your-own or local model, never required); local API/MCP
 
 ## Next smallest coherent slice (prioritized by user value)
 
-*(updated after v0.4)* — start v0.5 with the schema 2 migration and validator (1), then simple
-tables (2) as the first structured block, then collections and views (3–5). The carried checks
-(11–13) need a person at the Mac and can run any time.
+*(updated after v0.5)* — v0.6 starts with the two checks that need a person at the Mac (1, 2) and
+the out-of-process accessibility check (3), then keyboard paths (4) and the v0.5 follow-ups (11, 12).
+Localization (5, 6) comes after strings settle.

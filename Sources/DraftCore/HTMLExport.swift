@@ -85,6 +85,7 @@ public enum HTMLExport {
         .chip{color:var(--accent);background:color-mix(in srgb, var(--accent) 10%, transparent);border-radius:5px;padding:0 3px;text-decoration:none}
         .chip.missing{color:var(--soft);text-decoration:line-through}.date.plain{background:none;color:inherit;padding:0}
         .tag{border-radius:4px;padding:0 2px}
+        table.grid{border-collapse:collapse;width:100%;margin:.6em 0;font-size:.92em}table.grid th,table.grid td{border:1px solid var(--line);padding:6px 10px;text-align:left;vertical-align:top}table.grid th{background:color-mix(in srgb, var(--text) 5%, transparent);font-weight:600}
         .file{display:inline-flex;gap:8px;border:1px solid var(--line);border-radius:10px;padding:8px 12px}
         @media (max-width:640px){body{padding:16px 0}main{padding:28px 20px;border-radius:0}}
         @media print{html{background:\(useStyle ? bg : "#fff")}body{padding:0}main{box-shadow:none;max-width:none;border-radius:0}}
@@ -213,6 +214,22 @@ public enum HTMLExport {
                 let inner = "<i class='thumb'>\(letter)</i><div><b>\(esc(title.isEmpty ? "Untitled page" : title))</b></div>"
                 if let p = o.docPath(d) { return "<a class='card \(attr(size))' href='\(url(p))'>\(inner)</a>" }
                 return "<div class='card \(attr(size))'>\(inner)</div>"
+            case "table":
+                let rows = n.content ?? []
+                let head = rows.first.map { "<thead><tr>" + ($0.content ?? []).map { "<th>\(inline($0.content))</th>" }.joined() + "</tr></thead>" } ?? ""
+                let body = rows.dropFirst().map { "<tr>" + ($0.content ?? []).map { "<td>\(inline($0.content))</td>" }.joined() + "</tr>" }.joined()
+                return "<table class='grid'\(styleAttr(n))>\(head)<tbody>\(body)</tbody></table>"
+            case "collection":
+                guard let c = CollectionData(node: n) else { return "" }
+                let title: (String) -> String = { o.linkTitle($0, nil) ?? "Untitled" }
+                let head = "<tr><th>Name</th>" + c.fields.map { "<th>\(esc($0.name))</th>" }.joined() + "</tr>"
+                let body = c.items.map { it -> String in
+                    pages.append(it.docId)
+                    let name = esc(title(it.docId))
+                    let cell = o.docPath(it.docId).map { "<a href='\(url($0))'>\(name)</a>" } ?? name
+                    return "<tr><td>\(cell)</td>" + c.fields.map { "<td>\(esc(c.display(it, $0.id, title: title)))</td>" }.joined() + "</tr>"
+                }.joined()
+                return "<figure class='collection'><figcaption>\(esc(c.name))</figcaption><table class='grid'><thead>\(head)</thead><tbody>\(body)</tbody></table></figure>"
             case "linkPreview":
                 let u = n.attrs?["url"]?.string ?? ""
                 return "<a class='bookmark' href='\(attr(u))'><div><b>\(esc(n.attrs?["title"]?.string ?? u))</b>\(n.attrs?["summary"]?.string.map { "<span>\(esc($0))</span><br>" } ?? "")<span>\(esc(u))</span></div></a>"
@@ -251,6 +268,7 @@ public enum SiteExport {
             seen.insert(id); docs.append(d)
             walk(d.content) { n in
                 if n.type == "pageCard", let c = n.attrs?["docId"]?.string { queue.append(c) }
+                if let c = CollectionData(node: n) { queue += c.items.map(\.docId) }
             }
         }
         var names: [String: String] = [:], used = Set<String>(["index.html"])

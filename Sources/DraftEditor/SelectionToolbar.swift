@@ -23,6 +23,8 @@ public enum DraftPalette {
 ///   palette or link field is open.
 /// - Keyboard: ⌥F10 focuses the bar; ←/→ move, Return/Space activate, Esc returns to the text.
 public final class SelectionToolbar: NSView {
+    public override func resetCursorRects() { addCursorRect(bounds, cursor: .arrow) }
+    public override func cursorUpdate(with event: NSEvent) { NSCursor.arrow.set() }
     public enum Mode { case main, palette, link }
     struct Item {
         var id: String
@@ -46,18 +48,31 @@ public final class SelectionToolbar: NSView {
     var linkRange = NSRange(location: 0, length: 0)
     let linkField = NSTextField()
     var hoverIndex: Int? = nil
+    /// The blurred material behind the bar (a sibling just below it, so the bar's icons stay on top).
+    let glass = NSVisualEffectView()
+    static let height: CGFloat = 46
+    static let radius: CGFloat = 23
     public private(set) var isVisible = false
 
     init(controller: EditorController) {
         self.controller = controller
         super.init(frame: .zero)
         wantsLayer = true
-        layer?.cornerRadius = 20
+        layer?.cornerRadius = Self.radius
+        layer?.cornerCurve = .continuous
         layer?.borderWidth = 0.5
-        layer?.shadowOpacity = 0.22
-        layer?.shadowRadius = 14
-        layer?.shadowOffset = CGSize(width: 0, height: -4)
+        layer?.shadowOpacity = 0.16
+        layer?.shadowRadius = 18
+        layer?.shadowOffset = CGSize(width: 0, height: -8)
         layer?.masksToBounds = false
+        glass.material = .popover
+        glass.blendingMode = .withinWindow
+        glass.state = .active
+        glass.wantsLayer = true
+        glass.layer?.cornerRadius = Self.radius
+        glass.layer?.cornerCurve = .continuous
+        glass.layer?.masksToBounds = true
+        glass.isHidden = true
         isHidden = true
         setAccessibilityRole(.toolbar)
         setAccessibilityLabel("Text formatting")
@@ -128,14 +143,15 @@ public final class SelectionToolbar: NSView {
     }
 
     func layoutItems() {
-        var x: CGFloat = 6
+        var x: CGFloat = 9
         frames = items.map { it in
-            let r = NSRect(x: x, y: 4, width: it.width, height: 32)
-            x += it.width + (it.isSeparator ? 0 : 2)
+            let w = it.isSeparator || it.swatch != nil || it.id == "field" ? it.width : max(it.width, 34)
+            let r = NSRect(x: x, y: 5, width: w, height: Self.height - 10)
+            x += w + (it.isSeparator ? 0 : 3)
             return r
         }
-        let width = x + 4
-        setFrameSize(NSSize(width: width, height: 40))
+        let width = x + 6
+        setFrameSize(NSSize(width: width, height: Self.height))
         if mode == .link, let i = items.firstIndex(where: { $0.id == "field" }) {
             linkField.frame = frames[i].insetBy(dx: 2, dy: 7)
         }
@@ -179,9 +195,13 @@ public final class SelectionToolbar: NSView {
         if !isVisible {
             isVisible = true
             isHidden = false
+            syncGlass()
             if !(controller.host == nil) && !NSWorkspace.shared.accessibilityDisplayShouldReduceMotion {
-                alphaValue = 0
-                NSAnimationContext.runAnimationGroup { $0.duration = 0.12; animator().alphaValue = 1 }
+                alphaValue = 0; glass.alphaValue = 0
+                NSAnimationContext.runAnimationGroup { ctx in
+                    ctx.duration = 0.14
+                    animator().alphaValue = 1; glass.animator().alphaValue = 1
+                }
             }
         }
     }
@@ -190,6 +210,7 @@ public final class SelectionToolbar: NSView {
         guard isVisible || !isHidden else { return }
         isVisible = false
         isHidden = true
+        glass.isHidden = true
         mode = .main
         keyboardIndex = nil
         linkField.isHidden = true
@@ -220,8 +241,8 @@ public final class SelectionToolbar: NSView {
         let size = frame.size
         let visible = host.visibleRect
         let topSafe = visible.minY + 8 // the scroll area already starts below the document controls
-        var y = first.minY - size.height - 10
-        if y < topSafe { y = last.maxY + 10 } // flip below the selection
+        var y = first.minY - size.height - 12
+        if y < topSafe { y = last.maxY + 12 } // flip below the selection
         var x = first.midX - size.width / 2
         if first.width < 4 { x = first.minX - size.width / 2 }
         x = min(max(x, visible.minX + 10), visible.maxX - size.width - 10)
@@ -232,21 +253,38 @@ public final class SelectionToolbar: NSView {
 
     public override func updateLayer() { super.updateLayer() }
 
+    func syncGlass() {
+        if let sv = superview, glass.superview !== sv { sv.addSubview(glass, positioned: .below, relativeTo: self) }
+        glass.frame = frame
+        glass.isHidden = isHidden
+        glass.appearance = NSAppearance(named: dark ? .darkAqua : .aqua)
+    }
+    public override func setFrameOrigin(_ p: NSPoint) { super.setFrameOrigin(p); glass.setFrameOrigin(p) }
+    public override func setFrameSize(_ s: NSSize) { super.setFrameSize(s); glass.setFrameSize(s) }
+    public override func viewDidMoveToSuperview() {
+        super.viewDidMoveToSuperview()
+        if superview == nil { glass.removeFromSuperview() } else { syncGlass() }
+    }
+
     public override func draw(_ dirtyRect: NSRect) {
-        let bg = dark ? NSColor(white: 0.16, alpha: 0.96) : NSColor(white: 0.995, alpha: 0.95)
-        layer?.backgroundColor = bg.cgColor
-        layer?.borderColor = (dark ? NSColor(white: 1, alpha: 0.12) : NSColor(white: 0, alpha: 0.10)).cgColor
-        layer?.shadowPath = CGPath(roundedRect: bounds, cornerWidth: 20, cornerHeight: 20, transform: nil)
-        let fg = dark ? NSColor(white: 0.95, alpha: 1) : NSColor(white: 0.12, alpha: 1)
+        // A light tint over the blur keeps icons readable over any page; a hairline and an inner
+        // highlight give the glass its edge.
+        let tint = dark ? NSColor(white: 0.12, alpha: 0.55) : NSColor(white: 1, alpha: 0.62)
+        layer?.backgroundColor = NSColor.clear.cgColor
+        layer?.borderColor = (dark ? NSColor(white: 1, alpha: 0.14) : NSColor(white: 0, alpha: 0.09)).cgColor
+        layer?.shadowPath = CGPath(roundedRect: bounds, cornerWidth: Self.radius, cornerHeight: Self.radius, transform: nil)
+        let fg = dark ? NSColor(white: 0.96, alpha: 1) : NSColor(white: 0.1, alpha: 1)
         let accent = NSColor(hex: controller.theme.accent)
-        bg.setFill()
-        NSBezierPath(roundedRect: bounds, xRadius: 20, yRadius: 20).fill()
+        tint.setFill()
+        NSBezierPath(roundedRect: bounds, xRadius: Self.radius, yRadius: Self.radius).fill()
+        let rim = NSBezierPath(roundedRect: bounds.insetBy(dx: 1, dy: 1), xRadius: Self.radius - 1, yRadius: Self.radius - 1)
+        NSColor(white: 1, alpha: dark ? 0.08 : 0.55).setStroke(); rim.lineWidth = 1; rim.stroke()
         for (i, it) in items.enumerated() {
             let r = frames[i]
             if it.isSeparator {
                 if it.id != "field" {
                     fg.withAlphaComponent(0.15).setFill()
-                    NSBezierPath(rect: NSRect(x: r.midX - 0.5, y: r.minY + 7, width: 1, height: r.height - 14)).fill()
+                    NSBezierPath(rect: NSRect(x: r.midX - 0.5, y: r.minY + 8, width: 1, height: r.height - 16)).fill()
                 } else {
                     fg.withAlphaComponent(0.06).setFill()
                     NSBezierPath(roundedRect: r.insetBy(dx: 0, dy: 3), xRadius: 8, yRadius: 8).fill()
@@ -256,11 +294,11 @@ public final class SelectionToolbar: NSView {
             let hovered = hoverIndex == i && it.isEnabled
             if it.isActive || hovered {
                 (it.isActive ? accent.withAlphaComponent(dark ? 0.35 : 0.16) : fg.withAlphaComponent(0.07)).setFill()
-                NSBezierPath(roundedRect: r.insetBy(dx: 1, dy: 1), xRadius: 9, yRadius: 9).fill()
+                NSBezierPath(roundedRect: r.insetBy(dx: 1, dy: 2), xRadius: 11, yRadius: 11).fill()
             }
             if keyboardIndex == i {
                 accent.setStroke()
-                let p = NSBezierPath(roundedRect: r.insetBy(dx: 1, dy: 1), xRadius: 9, yRadius: 9); p.lineWidth = 2; p.stroke()
+                let p = NSBezierPath(roundedRect: r.insetBy(dx: 1, dy: 2), xRadius: 11, yRadius: 11); p.lineWidth = 2; p.stroke()
             }
             let color = it.isEnabled ? (it.isActive ? (dark ? .white : accent) : fg) : fg.withAlphaComponent(0.3)
             if mode == .palette, let hex = it.swatch {
@@ -279,7 +317,7 @@ public final class SelectionToolbar: NSView {
                 continue
             }
             if let s = it.symbol, let img = NSImage(systemSymbolName: s, accessibilityDescription: it.label) {
-                let cfg = NSImage.SymbolConfiguration(pointSize: it.id == "palette" ? 9 : 14, weight: it.id == "palette" ? .bold : .medium)
+                let cfg = NSImage.SymbolConfiguration(pointSize: it.id == "palette" ? 9 : 15.5, weight: it.id == "palette" ? .bold : .regular)
                     .applying(.init(paletteColors: [color]))
                 if let im = img.withSymbolConfiguration(cfg) {
                     let sz = im.size

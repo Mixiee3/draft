@@ -36,7 +36,7 @@ final class MigrationTests: XCTestCase {
         """
         let (lib, migrated, from) = try Migrations.migrateLibrary(Data(v0.utf8))
         XCTAssertTrue(migrated); XCTAssertEqual(from, 0)
-        XCTAssertEqual(lib.schemaVersion, 1)
+        XCTAssertEqual(lib.schemaVersion, librarySchemaVersion)
         XCTAssertEqual(lib.docs["d_1"]?.title, "Old")
         XCTAssertEqual(lib.docs["d_1"]?.createdAt != nil, true)
         XCTAssertEqual(lib.extra["futureThing"], .object(["x": 1]))
@@ -98,7 +98,7 @@ final class VaultTests: XCTestCase {
         XCTAssertEqual(backups.count, 1)
         XCTAssertTrue(backups[0].hasSuffix("library.v0.json"))
         let rewritten = try Data(contentsOf: dir.appendingPathComponent("library.json"))
-        XCTAssertTrue(String(decoding: rewritten, as: UTF8.self).contains("\"schemaVersion\" : 1"))
+        XCTAssertTrue(String(decoding: rewritten, as: UTF8.self).contains("\"schemaVersion\" : \(librarySchemaVersion)"))
     }
 
     func testNewerLibraryMakesVaultReadOnly() throws {

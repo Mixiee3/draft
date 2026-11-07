@@ -38,6 +38,10 @@ public protocol LinkHost: AnyObject {
     func pageCover(docId: String) -> NSImage?
     /// Settings → Online → Link previews (off by default).
     func wantsLinkPreviews() -> Bool
+    /// Open a collection block of this document in its own view.
+    func openCollection(blockId: String)
+    /// A new collection: its starter data (the app creates nothing until items are added).
+    func newCollectionName() -> String
     func fetchLinkPreview(_ url: URL, _ done: @escaping (LinkPreview?) -> Void)
 }
 
@@ -53,6 +57,8 @@ public extension LinkHost {
     func dailyNoteId(create: Bool) -> String? { nil }
     func pageCover(docId: String) -> NSImage? { nil }
     func wantsLinkPreviews() -> Bool { false }
+    func openCollection(blockId: String) {}
+    func newCollectionName() -> String { "Collection" }
     func fetchLinkPreview(_ url: URL, _ done: @escaping (LinkPreview?) -> Void) { done(nil) }
 }
 
@@ -150,7 +156,7 @@ extension EditorController {
             // In the document being looked at, new titles are a visible, undoable step. Anywhere else
             // they are applied quietly; that document's own history is reset because its steps
             // refer to text positions the new titles shift (other documents keep theirs).
-            let quiet = afterLoad || isLoading || textView.window == nil
+            let quiet = afterLoad || isLoading
             let apply = {
                 for (r, _, _, text, _) in textEdits {
                     let a = self.storage.attributes(at: r.location, effectiveRange: nil)
@@ -160,8 +166,11 @@ extension EditorController {
             }
             if quiet {
                 isProgrammaticEdit = true; storage.beginEditing(); apply(); storage.endEditing(); isProgrammaticEdit = false
-                if !afterLoad && !isLoading { undo.removeAllActions() }
-            } else { undoGroup(apply); undo.setActionName("Update Link Titles") }
+            } else {
+                // Recorded so earlier steps keep valid positions, but never a step of its own.
+                undoGroup(apply)
+                undo.setActionName(DocumentUndoManager.silentAction)
+            }
         }
         return textChanged || any
     }
@@ -240,6 +249,8 @@ extension EditorController {
 /// The `[[` (documents, pages, blocks), `@` (dates and documents) and `#` (tags) picker.
 /// Typing filters, ↑/↓ move, Return/Tab choose, Esc dismisses and keeps the typed text.
 public final class MentionMenu: NSView {
+    public override func resetCursorRects() { addCursorRect(bounds, cursor: .arrow) }
+    public override func cursorUpdate(with event: NSEvent) { NSCursor.arrow.set() }
     unowned let controller: EditorController
     public private(set) var isOpen = false
     public private(set) var trigger = ""
@@ -426,4 +437,25 @@ public final class MentionMenu: NSView {
         }
         NSGraphicsContext.restoreGraphicsState()
     }
+}
+
+/// A document's undo history. Link-title updates made by Draft are recorded (so earlier steps
+/// stay valid) but ride along with the user's steps: ⌘Z and ⇧⌘Z always undo or redo a real edit.
+public final class DocumentUndoManager: UndoManager {
+    public static let silentAction = "Update Link Titles"
+
+    public override func undo() {
+        let silentOnTop = undoActionName == Self.silentAction
+        super.undo()
+        if silentOnTop, canUndo, !isUndoing { super.undo() }
+        while canUndo, undoActionName == Self.silentAction, !isUndoing { super.undo() }
+    }
+
+    public override func redo() {
+        super.redo()
+        while canRedo, redoActionName == Self.silentAction, !isRedoing { super.redo() }
+    }
+
+    public override var undoMenuItemTitle: String { undoActionName == Self.silentAction ? "Undo" : super.undoMenuItemTitle }
+    public override var redoMenuItemTitle: String { redoActionName == Self.silentAction ? "Redo" : super.redoMenuItemTitle }
 }

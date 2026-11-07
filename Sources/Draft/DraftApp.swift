@@ -27,7 +27,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         Automation.startIfRequested()
     }
     func applicationWillTerminate(_ notification: Notification) {
-        MainActor.assumeIsolated { AppModel.shared.flushAll() }
+        onMain { AppModel.shared.flushAll() }
     }
     func applicationShouldTerminateAfterLastWindowClosed(_ sender: NSApplication) -> Bool { true }
 }
@@ -44,6 +44,8 @@ struct DraftCommands: Commands {
         CommandGroup(replacing: .newItem) {
             Button("New Document") { model.createDoc() }.keyboardShortcut("n")
             Button("New Folder") { model.createFolder() }.keyboardShortcut("n", modifiers: [.command, .shift])
+            Button("New from Template…") { model.templatePicker = true }.keyboardShortcut("t", modifiers: [.command, .option])
+            Button("Import…") { model.chooseImport() }.keyboardShortcut("i", modifiers: [.command, .shift])
             Divider()
             Button("Quick Open…") { model.quickOpen = true }.keyboardShortcut("o")
             Button("Today’s Daily Note") { model.openDaily() }.keyboardShortcut("d", modifiers: [.command, .shift])

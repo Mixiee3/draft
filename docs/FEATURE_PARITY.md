@@ -92,7 +92,7 @@ Last updated: v0.4 shipped (native macOS) — 2026‑11‑08.
 | T4 | Save / default / pin styles | User styles | B§C | verified | T2 | 0.4 | Save, duplicate, rename, pin, delete (falls back to base), use for new documents; survives relaunch (style test, `StyleStudioTests`) |
 | T5 | Backdrop solid | Palette | B§C | working | — | 0.1 | Backdrop popover → Solid |
 | T6 | Backdrop gradient | Start/end/direction | B§C | verified | — | 0.4 | Start/End color wells and direction slider, live; round-trips and exports (style test) |
-| T7 | Backdrop image, shuffle, upload, blur, Immersive/Faded | S04 | S04 | partial | assets | 0.4 | 12 original offline scenes, Shuffle, Upload, Blur, Immersive/Faded; opt-in Openverse search (off by default, asks first) — live search not exercised (`v04-backdrop-library.png`) |
+| T7 | Backdrop image, shuffle, upload, blur, Immersive/Faded | S04 | S04 | working | assets | 0.4 | 12 original offline scenes, Shuffle, Upload, Blur, Immersive/Faded; opt-in Openverse search (off by default, asks first); live check in v0.5: 18 results, one downloaded and stored as an asset, no requests while off (`online-live` automation) (`v04-backdrop-library.png`) |
 | T8 | Page color and text color independent | Separate layers | B§C | working | — | 0.1 | Changing one leaves the other |
 | T9 | Contrast warning / adjust | Warn + auto adjust | B§C | verified | T8 | 0.4 | Warning < 4.5:1 with "Adjust text color (x:1 → y:1)", hue kept (`testReadableColor…`, `v04-contrast-adjust.png`) |
 | T10 | Cover image | Upload, crop ratios, reposition, remove | B§C | verified | assets | 0.2.1 | Upload; hover pencil/X (also Style → Crop…/Remove); crop sheet with Original, 16:9, 2:1, 3:1, 4:3, Free, drag to move, corner to resize, arrow keys; the crop is stored as a rect + ratio, never baked into the image (`CoverCropTests`; visual check at 1440 and 720 pt) |
@@ -113,7 +113,7 @@ Last updated: v0.4 shipped (native macOS) — 2026‑11‑08.
 | N5 | Tab strip | Home + tabs, close, + | S01, S21 | verified | — | 0.1 | Open doc tab survives restart (smoke `tabOpen`) |
 | N6 | Tab state restore | Scroll/caret per tab | B§5.5 | verified | — | 0.2.1 | Each document tab stores scroll offset and selection (captured on tab switch and quit); restored once when the tab reappears after relaunch (smoke `tabState`) |
 | N7 | Back / forward | Back button in doc | S01 | verified | L1 | 0.3 | ⌘[ / ⌘] (Go menu) per tab with scroll per entry; follow → back → forward (links test) |
-| N8 | Spaces | Switcher, per-space tree | B§4, S13 | partial | — | 0.5 | One Space, renamable |
+| N8 | Spaces | Switcher, per-space tree | B§4, S13 | working | schema 2 | 0.5 | Rail switcher and Settings → Space: create, switch, delete (empty only); each Space keeps its own folders, documents, tags, tasks and tabs; templates and styles are shared. Unsaved text survives a switch; tabs restore after relaunch (`scripts/workflow-test.sh`, `SchemaTwoTests`, `v05-settings-spaces.png`) |
 | N9 | Folders | Create/rename/nest/delete | S21, S30 | partial | — | 0.2 | Create, rename, remove (docs → Unsorted); nesting missing |
 | N10 | Move doc to folder | Info → Move to | S41 | working | N9 | 0.1 | Info panel and card context menu |
 | N11 | Unsorted view + empty state | Message + skeletons | S29 | working | — | 0.1 | Empty-state message and placeholder rows |
@@ -157,18 +157,18 @@ Last updated: v0.4 shipped (native macOS) — 2026‑11‑08.
 
 | ID | Capability | Reference behavior | Evidence | Status | Deps | Target | Acceptance check |
 |---|---|---|---|---|---|---|---|
-| C1 | Simple table | Insert menu | S34 | missing | — | 0.5 | Listed disabled |
-| C2 | Collections + field types | Records are pages | B§I | missing | — | 0.5 | — |
-| C3 | Table / Gallery / Kanban views | Shared records | B§I | missing | C2 | 0.5 | — |
-| C4 | Calc row, multi-sort, filters | — | B§I | missing | C3 | 0.5 | — |
-| C5 | CSV / frontmatter export | — | B§I | missing | C2 | 0.5 | — |
+| C1 | Simple table | Insert menu | S34 | working | — | 0.5 | `/table` or Insert → Table; click a cell to edit; Tab/⇧Tab/Return move, ⌥⌘↓ adds a row, ⌥⌘→ a column, ⌥⌘⌫/⌦ remove; each committed cell is one undo; Markdown pipe tables round-trip (`TableTests`, `StructureTests`, `v05-table-editing.png`). Rows reorder by command; no column reordering or rich text inside cells yet |
+| C2 | Collections + field types | Records are pages | B§I | working | schema 2 | 0.5 | Text, number, select, multi-select, date, checkbox, relation, URL; each item is a nested page that keeps its id after relaunch; 1,000 items open in ≈ 0.1 s (`scripts/structure-test.sh`). Relation picker lists the first 40 documents by title (no search yet) |
+| C3 | Table / Gallery / Kanban views | Shared records | B§I | working | C2 | 0.5 | Per-view sort, filters, group-by and visible fields persist; Kanban drag changes one value of one record and is one undo; drag also has VoiceOver "Move to" actions; 1,000-row table scroll p95 ≈ 5 ms (`v05-collection-*.png`) |
+| C4 | Calc row, multi-sort, filters | — | B§I | working | C3 | 0.5 | Count, empty, filled, sum, average, min, max, checked match fixtures; multiple sort rules; AND/OR filters (`StructureTests`, `v05-filter-editor.png`) |
+| C5 | CSV / frontmatter export | — | B§I | working | C2 | 0.5 | CSV export re-imports to the same values (structure test); Markdown export gives each item page YAML frontmatter |
 
 ## 10. Templates
 
 | ID | Capability | Reference behavior | Evidence | Status | Deps | Target | Acceptance check |
 |---|---|---|---|---|---|---|---|
-| M1 | New → From Template picker | Search + rows | S27, S28 | partial | — | 0.5 | `+` menu lists "From Template… (planned v0.5)" disabled |
-| M2 | Custom templates | Settings | S09 | missing | M1 | 0.5 | Settings shows planned state |
+| M1 | New → From Template picker | Search + rows | S27, S28 | working | — | 0.5 | ⌥⌘T or Library + → From Template…: search, category chips, keyboard; 5 original built-ins; new documents get fresh block ids (`ImportTests`, `v05-template-picker.png`) |
+| M2 | Custom templates | Settings | S09 | working | M1 | 0.5 | Info → Save as Template… with a category; listed in the picker and Settings → Templates; editing a template never changes documents made from it (workflow test) |
 
 ## 11. Attachments and media
 
@@ -179,7 +179,7 @@ Last updated: v0.4 shipped (native macOS) — 2026‑11‑08.
 | A3 | File attachment block | File | S34, S19 | verified | vault | 0.2.1 | Insert → File, drag a file onto the page, or paste a file copied in Finder; stored once by content hash with its original name and size; click opens it in its default app; listed in Attachments; exported as a link with the file in `assets/` (`testFilesInsertOpenPasteAndExport`, `FileAssetTests`) |
 | A7 | Image size, caption, alt text | Resize, caption | B§7 | verified | A1 | 0.2.1 | Drag the right edge or use the image bar (S/M/L/Full) to set width as a fraction of the text width; caption shown under the image and exported; alt text is the VoiceOver label and the Markdown alt; each change is one undo step (`testImageBarSizeCaptionAltAndUndo`, `testDragResize…`) |
 | A4 | Attachments pane | Images, links, files listed | S19 | working | A1 | 0.2.1 | Lists images (thumbnail), links and files; click jumps to the block |
-| A5 | Link previews | Rich link | B§H | partial | opt-in network | 0.4 | Off by default (no request); when on, a pasted URL becomes a card that fills in without an undo step and exports as a plain link (unit test with a stand-in fetch). Live fetch not exercised |
+| A5 | Link previews | Rich link | B§H | working | opt-in network | 0.4 | Off by default (no request); when on, a pasted URL becomes a card that fills in without an undo step and exports as a plain link (unit test with a stand-in fetch); live fetch checked in v0.5 (`online-live`: title read from example.com, no requests while off) |
 | A6 | Whiteboard / Mermaid / Formula / photo search | Insert menu | S34 | missing | — | later | Listed disabled with version |
 
 ## 12. Import / export
@@ -190,7 +190,7 @@ Last updated: v0.4 shipped (native macOS) — 2026‑11‑08.
 | X2 | Lossless native export | — | B§10 | verified | — | 0.1 | `draft-export.json` in bundle (`testExportBundle…`) |
 | X3 | Export all | Library ⋯ | S25 | working | X1 | 0.1 | One folder, subfolders per folder |
 | X4 | PDF / Print / Word / Image / E-mail | Export panel | S39 | verified | — | 0.4 | PDF (paged), HTML and PNG with "Use document style"; page color and text agree with the editor (style test). Word later, E-mail v1.x |
-| X5 | Import | Library ⋯ → Import | S25 | missing | — | 0.5 | Listed disabled |
+| X5 | Import | Library ⋯ → Import | S25 | working | — | 0.5 | ⇧⌘I: Markdown files and folders (subfolders → folders, links → doc links, images → assets), HTML, OPML, Draft JSON (ids remapped on clash; folders and styles included). Draft export → import reproduces documents, links, style and folder (workflow test, `ImportTests`) |
 | X6 | Duplicate | Export panel | S39 | working | — | 0.1 | New ids for every block |
 | X7 | Transfer to other apps | Disabled when absent | S40 | missing | — | 1.x | Share panel explains |
 | X8 | Copy as Markdown | — | — | working | X1 | 0.1 | Share/Info → clipboard |
@@ -241,7 +241,7 @@ Last updated: v0.4 shipped (native macOS) — 2026‑11‑08.
 | Z4 | Sound / app icon choice | Toggles | S10 | missing | — | later | — |
 | Z5 | Language & spelling | Rows | S11 | missing | I1 | 0.6 | Planned state |
 | Z6 | Advanced | Task appearance, date links, sidebar, week start | S12 | partial | — | 0.6 | Week start, start of day, dates as chips/plain text, Online (off by default), Rebuild Index; sidebar customization → v0.6 |
-| Z7 | Space settings | Avatar, name | S13 | partial | — | 0.5 | Name editable; generated avatar |
+| Z7 | Space settings | Avatar, name | S13 | working | N8 | 0.5 | Rename, list, switch, delete empty Spaces, New Space; generated avatar |
 | Z8 | Stats | Storage, docs, blocks, pages, words, reading time | S15 | working | — | 0.1 | Settings → Stats |
 | Z10 | Daily notes & tasks, Tags settings | Daily notes, reminders, calendar events; tag rules and colors | S12, S17, S25 | working | K5, G2 | 0.3 | `v03-settings-daily.png`, `v03-settings-tags.png` |
 | Z9 | Data location | (Draft) | prompt | working | — | 0.1 | Path, Show in Finder, Export all |
