@@ -41,6 +41,10 @@ public final class EditorController: NSObject, NSTextStorageDelegate, NSTextView
         layout.delegate = self
         layout.selectedBlockIds = { [weak self] in self?.blockSelectionIds ?? [] }
         layout.isHidden = { [weak self] in self?.hiddenChars.contains($0) ?? false }
+        layout.selectionIsOutlined = { [weak self] in
+            guard let self else { return false }
+            return self.isBlockMode || (self.selectedImageIndex != nil && self.textView.selectedRange().length == 1)
+        }
         textView.delegate = self
         storage.delegate = self
         textView.isRichText = true

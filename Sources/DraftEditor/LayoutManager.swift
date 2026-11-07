@@ -14,6 +14,15 @@ public final class DraftLayoutManager: NSLayoutManager {
     /// Block ids shown as selected units.
     var selectedBlockIds: () -> [String] = { [] }
     var isHidden: (Int) -> Bool = { _ in false }
+    /// True when the current selection is shown as an outline (blocks, an image), not a fill.
+    var selectionIsOutlined: () -> Bool = { false }
+
+    public override func fillBackgroundRectArray(_ rectArray: UnsafePointer<NSRect>, count rectCount: Int, forCharacterRange charRange: NSRange, color: NSColor) {
+        if selectionIsOutlined(), let s = textStorage, charRange.location < s.length,
+           s.attribute(.draftHighlight, at: charRange.location, effectiveRange: nil) == nil,
+           s.attribute(.draftCode, at: charRange.location, effectiveRange: nil) == nil { return }
+        super.fillBackgroundRectArray(rectArray, count: rectCount, forCharacterRange: charRange, color: color)
+    }
 
     func invalidateNumbers() { numbersValid = false }
 

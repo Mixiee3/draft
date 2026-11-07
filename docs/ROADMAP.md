@@ -93,7 +93,7 @@ child ids; 56 tests + smoke test (restart, trash, backups, search jump). **Not y
 - ✅ Move blocks to another doc (block menu → Move to), undoable on both sides.
 - ✅ Undoing a group / ungrouping no longer leaves a page in Recently Deleted.
 - ✅ Toggle list (`+ `, ⌘↩), callout block, page break (`===`, honored when printing), strong/dotted/three-dot separators, `x ` task trigger.
-- ⬜ Cover crop/reposition (ratios, focal point) as data.
+- ✅ Cover crop/reposition (Original, 16:9, 2:1, 3:1, 4:3, Free; keyboard nudging) stored as data.
 - ⬜ Tab state across restarts (scroll + caret), back/forward stacks.
 - ✅ Image block: resize (edge drag or S/M/L/Full), caption, alt text; file attachment block (picker, drag and drop, Finder paste; opens in its default app).
 - 🟡 Performance: block operations now replace only the changed paragraphs (undo selects just

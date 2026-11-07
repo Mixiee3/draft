@@ -217,3 +217,27 @@ final class FileAssetTests: XCTestCase {
         XCTAssertEqual(attachmentsOf(d.content).map(\.kind), ["file", "image"])
     }
 }
+
+final class CoverCropTests: XCTestCase {
+    func testFittedRatiosClampAndDefault() {
+        // 1600×900 image (aspect 16:9)
+        let a = 16.0 / 9
+        let c3 = CoverCrop.fitted(ratio: 3, imageAspect: a)
+        XCTAssertEqual(CoverCrop.aspect(of: c3, imageAspect: a), 3, accuracy: 0.0001)
+        XCTAssertEqual(c3.w, 1); XCTAssertEqual(c3.y + c3.h / 2, 0.5, accuracy: 0.0001)
+        let c43 = CoverCrop.fitted(ratio: 4.0 / 3, imageAspect: a)
+        XCTAssertEqual(c43.h, 1); XCTAssertEqual(CoverCrop.aspect(of: c43, imageAspect: a), 4.0 / 3, accuracy: 0.0001)
+        XCTAssertEqual(CoverCrop.fitted(ratio: nil, imageAspect: a), CropRect(x: 0, y: 0, w: 1, h: 1))
+        let moved = CoverCrop.clamped(CropRect(x: 0.9, y: -0.2, w: 0.5, h: 0.4))
+        XCTAssertEqual(moved, CropRect(x: 0.5, y: 0, w: 0.5, h: 0.4))
+        let def = CoverCrop.effective(Cover(assetId: "a", focalY: 0.0), imageAspect: a)
+        XCTAssertEqual(def.y, 0, "default band follows the focal point, clamped")
+    }
+
+    func testOldCoversDecodeAndNewFieldsRoundTrip() throws {
+        let old = try JSONDecoder().decode(Cover.self, from: Data(#"{"assetId":"x.png","focalY":0.3}"#.utf8))
+        XCTAssertNil(old.crop)
+        let c = Cover(assetId: "x.png", crop: CropRect(x: 0.1, y: 0.2, w: 0.5, h: 0.25), ratio: "2:1")
+        XCTAssertEqual(try JSONDecoder().decode(Cover.self, from: DraftJSON.encode(c)), c)
+    }
+}

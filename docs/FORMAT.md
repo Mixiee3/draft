@@ -51,7 +51,7 @@ document files at any time. `parentDocId` marks a nested page.
 ```json
 {
   "schemaVersion": 1, "id": "d_…", "title": "Welcome", "createdAt": 0, "updatedAt": 0,
-  "appearance": { "styleId": "tidepool", "overrides": { "pageColor": "#ffffff" }, "cover": { "assetId": "….png", "focalY": 0.5 } },
+  "appearance": { "styleId": "tidepool", "overrides": { "pageColor": "#ffffff" }, "cover": { "assetId": "….png", "focalY": 0.5, "crop": { "x": 0, "y": 0.1, "w": 1, "h": 0.5 }, "ratio": "2:1" } },
   "content": { "type": "doc", "content": [ … nodes … ] }
 }
 ```
@@ -79,6 +79,10 @@ document files at any time. `parentDocId` marks a nested page.
 
 Marks: `bold`, `italic`, `underline`, `strike`, `code`, `highlight {color}`, `textStyle {color}`,
 `link {href}`.
+
+`cover.crop` is the visible part of the original image, normalized to 0…1 of its width and height
+(absent: a 3:1 band centered on `focalY`). `cover.ratio` is the user's choice (`original`, `16:9`,
+`2:1`, `3:1`, `4:3`, `free`).
 
 ### Appearance tokens
 

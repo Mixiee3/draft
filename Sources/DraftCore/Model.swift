@@ -219,9 +219,52 @@ public struct StyleOverrides: Codable, Hashable, Sendable {
 
 public struct Cover: Codable, Hashable, Sendable {
     public var assetId: String
-    /// 0…1 focal point. The crop UI lands later; the data is stored now.
+    /// 0…1 vertical focal point, used when there is no explicit crop.
     public var focalY: Double
-    public init(assetId: String, focalY: Double = 0.5) { self.assetId = assetId; self.focalY = focalY }
+    /// Visible part of the image, normalized to 0…1 of its width/height.
+    public var crop: CropRect?
+    /// "original", "16:9", "2:1", "3:1", "4:3" or "free".
+    public var ratio: String?
+    public init(assetId: String, focalY: Double = 0.5, crop: CropRect? = nil, ratio: String? = nil) {
+        self.assetId = assetId; self.focalY = focalY; self.crop = crop; self.ratio = ratio
+    }
+}
+
+public struct CropRect: Codable, Hashable, Sendable {
+    public var x, y, w, h: Double
+    public init(x: Double, y: Double, w: Double, h: Double) { self.x = x; self.y = y; self.w = w; self.h = h }
+}
+
+/// Cover crop geometry. Image aspect = pixel width / height; ratios are width / height.
+public enum CoverCrop {
+    public static let ratios: [(id: String, label: String, value: Double?)] = [
+        ("original", "Original", nil), ("16:9", "16:9", 16.0 / 9), ("2:1", "2:1", 2), ("3:1", "3:1", 3), ("4:3", "4:3", 4.0 / 3), ("free", "Free", nil),
+    ]
+    public static let defaultRatio = 3.0
+
+    public static func value(of id: String?) -> Double? { ratios.first { $0.id == id }?.value }
+
+    /// Largest crop of the given ratio that fits the image, centered on (cx, cy) as far as possible.
+    public static func fitted(ratio: Double?, imageAspect a: Double, cx: Double = 0.5, cy: Double = 0.5) -> CropRect {
+        guard let r = ratio, a > 0 else { return CropRect(x: 0, y: 0, w: 1, h: 1) }
+        var w = 1.0, h = a / r
+        if h > 1 { h = 1; w = r / a }
+        return clamped(CropRect(x: cx - w / 2, y: cy - h / 2, w: w, h: h))
+    }
+
+    /// Keep the rect inside the image (and at least 5% in each direction).
+    public static func clamped(_ c: CropRect) -> CropRect {
+        let w = min(1, max(0.05, c.w)), h = min(1, max(0.05, c.h))
+        return CropRect(x: min(max(0, c.x), 1 - w), y: min(max(0, c.y), 1 - h), w: w, h: h)
+    }
+
+    /// The crop actually shown: the stored one, or the default 3:1 band around the focal point.
+    public static func effective(_ cover: Cover, imageAspect a: Double) -> CropRect {
+        cover.crop.map(clamped) ?? fitted(ratio: defaultRatio, imageAspect: a, cy: cover.focalY)
+    }
+
+    /// Pixel aspect (width / height) of a crop of an image with aspect `a`.
+    public static func aspect(of c: CropRect, imageAspect a: Double) -> Double { (c.w * a) / max(0.0001, c.h) }
 }
 
 public struct DocumentAppearance: Codable, Hashable, Sendable {

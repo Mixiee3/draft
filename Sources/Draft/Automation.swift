@@ -407,7 +407,27 @@ enum Automation {
         }
         m.docRailTab = .attachments
         await capture("media-narrow")
+        // Cover: generated scene, cropped to 2:1 around the upper third.
+        let sceneArt = NSImage(size: NSSize(width: 1600, height: 1000), flipped: true) { r in
+            NSGradient(colors: [NSColor(hex: "#f06a4a"), NSColor(hex: "#f9c79a")])!.draw(in: r, angle: 90)
+            NSColor(hex: "#fff1c9").setFill(); NSBezierPath(ovalIn: NSRect(x: 1050, y: 180, width: 220, height: 220)).fill()
+            NSColor(hex: "#8e3a42").setFill(); NSBezierPath(rect: NSRect(x: 0, y: 700, width: 1600, height: 300)).fill()
+            return true
+        }
+        if let png = NSBitmapImageRep(data: sceneArt.tiffRepresentation!)?.representation(using: .png, properties: [:]), let cid = m.storeImage(data: png, ext: "png") {
+            m.updateAppearance(id) { $0.cover = Cover(assetId: cid, crop: CoverCrop.fitted(ratio: 2, imageAspect: 1.6, cy: 0.3), ratio: "2:1") }
+            m.editors[id]?.scrollView.contentView.scroll(to: .zero)
+            await capture("cover-narrow")
+            m.coverEditorDoc = id
+            await capture("cover-crop-sheet-narrow")
+            m.coverEditorDoc = nil
+        }
         w.setFrame(NSRect(x: 60, y: 60, width: 1440, height: 900), display: true)
         await capture("media-normal")
+        m.editors[id]?.scrollView.contentView.scroll(to: .zero)
+        await capture("cover-normal")
+        m.coverEditorDoc = id
+        await capture("cover-crop-sheet")
+        m.coverEditorDoc = nil
     }
 }

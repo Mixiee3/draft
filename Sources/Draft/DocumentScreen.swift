@@ -49,6 +49,9 @@ struct DocumentScreen: View {
             if model.styleGallery {
                 StyleGallery(docId: docId)
             }
+            if model.coverEditorDoc == docId, let cover = model.docs[docId]?.appearance.cover, let img = model.image(forAsset: cover.assetId) {
+                CoverCropSheet(docId: docId, cover: cover, image: img)
+            }
         }
         .onAppear { model.editors[docId]?.controller.refreshPageTitles { model.library.docs[$0]?.title } }
     }

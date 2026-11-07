@@ -173,6 +173,7 @@ struct StylePanel: View {
                 PanelSection(title: "Cover") {
                     row("Cover Image") {
                         if a.cover != nil {
+                            Button("Crop…") { model.coverEditorDoc = docId }.controlSize(.small)
                             Button("Remove") { model.updateAppearance(docId) { $0.cover = nil } }.controlSize(.small)
                         }
                         IconButton(symbol: "plus", label: "Add cover image", size: 26) {

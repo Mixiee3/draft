@@ -50,6 +50,7 @@ final class AppModel: ObservableObject {
     @Published var findCount = 0
     @Published var findFocusNonce = 0
     @Published var infoTab = "info"
+    @Published var coverEditorDoc: String?
 
     let vault = Vault(dir: Vault.defaultURL())
     private(set) var editors: [String: DocumentEditorView] = [:]
@@ -255,9 +256,11 @@ final class AppModel: ObservableObject {
         view.theme = theme(for: doc)
         view.controller.load(doc.content)
         view.title = doc.title
-        view.coverImage = doc.appearance.cover.flatMap { image(forAsset: $0.assetId) }
+        view.coverImage = coverImage(doc.appearance.cover)
         view.controller.refreshPageTitles { self.library.docs[$0]?.title }
         view.onTitleChange = { [weak self] t in self?.setTitle(id, t) }
+        view.onEditCover = { [weak self] in self?.coverEditorDoc = id }
+        view.onRemoveCover = { [weak self] in self?.updateAppearance(id) { $0.cover = nil } }
         editors[id] = view
         return view
     }
@@ -273,6 +276,17 @@ final class AppModel: ObservableObject {
         docs[id]?.updatedAt = nowMs()
         markDocDirty(id)
         editorTick &+= 1
+    }
+
+    /// The cover as shown: the stored crop (or the default band) cut from the original image.
+    func coverImage(_ cover: Cover?) -> NSImage? {
+        guard let cover, let img = image(forAsset: cover.assetId),
+              let cg = img.cgImage(forProposedRect: nil, context: nil, hints: nil) else { return nil }
+        let a = Double(cg.width) / Double(max(1, cg.height))
+        let c = CoverCrop.effective(cover, imageAspect: a)
+        let r = CGRect(x: c.x * Double(cg.width), y: c.y * Double(cg.height), width: c.w * Double(cg.width), height: c.h * Double(cg.height)).integral
+        guard let cut = cg.cropping(to: r) else { return img }
+        return NSImage(cgImage: cut, size: NSSize(width: cut.width, height: cut.height))
     }
 
     func image(forAsset assetId: String) -> NSImage? {
@@ -320,7 +334,7 @@ final class AppModel: ObservableObject {
         docs[id] = d
         if let e = editors[id] {
             e.theme = theme(for: d)
-            e.coverImage = d.appearance.cover.flatMap { image(forAsset: $0.assetId) }
+            e.coverImage = coverImage(d.appearance.cover)
         }
         markDocDirty(id)
         editorTick &+= 1
@@ -513,7 +527,7 @@ final class AppModel: ObservableObject {
                 e.controller.load(old.content)
                 e.title = old.title
                 e.theme = theme(for: old)
-                e.coverImage = old.appearance.cover.flatMap { image(forAsset: $0.assetId) }
+                e.coverImage = coverImage(old.appearance.cover)
             }
             if var m = library.docs[id] { m.applyDerived(from: old); m.updatedAt = old.updatedAt; library.docs[id] = m }
             scheduleLibrarySave()

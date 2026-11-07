@@ -95,7 +95,7 @@ Last updated: v0.2.1 in progress (native macOS) — 2026‑11‑07.
 | T7 | Backdrop image, shuffle, upload, blur, Immersive/Faded | S04 | S04 | partial | assets | 0.1→0.4 | Original vector scenes, Shuffle, Upload, Blur, Immersive/Faded work; photo search missing |
 | T8 | Page color and text color independent | Separate layers | B§C | working | — | 0.1 | Changing one leaves the other |
 | T9 | Contrast warning / adjust | Warn + auto adjust | B§C | partial | T8 | 0.4 | Warning < 4.5:1 with one-click readable color; explained auto-adjust missing |
-| T10 | Cover image | Upload, crop, reposition, remove | B§C | partial | assets | 0.2 | Upload + remove; crop/focal UI missing (focalY stored) |
+| T10 | Cover image | Upload, crop ratios, reposition, remove | B§C | verified | assets | 0.2.1 | Upload; hover pencil/X (also Style → Crop…/Remove); crop sheet with Original, 16:9, 2:1, 3:1, 4:3, Free, drag to move, corner to resize, arrow keys; the crop is stored as a rect + ratio, never baked into the image (`CoverCropTests`; visual check at 1440 and 720 pt) |
 | T11 | Separator styles | Line, tape, doodle | S02, B§C | working | — | 0.1 | Line / Dots / Tape / Wave (original artwork), document-wide |
 | T12 | Fonts System/Serif/Mono/Rounded | Families | S02, B§C | working | — | 0.1 | System font designs; document-only |
 | T13 | Shell tinted by doc style | Appearance setting | S10 | working | — | 0.1 | Rail/tabs tint (`document-ember.png`), toggle in Settings and Style panel |
