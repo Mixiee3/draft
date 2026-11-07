@@ -55,6 +55,7 @@ struct DocumentScreen: View {
         }
         .onAppear {
             model.editors[docId]?.controller.refreshPageTitles { model.library.docs[$0]?.title }
+            model.editors[docId]?.controller.refreshLinks()
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.05) { model.restoreTabState(docId) }
         }
     }
@@ -78,7 +79,14 @@ struct DocumentScreen: View {
                 .foregroundStyle(Color(hex: "#2a2622")).tint(Color(hex: "#2a2622"))
                 .accessibilityLabel("Insert block")
             }
-            if !narrow { Breadcrumb(docId: docId, light: darkPage || tokens.backdrop.kind == "image") }
+            if let day = model.library.docs[docId]?.dailyDate {
+                PillGroup(onBackdrop: true) {
+                    PillButton(symbol: "chevron.backward", label: "Previous day", onBackdrop: true) { model.openDaily(Day.add(day, days: -1), inPlace: true) }
+                    PillButton(symbol: "calendar", label: "Open in Calendar", text: narrow ? nil : Day.label(day, today: model.todayKey), onBackdrop: true) { model.openView(ViewRef(kind: "calendar", section: day)) }
+                    PillButton(symbol: "chevron.forward", label: "Next day", onBackdrop: true) { model.openDaily(Day.add(day, days: 1), inPlace: true) }
+                    if day != model.todayKey { PillButton(symbol: "sun.max", label: "Today’s note", onBackdrop: true) { model.openDaily(inPlace: true) } }
+                }
+            } else if !narrow { Breadcrumb(docId: docId, light: darkPage || tokens.backdrop.kind == "image") }
             Spacer()
             PillGroup(onBackdrop: true) {
                 PillButton(symbol: "square.and.arrow.up", label: "Share and export", text: "Share", isActive: model.panel == .share, onBackdrop: true) { toggle(.share) }

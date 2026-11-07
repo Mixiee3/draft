@@ -9,8 +9,9 @@ struct SettingsView: View {
 
     let sections: [(String, String, String, String?)] = [
         ("appearance", "Appearance", "paintpalette", nil), ("editor", "Editor", "text.cursor", nil), ("space", "Space", "square.on.circle", nil),
+        ("daily", "Daily Notes & Tasks", "calendar", nil), ("tags", "Tags", "number", nil), ("advanced", "Advanced", "slider.horizontal.3", nil),
         ("stats", "Stats", "chart.bar", nil), ("data", "Data & Storage", "internaldrive", nil), ("about", "About Draft", "info.circle", nil),
-        ("templates", "Templates", "doc.on.doc", "v0.5"), ("tags", "Tags", "number", "v0.3"), ("published", "Published Content", "globe", "v1.x"), ("language", "Language & Spelling", "globe.europe.africa", "v0.6"),
+        ("templates", "Templates", "doc.on.doc", "v0.5"), ("published", "Published Content", "globe", "v1.x"), ("language", "Language & Spelling", "globe.europe.africa", "v0.6"),
     ]
 
     var body: some View {
@@ -62,6 +63,9 @@ struct SettingsView: View {
                 }.onAppear { spaceName = model.library.space.name }
                 Text("Multiple Spaces arrive in v0.5.").font(.system(size: 11.5)).foregroundStyle(t.tertiary)
             }
+        case "daily": daily
+        case "tags": tags
+        case "advanced": advanced
         case "stats": stats
         case "data":
             group("Where your notes live") {
@@ -72,13 +76,107 @@ struct SettingsView: View {
             }
             if let r = model.readOnly { group("Read-only mode") { Text(r).foregroundStyle(.orange) } }
         case "about":
-            group("Draft 0.1 — First Light") {
+            group("Draft 0.3 — Linked Thinking") {
                 Text("A free, open-source, local-first notes app. No account, no network, no telemetry. Your documents are portable JSON + Markdown export.").font(.system(size: 12.5)).foregroundStyle(t.secondary)
             }
         default:
             let p = sections.first { $0.0 == section }
             group(p?.1 ?? "") {
                 Text("Not available yet — planned for \(p?.3 ?? "a later version"). See docs/ROADMAP.md for what it will do.").foregroundStyle(t.secondary)
+            }
+        }
+    }
+
+    func bind<V>(_ k: WritableKeyPath<DraftCore.Settings, V>) -> Binding<V> {
+        Binding(get: { model.library.settings[keyPath: k] }, set: { v in model.setSettings { $0[keyPath: k] = v } })
+    }
+
+    @State private var ignoreText = ""
+    @State private var pendingReminders: [String]? = nil
+
+    var daily: some View {
+        VStack(alignment: .leading, spacing: 22) {
+            group("Daily notes") {
+                Toggle("Show daily notes in All Docs and folders", isOn: bind(\.showDailyNotes))
+                Text("Daily notes are always in Calendar and in Quick Open. ⇧⌘D opens today's note; there is never more than one note per day.")
+                    .font(.system(size: 12)).foregroundStyle(t.secondary).fixedSize(horizontal: false, vertical: true)
+                Picker("Template for new daily notes", selection: bind(\.dailyTemplateId)) {
+                    Text("None (empty note)").tag(String?.none)
+                    ForEach(model.library.liveDocs.filter { $0.dailyDate == nil }.sorted { $0.title < $1.title }) { Text(model.docTitle($0.id)).tag(Optional($0.id)) }
+                }
+            }
+            group("Reminders") {
+                Toggle("Remind me when tasks are due", isOn: bind(\.reminders))
+                Picker("Time for tasks with only a date", selection: bind(\.reminderHour)) {
+                    ForEach(5..<23) { h in Text(String(format: "%02d:00", h)).tag(h) }
+                }.disabled(!model.library.settings.reminders)
+                Text(model.reminders.available ? "Local notifications on this Mac only. Turning reminders off removes every pending one."
+                     : "Reminders need the Draft app bundle (scripts/build-app.sh); they are unavailable when running with swift run.")
+                    .font(.system(size: 12)).foregroundStyle(t.secondary).fixedSize(horizontal: false, vertical: true)
+                if let p = pendingReminders { Text("\(p.count) reminder\(p.count == 1 ? "" : "s") scheduled").font(.system(size: 12)).foregroundStyle(t.tertiary) }
+            }
+            .onAppear { model.reminders.pending { pendingReminders = $0 } }
+            group("Calendar events") {
+                Toggle("Show events from Calendar next to daily notes", isOn: Binding(get: { model.library.settings.calendarEvents }, set: { on in
+                    guard on else { model.setSettings { $0.calendarEvents = false }; return }
+                    CalendarEvents.shared.request { ok, msg in
+                        model.setSettings { $0.calendarEvents = ok }
+                        if let msg { model.toast(msg) }
+                    }
+                }))
+                Text("Optional. Draft asks macOS for access only when you turn this on, reads events on this Mac, and never changes them.")
+                    .font(.system(size: 12)).foregroundStyle(t.secondary).fixedSize(horizontal: false, vertical: true)
+            }
+        }
+    }
+
+    var tags: some View {
+        VStack(alignment: .leading, spacing: 22) {
+            group("Words that are not tags") {
+                Toggle("Ignore color codes such as #fff and #a1b2c3", isOn: bind(\.tagRules.ignoreHex))
+                Toggle("Ignore numbers such as #1 and #2026", isOn: bind(\.tagRules.ignoreNumeric))
+                HStack {
+                    TextField("Also ignore (comma separated, e.g. todo, wip)", text: $ignoreText).textFieldStyle(.roundedBorder)
+                        .onSubmit(saveIgnore).accessibilityLabel("Custom words to ignore")
+                    Button("Save", action: saveIgnore)
+                }.onAppear { ignoreText = model.library.settings.tagRules.custom.joined(separator: ", ") }
+            }
+            group("Tags in this space") {
+                let tags = model.index.tagCounts(live: model.liveIds)
+                if tags.isEmpty { Text("No tags yet. Type # and a word in any document.").foregroundStyle(t.secondary) }
+                ForEach(tags, id: \.tag) { tag in
+                    HStack {
+                        Circle().fill(Color(hex: model.tagColor(tag.tag))).frame(width: 10, height: 10)
+                        Button("#" + tag.tag) { model.openView(ViewRef(kind: "tag", section: tag.tag)) }.buttonStyle(.link)
+                        Text("\(tag.count)").foregroundStyle(t.tertiary)
+                        Spacer()
+                        if model.library.settings.tagColors[tag.tag.lowercased()] != nil { Button("Default color") { model.setTagColor(tag.tag, nil) }.buttonStyle(.link) }
+                    }.font(.system(size: 13))
+                }
+            }
+        }
+    }
+
+    func saveIgnore() {
+        let words = ignoreText.split(separator: ",").map { $0.trimmingCharacters(in: CharacterSet(charactersIn: "# ")) }.filter { !$0.isEmpty }
+        model.setSettings { $0.tagRules.custom = words }
+    }
+
+    var advanced: some View {
+        VStack(alignment: .leading, spacing: 22) {
+            group("Week starts on") {
+                Picker("", selection: bind(\.weekStart)) { Text("System setting").tag(0); Text("Sunday").tag(1); Text("Monday").tag(2) }.pickerStyle(.segmented).labelsHidden()
+                Text("Used by Calendar and by dates such as @next monday.").font(.system(size: 12)).foregroundStyle(t.secondary)
+            }
+            group("A new day starts at") {
+                Picker("", selection: bind(\.dayStartHour)) { ForEach(0..<7) { h in Text(String(format: "%02d:00", h)).tag(h) } }.labelsHidden().frame(width: 120)
+                Text("Before this hour, Today and ⇧⌘D still mean the previous day — handy if you write after midnight.")
+                    .font(.system(size: 12)).foregroundStyle(t.secondary).fixedSize(horizontal: false, vertical: true)
+            }
+            group("Index") {
+                Text("Links, tags and tasks are kept in index/index.json, built from your documents. It can always be rebuilt and never changes a document.")
+                    .font(.system(size: 12)).foregroundStyle(t.secondary).fixedSize(horizontal: false, vertical: true)
+                Button("Rebuild Index") { model.rebuildIndex() }
             }
         }
     }
@@ -236,9 +334,14 @@ struct QuickOpen: View {
             .prefix(12).map { $0 }
     }
 
+    var blockResults: [(doc: String, block: IndexedBlock)] {
+        query.trimmingCharacters(in: .whitespaces).count < 2 ? [] : model.index.blockHits(query, live: model.liveIds, limit: 8)
+    }
+
     func choose() {
-        let r = results
+        let r = results, b = blockResults
         if r.indices.contains(index) { model.openView(.doc(r[index].id)) }
+        else if b.indices.contains(index - r.count) { let h = b[index - r.count]; model.openBlock(h.doc, h.block.id) }
         else if !query.isEmpty { model.createDoc(title: query) }
         model.quickOpen = false
     }
@@ -249,10 +352,10 @@ struct QuickOpen: View {
             VStack(spacing: 0) {
                 HStack(spacing: 8) {
                     Image(systemName: "magnifyingglass").foregroundStyle(t.secondary)
-                    TextField("Open a document by name…", text: $query)
+                    TextField("Open a document or find a block…", text: $query)
                         .textFieldStyle(.plain).font(.system(size: 16)).focused($focused)
                         .onSubmit(choose)
-                        .onKeyPress(.downArrow) { index = min(index + 1, max(0, results.count)); return .handled }
+                        .onKeyPress(.downArrow) { index = min(index + 1, max(0, results.count + blockResults.count)); return .handled }
                         .onKeyPress(.upArrow) { index = max(index - 1, 0); return .handled }
                         .onExitCommand { model.quickOpen = false }
                         .accessibilityLabel("Quick Open")
@@ -264,9 +367,14 @@ struct QuickOpen: View {
                             row(icon: m.parentDocId == nil ? "doc.text" : "doc.on.doc", title: m.title.isEmpty ? "Untitled" : m.title, sub: model.folderName(m.folderId), selected: i == index)
                                 .onTapGesture { index = i; choose() }
                         }
+                        let blocks = blockResults
+                        ForEach(Array(blocks.enumerated()), id: \.element.block.id) { i, h in
+                            row(icon: h.block.heading == true ? "number" : "text.alignleft", title: h.block.text, sub: model.docTitle(h.doc), selected: results.count + i == index)
+                                .onTapGesture { index = results.count + i; choose() }
+                        }
                         if !query.isEmpty {
-                            row(icon: "plus", title: "Create “\(query)”", sub: "New document", selected: index == results.count)
-                                .onTapGesture { index = results.count; choose() }
+                            row(icon: "plus", title: "Create “\(query)”", sub: "New document", selected: index == results.count + blocks.count)
+                                .onTapGesture { index = results.count + blocks.count; choose() }
                         }
                     }.padding(6)
                 }.frame(maxHeight: 360)

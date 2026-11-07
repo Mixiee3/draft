@@ -5,7 +5,10 @@ import DraftCore
 import DraftEditor
 
 enum Panel: String { case format, style, info, share }
-enum DocRailTab: String, CaseIterable { case outline, tasks, attachments, find }
+enum DocRailTab: String, CaseIterable { case outline, backlinks, tasks, attachments, find }
+
+/// A place in a tab's back/forward history.
+struct HistEntry: Equatable { var view: ViewRef; var scrollY: Double? }
 
 struct Toast: Identifiable, Equatable {
     let id = UUID()
@@ -51,11 +54,20 @@ final class AppModel: ObservableObject {
     @Published var findFocusNonce = 0
     @Published var infoTab = "info"
     @Published var coverEditorDoc: String?
+    /// Bumped when the link/tag/task index changes (backlinks, tags, tasks, calendar).
+    @Published var indexTick = 0
+    @Published var searchRegex = false
+    var index = VaultIndex()
+    var blockDoc: [String: String] = [:]
+    var indexTimer: Timer?
+    var forward: [String: [HistEntry]] = [:]
+    var lastIndexSeconds = 0.0
+    let reminders = ReminderScheduler()
 
     let vault = Vault(dir: Vault.defaultURL())
     private(set) var editors: [String: DocumentEditorView] = [:]
     private var hosts: [String: EditorHostAdapter] = [:]
-    private var history: [String: [ViewRef]] = [:]
+    var history: [String: [HistEntry]] = [:]
     private var imageCache: [String: NSImage] = [:]
     private var dirtyDocs = Set<String>()
     private var libDirty = false
@@ -82,6 +94,7 @@ final class AppModel: ObservableObject {
             library = lib
             let expired = lib.expiredTrash()
             if !expired.isEmpty { deleteForever(expired) }
+            loadIndex()
             if activeView.kind == "doc", let id = activeView.docId { _ = ensureDoc(id) }
             ready = true
         } catch let e as NewerSchemaError {
@@ -94,7 +107,7 @@ final class AppModel: ObservableObject {
 
     // MARK: Persistence
 
-    private func scheduleLibrarySave() {
+    func scheduleLibrarySave() {
         libDirty = true
         libTimer?.invalidate()
         libTimer = Timer.scheduledTimer(withTimeInterval: 0.4, repeats: false) { _ in Task { @MainActor in self.saveLibraryNow() } }
@@ -114,7 +127,7 @@ final class AppModel: ObservableObject {
         docTimer = Timer.scheduledTimer(withTimeInterval: 0.5, repeats: false) { _ in Task { @MainActor in self.saveDirtyDocs() } }
     }
 
-    private func saveDirtyDocs() {
+    func saveDirtyDocs() {
         docTimer?.invalidate()
         for id in dirtyDocs { saveDocNow(id) }
         dirtyDocs.removeAll()
@@ -133,6 +146,7 @@ final class AppModel: ObservableObject {
                 m.updatedAt = d.updatedAt
                 library.docs[id] = m
                 scheduleLibrarySave()
+                reindex(d)
             }
         } catch { reportSaveError(error) }
     }
@@ -141,7 +155,7 @@ final class AppModel: ObservableObject {
         if saveState != "error" { saveState = (dirtyDocs.isEmpty && !libDirty) ? "saved" : "saving" }
     }
 
-    private func reportSaveError(_ e: Error) {
+    func reportSaveError(_ e: Error) {
         saveState = "error"
         toast("Could not save: \(e.localizedDescription). Your text is still open; export it to be safe.")
     }
@@ -151,6 +165,7 @@ final class AppModel: ObservableObject {
         captureTabStates()
         saveDirtyDocs()
         saveLibraryNow()
+        saveIndexNow()
     }
 
     // MARK: Navigation
@@ -183,14 +198,14 @@ final class AppModel: ObservableObject {
         panel = nil
         if inPlace && cur.view.kind != "all" {
             if cur.view == view { return }
-            history[cur.id, default: []].append(cur.view)
+            pushHistory(cur)
             replaceTabView(cur.id, view)
             return
         }
         if let existing = library.tabs.first(where: { $0.view == view }), !newTab {
             library.activeTabId = existing.id
         } else if !newTab && view.kind != "doc" && cur.view.kind != "all" && cur.view.kind != "doc" {
-            history[cur.id, default: []].append(cur.view)
+            pushHistory(cur)
             replaceTabView(cur.id, view)
             return
         } else {
@@ -210,17 +225,58 @@ final class AppModel: ObservableObject {
     }
 
     var canGoBack: Bool { !(history[activeTab.id] ?? []).isEmpty || activeTab.view.kind != "all" }
+    var canGoForward: Bool { !(forward[activeTab.id] ?? []).isEmpty }
 
+    func entry(_ t: DraftCore.Tab) -> HistEntry {
+        HistEntry(view: t.view, scrollY: t.view.docId.flatMap { editors[$0] }.map { Double($0.scrollView.contentView.bounds.origin.y) })
+    }
+
+    func pushHistory(_ t: DraftCore.Tab) {
+        history[t.id, default: []].append(entry(t))
+        forward[t.id] = []
+    }
+
+    /// ⌘[: the previous place in this tab, at the scroll position it had.
     func goBack() {
         let cur = activeTab
+        captureTabStates()
         if var stack = history[cur.id], let prev = stack.popLast() {
             history[cur.id] = stack
-            if prev.kind == "doc", let id = prev.docId { _ = ensureDoc(id) }
-            replaceTabView(cur.id, prev)
+            forward[cur.id, default: []].append(entry(cur))
+            go(to: prev, in: cur.id)
         } else {
             activateTab(library.tabs[0].id)
         }
         panel = nil
+    }
+
+    /// ⌘]
+    func goForward() {
+        let cur = activeTab
+        guard var stack = forward[cur.id], let next = stack.popLast() else { return }
+        captureTabStates()
+        forward[cur.id] = stack
+        history[cur.id, default: []].append(entry(cur))
+        go(to: next, in: cur.id)
+        panel = nil
+    }
+
+    private func go(to e: HistEntry, in tabId: String) {
+        if e.view.kind == "doc", let id = e.view.docId {
+            guard library.docs[id]?.deletedAt == nil, ensureDoc(id) != nil else { toast("That document is no longer available."); return }
+        }
+        replaceTabView(tabId, e.view)
+        if let y = e.scrollY, let id = e.view.docId {
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.05) { [weak self] in self?.scroll(id, to: y) }
+        }
+    }
+
+    func scroll(_ docId: String, to y: Double) {
+        guard let e = editors[docId], let doc = e.scrollView.documentView else { return }
+        e.layoutSubtreeIfNeeded()
+        let maxY = max(0, doc.frame.height - e.scrollView.contentSize.height)
+        e.scrollView.contentView.scroll(to: NSPoint(x: 0, y: min(CGFloat(y), maxY)))
+        e.scrollView.reflectScrolledClipView(e.scrollView.contentView)
     }
 
     /// Remember scroll position and selection of every open document tab.
@@ -274,6 +330,7 @@ final class AppModel: ObservableObject {
         let closing = library.tabs[idx]
         library.tabs.remove(at: idx)
         history[id] = nil
+        forward[id] = nil
         if library.activeTabId == id { library.activeTabId = library.tabs[min(idx, library.tabs.count - 1)].id }
         if closing.view.kind == "doc", let d = closing.view.docId, !library.tabs.contains(where: { $0.view.docId == d }) {
             saveDirtyDocs()
@@ -298,6 +355,7 @@ final class AppModel: ObservableObject {
         view.title = doc.title
         view.coverImage = coverImage(doc.appearance.cover)
         view.controller.refreshPageTitles { self.library.docs[$0]?.title }
+        view.controller.refreshLinks()
         view.onTitleChange = { [weak self] t in self?.setTitle(id, t) }
         view.onEditCover = { [weak self] in self?.coverEditorDoc = id }
         view.onRemoveCover = { [weak self] in self?.updateAppearance(id) { $0.cover = nil } }
@@ -306,7 +364,10 @@ final class AppModel: ObservableObject {
     }
 
     func theme(for doc: DocFile) -> EditorTheme {
-        EditorTheme(tokens: Styles.resolve(doc.appearance), completedTasks: library.settings.completedTasks)
+        var t = EditorTheme(tokens: Styles.resolve(doc.appearance), completedTasks: library.settings.completedTasks)
+        t.tagRules = library.settings.tagRules
+        t.tagColors = library.settings.tagColors
+        return t
     }
 
     var activeEditor: DocumentEditorView? { activeDocId.flatMap { editors[$0] } }
@@ -361,8 +422,11 @@ final class AppModel: ObservableObject {
         docs[id]!.updatedAt = nowMs()
         library.docs[id]?.title = title
         markDocDirty(id)
-        // Keep page cards in open parent documents in sync.
-        for (_, e) in editors { e.controller.refreshPageTitles { self.library.docs[$0]?.title } }
+        // Keep page cards and link chips in other open documents in sync.
+        for (eid, e) in editors {
+            e.controller.refreshPageTitles { self.library.docs[$0]?.title }
+            if eid != id { e.controller.refreshLinks() }
+        }
     }
 
     func updateAppearance(_ id: String, _ f: (inout DocumentAppearance) -> Void) {
@@ -421,6 +485,7 @@ final class AppModel: ObservableObject {
             editors[id] = nil
             hosts[id] = nil
             dirtyDocs.remove(id)
+            index.entries[id] = nil
             do { try vault.purgeDoc(id) } catch { reportSaveError(error) }
         }
         library.tabs.removeAll { $0.view.kind == "doc" && ids.contains($0.view.docId ?? "") }
@@ -441,16 +506,17 @@ final class AppModel: ObservableObject {
     }
 
     /// New nested page of `parent` holding `content` exactly as given (block ids kept).
-    func createNestedPage(parent: String, title: String, content: Node) -> String? {
+    func createNestedPage(parent: String, title: String, content: Node, nested: Bool = true) -> String? {
         guard let pm = library.docs[parent], readOnly == nil else { return nil }
         let id = newId("d_")
         var doc = DocFile.empty(id: id, title: title, styleId: docs[parent]?.appearance.styleId ?? library.settings.defaultStyleId)
         doc.content = content
         docs[id] = doc
-        var meta = DocMeta(id: id, folderId: pm.folderId, parentDocId: parent)
+        var meta = DocMeta(id: id, folderId: pm.folderId, parentDocId: nested ? parent : nil)
         meta.applyDerived(from: doc)
         library.docs[id] = meta
-        reparent(cardDocIds(content), to: id) // pages that moved along now live under the new page
+        reparent(cardDocIds(content), to: id)
+        reindex(doc) // pages that moved along now live under the new page
         do { try vault.saveDoc(doc) } catch { reportSaveError(error) }
         scheduleLibrarySave()
         return id
@@ -462,14 +528,17 @@ final class AppModel: ObservableObject {
 
     func setGroupedPage(_ id: String, active: Bool, parent: String) {
         if active {
+            var nested = true
             if let held = heldPages.removeValue(forKey: id) {
                 library.docs[id] = held.meta
                 docs[id] = held.doc
+                nested = held.meta.parentDocId != nil // Move to New Document makes top-level documents
                 do { try vault.saveDoc(held.doc) } catch { reportSaveError(error) }
+                reindex(held.doc)
             } else {
                 library.restore(id) // pages trashed by earlier builds
             }
-            library.docs[id]?.parentDocId = parent
+            if nested { library.docs[id]?.parentDocId = parent }
             if let d = docs[id] { reparent(cardDocIds(d.content), to: id) }
         } else {
             saveDirtyDocs()
@@ -483,6 +552,8 @@ final class AppModel: ObservableObject {
             hosts[id] = nil
             library.tabs.removeAll { $0.view.kind == "doc" && $0.view.docId == id }
             if !library.tabs.contains(where: { $0.id == library.activeTabId }) { library.activeTabId = library.tabs[0].id }
+            index.entries[id] = nil
+            indexChanged()
             do { try vault.purgeDoc(id) } catch { reportSaveError(error) }
         }
         scheduleLibrarySave()
@@ -647,11 +718,15 @@ final class AppModel: ObservableObject {
     // MARK: Settings
 
     func setSettings(_ f: (inout DraftCore.Settings) -> Void) {
-        let before = library.settings.completedTasks
+        let before = library.settings
         f(&library.settings)
-        if before != library.settings.completedTasks {
+        let now = library.settings
+        if before.completedTasks != now.completedTasks || before.tagRules != now.tagRules || before.tagColors != now.tagColors {
             for (id, e) in editors { if let d = docs[id] { e.theme = theme(for: d) } }
         }
+        if before.tagRules != now.tagRules { saveDirtyDocs(); refreshIndex() }
+        if before.reminders != now.reminders || before.reminderHour != now.reminderHour { syncReminders(requestIfNeeded: now.reminders && !before.reminders) }
+        if before.dayStartHour != now.dayStartHour || before.weekStart != now.weekStart { indexTick &+= 1 }
         scheduleLibrarySave()
     }
 
@@ -768,7 +843,7 @@ final class AppModel: ObservableObject {
     // MARK: Library queries
 
     func docsFor(_ view: ViewRef) -> [DocMeta] {
-        var list = library.liveDocs.filter { $0.parentDocId == nil }
+        var list = library.liveDocs.filter { $0.parentDocId == nil && (library.settings.showDailyNotes || $0.dailyDate == nil) }
         switch view.kind {
         case "unsorted": list = list.filter { $0.folderId == nil }
         case "starred": list = library.liveDocs.filter { $0.starred }
@@ -792,8 +867,13 @@ final class AppModel: ObservableObject {
         return list
     }
 
+    var searchQuery: Result<Search.Query, Search.QueryError> {
+        do { return .success(try Search.parse(librarySearch, regex: searchRegex)) } catch { return .failure(error as? Search.QueryError ?? Search.QueryError(message: "Invalid search")) }
+    }
+
     var searchHits: [SearchHit] {
-        Search.hits(librarySearch, in: library.liveDocs) { [self] m in
+        guard case .success(let q) = searchQuery else { return [] }
+        return Search.hits(q, in: library.liveDocs) { [self] m in
             (editors[m.id]?.controller.document() ?? ensureDoc(m.id)?.content).map(docPlainText)
         }
     }
@@ -805,7 +885,7 @@ final class AppModel: ObservableObject {
         openView(.doc(id))
         railShowsFolders = false
         docRailTab = .find
-        findQuery = Search.terms(q).first ?? q
+        findQuery = (try? Search.parse(q))?.include.first ?? q
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) { [weak self] in
             guard let self, let c = self.editors[id]?.controller else { return }
             self.findCount = c.find(self.findQuery)
@@ -862,6 +942,7 @@ final class EditorHostAdapter: EditorHost {
     }
     func appendBlocks(_ content: Node, toDocument target: String) -> Bool {
         MainActor.assumeIsolated {
+            guard target != docId else { return false }
             let ok = model.appendBlocks(content, to: target)
             if ok {
                 let n = content.content?.count ?? 0, t = model.library.docs[target]?.title ?? ""

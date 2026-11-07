@@ -17,7 +17,7 @@ public enum Markdown {
         return o
     }
 
-    static func inline(_ nodes: [Node]?, _ lossy: inout Set<String>) -> String {
+    static func inline(_ nodes: [Node]?, _ lossy: inout Set<String>, link docPath: (String) -> String? = { _ in nil }) -> String {
         guard let nodes else { return "" }
         var out = ""
         for n in nodes {
@@ -47,6 +47,10 @@ public enum Markdown {
                 }
             }
             if let link = marks.first(where: { $0.type == "link" }) { core = "[\(core)](\(link.attrs?["href"]?.string ?? ""))" }
+            if let dl = marks.first(where: { $0.type == "docLink" }), let d = dl.attrs?["docId"]?.string, let p = docPath(d) {
+                core = "[\(core)](\(p.replacingOccurrences(of: " ", with: "%20")))"
+            }
+            if let dm = marks.first(where: { $0.type == "date" }), let d = dm.attrs?["date"]?.string { core = d.replacingOccurrences(of: "T", with: " ") }
             out += lead + core + trail
         }
         return out
@@ -69,11 +73,11 @@ public enum Markdown {
             switch n.type {
             case "paragraph":
                 let isCaption = n.attrs?["variant"]?.string == "caption"
-                let t = inline(n.content, &lossy)
+                let t = inline(n.content, &lossy, link: { pageLink($0, "") })
                 return [indent + (isCaption && !t.isEmpty ? "<small>\(t)</small>" : t)]
             case "heading":
                 let lvl = min(6, n.attrs?["level"]?.int ?? 1)
-                return [indent + String(repeating: "#", count: lvl) + " " + inline(n.content, &lossy)]
+                return [indent + String(repeating: "#", count: lvl) + " " + inline(n.content, &lossy, link: { pageLink($0, "") })]
             case "blockquote":
                 return blocks(n.content ?? [], "").map { indent + ($0.isEmpty ? ">" : "> " + $0) }
             case "callout":
@@ -135,7 +139,7 @@ public enum Markdown {
                 return lines
             default:
                 if n.content == nil && n.text == nil { lossy.insert("Unknown block “\(n.type)” was skipped in Markdown (kept in .draft.json).") }
-                return [indent + inline(n.content, &lossy)]
+                return [indent + inline(n.content, &lossy, link: { pageLink($0, "") })]
             }
         }
 
@@ -206,18 +210,22 @@ public enum ExportBuilder {
             guard !visited.contains(id), let doc = load(id) else { continue }
             visited.insert(id)
             natives.append(doc)
+            walk(doc.content) { if $0.type == "pageCard", let d = $0.attrs?["docId"]?.string { queue.append(d) } }
+        }
+        let exported = visited
+        for doc in natives {
+            let id = doc.id
             let myPath = pathFor(id)
             let depth = myPath.split(separator: "/").count - 1
             let up = String(repeating: "../", count: depth)
             let res = Markdown.render(doc, assetPath: { up + "assets/" + $0 }, pageLink: { pid, _ in
-                guard metas[pid] != nil else { return nil }
+                guard metas[pid] != nil, exported.contains(pid) else { return nil }
                 return up + pathFor(pid)
             })
             files.append((myPath, res.markdown))
             allAssets += res.assets
             lossy.formUnion(res.lossy)
             if let c = doc.appearance.cover { allAssets.append(c.assetId) }
-            queue += res.pages
         }
         let native: JSONValue = .object([
             "format": "draft-export",

@@ -40,6 +40,14 @@ final class LinkingTests: XCTestCase {
         XCTAssertEqual(daily.tasks[2].due, "2026-11-07", "tasks in a daily note are due that day")
     }
 
+    func testSettingTask() {
+        let d = sampleDoc().content
+        let done = d.settingTask("b_t1", checked: true)!
+        XCTAssertEqual(VaultIndex.entry(for: DocFile(id: "x", title: "", content: done, appearance: DocumentAppearance(styleId: "paper"), createdAt: 0, updatedAt: 0), daily: nil, rules: TagRules()).tasks[0].checked, true)
+        XCTAssertNil(d.settingTask("b_p", checked: true), "only tasks can be checked")
+        XCTAssertEqual(done.settingTask("b_t1", checked: false), d)
+    }
+
     func testTagRules() {
         let r = TagRules(custom: ["#todo"])
         XCTAssertFalse(r.allows("fff")); XCTAssertFalse(r.allows("A1B2C3")); XCTAssertFalse(r.allows("42")); XCTAssertFalse(r.allows("TODO"))

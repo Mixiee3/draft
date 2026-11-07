@@ -29,9 +29,9 @@ struct LibraryView: View {
             } else if !model.librarySearch.trimmingCharacters(in: .whitespaces).isEmpty && !docs.isEmpty {
                 SearchResults(hits: model.searchHits)
             } else if docs.isEmpty {
-                EmptyLibrary(message: !model.librarySearch.isEmpty ? "No documents match “\(model.librarySearch)”." :
+                EmptyLibrary(message: searchErrorText.map { "\($0). Check the brackets and escapes, or turn off .* to search for the words." } ?? (!model.librarySearch.isEmpty ? "No documents match “\(model.librarySearch)”." :
                                 view.kind == "unsorted" ? "Any documents you haven't moved into a folder will appear here." :
-                                view.kind == "folder" ? "This folder is empty. Press ⌘N to write something here." : "No documents yet. Press ⌘N to start writing.")
+                                view.kind == "folder" ? "This folder is empty. Press ⌘N to write something here." : "No documents yet. Press ⌘N to start writing."))
             } else {
                 GeometryReader { geo in
                     ScrollView {
@@ -107,21 +107,30 @@ struct LibraryView: View {
         .padding(.horizontal, 18).padding(.vertical, 14)
     }
 
+    var searchErrorText: String? {
+        if case .failure(let e) = model.searchQuery { return e.message }
+        return nil
+    }
+
     @ViewBuilder var searchPill: some View {
         if model.librarySearchOpen {
             HStack(spacing: 6) {
                 Image(systemName: "magnifyingglass").foregroundStyle(t.pillText.opacity(0.7))
-                TextField("Search titles and text", text: $model.librarySearch)
-                    .textFieldStyle(.plain).foregroundStyle(t.pillText).focused($searchFocused).frame(width: 200)
+                TextField(model.searchRegex ? "Regular expression" : "Words, \"a phrase\", -exclude", text: $model.librarySearch)
+                    .textFieldStyle(.plain).foregroundStyle(t.pillText).focused($searchFocused).frame(width: 220)
                     .onExitCommand { model.librarySearch = ""; model.librarySearchOpen = false }
                     .onSubmit { if let first = model.searchHits.first { model.openSearchResult(first.meta.id) } }
                     .accessibilityLabel("Search documents")
+                Button { model.searchRegex.toggle() } label: { Text(".*").font(.system(size: 12, weight: .bold, design: .monospaced)) }
+                    .buttonStyle(.plain).foregroundStyle(model.searchRegex ? t.accent : t.pillText.opacity(0.5))
+                    .help("Regular expression").accessibilityLabel("Regular expression").accessibilityAddTraits(model.searchRegex ? .isSelected : [])
                 Button { model.librarySearch = ""; model.librarySearchOpen = false } label: { Image(systemName: "xmark.circle.fill") }
                     .buttonStyle(.plain).foregroundStyle(t.pillText.opacity(0.5)).accessibilityLabel("Close search")
             }
             .padding(.horizontal, 12).frame(height: 36)
-            .background(Capsule().fill(t.pill)).overlay(Capsule().strokeBorder(t.pillBorder, lineWidth: 0.5))
+            .background(Capsule().fill(t.pill)).overlay(Capsule().strokeBorder(searchErrorText == nil ? t.pillBorder : Color.red, lineWidth: searchErrorText == nil ? 0.5 : 1.5))
             .onAppear { searchFocused = true }
+            if let e = searchErrorText { Text(e).font(.system(size: 12)).foregroundStyle(.red).accessibilityLabel("Search error: \(e)") }
         } else {
             PillGroup { PillButton(symbol: "magnifyingglass", label: "Search (⌘F)") { model.librarySearchOpen = true } }
                 .keyboardShortcut("f", modifiers: .command)

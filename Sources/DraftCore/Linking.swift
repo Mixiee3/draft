@@ -387,3 +387,18 @@ public enum Reminders {
         return Array(out.sorted { $0.fire < $1.fire }.prefix(limit))
     }
 }
+
+public extension Node {
+    /// The tree with task item `id` checked or unchecked; nil when there is no such task.
+    func settingTask(_ id: String, checked: Bool) -> Node? {
+        var found = false
+        func visit(_ n: Node) -> Node {
+            var out = n
+            if n.type == "taskItem", n.id == id { out[attr: "checked"] = .bool(checked); found = true }
+            out.content = n.content?.map(visit)
+            return out
+        }
+        let r = visit(self)
+        return found ? r : nil
+    }
+}

@@ -56,11 +56,12 @@ struct RailRow: View {
     var isSelected = false
     var indent: CGFloat = 0
     var trailing: AnyView? = nil
+    var tint: Color? = nil
     var action: () -> Void
     @State private var hover = false
     var body: some View {
         HStack(spacing: 8) {
-            Image(systemName: icon).font(.system(size: 12.5)).frame(width: 18).foregroundStyle(t.secondary)
+            Image(systemName: icon).font(.system(size: 12.5)).frame(width: 18).foregroundStyle(tint ?? t.secondary)
             Text(title.isEmpty ? "Untitled" : title).font(.system(size: 13)).lineLimit(1).foregroundStyle(t.text)
             Spacer(minLength: 0)
             trailing
@@ -121,6 +122,13 @@ struct LibraryRail: View {
                     RailRow(icon: "square.grid.2x2", title: "All Docs", isSelected: v.kind == "all") { model.activateTab(model.library.tabs[0].id) }
                     RailRow(icon: "magnifyingglass", title: "Quick Open", trailing: AnyView(Text("⌘O").font(.system(size: 11)).foregroundStyle(t.tertiary))) { model.quickOpen = true }
                     RailRow(icon: "person.2", title: "Shared with Me", isSelected: v.kind == "shared") { model.openView(ViewRef(kind: "shared")) }
+                    let _ = model.indexTick
+                    RailRow(icon: "sun.max", title: "Today", isSelected: model.activeDocId != nil && model.library.docs[model.activeDocId!]?.dailyDate == model.todayKey,
+                            trailing: AnyView(Text("⇧⌘D").font(.system(size: 11)).foregroundStyle(t.tertiary))) { model.openDaily() }
+                    RailRow(icon: "calendar", title: "Calendar", isSelected: v.kind == "calendar") { model.openView(ViewRef(kind: "calendar")) }
+                    let due = model.tasks(.today).count + model.tasks(.overdue).count
+                    RailRow(icon: "checklist", title: "Tasks", isSelected: v.kind == "tasks",
+                            trailing: due == 0 ? nil : AnyView(Text("\(due)").font(.system(size: 11)).foregroundStyle(t.tertiary))) { model.openView(ViewRef(kind: "tasks")) }
 
                     SectionHeader(title: "Starred")
                     let starred = model.library.liveDocs.filter(\.starred).sorted { $0.title < $1.title }
@@ -143,7 +151,16 @@ struct LibraryRail: View {
                     }
 
                     SectionHeader(title: "Tags")
-                    Text("Tags arrive in v0.3").font(.system(size: 12)).italic().foregroundStyle(t.tertiary).padding(.horizontal, 10).padding(.vertical, 4)
+                    let tags = model.index.tagCounts(live: model.liveIds)
+                    if tags.isEmpty {
+                        Text("Type # and a word in any document").font(.system(size: 12)).italic().foregroundStyle(t.tertiary).padding(.horizontal, 10).padding(.vertical, 4)
+                    }
+                    ForEach(tags, id: \.tag) { tag in
+                        RailRow(icon: "number", title: tag.tag, isSelected: v.kind == "tag" && v.section?.lowercased() == tag.tag.lowercased(),
+                                trailing: AnyView(Text("\(tag.count)").font(.system(size: 11)).foregroundStyle(t.tertiary)), tint: Color(hex: model.tagColor(tag.tag))) {
+                            model.openView(ViewRef(kind: "tag", section: tag.tag))
+                        }
+                    }
                 }.padding(.horizontal, 6)
             }
             Spacer(minLength: 0)
@@ -233,7 +250,7 @@ struct DocumentRail: View {
             }.padding(.horizontal, 14).padding(.bottom, 12)
 
             HStack(spacing: 2) {
-                ForEach([(DocRailTab.outline, "list.bullet", "Outline"), (.tasks, "checkmark.circle", "Tasks"), (.attachments, "paperclip", "Attachments"), (.find, "doc.text.magnifyingglass", "Find in Page (⌘F)")], id: \.0) { tab, icon, label in
+                ForEach([(DocRailTab.outline, "list.bullet", "Outline"), (.backlinks, "arrow.uturn.backward", "Backlinks"), (.tasks, "checkmark.circle", "Tasks"), (.attachments, "paperclip", "Attachments"), (.find, "doc.text.magnifyingglass", "Find in Page (⌘F)")], id: \.0) { tab, icon, label in
                     let on = model.docRailTab == tab
                     Button { model.docRailTab = tab } label: {
                         Image(systemName: icon).font(.system(size: 12.5, weight: .medium))
@@ -252,6 +269,7 @@ struct DocumentRail: View {
 
             switch model.docRailTab {
             case .outline: OutlinePane(docId: docId, content: content)
+            case .backlinks: BacklinksPane(docId: docId)
             case .tasks: TasksPane(docId: docId, content: content)
             case .attachments: AttachmentsPane(docId: docId, content: content)
             case .find: FindPane(docId: docId)

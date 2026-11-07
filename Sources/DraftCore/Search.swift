@@ -28,7 +28,7 @@ public enum Search {
         public var isEmpty: Bool { include.isEmpty && regex == nil }
     }
 
-    public struct QueryError: Error, Equatable { public let message: String }
+    public struct QueryError: Error, Equatable { public let message: String; public init(message: String) { self.message = message } }
 
     public static func parse(_ q: String, regex: Bool = false) throws -> Query {
         var out = Query()

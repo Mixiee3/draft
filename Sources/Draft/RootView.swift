@@ -95,6 +95,9 @@ struct MainContent: View {
             case "doc":
                 if let id = v.docId { DocumentScreen(docId: id).id(id) }
             case "settings": SettingsView(section: v.section ?? "appearance")
+            case "tasks": TasksView(section: v.section).id(v)
+            case "calendar": CalendarView(focus: v.section).id(v)
+            case "tag": TagView(tag: v.section ?? "").id(v)
             default: LibraryView(view: v)
             }
         }
@@ -119,6 +122,9 @@ struct TabStrip: View {
         case "shared": return "Shared with Me"
         case "trash": return "Recently Deleted"
         case "settings": return "Settings"
+        case "tasks": return "Tasks"
+        case "calendar": return "Calendar"
+        case "tag": return "#" + (v.section ?? "")
         case "folder": return model.folderName(v.folderId)
         case "doc": let s = model.library.docs[v.docId ?? ""]?.title ?? ""; return s.isEmpty ? "Untitled" : s
         default: return ""
@@ -133,6 +139,9 @@ struct TabStrip: View {
         case "shared": return "person.2"
         case "trash": return "trash"
         case "settings": return "gearshape"
+        case "tasks": return "checklist"
+        case "calendar": return "calendar"
+        case "tag": return "number"
         case "folder": return "folder"
         default: return "doc.text"
         }
