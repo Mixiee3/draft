@@ -87,6 +87,19 @@ public final class Vault: @unchecked Sendable {
         try Vault.writeAtomic(try DraftJSON.encode(lib, pretty: true), to: libraryURL)
     }
 
+    var indexURL: URL { dir.appendingPathComponent("index/index.json") }
+
+    /// The derived link/tag/task index; nil when missing or unreadable (it is then rebuilt).
+    public func loadIndex() -> VaultIndex? {
+        guard let data = try? Data(contentsOf: indexURL) else { return nil }
+        return try? JSONDecoder().decode(VaultIndex.self, from: data)
+    }
+
+    public func saveIndex(_ idx: VaultIndex) throws {
+        guard !isReadOnly else { return }
+        try Vault.writeAtomic(try JSONEncoder().encode(idx), to: indexURL)
+    }
+
     public func loadDoc(_ id: String) throws -> DocFile? {
         let url = try docURL(id)
         guard fm.fileExists(atPath: url.path) else { return nil }

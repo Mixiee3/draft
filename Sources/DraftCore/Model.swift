@@ -40,6 +40,8 @@ public struct DocMeta: Codable, Hashable, Identifiable, Sendable {
     public var tint: String
     /// Set while the document is in Recently Deleted (its file stays on disk until purged).
     public var deletedAt: Double?
+    /// Set on daily notes: the day (`yyyy-MM-dd`) the note belongs to.
+    public var dailyDate: String?
 
     public init(id: String, title: String = "", folderId: String? = nil, parentDocId: String? = nil, createdAt: Double = nowMs(), updatedAt: Double = nowMs(), viewedAt: Double = nowMs(), starred: Bool = false, styleId: String = "paper", excerpt: String = "", searchText: String = "", words: Int = 0, blocks: Int = 0, tint: String = "#d9d4ca") {
         self.id = id; self.title = title; self.folderId = folderId; self.parentDocId = parentDocId
@@ -64,6 +66,7 @@ public struct DocMeta: Codable, Hashable, Identifiable, Sendable {
         blocks = try c.decodeIfPresent(Int.self, forKey: .blocks) ?? 0
         tint = try c.decodeIfPresent(String.self, forKey: .tint) ?? "#d9d4ca"
         deletedAt = try c.decodeIfPresent(Double.self, forKey: .deletedAt)
+        dailyDate = try c.decodeIfPresent(String.self, forKey: .dailyDate)
     }
 }
 
@@ -109,6 +112,17 @@ public struct Settings: Codable, Hashable, Sendable {
     public var sort = SortSpec(key: .updatedAt, dir: "desc")
     public var railCollapsed: Bool = false
     public var defaultStyleId: String = "paper"
+    /// 0 = the system calendar's, 1 = Sunday, 2 = Monday.
+    public var weekStart: Int = 0
+    /// Hour (0–23) at which a new day starts for Today and daily notes.
+    public var dayStartHour: Int = 0
+    public var showDailyNotes: Bool = true
+    public var dailyTemplateId: String?
+    public var tagColors: [String: String] = [:]
+    public var tagRules = TagRules()
+    public var reminders: Bool = false
+    public var reminderHour: Int = 9
+    public var calendarEvents: Bool = false
 
     public init() {}
 
@@ -124,6 +138,15 @@ public struct Settings: Codable, Hashable, Sendable {
         sort = (try? c.decodeIfPresent(SortSpec.self, forKey: .sort)) ?? def.sort
         railCollapsed = try c.decodeIfPresent(Bool.self, forKey: .railCollapsed) ?? def.railCollapsed
         defaultStyleId = try c.decodeIfPresent(String.self, forKey: .defaultStyleId) ?? def.defaultStyleId
+        weekStart = try c.decodeIfPresent(Int.self, forKey: .weekStart) ?? def.weekStart
+        dayStartHour = try c.decodeIfPresent(Int.self, forKey: .dayStartHour) ?? def.dayStartHour
+        showDailyNotes = try c.decodeIfPresent(Bool.self, forKey: .showDailyNotes) ?? def.showDailyNotes
+        dailyTemplateId = try c.decodeIfPresent(String.self, forKey: .dailyTemplateId)
+        tagColors = (try? c.decodeIfPresent([String: String].self, forKey: .tagColors)) ?? [:]
+        tagRules = (try? c.decodeIfPresent(TagRules.self, forKey: .tagRules)) ?? def.tagRules
+        reminders = try c.decodeIfPresent(Bool.self, forKey: .reminders) ?? def.reminders
+        reminderHour = try c.decodeIfPresent(Int.self, forKey: .reminderHour) ?? def.reminderHour
+        calendarEvents = try c.decodeIfPresent(Bool.self, forKey: .calendarEvents) ?? def.calendarEvents
     }
 }
 
