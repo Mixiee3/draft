@@ -432,6 +432,14 @@ struct ActionsList: View {
     @EnvironmentObject var model: AppModel
     @Environment(\.tokens) var t
     let docId: String
+
+    /// A row backed by a shared editor command (same enablement and behavior as the menu bar).
+    func cmdRow(_ id: String) -> (String, String, String?, Bool, () -> Void) {
+        let cmd = EditorCommands.command(id)!
+        let c = model.editors[docId]?.controller
+        return (cmd.symbol, cmd.title, cmd.shortcut, c.map { cmd.isEnabled($0) } ?? false, { if let c { cmd.run(c) } })
+    }
+
     var body: some View {
         let _ = model.editorTick
         let c = model.editors[docId]?.controller
@@ -440,9 +448,8 @@ struct ActionsList: View {
             ("magnifyingglass", "Quick Open", "⌘O", true, { model.quickOpen = true }),
             ("arrow.uturn.backward", "Undo", "⌘Z", c?.textView.undoManager?.canUndo ?? false, { c?.textView.undoManager?.undo() }),
             ("arrow.uturn.forward", "Redo", "⇧⌘Z", c?.textView.undoManager?.canRedo ?? false, { c?.textView.undoManager?.redo() }),
-            ("rectangle.stack", "Group into Page — v0.2", "⌘G", false, {}),
-            ("arrow.up", "Move Block Up — v0.2", "⌥⌘↑", false, {}),
-            ("arrow.down", "Move Block Down — v0.2", "⌥⌘↓", false, {}),
+            cmdRow("block.group"), cmdRow("block.ungroup"), cmdRow("block.duplicate"), cmdRow("block.copyLink"),
+            cmdRow("block.moveUp"), cmdRow("block.moveDown"),
             ("doc.on.clipboard", "Copy as Markdown", nil, true, { model.copyMarkdown(docId) }),
             ("printer", "Print", "⌘P", true, { c?.textView.printView(nil) }),
         ]

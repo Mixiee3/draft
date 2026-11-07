@@ -36,6 +36,10 @@ cat > "$APP/Contents/Info.plist" <<PLIST
   <key>LSApplicationCategoryType</key><string>public.app-category.productivity</string>
   <key>NSHighResolutionCapable</key><true/>
   <key>NSPrincipalClass</key><string>NSApplication</string>
+  <key>CFBundleURLTypes</key><array><dict>
+    <key>CFBundleURLName</key><string>org.draftnotes.Draft.link</string>
+    <key>CFBundleURLSchemes</key><array><string>draft</string></array>
+  </dict></array>
   <key>NSHumanReadableCopyright</key><string>Free and open source. Your notes stay on your Mac.</string>
 </dict></plist>
 PLIST

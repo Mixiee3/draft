@@ -46,6 +46,16 @@ final class BlockOpsTests: XCTestCase {
         XCTAssertEqual(c.document(), before, "two undos restore the original exactly")
     }
 
+    func testMoveReplacesOnlyChangedParagraphsSoUndoDoesNotSelectEverything() {
+        caret(in: "b_d")
+        c.moveSelectedBlocks(by: -1) // swaps hr and d only
+        XCTAssertTrue(c.storage.attribute(.attachment, at: c.paragraph(withId: "b_a")!.location, effectiveRange: nil) == nil)
+        pump(); tv.undoManager?.undo()
+        let sel = tv.selectedRange()
+        XCTAssertLessThan(sel.length, (tv.string as NSString).length / 2, "undo selects only the changed blocks, not the whole document")
+        XCTAssertGreaterThanOrEqual(sel.location, c.paragraph(withId: "b_c")!.location)
+    }
+
     func testMoveLastBlockUpAndFirstToBottom() {
         caret(in: "b_d")
         c.moveSelectedBlocks(by: -1)

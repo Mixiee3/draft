@@ -51,6 +51,10 @@ enum Automation {
         // Styling is stored separately from content.
         m.updateAppearance(id) { $0.styleId = "ember" }
         if let t = m.createDoc(open: false, title: "Trash me") { m.flushAll(); m.requestDelete(t) }
+        // ⌘G: group the heading and the bold paragraph into a nested page.
+        let blocks = ed.controller.document().content ?? []
+        ed.controller.selectBlocks(ids: [blocks[0].id!, blocks[1].id!])
+        EditorCommands.command("block.group")!.run(ed.controller)
         await wait(1.0)
         try? Data(id.utf8).write(to: out.appendingPathComponent("smoke-doc-id.txt"))
         // Quit immediately: the quit path itself must flush pending saves.
@@ -64,8 +68,15 @@ enum Automation {
             result["style"] = doc.appearance.styleId
             result["text"] = docPlainText(doc.content)
             result["blocks"] = (doc.content.content ?? []).map(\.type).joined(separator: ",")
-            let boldOK = (doc.content.content ?? []).contains { n in (n.content ?? []).contains { $0.text == "bold" && $0.marks == [Mark("bold")] } }
+            // The grouped page: child of this doc, titled by the first block, holding the rest.
+            let pageId = m.cardDocIds(doc.content).first ?? ""
+            let page = m.ensureDoc(pageId)
+            result["pageParentOK"] = m.library.docs[pageId]?.parentDocId == id ? "yes" : "no"
+            result["pageTitle"] = page?.title ?? ""
+            result["pageText"] = page.map { docPlainText($0.content) } ?? ""
+            let boldOK = (page?.content.content ?? []).contains { n in (n.content ?? []).contains { $0.text == "bold" && $0.marks == [Mark("bold")] } }
             result["bold"] = boldOK ? "yes" : "no"
+            result["text"] = docPlainText(doc.content)
             result["tabOpen"] = m.library.tabs.contains { $0.view.docId == id } ? "yes" : "no"
             result["backups"] = "\(m.snapshots(id).count)"
             result["trashed"] = m.library.trashedDocs.map(\.title).joined(separator: ",")
@@ -85,6 +96,23 @@ enum Automation {
                 let rect = c.layout.boundingRect(forGlyphRange: c.layout.glyphRange(forCharacterRange: r, actualCharacterRange: nil), in: c.container)
                 result["jumpVisible"] = c.textView.visibleRect.intersects(rect.offsetBy(dx: c.textView.textContainerOrigin.x, dy: c.textView.textContainerOrigin.y)) ? "yes" : "no"
                 result["jumpMatches"] = "\(c.findMatches.count)"
+            }
+            // Block link opens the document; then ⇧⌘G ungroups the page in place.
+            if let taskId = (m.ensureDoc(id)?.content.content ?? []).first(where: { $0.type == "taskList" })?.content?.first?.id,
+               let url = AppModel.blockLink(doc: id, block: taskId) {
+                m.activateTab(m.library.tabs[0].id)
+                m.openLink(url)
+                await wait(0.5)
+                result["linkOpened"] = m.activeDocId == id ? "yes" : "no"
+            }
+            if let c = m.editors[id]?.controller, let card = c.document().content?.first(where: { $0.type == "pageCard" }) {
+                let pageId = card.attrs?["docId"]?.string ?? ""
+                c.selectBlocks(ids: [card.id!])
+                EditorCommands.command("block.ungroup")!.run(c)
+                await wait(0.3)
+                result["afterUngroup"] = (c.document().content ?? []).map(\.type).filter { $0 != "paragraph" || true }.suffix(4).joined(separator: ",")
+                result["ungroupedTrashed"] = m.library.docs[pageId]?.deletedAt != nil ? "yes" : "no"
+                result["ungroupedText"] = docPlainText(c.document())
             }
         } else { result["error"] = "document not found after restart" }
         if let d = try? JSONSerialization.data(withJSONObject: result, options: [.prettyPrinted, .sortedKeys]) {
@@ -194,6 +222,10 @@ enum Automation {
                 let r = c.layout.firstLineRect(pr)!.rect
                 ed.updateHandle(at: c.textView.convert(NSPoint(x: 10, y: r.midY + c.textView.textContainerOrigin.y), to: ed.paperView))
                 await capture("block-selection")
+                EditorCommands.command("block.group")!.run(c) // ⌘G on the two selected blocks
+                await capture("grouped-page")
+                await wait(0.2)
+                c.textView.undoManager?.undo()
                 c.exitBlockMode()
             }
             // Backups list

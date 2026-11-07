@@ -62,8 +62,9 @@ struct DraftCommands: Commands {
         CommandGroup(replacing: .textEditing) {
             Button("Find in Page") { model.docRailTab = .find; model.railShowsFolders = false; model.findFocusNonce += 1 }
                 .keyboardShortcut("f").disabled(model.activeDocId == nil)
-            Button("Find Next") { model.activeController?.findStep(1) }.keyboardShortcut("g").disabled(model.activeDocId == nil)
-            Button("Find Previous") { model.activeController?.findStep(-1) }.keyboardShortcut("g", modifiers: [.command, .shift]).disabled(model.activeDocId == nil)
+            // ⌘G / ⇧⌘G belong to Group / Ungroup; in the Find pane Return and ⇧Return step through matches.
+            Button("Find Next") { model.activeController?.findStep(1) }.disabled(model.activeDocId == nil)
+            Button("Find Previous") { model.activeController?.findStep(-1) }.disabled(model.activeDocId == nil)
         }
         CommandMenu("Format") {
             ForEach(EditorCommands.all.filter { $0.plannedFor == nil && $0.group != "Insert" }) { cmd in

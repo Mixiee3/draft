@@ -87,13 +87,16 @@ child ids; 56 tests + smoke test (restart, trash, backups, search jump). **Not y
 
 ## v0.2.1 — "Writer's desk, continued" (macOS)
 
-- ⬜ Block context menu (turn into, duplicate, copy link); group selected blocks into a page (⌘G) /
-  ungroup; move blocks to another doc.
+- ✅ Block context menu (turn into, duplicate ⌘D, copy link, group, move, delete) on the handle and in
+  the text's context menu; `draft://` block links open the doc at the block.
+- ✅ Group selected blocks into a nested page (⌘G) / ungroup (⇧⌘G), ids preserved, undoable.
+  ⬜ Move blocks to another doc.
 - ⬜ Toggle list (`+ `), callout block, page break (`===`), strong/dotted/three-dot separators, `x ` task trigger.
 - ⬜ Cover crop/reposition (ratios, focal point) as data.
 - ⬜ Tab state across restarts (scroll + caret), back/forward stacks.
 - ⬜ Image block: resize, caption, alt text; file attachment block (QuickLook).
-- ⬜ Performance: incremental block moves (today the document is rebuilt per move), 10k-block budget.
+- 🟡 Performance: block operations now replace only the changed paragraphs (undo selects just
+  those); ⬜ measured 10k-block keystroke budget.
 
 **Gate.** 10,000-block document keystroke latency < 16 ms p95 on M1; every new block type
 round-trips through Markdown export and import.
@@ -185,7 +188,8 @@ Assistant (opt-in, bring-your-own or local model, never required); local API/MCP
 
 *(updated after v0.2)*
 
-1. **Block context menu + group into page (⌘G)** — builds directly on block selection.
-2. **Callout, toggle list and page-break blocks** with their Markdown triggers.
+1. **Callout, toggle list and page-break blocks** with their Markdown triggers (+ the remaining
+   separator variants and the `x ` task trigger).
+2. **Move blocks to another document** (block menu → Move to…), reusing the group-into-page path.
 3. **Performance pass**: incremental moves and a measured 10k-block budget.
 4. **Tab state across restarts** (scroll and caret per tab).

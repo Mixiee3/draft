@@ -14,10 +14,13 @@ python3 -I - "$WORK/smoke-result.json" <<'PY'
 import json, sys
 r = json.load(open(sys.argv[1]))
 assert r.get("title") == "Smoke test document", r
-assert "Persisted heading" in r["text"] and "survives a restart" in r["text"], r
+assert r["pageTitle"] == "Persisted heading" and "survives a restart" in r["pageText"], r
+assert r["pageParentOK"] == "yes", r
 assert r["bold"] == "yes", r
 assert r["style"] == "ember", r
-assert r["blocks"].startswith("heading,paragraph,taskList"), r
+assert r["blocks"].startswith("pageCard,taskList"), r
+assert r["linkOpened"] == "yes", r
+assert r["ungroupedTrashed"] == "yes" and "Persisted heading" in r["ungroupedText"] and "survives a restart" in r["ungroupedText"], r
 assert r["tabOpen"] == "yes", r
 assert r["trashed"] == "Trash me", r
 assert "Trash me" not in r["listed"], r
