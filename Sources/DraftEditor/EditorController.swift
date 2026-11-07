@@ -28,6 +28,7 @@ public final class EditorController: NSObject, NSTextStorageDelegate, NSTextView
 
     public lazy var toolbar = SelectionToolbar(controller: self)
     public lazy var slash = SlashMenu(controller: self)
+    public lazy var mention = MentionMenu(controller: self)
     public lazy var imageBar = ImageBar(controller: self)
 
     public override init() {
@@ -282,7 +283,7 @@ public final class EditorController: NSObject, NSTextStorageDelegate, NSTextView
         let probe = sel.length > 0 ? sel.location : sel.location - 1
         if probe >= pr.location, probe >= 0, probe < storage.length, ns.character(at: probe) != 10 {
             let a = storage.attributes(at: probe, effectiveRange: nil)
-            for k in semanticKeys where k != .draftLink { if let v = a[k] { m[k] = v } }
+            for k in semanticKeys where !chipKeys.contains(k) { if let v = a[k] { m[k] = v } }
         }
         return m
     }
@@ -311,6 +312,7 @@ public final class EditorController: NSObject, NSTextStorageDelegate, NSTextView
         toolbar.update()
         imageBar.update()
         slash.selectionChanged()
+        mention.selectionChanged()
         host?.editorStateDidChange()
     }
 
@@ -333,10 +335,12 @@ public final class EditorController: NSObject, NSTextStorageDelegate, NSTextView
         if !isLoading, let t = pendingTrigger {
             pendingTrigger = nil
             slash.textChanged(typed: t.text, at: t.location)
+            mention.textChanged(typed: t.text, at: t.location)
             // Run the Markdown conversion as its own event so Undo restores the literal text.
             DispatchQueue.main.async { [weak self] in self?.applyMarkdownTrigger(typed: t.text, at: t.location) }
         } else {
             slash.textChanged(typed: nil, at: textView.selectedRange().location)
+            mention.textChanged(typed: nil, at: textView.selectedRange().location)
         }
         toolbar.update()
         host?.editorDidChange()
@@ -363,6 +367,7 @@ public final class EditorController: NSObject, NSTextStorageDelegate, NSTextView
     /// Returns true when handled.
     func handleNewline() -> Bool {
         if slash.isOpen { slash.choose(); return true }
+        if mention.isOpen { mention.choose(); return true }
         var sel = textView.selectedRange()
         if sel.length > 0 { replace(sel, with: NSAttributedString(), select: NSRange(location: sel.location, length: 0)); sel = textView.selectedRange() }
         let loc = sel.location
@@ -417,6 +422,7 @@ public final class EditorController: NSObject, NSTextStorageDelegate, NSTextView
     }
 
     func handleDeleteBackward() -> Bool {
+        if deleteChipBackward() { return true }
         let sel = textView.selectedRange()
         guard sel.length == 0 else { return false }
         let pr = paragraphRange(at: sel.location)
@@ -523,7 +529,7 @@ public final class EditorController: NSObject, NSTextStorageDelegate, NSTextView
     func applyMarkdownTrigger(typed: String, at loc: Int) {
         // Only convert if the caret is still right after the typed character.
         guard loc + (typed as NSString).length <= storage.length, textView.selectedRange() == NSRange(location: loc + (typed as NSString).length, length: 0),
-              ns.substring(with: NSRange(location: loc, length: (typed as NSString).length)) == typed, !slash.isOpen else { return }
+              ns.substring(with: NSRange(location: loc, length: (typed as NSString).length)) == typed, !slash.isOpen, !mention.isOpen else { return }
         let pr = paragraphRange(at: loc)
         let b = block(at: pr)
         guard b.kind != .code, !b.kind.isAttachment else { return }

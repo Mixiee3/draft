@@ -25,6 +25,7 @@ public final class DraftTextView: NSTextView {
     public override func insertTab(_ sender: Any?) {
         guard let c = controller else { return super.insertTab(sender) }
         if c.slash.isOpen { c.slash.choose(); return }
+        if c.mention.isOpen { c.mention.choose(); return }
         if c.imageBar.isVisible, c.selectedImageIndex != nil { window?.makeFirstResponder(c.imageBar.size); return } // Esc returns
         if c.currentBlock.kind.isList { c.indent(); return }
         super.insertTab(sender)
@@ -44,12 +45,21 @@ public final class DraftTextView: NSTextView {
             default: break
             }
         }
+        if let c = controller, c.mention.isOpen {
+            switch selector {
+            case #selector(moveUp(_:)): c.mention.move(-1); return
+            case #selector(moveDown(_:)): c.mention.move(1); return
+            case #selector(cancelOperation(_:)): c.mention.close(); return
+            default: break
+            }
+        }
         super.doCommand(by: selector)
     }
 
     public override func cancelOperation(_ sender: Any?) {
         guard let c = controller else { return }
         if c.slash.isOpen { c.slash.close(); return }
+        if c.mention.isOpen { c.mention.close(); return }
         if c.toolbar.isVisible { c.toolbar.dismissForCurrentSelection(); return }
         // Esc toggles between editing text and selecting whole blocks.
         if c.isBlockMode { c.exitBlockMode() } else { c.enterBlockMode() }
@@ -91,6 +101,7 @@ public final class DraftTextView: NSTextView {
         if c.trailing.kind == .task, let box = c.layout.checkboxRect(forParagraphAt: NSRange(location: c.storage.length, length: 0)), box.insetBy(dx: -5, dy: -5).contains(cp) {
             c.toggleTask(at: NSRange(location: c.storage.length, length: 0)); return
         }
+        if !event.modifierFlags.contains(.shift), c.openChip(at: idx, point: cp) { return }
         if event.modifierFlags.contains(.command), let (_, href) = c.linkRange(at: idx), let url = URL(string: href) {
             c.host?.open(url: url); return
         }

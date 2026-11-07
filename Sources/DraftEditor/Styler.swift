@@ -17,8 +17,11 @@ public struct EditorTheme: Equatable {
     public var font: String = "serif"
     public var separator: String = "line"
     public var completedTasks: String = "strike"
+    public var tagRules = TagRules()
+    public var tagColors: [String: String] = [:]
 
     public init() {}
+    public func tagColor(_ tag: String) -> NSColor { NSColor(hex: tagColors[tag.lowercased()] ?? Tags.defaultColor(tag)) }
     public init(tokens: StyleTokens, completedTasks: String) {
         textColor = tokens.textColor; pageColor = tokens.pageColor; accent = tokens.accent
         font = tokens.font; separator = tokens.separator; self.completedTasks = completedTasks
@@ -135,8 +138,24 @@ public enum Styler {
                 } else if code && b.kind != .code {
                     attrs[.backgroundColor] = theme.text.withAlphaComponent(0.07)
                 }
+                if a[.draftDocLink] != nil || a[.draftDate] != nil {
+                    let missing = a[.draftLinkMissing] != nil
+                    fg = missing ? theme.secondary : theme.accentColor
+                    attrs[.backgroundColor] = (missing ? theme.text : theme.accentColor).withAlphaComponent(theme.isDarkPage ? 0.22 : 0.1)
+                    if missing { attrs[.strikethroughStyle] = NSUnderlineStyle.single.rawValue }
+                    attrs[.underlineStyle] = nil
+                }
                 attrs[.foregroundColor] = fg
                 s.setAttributes(attrs, range: r)
+            }
+            if b.kind != .code, ns.range(of: "#", options: .literal, range: pr).location != NSNotFound {
+                for t in Tags.find(in: ns.substring(with: pr), rules: theme.tagRules) {
+                    let r = NSRange(location: pr.location + t.range.location, length: t.range.length)
+                    let a = s.attributes(at: r.location, effectiveRange: nil)
+                    guard a[.draftCode] == nil, a[.draftLink] == nil, a[.draftDocLink] == nil else { continue }
+                    let c = theme.tagColor(t.name)
+                    s.addAttributes([.foregroundColor: c, .backgroundColor: c.withAlphaComponent(theme.isDarkPage ? 0.25 : 0.12)], range: r)
+                }
             }
             loc = NSMaxRange(pr)
             if pr.length == 0 { break }

@@ -67,6 +67,10 @@ public extension NSAttributedString.Key {
     static let draftHighlight = NSAttributedString.Key("draft.highlight") // hex String
     static let draftTextColor = NSAttributedString.Key("draft.textColor") // hex String
     static let draftLink = NSAttributedString.Key("draft.link")           // href String
+    static let draftDocLink = NSAttributedString.Key("draft.docLink")     // "docId" or "docId#blockId"
+    static let draftDate = NSAttributedString.Key("draft.date")           // yyyy-MM-dd[THH:mm]
+    /// Display only (never saved): the linked document or block no longer exists.
+    static let draftLinkMissing = NSAttributedString.Key("draft.linkMissing")
 }
 
 /// Inline mark kinds that toggle on/off.
@@ -83,7 +87,9 @@ public enum InlineMark: String, CaseIterable, Sendable {
     }
 }
 
-public let semanticKeys: [NSAttributedString.Key] = [.draftBold, .draftItalic, .draftUnderline, .draftStrike, .draftCode, .draftHighlight, .draftTextColor, .draftLink]
+public let semanticKeys: [NSAttributedString.Key] = [.draftBold, .draftItalic, .draftUnderline, .draftStrike, .draftCode, .draftHighlight, .draftTextColor, .draftLink, .draftDocLink, .draftDate, .draftLinkMissing]
+/// Marks that belong to one inserted object and never continue into typed text.
+let chipKeys: Set<NSAttributedString.Key> = [.draftLink, .draftDocLink, .draftDate, .draftLinkMissing]
 
 /// Characters used inside a paragraph.
 public enum Chars {
