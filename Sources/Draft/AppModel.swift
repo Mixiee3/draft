@@ -447,10 +447,25 @@ final class AppModel: ObservableObject {
         setAppearance(id, d.appearance, previous: old)
     }
 
-    private var lastStyleUndo: (doc: String, at: Date)?
+    private var lastStyleUndo: (doc: String, kind: String, at: Date)?
 
-    /// Appearance changes are undoable in the document (⌘Z) and never touch its content. A run of
-    /// changes within a second (a slider or color drag) is one undo step.
+    /// Which parts of the look a change touches (a drag repeats the same kind).
+    static func changeKind(_ a: DocumentAppearance, _ b: DocumentAppearance) -> String {
+        var k: [String] = []
+        if a.styleId != b.styleId { k.append("style") }
+        if a.cover != b.cover { k.append("cover") }
+        let x = a.overrides, y = b.overrides
+        if x.backdrop != y.backdrop { k.append("backdrop") }
+        if x.pageColor != y.pageColor { k.append("page") }
+        if x.textColor != y.textColor { k.append("text") }
+        if x.accent != y.accent { k.append("accent") }
+        if x.font != y.font { k.append("font") }
+        if x.separator != y.separator { k.append("separator") }
+        return k.joined(separator: ",")
+    }
+
+    /// Appearance changes are undoable in the document (⌘Z) and never touch its content. Repeats
+    /// of the same change within a second (a slider or color drag) are one undo step.
     func setAppearance(_ id: String, _ a: DocumentAppearance, previous: DocumentAppearance?, registering: Bool = true) {
         guard var d = docs[id] else { return }
         let old = previous ?? d.appearance
@@ -462,15 +477,17 @@ final class AppModel: ObservableObject {
             e.theme = theme(for: d)
             e.coverImage = coverImage(d.appearance.cover)
         }
-        if registering, let um = editors[id]?.controller.undo, !(um.isUndoing || um.isRedoing) {
-            if lastStyleUndo?.doc != id || Date().timeIntervalSince(lastStyleUndo!.at) > 1 {
-                um.registerUndo(withTarget: self) { m in MainActor.assumeIsolated { m.setAppearance(id, old, previous: a) } }
+        if let um = editors[id]?.controller.undo, registering || um.isUndoing || um.isRedoing {
+            let kind = Self.changeKind(old, a)
+            let repeatDrag = !um.isUndoing && !um.isRedoing && lastStyleUndo.map { $0.doc == id && $0.kind == kind && Date().timeIntervalSince($0.at) < 1 } == true
+            if !repeatDrag {
+                um.registerUndo(withTarget: self) { m in MainActor.assumeIsolated {
+                    let now = m.docs[id]?.appearance // redo returns to the latest look, including merged drag steps
+                    m.setAppearance(id, old, previous: now)
+                } }
                 um.setActionName("Style Change")
             }
-            lastStyleUndo = (id, Date())
-        } else if let um = editors[id]?.controller.undo {
-            um.registerUndo(withTarget: self) { m in MainActor.assumeIsolated { m.setAppearance(id, old, previous: a) } }
-            um.setActionName("Style Change")
+            lastStyleUndo = um.isUndoing || um.isRedoing ? nil : (id, kind, Date())
         }
         markDocDirty(id)
         editorTick &+= 1

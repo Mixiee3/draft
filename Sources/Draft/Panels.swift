@@ -486,6 +486,7 @@ struct SharePanel: View {
     @Environment(\.tokens) var t
     let docId: String
     @State private var tab = "export"
+    @State private var useStyle = true
 
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
@@ -498,7 +499,7 @@ struct SharePanel: View {
                 exportRow("doc.on.clipboard", "Copy as Markdown") { model.copyMarkdown(docId) }
             case "publish":
                 if let m = model.library.docs[docId] { DocPreview(meta: m, height: 170) }
-                card(icon: "globe", title: "Publish to the web", text: "Hosted publishing is planned for v1.x and will be optional and self-hostable. A static HTML export arrives in v0.4.")
+                card(icon: "globe", title: "Publish to the web", text: "Hosted publishing is planned for v1.x and will be optional and self-hostable. Until then, Export As → Website writes an offline site you can host anywhere.")
                 Button("Create Link") {}.disabled(true).frame(maxWidth: .infinity).controlSize(.large)
             case "transfer":
                 card(icon: "arrow.left.arrow.right", title: "Send to other apps", text: "Transfer to other writing and task apps is planned for v1.x. Until then, Markdown export works with nearly every app.")
@@ -508,9 +509,12 @@ struct SharePanel: View {
                     exportRow("doc.on.clipboard", "Copy as Markdown") { model.copyMarkdown(docId) }
                     exportRow("printer", "Print… (Save as PDF from the dialog)") { model.editors[docId]?.controller.textView.printView(nil) }
                     exportRow("plus.square.on.square", "Duplicate") { model.duplicate(docId) }
-                    exportRow("doc", "PDF with style — v0.4", enabled: false) {}
-                    exportRow("doc.text", "Word — v0.4", enabled: false) {}
-                    exportRow("photo", "Image — v0.4", enabled: false) {}
+                    Toggle("Use document style", isOn: $useStyle).toggleStyle(.switch).controlSize(.small).font(.system(size: 12))
+                    exportRow("doc", "PDF…") { model.exportStyled(docId, as: "pdf", useStyle: useStyle) }
+                    exportRow("globe", "Web page (HTML)…") { model.exportStyled(docId, as: "html", useStyle: useStyle) }
+                    exportRow("photo", "Image (PNG)…") { model.exportStyled(docId, as: "png", useStyle: useStyle) }
+                    exportRow("square.grid.3x1.below.line.grid.1x2", "Website of all documents…") { model.exportSite(useStyle: useStyle) }
+                    exportRow("doc.text", "Word — later", enabled: false) {}
                     exportRow("envelope", "E-mail — v1.x", enabled: false) {}
                 }
                 Text("Exports include a lossless draft-export.json next to the Markdown.").font(.system(size: 11)).foregroundStyle(t.tertiary)
