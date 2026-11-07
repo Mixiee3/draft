@@ -165,7 +165,7 @@ extension AppModel {
         }
         guard ok else { toast("That task is no longer in “\(docTitle(docId))”."); return }
         saveDirtyDocs()
-        undo?.registerUndo(withTarget: self) { m in MainActor.assumeIsolated { m.setTask(docId, blockId, checked: !checked, undo: undo) } }
+        undo?.registerUndo(withTarget: self) { m in onMain { m.setTask(docId, blockId, checked: !checked, undo: undo) } }
         undo?.setActionName(checked ? "Complete Task" : "Reopen Task")
     }
 
@@ -179,7 +179,7 @@ extension AppModel {
         }
         guard ok else { toast("That task is no longer in “\(docTitle(docId))”."); return }
         saveDirtyDocs()
-        undo?.registerUndo(withTarget: self) { m in MainActor.assumeIsolated { m.setTaskDue(docId, blockId, due: old, undo: undo) } }
+        undo?.registerUndo(withTarget: self) { m in onMain { m.setTaskDue(docId, blockId, due: old, undo: undo) } }
         undo?.setActionName(due == nil ? "Clear Due Date" : "Set Due Date")
     }
 
@@ -320,23 +320,24 @@ final class CalendarEvents: ObservableObject {
 }
 
 extension EditorHostAdapter: LinkHost {
-    func mentionItems(trigger: String, query: String) -> [MentionItem] { MainActor.assumeIsolated { model.mentionItems(from: docId, trigger: trigger, query: query) } }
+    func mentionItems(trigger: String, query: String) -> [MentionItem] { onMain { model.mentionItems(from: docId, trigger: trigger, query: query) } }
     func createLinkedDocument(title: String) -> String? {
-        MainActor.assumeIsolated { model.createDoc(folderId: .some(model.library.docs[docId]?.folderId), open: false, title: title) }
+        onMain { model.createDoc(folderId: .some(model.library.docs[docId]?.folderId), open: false, title: title) }
     }
-    func openDocLink(docId: String, blockId: String?) { MainActor.assumeIsolated { model.openDocLink(docId, block: blockId) } }
-    func openDay(_ day: String) { MainActor.assumeIsolated { model.openDay(day) } }
-    func openTag(_ tag: String) { MainActor.assumeIsolated { model.openView(ViewRef(kind: "tag", section: tag)) } }
-    func resolveLink(docId: String, blockId: String?) -> (docId: String, title: String)? { MainActor.assumeIsolated { model.resolveLink(docId, blockId) } }
-    func todayKey() -> String { MainActor.assumeIsolated { model.todayKey } }
+    func openDocLink(docId: String, blockId: String?) { onMain { model.openDocLink(docId, block: blockId) } }
+    func openDay(_ day: String) { onMain { model.openDay(day) } }
+    func openTag(_ tag: String) { onMain { model.openView(ViewRef(kind: "tag", section: tag)) } }
+    func resolveLink(docId: String, blockId: String?) -> (docId: String, title: String)? { onMain { model.resolveLink(docId, blockId) } }
+    func todayKey() -> String { onMain { model.todayKey } }
     func createDocument(title: String, content: Node) -> String? {
-        MainActor.assumeIsolated { model.createNestedPage(parent: docId, title: title, content: content, nested: false) }
+        onMain { model.createNestedPage(parent: docId, title: title, content: content, nested: false) }
     }
-    func pageCover(docId: String) -> NSImage? { MainActor.assumeIsolated { model.ensureDoc(docId).flatMap { model.coverImage($0.appearance.cover) } } }
-    func wantsLinkPreviews() -> Bool { MainActor.assumeIsolated { model.settings.linkPreviews } }
-    func fetchLinkPreview(_ url: URL, _ done: @escaping (LinkPreview?) -> Void) { MainActor.assumeIsolated { model.online.linkPreview(url, enabled: model.settings.linkPreviews, done) } }
+    func pageCover(docId: String) -> NSImage? { onMain { model.ensureDoc(docId).flatMap { model.coverImage($0.appearance.cover) } } }
+    func wantsLinkPreviews() -> Bool { onMain { model.settings.linkPreviews } }
+    func openCollection(blockId: String) { onMain { model.saveDirtyDocs(); model.openCollection(docId, blockId) } }
+    func fetchLinkPreview(_ url: URL, _ done: @escaping (LinkPreview?) -> Void) { onMain { model.online.linkPreview(url, enabled: model.settings.linkPreviews, done) } }
     func dailyNoteId(create: Bool) -> String? {
-        MainActor.assumeIsolated {
+        onMain {
             let id = model.dailyNote(model.todayKey, create: create)
             return id == docId ? nil : id
         }

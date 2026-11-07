@@ -27,7 +27,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         Automation.startIfRequested()
     }
     func applicationWillTerminate(_ notification: Notification) {
-        MainActor.assumeIsolated { AppModel.shared.flushAll() }
+        onMain { AppModel.shared.flushAll() }
     }
     func applicationShouldTerminateAfterLastWindowClosed(_ sender: NSApplication) -> Bool { true }
 }

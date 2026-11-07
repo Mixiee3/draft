@@ -73,8 +73,9 @@ public enum EditorCommands {
         EditorCommand("insert.image", "Image", "photo", group: "Insert", keywords: ["image", "picture", "photo"], run: { $0.insertImageFromPicker() }),
         EditorCommand("insert.divider", "Separator", "minus", group: "Insert", keywords: ["divider", "separator", "line", "hr"], run: { $0.insertDivider() }),
         EditorCommand("insert.file", "File", "paperclip", group: "Insert", keywords: ["file", "attachment", "pdf", "document"], run: { $0.insertFileFromPicker() }),
-        EditorCommand("insert.table", "Table", "tablecells", group: "Insert", keywords: ["table"], plannedFor: "v0.5", isEnabled: { _ in false }),
-        EditorCommand("insert.collection", "Collection", "square.grid.3x2", group: "Insert", keywords: ["collection", "database"], plannedFor: "v0.5", isEnabled: { _ in false }),
+        EditorCommand("insert.table", "Table", "tablecells", group: "Insert", keywords: ["table", "grid"], run: { $0.insertAttachmentBlock(kind: .table, node: Tables.make()) }),
+        EditorCommand("insert.collection", "Collection", "square.grid.3x2", group: "Insert", keywords: ["collection", "database", "kanban", "board"],
+                      run: { c in c.insertAttachmentBlock(kind: .collection, node: CollectionData.starter(name: c.linkHost?.newCollectionName() ?? "Collection").node(id: newId("b_"))) }),
         EditorCommand("insert.formula", "Formula", "function", group: "Insert", keywords: ["math", "equation"], plannedFor: "later", isEnabled: { _ in false }),
         EditorCommand("insert.pagebreak", "Page Break", "arrow.down.to.line", group: "Insert", keywords: ["break", "page", "print"], run: { $0.insertAttachmentBlock(kind: .divider, node: Node("pageBreak")) }),
         // Inline marks

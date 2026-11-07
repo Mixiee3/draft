@@ -122,6 +122,7 @@ struct MainContent: View {
             case "tasks": TasksView(section: v.section).id(v)
             case "calendar": CalendarView(focus: v.section).id(v)
             case "tag": TagView(tag: v.section ?? "").id(v)
+            case "collection": CollectionScreen(docId: v.docId ?? "", blockId: v.section ?? "").id(v)
             default: LibraryView(view: v)
             }
         }
@@ -149,6 +150,7 @@ struct TabStrip: View {
         case "tasks": return "Tasks"
         case "calendar": return "Calendar"
         case "tag": return "#" + (v.section ?? "")
+        case "collection": return model.collectionData(v.docId ?? "", v.section ?? "")?.name ?? "Collection"
         case "folder": return model.folderName(v.folderId)
         case "doc": let s = model.library.docs[v.docId ?? ""]?.title ?? ""; return s.isEmpty ? "Untitled" : s
         default: return ""
@@ -166,6 +168,7 @@ struct TabStrip: View {
         case "tasks": return "checklist"
         case "calendar": return "calendar"
         case "tag": return "number"
+        case "collection": return "square.grid.3x2"
         case "folder": return "folder"
         default: return "doc.text"
         }

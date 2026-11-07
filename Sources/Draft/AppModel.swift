@@ -56,6 +56,7 @@ final class AppModel: ObservableObject {
     @Published var coverEditorDoc: String?
     /// Bumped when the link/tag/task index changes (backlinks, tags, tasks, calendar).
     @Published var indexTick = 0
+    @Published var collectionTick = 0
     @Published var searchRegex = false
     var index = VaultIndex()
     var blockDoc: [String: String] = [:]
@@ -484,7 +485,7 @@ final class AppModel: ObservableObject {
             let kind = Self.changeKind(old, a)
             let repeatDrag = !um.isUndoing && !um.isRedoing && lastStyleUndo.map { $0.doc == id && $0.kind == kind && Date().timeIntervalSince($0.at) < 1 } == true
             if !repeatDrag {
-                um.registerUndo(withTarget: self) { m in MainActor.assumeIsolated {
+                um.registerUndo(withTarget: self) { m in onMain {
                     let now = m.docs[id]?.appearance // redo returns to the latest look, including merged drag steps
                     m.setAppearance(id, old, previous: now)
                 } }
@@ -967,40 +968,40 @@ final class EditorHostAdapter: EditorHost {
     let docId: String
     init(model: AppModel, docId: String) { self.model = model; self.docId = docId }
 
-    func image(forAsset id: String) -> NSImage? { MainActor.assumeIsolated { model.image(forAsset: id) } }
+    func image(forAsset id: String) -> NSImage? { onMain { model.image(forAsset: id) } }
     func pageInfo(docId: String) -> (title: String, excerpt: String, tint: NSColor)? {
-        MainActor.assumeIsolated {
+        onMain {
             guard let m = model.library.docs[docId], m.deletedAt == nil else { return nil }
             return (m.title, m.excerpt, NSColor(hex: m.tint))
         }
     }
-    func openPage(docId: String) { MainActor.assumeIsolated { model.openView(.doc(docId), inPlace: true) } }
+    func openPage(docId: String) { onMain { model.openView(.doc(docId), inPlace: true) } }
     func createChildPage() -> (docId: String, title: String)? {
-        MainActor.assumeIsolated {
+        onMain {
             let parent = model.library.docs[docId]
             guard let id = model.createDoc(folderId: .some(parent?.folderId), parentDocId: docId, open: false) else { return nil }
             return (id, "")
         }
     }
-    func pickImage(_ completion: @escaping (String?) -> Void) { MainActor.assumeIsolated { model.pickImage(completion) } }
-    func storeImage(data: Data, ext: String) -> String? { MainActor.assumeIsolated { model.storeImage(data: data, ext: ext) } }
+    func pickImage(_ completion: @escaping (String?) -> Void) { onMain { model.pickImage(completion) } }
+    func storeImage(data: Data, ext: String) -> String? { onMain { model.storeImage(data: data, ext: ext) } }
     func open(url: URL) {
-        if url.scheme == "draft" { MainActor.assumeIsolated { model.openLink(url) } } else { NSWorkspace.shared.open(url) }
+        if url.scheme == "draft" { onMain { model.openLink(url) } } else { NSWorkspace.shared.open(url) }
     }
     func createGroupedPage(title: String, content: Node) -> String? {
-        MainActor.assumeIsolated { model.createNestedPage(parent: docId, title: title, content: content) }
+        onMain { model.createNestedPage(parent: docId, title: title, content: content) }
     }
-    func setGroupedPage(_ id: String, active: Bool) { MainActor.assumeIsolated { model.setGroupedPage(id, active: active, parent: docId) } }
-    func pageDocument(docId: String) -> (title: String, content: Node)? { MainActor.assumeIsolated { model.pageDocument(docId) } }
+    func setGroupedPage(_ id: String, active: Bool) { onMain { model.setGroupedPage(id, active: active, parent: docId) } }
+    func pageDocument(docId: String) -> (title: String, content: Node)? { onMain { model.pageDocument(docId) } }
     func link(toBlock blockId: String) -> URL? { AppModel.blockLink(doc: docId, block: blockId) }
-    func pickFile(_ completion: @escaping ((assetId: String, name: String, size: Int)?) -> Void) { MainActor.assumeIsolated { model.pickFile(completion) } }
-    func storeFile(at url: URL) -> (assetId: String, name: String, size: Int)? { MainActor.assumeIsolated { model.storeFile(at: url) } }
-    func openAttachment(assetId: String, name: String) { MainActor.assumeIsolated { model.openAttachment(assetId: assetId, name: name) } }
+    func pickFile(_ completion: @escaping ((assetId: String, name: String, size: Int)?) -> Void) { onMain { model.pickFile(completion) } }
+    func storeFile(at url: URL) -> (assetId: String, name: String, size: Int)? { onMain { model.storeFile(at: url) } }
+    func openAttachment(assetId: String, name: String) { onMain { model.openAttachment(assetId: assetId, name: name) } }
     func moveTargets() -> [(id: String, title: String)] {
-        MainActor.assumeIsolated { model.moveTargets(excluding: docId).map { ($0.id, $0.title.isEmpty ? "Untitled" : $0.title) } }
+        onMain { model.moveTargets(excluding: docId).map { ($0.id, $0.title.isEmpty ? "Untitled" : $0.title) } }
     }
     func appendBlocks(_ content: Node, toDocument target: String) -> Bool {
-        MainActor.assumeIsolated {
+        onMain {
             guard target != docId else { return false }
             let ok = model.appendBlocks(content, to: target)
             if ok {
@@ -1011,9 +1012,20 @@ final class EditorHostAdapter: EditorHost {
         }
     }
     func removeBlocks(_ ids: [String], fromDocument target: String) {
-        MainActor.assumeIsolated { model.removeBlocks(ids, from: target, returningPagesTo: docId) }
+        onMain { model.removeBlocks(ids, from: target, returningPagesTo: docId) }
     }
-    func editorDidChange() { MainActor.assumeIsolated { model.editorChanged(docId) } }
+    func editorDidChange() { onMain { model.editorChanged(docId) } }
     /// Only panels that mirror the caret's formatting need live updates.
-    func editorStateDidChange() { MainActor.assumeIsolated { if model.panel == .format || model.panel == .info { model.editorTick &+= 1 } } }
+    func editorStateDidChange() { onMain { if model.panel == .format || model.panel == .info { model.editorTick &+= 1 } } }
+}
+
+/// Main-actor work called from AppKit on the main thread. `onMain` asks the
+/// Swift runtime for the current executor, and that lookup crashed when AppKit drew or dispatched
+/// events from inside a task; the thread check is enough here.
+@inline(__always)
+func onMain<T>(_ body: @MainActor () throws -> T) rethrows -> T {
+    precondition(Thread.isMainThread, "main-thread only")
+    return try withoutActuallyEscaping(body) { b in
+        try unsafeBitCast(b, to: (() throws -> T).self)()
+    }
 }

@@ -38,6 +38,10 @@ public protocol LinkHost: AnyObject {
     func pageCover(docId: String) -> NSImage?
     /// Settings → Online → Link previews (off by default).
     func wantsLinkPreviews() -> Bool
+    /// Open a collection block of this document in its own view.
+    func openCollection(blockId: String)
+    /// A new collection: its starter data (the app creates nothing until items are added).
+    func newCollectionName() -> String
     func fetchLinkPreview(_ url: URL, _ done: @escaping (LinkPreview?) -> Void)
 }
 
@@ -53,6 +57,8 @@ public extension LinkHost {
     func dailyNoteId(create: Bool) -> String? { nil }
     func pageCover(docId: String) -> NSImage? { nil }
     func wantsLinkPreviews() -> Bool { false }
+    func openCollection(blockId: String) {}
+    func newCollectionName() -> String { "Collection" }
     func fetchLinkPreview(_ url: URL, _ done: @escaping (LinkPreview?) -> Void) { done(nil) }
 }
 

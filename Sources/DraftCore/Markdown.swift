@@ -17,7 +17,7 @@ public enum Markdown {
         return o
     }
 
-    static func inline(_ nodes: [Node]?, _ lossy: inout Set<String>, link docPath: (String) -> String? = { _ in nil }) -> String {
+    public static func inline(_ nodes: [Node]?, _ lossy: inout Set<String>, link docPath: (String) -> String? = { _ in nil }) -> String {
         guard let nodes else { return "" }
         var out = ""
         for n in nodes {
@@ -56,7 +56,7 @@ public enum Markdown {
         return out
     }
 
-    public static func render(_ doc: DocFile, assetPath: (String) -> String, pageLink: (String, String) -> String?) -> MarkdownResult {
+    public static func render(_ doc: DocFile, assetPath: (String) -> String, pageLink: (String, String) -> String?, pageTitle: (String) -> String = { _ in "Untitled" }, frontmatter: String? = nil) -> MarkdownResult {
         var lossy = Set<String>()
         var assets: [String] = []
         var pages: [String] = []
@@ -107,6 +107,20 @@ public enum Markdown {
                 assets.append(a)
                 let p = assetPath(a)
                 return [indent + "[\(escape(name))](\(p.addingPercentEncoding(withAllowedCharacters: .urlPathAllowed) ?? p))"]
+            case "table":
+                return Tables.markdown(n, &lossy).map { indent + $0 }
+            case "collection":
+                guard let c = CollectionData(node: n) else { return [] }
+                lossy.insert("Collections are exported as a table plus one page per item (fields as frontmatter); views, filters and calculations are kept in draft-export.json.")
+                let title = pageTitle
+                var lines = [indent + "**\(escape(c.name))**", "", indent + "| Name | " + c.fields.map { escape($0.name) }.joined(separator: " | ") + " |", indent + "|" + String(repeating: " --- |", count: c.fields.count + 1)]
+                for it in c.items {
+                    pages.append(it.docId)
+                    let name = escape(title(it.docId))
+                    let link = pageLink(it.docId, title(it.docId)).map { "[\(name)](\($0.addingPercentEncoding(withAllowedCharacters: .urlPathAllowed) ?? $0))" } ?? name
+                    lines.append(indent + "| " + ([link] + c.fields.map { escape(c.display(it, $0.id, title: title)).replacingOccurrences(of: "|", with: "\\|") }).joined(separator: " | ") + " |")
+                }
+                return lines
             case "linkPreview":
                 let u = n.attrs?["url"]?.string ?? ""
                 let t = n.attrs?["title"]?.string ?? u
@@ -162,7 +176,7 @@ public enum Markdown {
         var md = out.joined(separator: "\n")
         while md.contains("\n\n\n") { md = md.replacingOccurrences(of: "\n\n\n", with: "\n\n") }
         md = md.trimmingCharacters(in: .whitespacesAndNewlines) + "\n"
-        return MarkdownResult(markdown: md, assets: assets, pages: pages, lossy: lossy.sorted())
+        return MarkdownResult(markdown: (frontmatter ?? "") + md, assets: assets, pages: pages, lossy: lossy.sorted())
     }
 
     /// File-system-safe name that keeps Unicode letters (Czech, Japanese…) intact.
@@ -195,6 +209,7 @@ public enum ExportBuilder {
         var used = Set<String>()
         var queue = rootIds
         var visited = Set<String>()
+        var itemOf: [String: (CollectionData, CollectionItem)] = [:]
 
         func dirFor(_ id: String) -> String {
             guard groupByFolder, let fid = metas[id]?.folderId, let f = folders.first(where: { $0.id == fid }) else { return "" }
@@ -214,9 +229,13 @@ public enum ExportBuilder {
             guard !visited.contains(id), let doc = load(id) else { continue }
             visited.insert(id)
             natives.append(doc)
-            walk(doc.content) { if $0.type == "pageCard", let d = $0.attrs?["docId"]?.string { queue.append(d) } }
+            walk(doc.content) { n in
+                if n.type == "pageCard", let d = n.attrs?["docId"]?.string { queue.append(d) }
+                if let c = CollectionData(node: n) { for it in c.items { queue.append(it.docId); itemOf[it.docId] = (c, it) } }
+            }
         }
         let exported = visited
+        let title: (String) -> String = { metas[$0].map { $0.title.isEmpty ? "Untitled" : $0.title } ?? "Untitled" }
         for doc in natives {
             let id = doc.id
             let myPath = pathFor(id)
@@ -225,7 +244,7 @@ public enum ExportBuilder {
             let res = Markdown.render(doc, assetPath: { up + "assets/" + $0 }, pageLink: { pid, _ in
                 guard metas[pid] != nil, exported.contains(pid) else { return nil }
                 return up + pathFor(pid)
-            })
+            }, pageTitle: title, frontmatter: itemOf[id].map { $0.0.frontmatter($0.1, title: title) })
             files.append((myPath, res.markdown))
             allAssets += res.assets
             lossy.formUnion(res.lossy)

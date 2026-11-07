@@ -29,6 +29,7 @@ public final class EditorController: NSObject, NSTextStorageDelegate, NSTextView
     public lazy var toolbar = SelectionToolbar(controller: self)
     public lazy var slash = SlashMenu(controller: self)
     public lazy var mention = MentionMenu(controller: self)
+    public lazy var tableEditor = TableEditor(controller: self)
     public lazy var imageBar = ImageBar(controller: self)
 
     public override init() {
@@ -117,6 +118,8 @@ public final class EditorController: NSObject, NSTextStorageDelegate, NSTextView
             case .image: cell = ImageCell()
             case .page: cell = PageCardCell()
             case .bookmark: cell = BookmarkCell()
+            case .table: cell = TableCell()
+            case .collection: cell = CollectionCell()
             case .file: cell = FileCell()
             default: cell = OpaqueCell()
             }
@@ -124,6 +127,8 @@ public final class EditorController: NSObject, NSTextStorageDelegate, NSTextView
             case .image: cell.setAccessibilityLabel((a.node.attrs?["alt"]?.string).flatMap { $0.isEmpty ? nil : "Image: \($0)" } ?? "Image without description")
             case .file: cell.setAccessibilityLabel("File: \(a.node.attrs?["name"]?.string ?? "attachment")")
             case .page: cell.setAccessibilityLabel("Page: \(a.node.attrs?["title"]?.string ?? "Untitled")")
+            case .table: cell.setAccessibilityLabel("Table, \(a.node.content?.count ?? 0) rows. Click a cell to edit")
+            case .collection: cell.setAccessibilityLabel("Collection \(CollectionData(node: a.node)?.name ?? ""), \(CollectionData(node: a.node)?.items.count ?? 0) items. Click to open")
             case .bookmark: cell.setAccessibilityLabel("Link: \(a.node.attrs?["title"]?.string ?? a.node.attrs?["url"]?.string ?? "")")
             default: cell.setAccessibilityLabel(a.kind == .divider ? "Separator" : "Preserved block")
             }
@@ -315,6 +320,7 @@ public final class EditorController: NSObject, NSTextStorageDelegate, NSTextView
         imageBar.update()
         slash.selectionChanged()
         mention.selectionChanged()
+        if tableEditor.tableId != nil, textView.window?.firstResponder === textView { tableEditor.end() }
         host?.editorStateDidChange()
     }
 

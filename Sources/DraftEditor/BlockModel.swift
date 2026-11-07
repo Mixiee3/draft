@@ -3,9 +3,9 @@ import DraftCore
 
 /// Semantic block kinds as edited in TextKit. Each text paragraph is exactly one block.
 public enum BlockKind: String, Sendable {
-    case paragraph, heading, quote, callout, code, bullet, ordered, task, toggle, divider, image, page, file, bookmark, opaque
+    case paragraph, heading, quote, callout, code, bullet, ordered, task, toggle, divider, image, page, file, bookmark, table, collection, opaque
     public var isList: Bool { self == .bullet || self == .ordered || self == .task || self == .toggle }
-    public var isAttachment: Bool { self == .divider || self == .image || self == .page || self == .file || self == .bookmark || self == .opaque }
+    public var isAttachment: Bool { self == .divider || self == .image || self == .page || self == .file || self == .bookmark || self == .table || self == .collection || self == .opaque }
 }
 
 /// Immutable block descriptor stored on every character of its paragraph (attribute

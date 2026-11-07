@@ -203,6 +203,7 @@ public final class DocumentEditorView: NSView, NSTextViewDelegate {
     @objc func scrolled() {
         if controller.toolbar.isVisible { controller.toolbar.position() }
         if controller.slash.isOpen { controller.slash.position() }
+        if controller.tableEditor.tableId != nil { controller.tableEditor.reposition() }
     }
 
     public override func layout() {
