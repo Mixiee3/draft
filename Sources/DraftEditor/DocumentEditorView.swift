@@ -50,6 +50,8 @@ public final class DocumentEditorView: NSView, NSTextViewDelegate {
     let ruleView = NSView()
     public var onTitleChange: ((String) -> Void)?
     public var onLayout: (() -> Void)?
+    /// Height reserved at the top for the host's floating controls.
+    public var topInset: CGFloat = 0 { didSet { needsLayout = true } }
 
     public var pageColor = NSColor(hex: "#fffdf8") { didSet { paperBackground.layer?.backgroundColor = pageColor.cgColor } }
     public var coverImage: NSImage? { didSet { coverView.image = coverImage; coverView.isHidden = coverImage == nil; needsLayout = true; relayout() } }
@@ -74,8 +76,7 @@ public final class DocumentEditorView: NSView, NSTextViewDelegate {
         scrollView.contentView.drawsBackground = false
         scrollView.documentView = paper
         scrollView.translatesAutoresizingMaskIntoConstraints = true
-        scrollView.autoresizingMask = [.width, .height]
-        scrollView.frame = bounds
+        scrollView.autoresizingMask = []
         addSubview(scrollView)
         paper.owner = self
 
@@ -176,7 +177,8 @@ public final class DocumentEditorView: NSView, NSTextViewDelegate {
 
     public override func layout() {
         super.layout()
-        scrollView.frame = bounds
+        // Text scrolls only below the host's top controls, never underneath them.
+        scrollView.frame = NSRect(x: 0, y: 0, width: bounds.width, height: max(0, bounds.height - topInset))
         relayout()
     }
 
@@ -190,7 +192,7 @@ public final class DocumentEditorView: NSView, NSTextViewDelegate {
         let margin: CGFloat = width < 640 ? 10 : 28
         let paperW = min(840, width - margin * 2)
         let paperX = ((width - paperW) / 2).rounded()
-        let top: CGFloat = 70
+        let top: CGFloat = topInset > 0 ? 14 : 70
         let pad: CGFloat = paperW < 560 ? 22 : (paperW < 700 ? 44 : 68)
         var y = top
         if coverImage != nil {

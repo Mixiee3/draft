@@ -219,7 +219,7 @@ public final class SelectionToolbar: NSView {
         guard let host = controller.overlayHost, let (first, last) = selectionRects() else { return }
         let size = frame.size
         let visible = host.visibleRect
-        let topSafe = visible.minY + 64 // keep clear of the document's top controls
+        let topSafe = visible.minY + 8 // the scroll area already starts below the document controls
         var y = first.minY - size.height - 10
         if y < topSafe { y = last.maxY + 10 } // flip below the selection
         var x = first.midX - size.width / 2

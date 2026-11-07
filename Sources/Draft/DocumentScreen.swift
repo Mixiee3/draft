@@ -24,7 +24,8 @@ struct DocumentScreen: View {
                 .accessibilityLabel("Document")
                 // Text fades out as it scrolls under the top controls, like paper sliding away.
                 .mask(VStack(spacing: 0) {
-                    LinearGradient(colors: [.clear, .black], startPoint: .top, endPoint: .bottom).frame(height: 76)
+                    Color.clear.frame(height: 58)
+                    LinearGradient(colors: [.clear, .black], startPoint: .top, endPoint: .bottom).frame(height: 14)
                     Color.black
                 })
             GeometryReader { g in topBar(tokens: tokens, darkPage: darkPage, narrow: g.size.width < 760) }

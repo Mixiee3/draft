@@ -25,7 +25,12 @@ final class EditorTests: XCTestCase {
             pump()
         }
     }
-    func pump() { RunLoop.main.run(until: Date().addingTimeInterval(0.005)) }
+    /// Drains work queued on the main queue so far (FIFO), e.g. Markdown conversions.
+    func pump() {
+        let e = expectation(description: "main queue drained")
+        DispatchQueue.main.async { e.fulfill() }
+        wait(for: [e], timeout: 2)
+    }
     func blocks() -> [Node] { c.document().content ?? [] }
     func undo() { tv.undoManager?.undo() }
 
@@ -194,6 +199,21 @@ final class EditorTests: XCTestCase {
         var t = EditorTheme(); t.font = "mono"; t.separator = "tape"; t.textColor = "#ffffff"
         view.theme = t
         XCTAssertEqual(c.document(), before)
+    }
+
+    func testSlashMenuStaysInsideVisibleAreaInShortWindow() {
+        view.topInset = 58
+        window.setContentSize(NSSize(width: 520, height: 330))
+        view.frame = NSRect(x: 0, y: 0, width: 520, height: 330)
+        view.layoutSubtreeIfNeeded()
+        for i in 0..<14 { type("line \(i)"); tv.insertNewline(nil) }
+        type("/")
+        tv.scrollRangeToVisible(tv.selectedRange())
+        c.slash.position()
+        XCTAssertTrue(c.slash.isOpen)
+        let vis = view.paper.visibleRect
+        XCTAssertTrue(vis.insetBy(dx: -1, dy: -1).contains(c.slash.frame), "\(c.slash.frame) inside \(vis)")
+        XCTAssertLessThanOrEqual(view.scrollView.frame.maxY, view.bounds.height - 58, "text area starts below the top controls")
     }
 
     func testSlashMenuInsertsChecklist() {

@@ -242,6 +242,7 @@ final class AppModel: ObservableObject {
         let host = EditorHostAdapter(model: self, docId: id)
         hosts[id] = host
         view.controller.host = host
+        view.topInset = 58
         view.theme = theme(for: doc)
         view.controller.load(doc.content)
         view.title = doc.title
