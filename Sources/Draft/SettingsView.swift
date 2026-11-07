@@ -116,7 +116,7 @@ struct SettingsView: View {
     }
 
     var stats: some View {
-        let metas = Array(model.library.docs.values)
+        let metas = model.library.liveDocs
         let words = metas.reduce(0) { $0 + $1.words }
         let size = (try? FileManager.default.subpathsOfDirectory(atPath: model.vault.dir.path).reduce(0) { acc, p in
             acc + ((try? FileManager.default.attributesOfItem(atPath: model.vault.dir.appendingPathComponent(p).path)[.size] as? Int) ?? 0)
@@ -225,7 +225,7 @@ struct QuickOpen: View {
 
     var results: [DocMeta] {
         let q = query.lowercased().trimmingCharacters(in: .whitespaces)
-        let all = model.library.docs.values.sorted { a, b in
+        let all = model.library.liveDocs.sorted { a, b in
             if a.starred != b.starred { return a.starred }
             return a.viewedAt > b.viewedAt
         }

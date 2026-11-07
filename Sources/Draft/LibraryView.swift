@@ -12,6 +12,7 @@ struct LibraryView: View {
         case "unsorted": return "Unsorted"
         case "starred": return "Starred"
         case "shared": return "Shared with Me"
+        case "trash": return "Recently Deleted"
         case "folder": return model.folderName(view.folderId)
         default: return "All Docs"
         }
@@ -21,7 +22,9 @@ struct LibraryView: View {
         let docs = model.docsFor(view)
         VStack(spacing: 0) {
             header
-            if view.kind == "shared" {
+            if view.kind == "trash" {
+                TrashList(docs: docs)
+            } else if view.kind == "shared" {
                 EmptyLibrary(message: "Draft is local-first: nothing is shared with you yet. Sharing and collaboration are planned for v2.0, after sync (v1.x).")
             } else if docs.isEmpty {
                 EmptyLibrary(message: !model.librarySearch.isEmpty ? "No documents match “\(model.librarySearch)”." :
@@ -183,7 +186,7 @@ struct DocCardMenu: ViewModifier {
                 }
                 Button("Export as Markdown…") { model.exportDoc(meta.id) }
                 Divider()
-                Button("Delete…", role: .destructive) { model.requestDelete(meta.id) }
+                Button("Move to Recently Deleted", role: .destructive) { model.requestDelete(meta.id) }
             }
             .accessibilityElement(children: .combine)
             .accessibilityAddTraits(.isButton)
@@ -337,5 +340,44 @@ struct ListRow: View {
         .overlay(alignment: .bottom) { Rectangle().fill(t.line).frame(height: 0.5).padding(.leading, 60) }
         .onHover { hover = $0 }
         .modifier(DocCardMenu(meta: meta))
+    }
+}
+
+/// Recently Deleted: restore or delete permanently. Items are purged after 30 days.
+struct TrashList: View {
+    @EnvironmentObject var model: AppModel
+    @Environment(\.tokens) var t
+    let docs: [DocMeta]
+    var body: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            HStack {
+                Text("Deleted documents stay here for \(Int(Library.trashRetentionDays)) days, then are removed with their backups.")
+                    .font(.system(size: 12.5)).foregroundStyle(t.secondary)
+                Spacer()
+                Button("Empty Recently Deleted…") { model.requestDeleteForever(docs.map(\.id)) }.disabled(docs.isEmpty)
+            }.padding(.horizontal, 18)
+            if docs.isEmpty {
+                EmptyLibrary(message: "Nothing here. Deleted documents and pages can be restored from this list.")
+            }
+            ScrollView {
+                VStack(spacing: 2) {
+                    ForEach(docs) { m in
+                        HStack(spacing: 12) {
+                            MiniPage(meta: m, size: 34)
+                            VStack(alignment: .leading, spacing: 2) {
+                                Text(m.title.isEmpty ? "Untitled" : m.title).font(.system(size: 13.5, weight: .medium)).foregroundStyle(t.text)
+                                Text((m.parentDocId != nil ? "Nested page · " : "") + "Deleted " + relative(m.deletedAt ?? 0) + (m.excerpt.isEmpty ? "" : " · " + m.excerpt))
+                                    .font(.system(size: 11.5)).foregroundStyle(t.tertiary).lineLimit(1)
+                            }
+                            Spacer()
+                            Button("Restore") { model.restore(m.id) }
+                            Button("Delete Permanently…", role: .destructive) { model.requestDeleteForever([m.id]) }
+                        }
+                        .padding(.horizontal, 12).padding(.vertical, 8)
+                        .background(RoundedRectangle(cornerRadius: 10).fill(t.hover.opacity(0.6)))
+                    }
+                }.padding(.horizontal, 18).padding(.bottom, 24)
+            }
+        }
     }
 }

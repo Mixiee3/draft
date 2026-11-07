@@ -123,7 +123,7 @@ struct LibraryRail: View {
                     RailRow(icon: "person.2", title: "Shared with Me", isSelected: v.kind == "shared") { model.openView(ViewRef(kind: "shared")) }
 
                     SectionHeader(title: "Starred")
-                    let starred = model.library.docs.values.filter(\.starred).sorted { $0.title < $1.title }
+                    let starred = model.library.liveDocs.filter(\.starred).sorted { $0.title < $1.title }
                     if starred.isEmpty {
                         Text("Star documents to keep them close").font(.system(size: 12)).italic().foregroundStyle(t.tertiary).padding(.horizontal, 10).padding(.vertical, 4)
                     }
@@ -135,6 +135,11 @@ struct LibraryRail: View {
                     RailRow(icon: "tray", title: "Unsorted", isSelected: v.kind == "unsorted") { model.openView(ViewRef(kind: "unsorted")) }
                     ForEach(model.library.folders.sorted { $0.order < $1.order }) { f in
                         folderRow(f)
+                    }
+
+                    RailRow(icon: "trash", title: "Recently Deleted", isSelected: v.kind == "trash",
+                            trailing: model.library.trashedDocs.isEmpty ? nil : AnyView(Text("\(model.library.trashedDocs.count)").font(.system(size: 11)).foregroundStyle(t.tertiary))) {
+                        model.openView(ViewRef(kind: "trash"))
                     }
 
                     SectionHeader(title: "Tags")
@@ -174,7 +179,7 @@ struct LibraryRail: View {
                 Button("Remove Folder…", role: .destructive) { model.requestDeleteFolder(f.id) }
             }
             if expanded {
-                ForEach(model.library.docs.values.filter { $0.folderId == f.id && $0.parentDocId == nil }.sorted { $0.title < $1.title }) { m in
+                ForEach(model.library.liveDocs.filter { $0.folderId == f.id && $0.parentDocId == nil }.sorted { $0.title < $1.title }) { m in
                     RailRow(icon: "doc.text", title: m.title, isSelected: model.activeDocId == m.id, indent: 18) { model.openView(.doc(m.id)) }
                 }
             }
@@ -192,7 +197,7 @@ struct VaultCard: View {
                 Image(systemName: "internaldrive").foregroundStyle(t.accent)
                 Text("Stored on this Mac").font(.system(size: 12.5, weight: .semibold)).foregroundStyle(t.text)
             }
-            Text("\(model.library.docs.count) documents · plain files you own. No account, no cloud.")
+            Text("\(model.library.liveDocs.count) documents · plain files you own. No account, no cloud.")
                 .font(.system(size: 11.5)).foregroundStyle(t.secondary).fixedSize(horizontal: false, vertical: true)
             Button("Show in Finder") { model.revealVault() }.buttonStyle(.link).font(.system(size: 11.5))
         }

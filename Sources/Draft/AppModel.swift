@@ -78,6 +78,8 @@ final class AppModel: ObservableObject {
             if lib.tabs.first?.view.kind != "all" { lib.tabs.insert(Tab(view: .all), at: 0) }
             if !lib.tabs.contains(where: { $0.id == lib.activeTabId }) { lib.activeTabId = lib.tabs[0].id }
             library = lib
+            let expired = lib.expiredTrash()
+            if !expired.isEmpty { deleteForever(expired) }
             if activeView.kind == "doc", let id = activeView.docId { _ = ensureDoc(id) }
             ready = true
         } catch let e as NewerSchemaError {
@@ -123,6 +125,7 @@ final class AppModel: ObservableObject {
         docs[id] = d
         do {
             try vault.saveDoc(d)
+            try? vault.snapshotIfDue(d) // automatic local backups; never block a save on them
             if var m = library.docs[id] {
                 m.applyDerived(from: d)
                 m.updatedAt = d.updatedAt
@@ -164,7 +167,12 @@ final class AppModel: ObservableObject {
 
     func openView(_ view: ViewRef, inPlace: Bool = false, newTab: Bool = false) {
         if view.kind == "doc", let id = view.docId {
-            guard library.docs[id] != nil, ensureDoc(id) != nil else { return }
+            guard let meta = library.docs[id] else { return }
+            if meta.deletedAt != nil {
+                toast("“\(meta.title.isEmpty ? "Untitled" : meta.title)” is in Recently Deleted.", action: "Restore") { self.restore(id) }
+                return
+            }
+            guard ensureDoc(id) != nil else { return }
             library.docs[id]?.viewedAt = nowMs()
         }
         let cur = activeTab
@@ -324,29 +332,73 @@ final class AppModel: ObservableObject {
         return out
     }
 
+    /// Delete = move to Recently Deleted (with its nested pages). Recoverable for 30 days.
     func requestDelete(_ id: String) {
-        guard let m = library.docs[id] else { return }
-        let kids = descendants(id)
-        confirm = ConfirmRequest(
-            title: "Delete “\(m.title.isEmpty ? "Untitled" : m.title)”?",
-            detail: (kids.isEmpty ? "" : "This also deletes \(kids.count) nested page\(kids.count > 1 ? "s" : ""). ") + "Deleted documents cannot be recovered in this version (Recently Deleted arrives in v0.2). Export first if unsure.",
-            confirmLabel: "Delete", destructive: true, onConfirm: { [weak self] in self?.deleteDocs([id] + kids) })
+        saveDirtyDocs()
+        let ids = library.trash(id)
+        guard !ids.isEmpty else { return }
+        for i in ids { editors[i] = nil; hosts[i] = nil }
+        panel = nil
+        scheduleLibrarySave()
+        let t = library.docs[id]?.title ?? ""
+        toast("Moved “\(t.isEmpty ? "Untitled" : t)”\(ids.count > 1 ? " and \(ids.count - 1) nested page\(ids.count > 2 ? "s" : "")" : "") to Recently Deleted", action: "Undo") { self.restore(id) }
     }
 
-    func deleteDocs(_ ids: [String]) {
+    func restore(_ id: String) {
+        let ids = library.restore(id)
+        guard !ids.isEmpty else { return }
+        scheduleLibrarySave()
+        for (_, e) in editors { e.controller.layout.invalidateDisplay(forCharacterRange: NSRange(location: 0, length: e.controller.storage.length)) }
+        toast("Restored “\(library.docs[id]?.title.isEmpty == false ? library.docs[id]!.title : "Untitled")”")
+    }
+
+    func requestDeleteForever(_ ids: [String]) {
+        guard !ids.isEmpty else { return }
+        let all = ids + ids.flatMap { library.descendants(of: $0) }.filter { library.docs[$0]?.deletedAt != nil }
+        let unique = Array(Set(all))
+        confirm = ConfirmRequest(title: unique.count == 1 ? "Delete permanently?" : "Delete \(unique.count) documents permanently?",
+                                 detail: "Their files and automatic backups are removed from this Mac. This cannot be undone.",
+                                 confirmLabel: "Delete Permanently", destructive: true, onConfirm: { [weak self] in self?.deleteForever(unique) })
+    }
+
+    func deleteForever(_ ids: [String]) {
         for id in ids {
             library.docs[id] = nil
             docs[id] = nil
             editors[id] = nil
             hosts[id] = nil
             dirtyDocs.remove(id)
-            do { try vault.deleteDoc(id) } catch { reportSaveError(error) }
+            do { try vault.purgeDoc(id) } catch { reportSaveError(error) }
         }
         library.tabs.removeAll { $0.view.kind == "doc" && ids.contains($0.view.docId ?? "") }
         if !library.tabs.contains(where: { $0.id == library.activeTabId }) { library.activeTabId = library.tabs[0].id }
-        panel = nil
         scheduleLibrarySave()
-        toast(ids.count > 1 ? "Deleted \(ids.count) documents" : "Document deleted")
+    }
+
+    // MARK: Backups
+
+    func snapshots(_ id: String) -> [Snapshot] { vault.snapshots(id) }
+
+    func restoreSnapshot(_ id: String, _ s: Snapshot) {
+        saveDirtyDocs()
+        do {
+            if let cur = docs[id] { try vault.snapshotIfDue(cur, force: true) } // restoring is itself reversible
+            var old = try vault.loadSnapshot(s)
+            old.id = id
+            old.updatedAt = nowMs()
+            docs[id] = old
+            try vault.saveDoc(old)
+            if let e = editors[id] {
+                e.controller.load(old.content)
+                e.title = old.title
+                e.theme = theme(for: old)
+                e.coverImage = old.appearance.cover.flatMap { image(forAsset: $0.assetId) }
+            }
+            if var m = library.docs[id] { m.applyDerived(from: old); m.updatedAt = old.updatedAt; library.docs[id] = m }
+            scheduleLibrarySave()
+            editorTick &+= 1
+            toast("Restored the version from \(relative(s.savedAt)). The previous version was backed up.")
+        } catch { toast("Could not restore backup: \(error.localizedDescription)") }
     }
 
     func duplicate(_ id: String) {
@@ -400,7 +452,7 @@ final class AppModel: ObservableObject {
 
     func requestDeleteFolder(_ id: String) {
         guard let f = library.folders.first(where: { $0.id == id }) else { return }
-        let count = library.docs.values.filter { $0.folderId == id && $0.parentDocId == nil }.count
+        let count = library.liveDocs.filter { $0.folderId == id && $0.parentDocId == nil }.count
         let run = { [weak self] in
             guard let self else { return }
             for k in self.library.docs.keys where self.library.docs[k]?.folderId == id { self.library.docs[k]?.folderId = nil }
@@ -496,7 +548,7 @@ final class AppModel: ObservableObject {
     }
 
     func exportAll() {
-        let roots = library.docs.values.filter { $0.parentDocId == nil }.sorted { $0.title < $1.title }.map(\.id)
+        let roots = library.liveDocs.filter { $0.parentDocId == nil }.sorted { $0.title < $1.title }.map(\.id)
         let f = DateFormatter(); f.dateFormat = "yyyy-MM-dd"
         export(docIds: roots, name: "Draft export \(f.string(from: Date()))", groupByFolder: true)
     }
@@ -513,18 +565,19 @@ final class AppModel: ObservableObject {
     // MARK: Library queries
 
     func docsFor(_ view: ViewRef) -> [DocMeta] {
-        var list = library.docs.values.filter { $0.parentDocId == nil }
+        var list = library.liveDocs.filter { $0.parentDocId == nil }
         switch view.kind {
         case "unsorted": list = list.filter { $0.folderId == nil }
-        case "starred": list = library.docs.values.filter { $0.starred }
+        case "starred": list = library.liveDocs.filter { $0.starred }
         case "folder": list = list.filter { $0.folderId == view.folderId }
         case "shared": list = []
+        case "trash": return library.trashedDocs.sorted { ($0.deletedAt ?? 0) > ($1.deletedAt ?? 0) }
         default: break
         }
         let q = librarySearch.trimmingCharacters(in: .whitespaces).lowercased()
         if !q.isEmpty {
             let terms = q.split(separator: " ").map(String.init)
-            list = library.docs.values.filter { m in terms.allSatisfy { m.searchText.contains($0) } }
+            list = library.liveDocs.filter { m in terms.allSatisfy { m.searchText.range(of: $0, options: [.caseInsensitive, .diacriticInsensitive]) != nil } }
             // Title matches first.
             return list.sorted { a, b in
                 let ta = a.title.lowercased().contains(q), tb = b.title.lowercased().contains(q)
@@ -564,7 +617,7 @@ final class EditorHostAdapter: EditorHost {
     func image(forAsset id: String) -> NSImage? { MainActor.assumeIsolated { model.image(forAsset: id) } }
     func pageInfo(docId: String) -> (title: String, excerpt: String, tint: NSColor)? {
         MainActor.assumeIsolated {
-            guard let m = model.library.docs[docId] else { return nil }
+            guard let m = model.library.docs[docId], m.deletedAt == nil else { return nil }
             return (m.title, m.excerpt, NSColor(hex: m.tint))
         }
     }

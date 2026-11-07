@@ -48,6 +48,7 @@ enum Automation {
         await type("[] a task\n", into: ed.controller)
         // Styling is stored separately from content.
         m.updateAppearance(id) { $0.styleId = "ember" }
+        if let t = m.createDoc(open: false, title: "Trash me") { m.flushAll(); m.requestDelete(t) }
         await wait(1.0)
         try? Data(id.utf8).write(to: out.appendingPathComponent("smoke-doc-id.txt"))
         // Quit immediately: the quit path itself must flush pending saves.
@@ -64,6 +65,9 @@ enum Automation {
             let boldOK = (doc.content.content ?? []).contains { n in (n.content ?? []).contains { $0.text == "bold" && $0.marks == [Mark("bold")] } }
             result["bold"] = boldOK ? "yes" : "no"
             result["tabOpen"] = m.library.tabs.contains { $0.view.docId == id } ? "yes" : "no"
+            result["backups"] = "\(m.snapshots(id).count)"
+            result["trashed"] = m.library.trashedDocs.map(\.title).joined(separator: ",")
+            result["listed"] = m.docsFor(.all).map(\.title).sorted().joined(separator: ",")
         } else { result["error"] = "document not found after restart" }
         if let d = try? JSONSerialization.data(withJSONObject: result, options: [.prettyPrinted, .sortedKeys]) {
             try? d.write(to: out.appendingPathComponent("smoke-result.json"))

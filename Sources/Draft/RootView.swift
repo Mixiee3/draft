@@ -116,6 +116,7 @@ struct TabStrip: View {
         case "unsorted": return "Unsorted"
         case "starred": return "Starred"
         case "shared": return "Shared with Me"
+        case "trash": return "Recently Deleted"
         case "settings": return "Settings"
         case "folder": return model.folderName(v.folderId)
         case "doc": let s = model.library.docs[v.docId ?? ""]?.title ?? ""; return s.isEmpty ? "Untitled" : s
@@ -129,6 +130,7 @@ struct TabStrip: View {
         case "unsorted": return "tray"
         case "starred": return "star"
         case "shared": return "person.2"
+        case "trash": return "trash"
         case "settings": return "gearshape"
         case "folder": return "folder"
         default: return "doc.text"
