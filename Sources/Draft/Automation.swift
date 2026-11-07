@@ -52,6 +52,11 @@ enum Automation {
         // Styling is stored separately from content.
         m.updateAppearance(id) { $0.styleId = "ember" }
         if let t = m.createDoc(open: false, title: "Trash me") { m.flushAll(); m.requestDelete(t) }
+        // Long enough to scroll: remember a scroll position and caret for this tab.
+        let tv = ed.controller.textView
+        tv.setSelectedRange(NSRange(location: (tv.string as NSString).length, length: 0))
+        ed.controller.pastePlainForAutomation(String(repeating: "Scroll filler line.\n", count: 70) + "Caret lands here.")
+        await wait(0.3)
         // ⌘G: group the heading and the bold paragraph into a nested page.
         let blocks = ed.controller.document().content ?? []
         ed.controller.selectBlocks(ids: [blocks[0].id!, blocks[1].id!])
@@ -62,6 +67,10 @@ enum Automation {
             ed.controller.selectBlocks(ids: [task])
             ed.controller.moveSelectedBlocks(toDocument: morning.id)
         }
+        let caretLoc = ((tv.string as NSString).range(of: "Caret lands here.")).location + 5
+        tv.setSelectedRange(NSRange(location: caretLoc, length: 3))
+        ed.scrollView.contentView.scroll(to: NSPoint(x: 0, y: 900)); ed.scrollView.reflectScrolledClipView(ed.scrollView.contentView)
+        try? "\(caretLoc),\(Int(ed.scrollView.contentView.bounds.origin.y))".write(to: out.appendingPathComponent("smoke-tabstate.txt"), atomically: true, encoding: .utf8)
         await wait(1.0)
         try? Data(id.utf8).write(to: out.appendingPathComponent("smoke-doc-id.txt"))
         // Quit immediately: the quit path itself must flush pending saves.
@@ -70,6 +79,12 @@ enum Automation {
     static func smokeRead() async {
         let id = (try? String(contentsOf: out.appendingPathComponent("smoke-doc-id.txt"), encoding: .utf8)) ?? ""
         var result: [String: String] = ["docId": id]
+        await wait(0.8) // let the reopened tab restore itself
+        if let ed = m.editors[id], let expected = try? String(contentsOf: out.appendingPathComponent("smoke-tabstate.txt"), encoding: .utf8) {
+            let sel = ed.controller.textView.selectedRange()
+            result["tabState"] = "\(sel.location),\(Int(ed.scrollView.contentView.bounds.origin.y))"
+            result["tabStateExpected"] = expected + " len3=\(sel.length == 3)"
+        }
         if let meta = m.library.docs[id], let doc = m.ensureDoc(id) {
             result["title"] = meta.title
             result["style"] = doc.appearance.styleId

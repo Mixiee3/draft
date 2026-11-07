@@ -92,6 +92,10 @@ public struct ViewRef: Codable, Hashable, Sendable {
 public struct Tab: Codable, Hashable, Identifiable, Sendable {
     public var id: String
     public var view: ViewRef
+    /// Where the user was in a document tab (restored after relaunch).
+    public var scrollY: Double?
+    public var selStart: Int?
+    public var selLength: Int?
     public init(id: String = newId("t_"), view: ViewRef) { self.id = id; self.view = view }
 }
 

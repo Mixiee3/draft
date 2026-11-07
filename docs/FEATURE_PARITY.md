@@ -111,7 +111,7 @@ Last updated: v0.2.1 in progress (native macOS) — 2026‑11‑07.
 | N3 | Rail mode menu | Folders / Document; Focus mode | S08 | partial | — | 0.6 | Folders/Document switch works; Focus mode missing |
 | N4 | Collapse rail | — | S01 | working | — | 0.1 | ⌃⌘S; persisted |
 | N5 | Tab strip | Home + tabs, close, + | S01, S21 | verified | — | 0.1 | Open doc tab survives restart (smoke `tabOpen`) |
-| N6 | Tab state restore | Scroll/caret per tab | B§5.5 | partial | — | 0.2 | Editors stay alive per open tab (scroll, caret, undo kept while running); not across restart |
+| N6 | Tab state restore | Scroll/caret per tab | B§5.5 | verified | — | 0.2.1 | Each document tab stores scroll offset and selection (captured on tab switch and quit); restored once when the tab reappears after relaunch (smoke `tabState`) |
 | N7 | Back / forward | — | S01 | partial | — | 0.2 | Back within tab; forward missing |
 | N8 | Spaces | Switcher, per-space tree | B§4, S13 | partial | — | 0.5 | One Space, renamable |
 | N9 | Folders | Create/rename/nest/delete | S21, S30 | partial | — | 0.2 | Create, rename, remove (docs → Unsorted); nesting missing |

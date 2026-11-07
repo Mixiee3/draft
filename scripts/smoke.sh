@@ -23,6 +23,7 @@ assert r["movedTo"] == "yes" and r["movedFrom"] == "gone", r
 assert r["linkOpened"] == "yes", r
 assert r["ungroupedGone"] == "yes" and "Persisted heading" in r["ungroupedText"] and "survives a restart" in r["ungroupedText"], r
 assert r["tabOpen"] == "yes", r
+assert r["tabStateExpected"] == r["tabState"] + " len3=true", r
 assert r["trashed"] == "Trash me", r
 assert "Trash me" not in r["listed"], r
 assert int(r["backups"]) >= 1, r

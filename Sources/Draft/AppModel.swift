@@ -148,6 +148,7 @@ final class AppModel: ObservableObject {
 
     /// Called before quitting and by automation. Synchronous: the vault uses plain file IO.
     func flushAll() {
+        captureTabStates()
         saveDirtyDocs()
         saveLibraryNow()
     }
@@ -168,6 +169,7 @@ final class AppModel: ObservableObject {
     }
 
     func openView(_ view: ViewRef, inPlace: Bool = false, newTab: Bool = false) {
+        captureTabStates()
         if view.kind == "doc", let id = view.docId {
             guard let meta = library.docs[id] else { return }
             if meta.deletedAt != nil {
@@ -221,7 +223,45 @@ final class AppModel: ObservableObject {
         panel = nil
     }
 
+    /// Remember scroll position and selection of every open document tab.
+    func captureTabStates() {
+        for i in library.tabs.indices {
+            guard library.tabs[i].view.kind == "doc", let d = library.tabs[i].view.docId, let e = editors[d] else { continue }
+            let y = Double(e.scrollView.contentView.bounds.origin.y.rounded())
+            let sel = e.controller.textView.selectedRange()
+            if library.tabs[i].scrollY != y || library.tabs[i].selStart != sel.location || library.tabs[i].selLength != sel.length {
+                library.tabs[i].scrollY = y
+                library.tabs[i].selStart = sel.location
+                library.tabs[i].selLength = sel.length
+                libDirty = true
+            }
+        }
+    }
+
+    private var restoredTabs = Set<String>()
+
+    /// Put a document tab back where it was, once per launch.
+    func restoreTabState(_ docId: String) {
+        guard let tab = library.tabs.first(where: { $0.view.kind == "doc" && $0.view.docId == docId }), !restoredTabs.contains(tab.id),
+              let e = editors[docId] else { return }
+        restoredTabs.insert(tab.id)
+        let tv = e.controller.textView
+        let len = (tv.string as NSString).length
+        if let start = tab.selStart {
+            let loc = min(start, len)
+            tv.setSelectedRange(NSRange(location: loc, length: min(tab.selLength ?? 0, len - loc)))
+        }
+        e.window?.makeFirstResponder(tv)
+        if let y = tab.scrollY {
+            e.layoutSubtreeIfNeeded()
+            let maxY = max(0, e.scrollView.documentView!.frame.height - e.scrollView.contentSize.height)
+            e.scrollView.contentView.scroll(to: NSPoint(x: 0, y: min(CGFloat(y), maxY)))
+            e.scrollView.reflectScrolledClipView(e.scrollView.contentView)
+        }
+    }
+
     func activateTab(_ id: String) {
+        captureTabStates()
         guard let t = library.tabs.first(where: { $0.id == id }) else { return }
         if let d = t.view.docId, t.view.kind == "doc" { _ = ensureDoc(d) }
         library.activeTabId = id

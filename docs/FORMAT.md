@@ -43,6 +43,9 @@ The reference implementation is `Sources/DraftCore`. All JSON is UTF‑8; timest
 }
 ```
 
+Document tabs may carry `scrollY`, `selStart`, `selLength` (where the user was; optional). `DocMeta.deletedAt`
+marks a document in Recently Deleted.
+
 `excerpt`, `searchText`, `words`, `blocks`, `tint` are **derived** and may be rebuilt from the
 document files at any time. `parentDocId` marks a nested page.
 

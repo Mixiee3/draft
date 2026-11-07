@@ -53,7 +53,10 @@ struct DocumentScreen: View {
                 CoverCropSheet(docId: docId, cover: cover, image: img)
             }
         }
-        .onAppear { model.editors[docId]?.controller.refreshPageTitles { model.library.docs[$0]?.title } }
+        .onAppear {
+            model.editors[docId]?.controller.refreshPageTitles { model.library.docs[$0]?.title }
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.05) { model.restoreTabState(docId) }
+        }
     }
 
     func topBar(tokens: StyleTokens, darkPage: Bool, narrow: Bool) -> some View {
