@@ -76,6 +76,13 @@ public enum Markdown {
                 return [indent + String(repeating: "#", count: lvl) + " " + inline(n.content, &lossy)]
             case "blockquote":
                 return blocks(n.content ?? [], "").map { indent + ($0.isEmpty ? ">" : "> " + $0) }
+            case "callout":
+                lossy.insert("Callouts are exported as quotes with their icon.")
+                var lines = blocks(n.content ?? [], "")
+                if !lines.isEmpty { lines[0] = (n.attrs?["icon"]?.string ?? "💡") + " " + lines[0] }
+                return lines.map { indent + ($0.isEmpty ? ">" : "> " + $0) }
+            case "pageBreak":
+                return [indent + "<div style=\"page-break-after: always\"></div>"]
             case "codeBlock":
                 let lang = n.attrs?["language"]?.string ?? ""
                 let text = (n.content ?? []).map { $0.text ?? "" }.joined()
@@ -86,7 +93,16 @@ public enum Markdown {
                 var src = n.attrs?["src"]?.string ?? ""
                 if let a = n.attrs?["assetId"]?.string { assets.append(a); src = assetPath(a) }
                 let enc = src.addingPercentEncoding(withAllowedCharacters: .urlPathAllowed.union(.init(charactersIn: ":"))) ?? src
-                return [indent + "![\(escape(n.attrs?["alt"]?.string ?? ""))](\(enc))"]
+                var lines = [indent + "![\(escape(n.attrs?["alt"]?.string ?? ""))](\(enc))"]
+                if let cap = n.attrs?["caption"]?.string, !cap.isEmpty { lines.append(indent + "*\(escape(cap))*") }
+                if n.attrs?["width"] != nil { lossy.insert("Image sizes are not representable in Markdown.") }
+                return lines
+            case "file":
+                let name = n.attrs?["name"]?.string ?? "File"
+                guard let a = n.attrs?["assetId"]?.string else { return [indent + escape(name)] }
+                assets.append(a)
+                let p = assetPath(a)
+                return [indent + "[\(escape(name))](\(p.addingPercentEncoding(withAllowedCharacters: .urlPathAllowed) ?? p))"]
             case "pageCard":
                 let t = n.attrs?["title"]?.string ?? ""
                 let title = t.isEmpty ? "Untitled page" : t
@@ -97,7 +113,8 @@ public enum Markdown {
                     return [indent + "[\(escape(title))](\(enc))"]
                 }
                 return [indent + "**\(escape(title))**"]
-            case "bulletList", "orderedList", "taskList":
+            case "bulletList", "orderedList", "taskList", "toggleList":
+                if n.type == "toggleList" { lossy.insert("Toggle lists are exported as bulleted lists (always expanded).") }
                 var lines: [String] = []
                 var num = n.attrs?["start"]?.int ?? 1
                 for item in n.content ?? [] {

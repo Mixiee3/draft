@@ -50,6 +50,7 @@ final class AppModel: ObservableObject {
     @Published var findCount = 0
     @Published var findFocusNonce = 0
     @Published var infoTab = "info"
+    @Published var coverEditorDoc: String?
 
     let vault = Vault(dir: Vault.defaultURL())
     private(set) var editors: [String: DocumentEditorView] = [:]
@@ -108,7 +109,7 @@ final class AppModel: ObservableObject {
 
     func markDocDirty(_ id: String) {
         dirtyDocs.insert(id)
-        saveState = "saving"
+        if saveState != "saving" { saveState = "saving" } // publish only real changes: every publish re-renders the window
         docTimer?.invalidate()
         docTimer = Timer.scheduledTimer(withTimeInterval: 0.5, repeats: false) { _ in Task { @MainActor in self.saveDirtyDocs() } }
     }
@@ -122,7 +123,7 @@ final class AppModel: ObservableObject {
 
     private func saveDocNow(_ id: String) {
         guard var d = docs[id] else { return }
-        if let ed = editors[id] { d.content = ed.controller.document() }
+        if let ed = editors[id] { d.content = ed.controller.document(); d.updatedAt = nowMs() }
         docs[id] = d
         do {
             try vault.saveDoc(d)
@@ -147,6 +148,7 @@ final class AppModel: ObservableObject {
 
     /// Called before quitting and by automation. Synchronous: the vault uses plain file IO.
     func flushAll() {
+        captureTabStates()
         saveDirtyDocs()
         saveLibraryNow()
     }
@@ -167,6 +169,7 @@ final class AppModel: ObservableObject {
     }
 
     func openView(_ view: ViewRef, inPlace: Bool = false, newTab: Bool = false) {
+        captureTabStates()
         if view.kind == "doc", let id = view.docId {
             guard let meta = library.docs[id] else { return }
             if meta.deletedAt != nil {
@@ -220,7 +223,45 @@ final class AppModel: ObservableObject {
         panel = nil
     }
 
+    /// Remember scroll position and selection of every open document tab.
+    func captureTabStates() {
+        for i in library.tabs.indices {
+            guard library.tabs[i].view.kind == "doc", let d = library.tabs[i].view.docId, let e = editors[d] else { continue }
+            let y = Double(e.scrollView.contentView.bounds.origin.y.rounded())
+            let sel = e.controller.textView.selectedRange()
+            if library.tabs[i].scrollY != y || library.tabs[i].selStart != sel.location || library.tabs[i].selLength != sel.length {
+                library.tabs[i].scrollY = y
+                library.tabs[i].selStart = sel.location
+                library.tabs[i].selLength = sel.length
+                libDirty = true
+            }
+        }
+    }
+
+    private var restoredTabs = Set<String>()
+
+    /// Put a document tab back where it was, once per launch.
+    func restoreTabState(_ docId: String) {
+        guard let tab = library.tabs.first(where: { $0.view.kind == "doc" && $0.view.docId == docId }), !restoredTabs.contains(tab.id),
+              let e = editors[docId] else { return }
+        restoredTabs.insert(tab.id)
+        let tv = e.controller.textView
+        let len = (tv.string as NSString).length
+        if let start = tab.selStart {
+            let loc = min(start, len)
+            tv.setSelectedRange(NSRange(location: loc, length: min(tab.selLength ?? 0, len - loc)))
+        }
+        e.window?.makeFirstResponder(tv)
+        if let y = tab.scrollY {
+            e.layoutSubtreeIfNeeded()
+            let maxY = max(0, e.scrollView.documentView!.frame.height - e.scrollView.contentSize.height)
+            e.scrollView.contentView.scroll(to: NSPoint(x: 0, y: min(CGFloat(y), maxY)))
+            e.scrollView.reflectScrolledClipView(e.scrollView.contentView)
+        }
+    }
+
     func activateTab(_ id: String) {
+        captureTabStates()
         guard let t = library.tabs.first(where: { $0.id == id }) else { return }
         if let d = t.view.docId, t.view.kind == "doc" { _ = ensureDoc(d) }
         library.activeTabId = id
@@ -255,9 +296,11 @@ final class AppModel: ObservableObject {
         view.theme = theme(for: doc)
         view.controller.load(doc.content)
         view.title = doc.title
-        view.coverImage = doc.appearance.cover.flatMap { image(forAsset: $0.assetId) }
+        view.coverImage = coverImage(doc.appearance.cover)
         view.controller.refreshPageTitles { self.library.docs[$0]?.title }
         view.onTitleChange = { [weak self] t in self?.setTitle(id, t) }
+        view.onEditCover = { [weak self] in self?.coverEditorDoc = id }
+        view.onRemoveCover = { [weak self] in self?.updateAppearance(id) { $0.cover = nil } }
         editors[id] = view
         return view
     }
@@ -270,9 +313,18 @@ final class AppModel: ObservableObject {
     var activeController: EditorController? { activeEditor?.controller }
 
     func editorChanged(_ id: String) {
-        docs[id]?.updatedAt = nowMs()
         markDocDirty(id)
-        editorTick &+= 1
+    }
+
+    /// The cover as shown: the stored crop (or the default band) cut from the original image.
+    func coverImage(_ cover: Cover?) -> NSImage? {
+        guard let cover, let img = image(forAsset: cover.assetId),
+              let cg = img.cgImage(forProposedRect: nil, context: nil, hints: nil) else { return nil }
+        let a = Double(cg.width) / Double(max(1, cg.height))
+        let c = CoverCrop.effective(cover, imageAspect: a)
+        let r = CGRect(x: c.x * Double(cg.width), y: c.y * Double(cg.height), width: c.w * Double(cg.width), height: c.h * Double(cg.height)).integral
+        guard let cut = cg.cropping(to: r) else { return img }
+        return NSImage(cgImage: cut, size: NSSize(width: cut.width, height: cut.height))
     }
 
     func image(forAsset assetId: String) -> NSImage? {
@@ -320,7 +372,7 @@ final class AppModel: ObservableObject {
         docs[id] = d
         if let e = editors[id] {
             e.theme = theme(for: d)
-            e.coverImage = d.appearance.cover.flatMap { image(forAsset: $0.assetId) }
+            e.coverImage = coverImage(d.appearance.cover)
         }
         markDocDirty(id)
         editorTick &+= 1
@@ -404,22 +456,77 @@ final class AppModel: ObservableObject {
         return id
     }
 
+    /// Pages taken out by undoing a group (or by ungroup) are held here, not in Recently Deleted:
+    /// their content lives on in the parent, and redo puts them back.
+    private var heldPages: [String: (meta: DocMeta, doc: DocFile)] = [:]
+
     func setGroupedPage(_ id: String, active: Bool, parent: String) {
-        guard let d = ensureDoc(id) else { return }
-        let kids = cardDocIds(editors[id]?.controller.document() ?? d.content)
         if active {
-            library.restore(id)
+            if let held = heldPages.removeValue(forKey: id) {
+                library.docs[id] = held.meta
+                docs[id] = held.doc
+                do { try vault.saveDoc(held.doc) } catch { reportSaveError(error) }
+            } else {
+                library.restore(id) // pages trashed by earlier builds
+            }
             library.docs[id]?.parentDocId = parent
-            reparent(kids, to: id)
+            if let d = docs[id] { reparent(cardDocIds(d.content), to: id) }
         } else {
             saveDirtyDocs()
-            reparent(kids, to: parent) // hand nested pages back before trashing, so they stay live
-            library.trash(id)
+            guard var d = ensureDoc(id), let meta = library.docs[id] else { return }
+            if let e = editors[id] { d.content = e.controller.document() }
+            reparent(cardDocIds(d.content), to: parent) // nested pages stay live under the parent
+            heldPages[id] = (meta, d)
+            library.docs[id] = nil
+            docs[id] = nil
             editors[id] = nil
             hosts[id] = nil
+            library.tabs.removeAll { $0.view.kind == "doc" && $0.view.docId == id }
+            if !library.tabs.contains(where: { $0.id == library.activeTabId }) { library.activeTabId = library.tabs[0].id }
+            do { try vault.purgeDoc(id) } catch { reportSaveError(error) }
         }
         scheduleLibrarySave()
         editorTick &+= 1
+    }
+
+    // MARK: Moving blocks between documents
+
+    func moveTargets(excluding id: String) -> [DocMeta] {
+        Array(library.liveDocs.filter { $0.id != id }.sorted { $0.viewedAt > $1.viewedAt }.prefix(15))
+    }
+
+    /// Append top-level blocks to another document (open editor or file). Returns false if it can't.
+    func appendBlocks(_ content: Node, to target: String) -> Bool {
+        guard library.docs[target]?.deletedAt == nil, var d = ensureDoc(target) else { return false }
+        if let e = editors[target] {
+            e.controller.appendBlocks(content)
+        } else {
+            var blocks = d.content.content ?? []
+            if blocks.count == 1, blocks[0].type == "paragraph", blocks[0].content == nil { blocks = [] } // replace an empty page
+            d.content.content = blocks + (content.content ?? [])
+            d.updatedAt = nowMs()
+            docs[target] = d
+            markDocDirty(target)
+        }
+        reparent(cardDocIds(content), to: target)
+        scheduleLibrarySave()
+        return true
+    }
+
+    func removeBlocks(_ ids: [String], from target: String, returningPagesTo parent: String) {
+        guard var d = ensureDoc(target) else { return }
+        let moved = editors[target].map { $0.controller.document() } ?? d.content
+        let pages = Set(cardDocIds(moved)).subtracting(cardDocIds(moved.removingBlocks(Set(ids))))
+        if let e = editors[target] {
+            e.controller.removeBlocks(ids: Set(ids))
+        } else {
+            d.content = d.content.removingBlocks(Set(ids))
+            d.updatedAt = nowMs()
+            docs[target] = d
+            markDocDirty(target)
+        }
+        reparent(Array(pages), to: parent)
+        scheduleLibrarySave()
     }
 
     func pageDocument(_ id: String) -> (title: String, content: Node)? {
@@ -458,7 +565,7 @@ final class AppModel: ObservableObject {
                 e.controller.load(old.content)
                 e.title = old.title
                 e.theme = theme(for: old)
-                e.coverImage = old.appearance.cover.flatMap { image(forAsset: $0.assetId) }
+                e.coverImage = coverImage(old.appearance.cover)
             }
             if var m = library.docs[id] { m.applyDerived(from: old); m.updatedAt = old.updatedAt; library.docs[id] = m }
             scheduleLibrarySave()
@@ -582,6 +689,36 @@ final class AppModel: ObservableObject {
         }
     }
 
+    static let maxFileBytes = 512 * 1024 * 1024
+
+    func storeFile(at url: URL) -> (assetId: String, name: String, size: Int)? {
+        let size = (try? url.resourceValues(forKeys: [.fileSizeKey]).fileSize) ?? 0
+        guard size <= Self.maxFileBytes else { toast("“\(url.lastPathComponent)” is larger than 512 MB and was not added."); return nil }
+        do {
+            let data = try Data(contentsOf: url, options: .mappedIfSafe)
+            return (try vault.putAsset(data, ext: url.pathExtension), url.lastPathComponent, data.count)
+        } catch { toast("Could not add “\(url.lastPathComponent)”: \(error.localizedDescription)"); return nil }
+    }
+
+    func pickFile(_ completion: @escaping ((assetId: String, name: String, size: Int)?) -> Void) {
+        let p = NSOpenPanel()
+        p.allowsMultipleSelection = false
+        p.message = "Choose a file. Draft copies it into your vault."
+        p.begin { r in completion(r == .OK ? p.url.flatMap { self.storeFile(at: $0) } : nil) }
+    }
+
+    /// Opens a stored file under its original name (a read-only copy in the temporary folder).
+    func openAttachment(assetId: String, name: String) {
+        do {
+            let src = try vault.assetURL(assetId)
+            let dir = FileManager.default.temporaryDirectory.appendingPathComponent("Draft Files/\((assetId as NSString).deletingPathExtension)", isDirectory: true)
+            try FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
+            let dest = dir.appendingPathComponent(Markdown.safeFileName(name, fallback: assetId))
+            if !FileManager.default.fileExists(atPath: dest.path) { try FileManager.default.copyItem(at: src, to: dest) }
+            NSWorkspace.shared.open(dest)
+        } catch { toast("Could not open “\(name)”: \(error.localizedDescription)") }
+    }
+
     func revealVault() { NSWorkspace.shared.activateFileViewerSelecting([vault.dir]) }
 
     // MARK: Export
@@ -655,7 +792,11 @@ final class AppModel: ObservableObject {
         return list
     }
 
-    var searchHits: [SearchHit] { Search.hits(librarySearch, in: library.liveDocs) }
+    var searchHits: [SearchHit] {
+        Search.hits(librarySearch, in: library.liveDocs) { [self] m in
+            (editors[m.id]?.controller.document() ?? ensureDoc(m.id)?.content).map(docPlainText)
+        }
+    }
 
     /// Open a search result and land on the first match: Find in Page is pre-filled, so every
     /// match is highlighted and the first one is scrolled into view.
@@ -713,6 +854,26 @@ final class EditorHostAdapter: EditorHost {
     func setGroupedPage(_ id: String, active: Bool) { MainActor.assumeIsolated { model.setGroupedPage(id, active: active, parent: docId) } }
     func pageDocument(docId: String) -> (title: String, content: Node)? { MainActor.assumeIsolated { model.pageDocument(docId) } }
     func link(toBlock blockId: String) -> URL? { AppModel.blockLink(doc: docId, block: blockId) }
+    func pickFile(_ completion: @escaping ((assetId: String, name: String, size: Int)?) -> Void) { MainActor.assumeIsolated { model.pickFile(completion) } }
+    func storeFile(at url: URL) -> (assetId: String, name: String, size: Int)? { MainActor.assumeIsolated { model.storeFile(at: url) } }
+    func openAttachment(assetId: String, name: String) { MainActor.assumeIsolated { model.openAttachment(assetId: assetId, name: name) } }
+    func moveTargets() -> [(id: String, title: String)] {
+        MainActor.assumeIsolated { model.moveTargets(excluding: docId).map { ($0.id, $0.title.isEmpty ? "Untitled" : $0.title) } }
+    }
+    func appendBlocks(_ content: Node, toDocument target: String) -> Bool {
+        MainActor.assumeIsolated {
+            let ok = model.appendBlocks(content, to: target)
+            if ok {
+                let n = content.content?.count ?? 0, t = model.library.docs[target]?.title ?? ""
+                model.toast("Moved \(n) block\(n == 1 ? "" : "s") to “\(t.isEmpty ? "Untitled" : t)”", action: "Open") { [model] in model.openView(.doc(target)) }
+            }
+            return ok
+        }
+    }
+    func removeBlocks(_ ids: [String], fromDocument target: String) {
+        MainActor.assumeIsolated { model.removeBlocks(ids, from: target, returningPagesTo: docId) }
+    }
     func editorDidChange() { MainActor.assumeIsolated { model.editorChanged(docId) } }
-    func editorStateDidChange() { MainActor.assumeIsolated { model.editorTick &+= 1 } }
+    /// Only panels that mirror the caret's formatting need live updates.
+    func editorStateDidChange() { MainActor.assumeIsolated { if model.panel == .format || model.panel == .info { model.editorTick &+= 1 } } }
 }

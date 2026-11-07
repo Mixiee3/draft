@@ -27,7 +27,7 @@ Legend: ✅ done · 🟡 partial · ⬜ not started
 
 ---
 
-## v0.1 — "First light" (current milestone, macOS) ✅
+## v0.1 — "First light" (macOS) ✅
 
 **Theme.** A runnable native vertical slice proving the architecture.
 
@@ -85,31 +85,71 @@ backups; `searchText` keeps original case (derived, rebuilt on save).
 child ids; 56 tests + smoke test (restart, trash, backups, search jump). **Not yet measured:**
 10,000-block keystroke latency — moved to v0.2.1 with the remaining items.
 
-## v0.2.1 — "Writer's desk, continued" (macOS)
+## v0.2.1 — "Writer's desk, continued" (macOS) ✅ shipped
 
 - ✅ Block context menu (turn into, duplicate ⌘D, copy link, group, move, delete) on the handle and in
   the text's context menu; `draft://` block links open the doc at the block.
 - ✅ Group selected blocks into a nested page (⌘G) / ungroup (⇧⌘G), ids preserved, undoable.
-  ⬜ Move blocks to another doc.
-- ⬜ Toggle list (`+ `), callout block, page break (`===`), strong/dotted/three-dot separators, `x ` task trigger.
-- ⬜ Cover crop/reposition (ratios, focal point) as data.
-- ⬜ Tab state across restarts (scroll + caret), back/forward stacks.
-- ⬜ Image block: resize, caption, alt text; file attachment block (QuickLook).
-- 🟡 Performance: block operations now replace only the changed paragraphs (undo selects just
-  those); ⬜ measured 10k-block keystroke budget.
+- ✅ Move blocks to another doc (block menu → Move to), undoable on both sides.
+- ✅ Undoing a group / ungrouping no longer leaves a page in Recently Deleted.
+- ✅ Toggle list (`+ `, ⌘↩), callout block, page break (`===`, honored when printing), strong/dotted/three-dot separators, `x ` task trigger.
+- ✅ Cover crop/reposition (Original, 16:9, 2:1, 3:1, 4:3, Free; keyboard nudging) stored as data.
+- ✅ Tab state across restarts (scroll + caret). ⬜ Back/forward stacks (moved to v0.3 with links).
+- ✅ Image block: resize (edge drag or S/M/L/Full), caption, alt text; file attachment block (picker, drag and drop, Finder paste; opens in its default app).
+- ✅ Performance pass with `scripts/perf.sh` (10,000 blocks, real app). Fixed: per-keystroke whole-window
+  SwiftUI re-renders and full-document conversions (131 → 7 ms p50), full ID scans on Return
+  (114 → 13 ms), block moves via direct paragraph cut/insert (382 → 14 ms), forced full layout on
+  height changes, and search of text beyond the 50,000-character index.
+  🟡 Known limits (TextKit 1 contiguous layout): keystrokes that change wrapping (~20 ms p95) and
+  toggles near the top of a 10k-block doc (~120 ms) relayout everything below → v0.8.
 
-**Gate.** 10,000-block document keystroke latency < 16 ms p95 on M1; every new block type
-round-trips through Markdown export and import.
+**Gate (as shipped).** Build, 77 tests, smoke test (relaunch: content, grouping, move-to, trash,
+backups, search jump, block link, ungroup, tab state), drag test and `scripts/perf.sh` all pass.
+Every new block type round-trips losslessly through the native format (tests) and exports to
+Markdown, with lossy cases reported (toggles → bullets, callouts → quotes, image sizes).
+**Deviation:** the planned < 16 ms p95 keystroke target at 10,000 blocks is not met (7 ms p50,
+~20 ms p95; budget in `perf.sh` is 16 ms p50 / 40 ms p95) — the remaining cost is TextKit 1
+contiguous relayout and moves to v0.8 with the layout-scaling work.
+
+**Data/format.** Additive only (schema stays 1): `toggleList`/`toggleItem(open)`, `callout(icon)`,
+`pageBreak`, `horizontalRule.variant`, `file`, `image.width/caption`, `cover.crop/ratio`,
+`Tab.scrollY/selStart/selLength`. Older builds keep unknown blocks as preserved placeholders.
+
+
 
 ## v0.3 — "Linked thinking" (macOS)
 
-- ⬜ `[[` / `@` link picker for documents and blocks; block references that survive moves.
-- ⬜ Backlinks pane; tags (`#tag`) with autocomplete, colors, results view, ignore rules (hex/numeric/custom).
-- ⬜ Daily notes; Calendar stream (Today, upcoming, Add Task, Create Daily Note); global Tasks view
-  (Today/Upcoming/Overdue/Completed) with due dates and reminders (local notifications).
+**Theme.** Notes that know about each other and about time: links, backlinks, tags, daily notes,
+a calendar, and tasks across documents. Everything is derived from block ids in a local index.
 
-**Prerequisites.** Persistent link/tag/task index derived from block ids. **Gate.** Renaming or moving
-a target never breaks a link; toggling a task in Tasks view updates the source block with one undo.
+**Implementation order** (each step builds on the previous one):
+
+| # | Feature | Status | Acceptance check |
+|---|---|---|---|
+| 1 | Local link/tag/task index (`index/` in the vault, rebuilt from documents, incremental on save) | ⬜ planned | Deleting `index/` and relaunching rebuilds the same results; a 10,000-block vault indexes in < 3 s; no document file is ever written by indexing |
+| 2 | Linked documents: `[[` and `@` picker (documents, nested pages, blocks), inline link chips, ⌘-click / click to open | ⬜ planned (block links via `draft://` ✅ in v0.2.1) | Type `[[Plan` → pick → chip shows the live title; renaming or moving the target keeps the link working; Markdown export writes relative links |
+| 3 | Back / forward history across links and nested pages (⌘[ / ⌘]) | ⬜ planned (Back ✅) | Follow three links, ⌘[ three times returns through each with scroll restored |
+| 4 | Backlinks pane (document rail segment) grouped by source with context snippet; jump to the linking block | ⬜ planned | A link added in doc A appears in B's backlinks within 1 s; clicking it opens A at the block |
+| 5 | Block references that survive moves (render referenced block text, update when it changes) | ⬜ planned | Move or group the referenced block — the reference still resolves; deleting it shows a recoverable "missing" state |
+| 6 | Tags `#tag`: inline chips, autocomplete, colors, tag results view in the rail, ignore rules (hex colors, numbers, custom) | ⬜ planned | `#ideas` autocompletes existing tags; `#ff0000` and `#1` are ignored by default (S17); tag view lists every block with the tag |
+| 7 | Daily notes: one page per date in a "Daily Notes" folder, today via ⌘⇧D, previous/next day, optional template; "Show Daily Notes" toggle in All Docs (S25) | ⬜ planned | Opening today twice never creates two notes; dates follow the week-start setting |
+| 8 | Calendar stream (S33): day cards (Today highlighted, upcoming dimmed), Add Task, Create Daily Note, filters Daily Notes / Tasks (/ Events with optional, permission-gated system calendar read) | ⬜ planned | Add Task on a future day creates a task with that due date in the daily note; filters persist |
+| 9 | Tasks across documents: due dates (`@today`, `@tomorrow`, date picker), Inbox / Today / Upcoming / Overdue / Completed views, source context, completion with one undo | ⬜ planned (per-document Tasks pane ✅) | Completing a task in the Tasks view updates the source block; ⌘Z reverts both; overdue tasks show after midnight |
+| 10 | Reminders as local notifications (opt-in) | ⬜ planned | A task due at 09:00 posts one notification; turning reminders off cancels pending ones |
+| 11 | Move blocks to a new document / to today's daily note (S42) | ⬜ planned (Move to existing ✅) | ⌥⌘N moves the selection into a new doc and leaves a page card |
+| 12 | Search options: exact "phrase", -exclusion, regex (S6, B§H); Quick Open includes blocks of the current Space | ⬜ planned (Space Search ✅) | `"quiet place" -draft` returns only matching docs; invalid regex shows an inline error |
+| 13 | Date links / mentions of dates (Advanced settings: badge or text, S12) | ⬜ planned | `@next monday` becomes a date chip that opens that daily note |
+
+**Prerequisites.** Stable block ids (✅), block links (✅), the index (step 1), week-start / start-of-day
+settings (S12, moved here from v0.6).
+**Data risk.** New inline node for links and tags (`docLink`, `tag`) and task attributes (`due`,
+`priority`) — additive; older builds keep them as text with a preserved mark. The index is derived
+data and never the source of truth.
+**Release gate.** Renaming or moving a target never breaks a link; toggling a task in Tasks view
+updates the source block with one undo; tags, backlinks and tasks survive relaunch and index rebuild;
+perf budget holds with links in a 10,000-block document.
+**Out of scope (why).** Mentions of people and comments need collaboration (v2.0); Events editing
+needs a calendar provider (later, optional); recurring tasks wait for usage feedback (v0.5+).
 
 ## v0.4 — "Style studio" (macOS)
 
@@ -133,12 +173,17 @@ collection scrolls at 60 fps; a Kanban drag is one undoable record update.
 
 ## v0.6 — "Every window" (macOS + iPad-ready core)
 
+(Week start / start-of-day settings moved to v0.3 for daily notes and the calendar.)
+
 - ⬜ VoiceOver audit and fixes; full keyboard path for every panel; automated accessibility checks.
 - ⬜ Localization (String Catalogs), two non-English locales; spelling language setting.
 - ⬜ Keyboard layout (AZERTY/QWERTZ/Dvorak) and IME composition test matrix.
 - ⬜ Remaining settings: shortcuts sheet, week start, sidebar customization; Focus mode; Present mode.
 
 ## v0.8 — "Trust" (macOS)
+
+- ⬜ Layout scaling for very long documents: bounded relayout (e.g. TextKit 2 or chunked layout) so
+  wrapping changes and toggles stay under 16 ms at 10,000 blocks; a separate search index.
 
 - ⬜ Version history UI with diffs; vault integrity checker; orphan-asset GC (with confirmation).
 - ⬜ Optional encryption at rest; performance budgets enforced in CI.
@@ -186,10 +231,6 @@ Assistant (opt-in, bring-your-own or local model, never required); local API/MCP
 
 ## Next smallest coherent slice (prioritized by user value)
 
-*(updated after v0.2)*
-
-1. **Callout, toggle list and page-break blocks** with their Markdown triggers (+ the remaining
-   separator variants and the `x ` task trigger).
-2. **Move blocks to another document** (block menu → Move to…), reusing the group-into-page path.
-3. **Performance pass**: incremental moves and a measured 10k-block budget.
-4. **Tab state across restarts** (scroll and caret per tab).
+*(updated after v0.2.1)* — start v0.3 with steps 1–2: the local index and `[[` linked documents,
+then backlinks (4) and back/forward (3). Daily notes (7) and the Tasks view (9) follow, since they
+share the date model.

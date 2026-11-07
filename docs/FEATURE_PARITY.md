@@ -12,7 +12,7 @@ app or screenshots) · `verified` (covered by `swift test` or `scripts/smoke.sh`
 
 Platform: all statuses are for the native macOS app. Windows: see §22.
 
-Last updated: v0.2.1 in progress (native macOS) — 2026‑11‑07.
+Last updated: v0.2.1 shipped (native macOS) — 2026‑11‑07.
 
 ## 1. Editor primitives and keyboard
 
@@ -24,23 +24,24 @@ Last updated: v0.2.1 in progress (native macOS) — 2026‑11‑07.
 | E4 | Backspace rules | Merge into previous; list item un-lists/outdents first | B§5.3 | verified | E1 | 0.1 | `testBackspaceAtStartOfBullet…`, `testBackspaceMergeKeepsPreviousBlock` |
 | E5 | Soft break | Shift+Return | B§5.3 | working | — | 0.1 | Shift+Return inserts a line break exported as `hardBreak` |
 | E6 | Undo / redo | Formatting, moves, deletes | B§8 | verified | — | 0.1 | `testToggleBold…Undo`, `testFindReplaceAllIsOneUndo` |
-| E7 | Markdown block triggers | `#`…`####`, `-`/`*`, `1.`, `[]`/`x `, `[x]`, `>`/`|`, `+ ` toggle, ``` | B§G | partial | — | 0.1→0.2 | All but `x ` and `+ ` work; `# ` undo restores literal (`testMarkdownHeadingTrigger…`) |
-| E8 | Separator triggers | `---` regular; `=--`, `.--`, `..-`, `===` page break | B§G | partial | — | 0.1→0.2 | `---` → separator (`testDividerTrigger…`); variants missing |
+| E7 | Markdown block triggers | `#`…`####`, `-`/`*`, `1.`, `[]`/`x `, `[x]`, `>`/`|`, `+ ` toggle, ``` | B§G | verified | — | 0.2.1 | All listed triggers convert; undo restores the literal text (`testMarkdownHeadingTrigger…`, `testXTriggerMakesTask`, toggle test) |
+| E8 | Separator triggers | `---` regular; `=--` strong, `.--` dotted, `..-` three-dot, `===` page break | B§G | verified | — | 0.2.1 | Each trigger creates the matching separator or page break (`testSeparatorVariantsAndPageBreak`); page breaks start a new page when printing / saving PDF |
 | E9 | Inline Markdown | `*i*` `**b**` `~~s~~` `==h==` `` `c` `` | B§G | verified | — | 0.1 | `testInlineMarkdownBold`; typing after the delimiter is plain |
 | E10 | Equations `$$x$$` | Inline math | B§G, S06 | missing | renderer | later | `$$a^2$$` renders as formula and exports as `$$…$$` |
 | E11 | Slash menu | Filter, arrows, Return, Esc | B§5.3 | verified | E-cmds | 0.1 | `/check` + Return → checklist (`testSlashMenuInsertsChecklist`) |
-| E12 | `+` insert menu | Image, File, Code, Formula, Mermaid, Whiteboard, Table, Collection, Page Break | S34 | partial | — | 0.1→0.5 | Image/Page/Card/Separator/Code/Checklist/Quote work; others listed disabled with version |
+| E12 | `+` insert menu | Image, File, Code, Formula, Mermaid, Whiteboard, Table, Collection, Page Break | S34 | partial | — | 0.2.1→0.5 | Image, File, Page, Card, Separator, Page Break, Code, Checklist, Quote work; Table/Collection (v0.5), Formula/Whiteboard (later) listed disabled with version |
 | E13 | Indent / outdent | Tab / Shift-Tab | B§8 | verified | — | 0.1 | `testTaskTriggerTabNestingAndToggle` |
 | E14 | Block handle + drag reorder | Gutter handle, insertion line | B§5.3, S01 | verified | E15 | 0.2 | ⋮⋮ handle on hover; drag shows insertion line, autoscrolls; drop moves selected blocks (`testDragDropBoundaryMapping`); one undo |
 | E15 | Block selection | Distinct from text selection | B§5.3 | verified | — | 0.2 | Esc selects block, ⇧↑/↓ extend, ↑/↓ move, Delete removes, typing/Return exits; ⌘C copies blocks (`testEscSelectsBlock…`) |
-| E16 | Group into page ⌘G / ungroup ⇧⌘G | Tree transform | B§B, S42 | verified | E15 | 0.2.1 | First block becomes the page title and the card keeps its id; other blocks keep ids, marks, checkboxes; nested pages move along; undo/redo trash/restore the page; ungroup restores the original blocks exactly (`GroupTests`, smoke `pageTitle`/`ungroupedTrashed`) |
+| E16 | Group into page ⌘G / ungroup ⇧⌘G | Tree transform | B§B, S42 | verified | E15 | 0.2.1 | First block becomes the page title and the card keeps its id; other blocks keep ids, marks, checkboxes; nested pages move along; undo/ungroup set the page aside (not into Recently Deleted) and redo restores it; ungroup restores the original blocks exactly (`GroupTests`, smoke `pageTitle`/`ungroupedGone`) |
 | E23 | Block context menu | Turn into, duplicate, copy link, group, move, delete | S42, B§5.4 | verified | E15 | 0.2.1 | Right-click/⌃-click on the ⋮⋮ handle or Block submenu in the text menu; items run shared commands (`testDuplicateAndCopyLinkAndMenu`) |
 | E24 | Block links `draft://open?doc=…&block=…` | Copy link to block | B§5.6 | verified | E2 | 0.2.1 | Copy Link to Block; opening the link (from Draft or another app) opens the doc at that block (smoke `linkOpened`) |
+| E25 | Move blocks to another document | Move to new Document(s) / Move to Daily Note | S42 | verified | E15 | 0.2.1 | Block menu → Move to (15 most recent docs); blocks keep ids and marks; nested pages are re-parented; undo takes them back from the target; survives relaunch (`testMoveBlocksToAnotherDocument…`, smoke `movedTo`) — “to new document” and “to daily note” are v0.3 |
 | E17 | Move up/down/top/bottom | Shortcut actions | S42 | verified | E15 | 0.2 | ⌥⌘↑/↓, ⌃⌥⌘↑/↓; ids, marks, task state preserved; one undo each (`testMoveUpDown…`) |
 | E18 | Paste | Rich, plain, Markdown | B§5.3 | verified | — | 0.2 | Multi-line text → one block per line, Markdown recognized; RTF/HTML → headings, lists, bold/italic/underline/strike/code/links; Draft→Draft keeps blocks+marks with new ids; surrounding block keeps id; one undo (`PasteTests`, `MarkdownImportTests`) |
 | E19 | Multi-block text selection | Beta in reference | S12 | working | — | 0.1 | Drag across paragraphs selects text in all (native TextKit) |
 | E20 | IME / non-US layouts | Fixes documented | B§7, B§8 | partial | — | 0.6 | NSTextView composition works; layout matrix untested |
-| E21 | 10k-block performance | Quality gate | B§11 | missing | — | 0.2 | Synthetic 10k-block doc; keystroke < 16 ms p95 |
+| E21 | 10k-block performance | Quality gate | B§11 | partial | — | 0.2.1→0.8 | `scripts/perf.sh` (10,000 blocks, real app): keystroke 7 ms p50 / ~20 ms p95, Return ~13 ms, block move ~14 ms, save ~0.3 s, open ~2.1 s, search past the index limit ~0.15 s. Limits: a keystroke that changes line wrapping and a toggle near the top (~120 ms) relayout everything below (TextKit 1 contiguous layout; non-contiguous layout mis-measures collapsed toggles) |
 | E22 | Spellcheck | Native | S11 | working | — | 0.1 | Continuous spellcheck on in editor |
 
 ## 2. Inline and block formatting
@@ -63,8 +64,8 @@ Last updated: v0.2.1 in progress (native macOS) — 2026‑11‑07.
 | F14 | `Aa` marks/lists/indent/align | Disabled when not applicable | S05 | working | — | 0.1 | Buttons use command `isEnabled` |
 | F15 | Decoration Focus / Block | Bar or filled block | S05 | working | — | 0.1 | Focus draws accent bar; Block fills background |
 | F16 | Block color | Swatch grid | S05 | working | F15 | 0.1 | Stored as `blockColor` attr, drawn by layout manager |
-| F17 | Toggle list | `+ ` | B§G, S05 | missing | — | 0.2 | Collapses children; listed disabled "planned v0.2" |
-| F18 | Callout | Block | B§7 | partial | — | 0.2 | Achievable with Block decoration + color; dedicated node missing |
+| F17 | Toggle list | `+ ` | B§G, S05 | verified | — | 0.2.1 | ▶/▼ marker (click or ⌘↩) collapses children, which are hidden from layout but kept in the file (`open` attr); caret skips hidden text; undoable; survives reload (`testToggleCollapse…`) |
+| F18 | Callout | Block | B§7 | verified | — | 0.2.1 | Slash / `Aa` → Callout; icon + tinted box spanning its paragraphs; Return continues, empty Return exits; block color applies; exports as a quote with the icon (`testCalloutContinuesExits…`) |
 | F19 | Code block | ``` | B§7 | working | — | 0.1 | Monospace, background; Return adds lines, Return on empty last line exits; no syntax highlighting |
 | F20 | Per-block font | Format panel bottom | S05 | missing | — | 0.4 | — |
 
@@ -94,7 +95,7 @@ Last updated: v0.2.1 in progress (native macOS) — 2026‑11‑07.
 | T7 | Backdrop image, shuffle, upload, blur, Immersive/Faded | S04 | S04 | partial | assets | 0.1→0.4 | Original vector scenes, Shuffle, Upload, Blur, Immersive/Faded work; photo search missing |
 | T8 | Page color and text color independent | Separate layers | B§C | working | — | 0.1 | Changing one leaves the other |
 | T9 | Contrast warning / adjust | Warn + auto adjust | B§C | partial | T8 | 0.4 | Warning < 4.5:1 with one-click readable color; explained auto-adjust missing |
-| T10 | Cover image | Upload, crop, reposition, remove | B§C | partial | assets | 0.2 | Upload + remove; crop/focal UI missing (focalY stored) |
+| T10 | Cover image | Upload, crop ratios, reposition, remove | B§C | verified | assets | 0.2.1 | Upload; hover pencil/X (also Style → Crop…/Remove); crop sheet with Original, 16:9, 2:1, 3:1, 4:3, Free, drag to move, corner to resize, arrow keys; the crop is stored as a rect + ratio, never baked into the image (`CoverCropTests`; visual check at 1440 and 720 pt) |
 | T11 | Separator styles | Line, tape, doodle | S02, B§C | working | — | 0.1 | Line / Dots / Tape / Wave (original artwork), document-wide |
 | T12 | Fonts System/Serif/Mono/Rounded | Families | S02, B§C | working | — | 0.1 | System font designs; document-only |
 | T13 | Shell tinted by doc style | Appearance setting | S10 | working | — | 0.1 | Rail/tabs tint (`document-ember.png`), toggle in Settings and Style panel |
@@ -110,8 +111,8 @@ Last updated: v0.2.1 in progress (native macOS) — 2026‑11‑07.
 | N3 | Rail mode menu | Folders / Document; Focus mode | S08 | partial | — | 0.6 | Folders/Document switch works; Focus mode missing |
 | N4 | Collapse rail | — | S01 | working | — | 0.1 | ⌃⌘S; persisted |
 | N5 | Tab strip | Home + tabs, close, + | S01, S21 | verified | — | 0.1 | Open doc tab survives restart (smoke `tabOpen`) |
-| N6 | Tab state restore | Scroll/caret per tab | B§5.5 | partial | — | 0.2 | Editors stay alive per open tab (scroll, caret, undo kept while running); not across restart |
-| N7 | Back / forward | — | S01 | partial | — | 0.2 | Back within tab; forward missing |
+| N6 | Tab state restore | Scroll/caret per tab | B§5.5 | verified | — | 0.2.1 | Each document tab stores scroll offset and selection (captured on tab switch and quit); restored once when the tab reappears after relaunch (smoke `tabState`) |
+| N7 | Back / forward | Back button in doc | S01 | partial | L1 | 0.3 | Back returns within the tab; forward and ⌘[/⌘] history across links → v0.3 step 3 |
 | N8 | Spaces | Switcher, per-space tree | B§4, S13 | partial | — | 0.5 | One Space, renamable |
 | N9 | Folders | Create/rename/nest/delete | S21, S30 | partial | — | 0.2 | Create, rename, remove (docs → Unsorted); nesting missing |
 | N10 | Move doc to folder | Info → Move to | S41 | working | N9 | 0.1 | Info panel and card context menu |
@@ -124,12 +125,12 @@ Last updated: v0.2.1 in progress (native macOS) — 2026‑11‑07.
 
 | ID | Capability | Reference behavior | Evidence | Status | Deps | Target | Acceptance check |
 |---|---|---|---|---|---|---|---|
-| S1 | Library inline search | Expands in header | S26 | working | — | 0.1 | `library-search.png`; all terms must match title or text; title matches first |
+| S1 | Library inline search | Expands in header | S26 | verified | — | 0.2 | All terms, case/diacritic-insensitive; documents longer than the 50,000-character index are searched in full (`testLongDocumentsAreSearchedPastTheIndexLimit`, perf `searchHits`) |
 | S2 | Quick Open ⌘O | By name; create new | B§H | working | — | 0.1 | ↑/↓/Return; "Create …" row |
 | S3 | Space Search with counts + jump | One result per doc | B§H | verified | — | 0.2 | All terms, case/diacritic-insensitive, title matches first, match-count badge, highlighted snippet; Return/click opens the doc with Find in Page filled and the first match scrolled into view (`SearchTests`, smoke `jumpVisible`) |
 | S4 | Find in Page ⌘F | Rail pane, next/prev | S35, B§H | working | — | 0.1 | Highlights all, current stronger; ⌘G/⇧⌘G |
 | S5 | Replace | — | B§H | verified | S4 | 0.1 | Replace all is one undo (test) |
-| S6 | Phrase / exclusion / regex | macOS options | B§H | missing | S3 | 0.3 | — |
+| S6 | Phrase / exclusion / regex | macOS options | B§H | missing | S3 | 0.3 | `"quiet place" -draft` returns only matching docs; invalid regex shows an inline error |
 
 ## 7. Tasks, calendar, daily notes, reminders
 
@@ -137,20 +138,20 @@ Last updated: v0.2.1 in progress (native macOS) — 2026‑11‑07.
 |---|---|---|---|---|---|---|---|
 | K1 | Checklist block | `[] ` | B§G | verified | — | 0.1 | Trigger + click toggle (`testTaskTrigger…`) and smoke test |
 | K2 | Document Tasks pane | Tasks in doc | S18 | working | K1 | 0.1 | Lists, counts, toggles source block |
-| K3 | Global Tasks view | Today/Upcoming… | B§5.7 | missing | index | 0.3 | — |
-| K4 | Due dates / reminders | — | B§5.7 | missing | K3 | 0.3 | — |
-| K5 | Daily notes | One page per date | B§5.7, S33 | missing | — | 0.3 | — |
-| K6 | Calendar stream | Day cards, filters | S33 | missing | K5 | 0.3 | — |
+| K3 | Global Tasks view | Today/Upcoming/etc. | B§5.7 | missing | index | 0.3 | Inbox/Today/Upcoming/Overdue/Completed; completing a task updates its source block with one undo |
+| K4 | Due dates / reminders | Date on task | B§5.7 | missing | K3 | 0.3 | `@tomorrow` sets a due date; opt-in local notification fires once at the due time |
+| K5 | Daily notes | One page per date | B§5.7, S33 | missing | index | 0.3 | ⌘⇧D opens today; opening twice never creates two notes; previous/next day |
+| K6 | Calendar stream | Day cards, Add Task, Create Daily Note, filters | S33 | missing | K5 | 0.3 | Today highlighted; Add Task on a future day creates a dated task; filters persist |
 | K7 | Completed-task appearance | Setting | S12 | working | — | 0.1 | Strikethrough / Dimmed / Unchanged |
 
 ## 8. Tags, links, backlinks
 
 | ID | Capability | Reference behavior | Evidence | Status | Deps | Target | Acceptance check |
 |---|---|---|---|---|---|---|---|
-| G1 | Tags `#tag` | Inline, autocomplete | B§5.6, S17 | missing | index | 0.3 | Rail shows "Tags arrive in v0.3" |
-| G2 | Tag ignore rules | Hex, numbers, custom | S17 | missing | G1 | 0.3 | — |
-| G3 | Backlinks | Linking pages | B§5.6 | missing | L1 | 0.3 | — |
-| L1 | `[[` / `@` doc & block links | Picker | B§G | missing | E2 | 0.3 | — |
+| G1 | Tags `#tag` | Inline, autocomplete | B§5.6, S17 | missing | index | 0.3 | `#ideas` autocompletes; tag view lists every tagged block |
+| G2 | Tag ignore rules (hex, numeric, custom) | Settings | S17 | missing | G1 | 0.3 | `#ff0000` and `#1` ignored by default; custom rules apply on reindex |
+| G3 | Backlinks | Pages linking here | B§5.6 | missing | L1 | 0.3 | A new link appears in the target's backlinks within 1 s; click opens the source at the block |
+| L1 | Doc/block links (`[[`, `@`) | Link picker | B§G | partial | E2 | 0.3 | `draft://` block links work (E24); `[[`/`@` picker with live titles that survive rename/move → v0.3 step 2 |
 
 ## 9. Tables and collections
 
@@ -175,8 +176,9 @@ Last updated: v0.2.1 in progress (native macOS) — 2026‑11‑07.
 |---|---|---|---|---|---|---|---|
 | A1 | Image block | Insert/upload | S34 | working | vault | 0.1 | Picked/pasted image copied to `assets/<sha>`; content addressing verified (`testAssetsAreContentAddressed`) |
 | A2 | Paste images | — | B§5.3 | working | A1 | 0.1 | PNG/TIFF on pasteboard → image block |
-| A3 | File attachments | — | S34 | missing | vault | 0.2 | Listed disabled |
-| A4 | Attachments pane | Images, links, files | S19 | working | A1 | 0.1 | Thumbnails and links; click jumps |
+| A3 | File attachment block | File | S34, S19 | verified | vault | 0.2.1 | Insert → File, drag a file onto the page, or paste a file copied in Finder; stored once by content hash with its original name and size; click opens it in its default app; listed in Attachments; exported as a link with the file in `assets/` (`testFilesInsertOpenPasteAndExport`, `FileAssetTests`) |
+| A7 | Image size, caption, alt text | Resize, caption | B§7 | verified | A1 | 0.2.1 | Drag the right edge or use the image bar (S/M/L/Full) to set width as a fraction of the text width; caption shown under the image and exported; alt text is the VoiceOver label and the Markdown alt; each change is one undo step (`testImageBarSizeCaptionAltAndUndo`, `testDragResize…`) |
+| A4 | Attachments pane | Images, links, files listed | S19 | working | A1 | 0.2.1 | Lists images (thumbnail), links and files; click jumps to the block |
 | A5 | Link previews | Rich link | B§H | missing | opt-in network | 0.4 | — |
 | A6 | Whiteboard / Mermaid / Formula / photo search | Insert menu | S34 | missing | — | later | Listed disabled with version |
 
@@ -247,8 +249,8 @@ Last updated: v0.2.1 in progress (native macOS) — 2026‑11‑07.
 
 | ID | Capability | Evidence | Status | Target | Acceptance check |
 |---|---|---|---|---|---|
-| Y11 | Labels on icon-only controls | B§10 | working | 0.1 | `accessibilityLabel` on every icon button; toolbar exposes button children |
-| Y12 | Visible keyboard focus | B§10 | partial | 0.6 | Native controls + toolbar ring; SwiftUI custom chips need audit |
+| Y11 | Accessible labels on icon-only controls | B§10 | working | 0.2.1 | Draft-owned AppKit controls (image bar, cover buttons, block handle, toolbar) have names (a11y automation); `Aa` icon chips speak their command names; attachment cells carry Image/File/Page labels with alt text |
+| Y12 | Visible keyboard focus and keyboard paths | B§10 | partial | 0.6 | ⌥F10 formatting bar, Esc block mode, Tab into the image bar (a11y automation `tabIntoImageBar`), ⌘↩ toggles, crop sheet arrow keys; full audit of SwiftUI focus rings pending |
 | Y13 | Menus: arrows, Return, Esc | B§5.1 | working | 0.1 | Slash menu, Quick Open, palette |
 | Y14 | Contrast over backdrops | prompt | working | 0.1 | Built-in styles ≥ 7:1 text/page (test); controls on opaque pills |
 | Y15 | VoiceOver audit | B§12 | missing | 0.6 | Recorded VoiceOver pass |

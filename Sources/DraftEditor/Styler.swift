@@ -80,9 +80,10 @@ public enum Styler {
         var tail: CGFloat = 0
         if b.kind.isList { indent = EditorTheme.listIndent * CGFloat(b.indent + 1) }
         if b.kind == .quote { indent = 20 }
+        if b.kind == .callout { indent = 42; tail = -14; p.paragraphSpacingBefore = 6 }
         if b.kind == .code { indent = 16; tail = -16; p.paragraphSpacingBefore = 4; p.paragraphSpacing = 12 }
         if b.decoration == "focus" { indent += 16 }
-        if b.decoration == "block" || (b.blockColor != nil && b.kind != .code) { indent += 12; tail = -12 }
+        if b.kind != .callout && (b.decoration == "block" || (b.blockColor != nil && b.kind != .code)) { indent += 12; tail = -12 }
         p.firstLineHeadIndent = indent
         p.headIndent = indent
         p.tailIndent = tail

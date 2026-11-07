@@ -26,4 +26,12 @@ final class SearchTests: XCTestCase {
         XCTAssertTrue(h.snippet.hasPrefix("…") && h.snippet.hasSuffix("…"))
         XCTAssertEqual(h.snippet[h.snippetMatch!], "needle")
     }
+
+    func testLongDocumentsAreSearchedPastTheIndexLimit() {
+        let long = String(repeating: "filler ", count: Search.indexLimit / 7 + 10)
+        var m = meta("big", "Big", long)
+        m.searchText = String(m.searchText.prefix(Search.indexLimit))
+        XCTAssertTrue(Search.hits("needle", in: [m]).isEmpty)
+        XCTAssertEqual(Search.hits("needle", in: [m], fullText: { _ in long + " needle" }).first?.count, 1)
+    }
 }

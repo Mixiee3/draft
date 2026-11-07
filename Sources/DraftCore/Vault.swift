@@ -35,7 +35,7 @@ public final class Vault: @unchecked Sendable {
         return dir.appendingPathComponent("docs/\(id).json")
     }
     public func assetURL(_ name: String) throws -> URL {
-        guard name.range(of: "^[a-f0-9]{16,64}\\.[a-z0-9]{2,5}$", options: .regularExpression) != nil else { throw MigrationError(message: "Invalid asset id") }
+        guard name.range(of: "^[a-f0-9]{16,64}\\.[a-z0-9]{1,10}$", options: .regularExpression) != nil else { throw MigrationError(message: "Invalid asset id") }
         return dir.appendingPathComponent("assets/\(name)")
     }
 
@@ -116,8 +116,10 @@ public final class Vault: @unchecked Sendable {
     }
 
     /// Content-addressed: identical images are stored once. Returns the asset id (file name).
-    public func putAsset(_ data: Data, ext: String) throws -> String {
+    public func putAsset(_ data: Data, ext rawExt: String) throws -> String {
         try guardWritable()
+        let cleaned = rawExt.lowercased().filter { $0.isASCII && ($0.isLetter || $0.isNumber) }
+        let ext = cleaned.isEmpty ? "bin" : String(cleaned.prefix(10))
         let hash = SHA256.hash(data: data).map { String(format: "%02x", $0) }.joined().prefix(32)
         let name = "\(hash).\(ext.lowercased())"
         let url = try assetURL(name)

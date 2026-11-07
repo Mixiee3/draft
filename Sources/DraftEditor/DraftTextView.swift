@@ -25,6 +25,7 @@ public final class DraftTextView: NSTextView {
     public override func insertTab(_ sender: Any?) {
         guard let c = controller else { return super.insertTab(sender) }
         if c.slash.isOpen { c.slash.choose(); return }
+        if c.imageBar.isVisible, c.selectedImageIndex != nil { window?.makeFirstResponder(c.imageBar.size); return } // Esc returns
         if c.currentBlock.kind.isList { c.indent(); return }
         super.insertTab(sender)
     }
@@ -83,6 +84,9 @@ public final class DraftTextView: NSTextView {
         if let box = c.layout.checkboxRect(forParagraphAt: pr), box.insetBy(dx: -5, dy: -5).contains(cp) {
             c.toggleTask(at: pr); return
         }
+        if let box = c.layout.toggleRect(forParagraphAt: pr), box.insetBy(dx: -5, dy: -5).contains(cp) {
+            c.toggleOpen(at: pr); return
+        }
         // A click below the last line of an empty trailing task still toggles it.
         if c.trailing.kind == .task, let box = c.layout.checkboxRect(forParagraphAt: NSRange(location: c.storage.length, length: 0)), box.insetBy(dx: -5, dy: -5).contains(cp) {
             c.toggleTask(at: NSRange(location: c.storage.length, length: 0)); return
@@ -102,6 +106,17 @@ public final class DraftTextView: NSTextView {
         menu.insertItem(block, at: 0)
         menu.insertItem(.separator(), at: 1)
         return menu
+    }
+
+    /// Printing / Save as PDF: start a new page at every page-break block.
+    public override func adjustPageHeightNew(_ newBottom: UnsafeMutablePointer<CGFloat>, top oldTop: CGFloat, bottom proposedBottom: CGFloat, limit bottomLimit: CGFloat) {
+        super.adjustPageHeightNew(newBottom, top: oldTop, bottom: proposedBottom, limit: bottomLimit)
+        guard let c = controller else { return }
+        c.storage.enumerateAttribute(.attachment, in: NSRange(location: 0, length: c.storage.length)) { v, r, stop in
+            guard let a = v as? BlockAttachment, a.node.type == "pageBreak" else { return }
+            let y = c.layout.boundingRect(forGlyphRange: c.layout.glyphRange(forCharacterRange: r, actualCharacterRange: nil), in: c.container).minY + textContainerOrigin.y
+            if y > oldTop + 1, y < newBottom.pointee { newBottom.pointee = y; stop.pointee = true }
+        }
     }
 
     public override func resetCursorRects() {
@@ -132,7 +147,7 @@ public final class DraftTextView: NSTextView {
         return super.writeSelection(to: pboard, type: type)
     }
 
-    public override var readablePasteboardTypes: [NSPasteboard.PasteboardType] { [EditorController.pasteboardType, .rtf, .html, .png, .tiff, .string] }
+    public override var readablePasteboardTypes: [NSPasteboard.PasteboardType] { [EditorController.pasteboardType, .fileURL, .rtf, .html, .png, .tiff, .string] }
 
     public override func readSelection(from pboard: NSPasteboard, type: NSPasteboard.PasteboardType) -> Bool {
         guard let c = controller else { return super.readSelection(from: pboard, type: type) }
@@ -143,6 +158,8 @@ public final class DraftTextView: NSTextView {
             if let d = pboard.data(forType: .png) { return c.pasteImage(d, ext: "png") }
         case .tiff:
             if let d = pboard.data(forType: .tiff), let rep = NSBitmapImageRep(data: d), let png = rep.representation(using: .png, properties: [:]) { return c.pasteImage(png, ext: "png") }
+        case .fileURL:
+            if let urls = pboard.readObjects(forClasses: [NSURL.self], options: [.urlReadingFileURLsOnly: true]) as? [URL], !urls.isEmpty { return c.insertFiles(urls) }
         case .rtf, .html:
             if let d = pboard.data(forType: type),
                let s = try? NSAttributedString(data: d, options: [.documentType: type == .rtf ? NSAttributedString.DocumentType.rtf : .html, .characterEncoding: String.Encoding.utf8.rawValue], documentAttributes: nil) {
@@ -162,6 +179,18 @@ public final class DraftTextView: NSTextView {
             return t
         }
         return super.preferredPasteboardType(from: availableTypes, restrictedToTypesFrom: allowedTypes)
+    }
+
+    public override var acceptableDragTypes: [NSPasteboard.PasteboardType] { super.acceptableDragTypes + [.fileURL] }
+
+    public override func performDragOperation(_ sender: NSDraggingInfo) -> Bool {
+        if let c = controller, let urls = sender.draggingPasteboard.readObjects(forClasses: [NSURL.self], options: [.urlReadingFileURLsOnly: true]) as? [URL], !urls.isEmpty {
+            let p = convert(sender.draggingLocation, from: nil)
+            let idx = c.layout.characterIndex(for: NSPoint(x: p.x - textContainerOrigin.x, y: p.y - textContainerOrigin.y), in: c.container, fractionOfDistanceBetweenInsertionPoints: nil)
+            setSelectedRange(NSRange(location: idx, length: 0))
+            return c.insertFiles(urls)
+        }
+        return super.performDragOperation(sender)
     }
 
     public override func paste(_ sender: Any?) {

@@ -1,5 +1,9 @@
 # Draft vault format (schema 1)
 
+Schema 1 grows only by **additive** node types and optional attributes. A Draft that does not know
+a node type keeps it verbatim and shows it as a preserved placeholder, so older builds never lose
+newer content; the schema number changes only for changes that need a migration.
+
 This is the contract every Draft implementation (macOS today, Windows later) reads and writes.
 The reference implementation is `Sources/DraftCore`. All JSON is UTF‑8; timestamps are Unix epoch
 **milliseconds**; ids are `[A-Za-z0-9_-]{1,64}`.
@@ -8,7 +12,7 @@ The reference implementation is `Sources/DraftCore`. All JSON is UTF‑8; timest
 <vault>/
   library.json            index (schemaVersion, space, folders, docs, settings, tabs)
   docs/<docId>.json       one document
-  assets/<sha256-32>.<ext> images and covers, content-addressed (png, jpg, gif, webp, heic, tiff)
+  assets/<sha256-32>.<ext> images, covers and attached files, content-addressed (extension: 1–10 lowercase letters/digits)
   backups/                copies written before any migration (never read by the app)
 ```
 
@@ -39,6 +43,9 @@ The reference implementation is `Sources/DraftCore`. All JSON is UTF‑8; timest
 }
 ```
 
+Document tabs may carry `scrollY`, `selStart`, `selLength` (where the user was; optional). `DocMeta.deletedAt`
+marks a document in Recently Deleted.
+
 `excerpt`, `searchText`, `words`, `blocks`, `tint` are **derived** and may be rebuilt from the
 document files at any time. `parentDocId` marks a nested page.
 
@@ -47,7 +54,7 @@ document files at any time. `parentDocId` marks a nested page.
 ```json
 {
   "schemaVersion": 1, "id": "d_…", "title": "Welcome", "createdAt": 0, "updatedAt": 0,
-  "appearance": { "styleId": "tidepool", "overrides": { "pageColor": "#ffffff" }, "cover": { "assetId": "….png", "focalY": 0.5 } },
+  "appearance": { "styleId": "tidepool", "overrides": { "pageColor": "#ffffff" }, "cover": { "assetId": "….png", "focalY": 0.5, "crop": { "x": 0, "y": 0.1, "w": 1, "h": 0.5 }, "ratio": "2:1" } },
   "content": { "type": "doc", "content": [ … nodes … ] }
 }
 ```
@@ -62,14 +69,23 @@ document files at any time. `parentDocId` marks a nested page.
 | `codeBlock` | `id`, `language?` | one text node, `\n` line breaks |
 | `bulletList` / `orderedList` (`start`) / `taskList` | `id` | `listItem` / `taskItem` |
 | `listItem` / `taskItem` (`checked`) | `id`, `blockColor?`, `decoration?` | paragraph, then paragraphs or nested lists |
-| `horizontalRule` | `id` | — (look comes from the document's separator style) |
-| `image` | `id`, `assetId` or `src`, `alt` | — |
+| `horizontalRule` | `id`, `variant?` (`strong` / `dotted` / `dots`; absent = the document's separator style) | — |
+| `pageBreak` | `id` | — (starts a new page when printing) |
+| `callout` | `id`, `icon` (emoji, default 💡) | paragraphs; block color comes from the paragraphs' `blockColor` |
+| `toggleList` | `id` | `toggleItem` |
+| `toggleItem` | `id`, `open` (bool; collapsed children are hidden, never dropped) | paragraph, then paragraphs or nested lists |
+| `image` | `id`, `assetId` or `src`, `alt`, `caption?`, `width?` (fraction 0.15–1 of the text width; absent = natural size up to full width) | — |
+| `file` | `id`, `assetId` (content hash + original extension), `name` (original file name), `size` (bytes) | — |
 | `pageCard` | `id`, `docId`, `title` (cached), `presentation` (`card`/`page`) | — |
 | `text` | — | `text`, `marks?` |
 | `hardBreak` | — | — |
 
 Marks: `bold`, `italic`, `underline`, `strike`, `code`, `highlight {color}`, `textStyle {color}`,
 `link {href}`.
+
+`cover.crop` is the visible part of the original image, normalized to 0…1 of its width and height
+(absent: a 3:1 band centered on `focalY`). `cover.ratio` is the user's choice (`original`, `16:9`,
+`2:1`, `3:1`, `4:3`, `free`).
 
 ### Appearance tokens
 

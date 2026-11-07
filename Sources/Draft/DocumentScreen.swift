@@ -49,8 +49,14 @@ struct DocumentScreen: View {
             if model.styleGallery {
                 StyleGallery(docId: docId)
             }
+            if model.coverEditorDoc == docId, let cover = model.docs[docId]?.appearance.cover, let img = model.image(forAsset: cover.assetId) {
+                CoverCropSheet(docId: docId, cover: cover, image: img)
+            }
         }
-        .onAppear { model.editors[docId]?.controller.refreshPageTitles { model.library.docs[$0]?.title } }
+        .onAppear {
+            model.editors[docId]?.controller.refreshPageTitles { model.library.docs[$0]?.title }
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.05) { model.restoreTabState(docId) }
+        }
     }
 
     func topBar(tokens: StyleTokens, darkPage: Bool, narrow: Bool) -> some View {
@@ -147,6 +153,8 @@ struct ChipButton: View {
     var isActive = false
     var isEnabled = true
     var height: CGFloat = 34
+    /// Spoken name for icon-only chips.
+    var label: String? = nil
     var action: () -> Void
     @State private var hover = false
     var body: some View {
@@ -165,7 +173,8 @@ struct ChipButton: View {
         .opacity(isEnabled ? 1 : 0.35)
         .disabled(!isEnabled)
         .onHover { hover = $0 }
-        .accessibilityLabel(title.isEmpty ? (symbol ?? "") : title)
+        .help(label ?? title)
+        .accessibilityLabel(label ?? (title.isEmpty ? (symbol ?? "") : title))
         .accessibilityAddTraits(isActive ? .isSelected : [])
     }
 }

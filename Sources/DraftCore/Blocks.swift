@@ -3,9 +3,9 @@ import Foundation
 /// Node types that are blocks and therefore carry a stable `id` attribute.
 public let blockTypes: Set<String> = [
     "paragraph", "heading", "blockquote", "codeBlock", "horizontalRule", "bulletList", "orderedList",
-    "listItem", "taskList", "taskItem", "image", "pageCard",
+    "listItem", "taskList", "taskItem", "toggleList", "toggleItem", "callout", "pageBreak", "image", "file", "pageCard",
 ]
-let containerListTypes: Set<String> = ["bulletList", "orderedList", "taskList"]
+let containerListTypes: Set<String> = ["bulletList", "orderedList", "taskList", "toggleList", "callout"]
 
 /// Give every block a unique id. Existing ids are kept; only missing ids and *duplicates* get
 /// new ones, and the first occurrence of an id always wins.
@@ -57,7 +57,7 @@ public struct DocStats: Equatable { public var words: Int; public var chars: Int
 public func docStats(_ root: Node) -> DocStats {
     let text = docPlainText(root)
     var blocks = 0
-    walk(root) { n in if blockTypes.contains(n.type) && !containerListTypes.contains(n.type) && n.type != "listItem" && n.type != "taskItem" { blocks += 1 } }
+    walk(root) { n in if blockTypes.contains(n.type) && !containerListTypes.contains(n.type) && n.type != "listItem" && n.type != "taskItem" && n.type != "toggleItem" { blocks += 1 } }
     let words = text.split(whereSeparator: { $0.isWhitespace }).count
     return DocStats(words: words, chars: text.replacingOccurrences(of: "\n", with: "").count, blocks: blocks)
 }
@@ -115,6 +115,9 @@ public func attachmentsOf(_ root: Node) -> [AttachmentInfo] {
     var current = ""
     walk(root) { n in
         if let id = n.id { current = id }
+        if n.type == "file" {
+            out.append(AttachmentInfo(blockId: n.id ?? "", kind: "file", label: n.attrs?["name"]?.string ?? "File", ref: n.attrs?["assetId"]?.string ?? ""))
+        }
         if n.type == "image" {
             out.append(AttachmentInfo(blockId: n.id ?? "", kind: "image", label: n.attrs?["alt"]?.string.flatMap { $0.isEmpty ? nil : $0 } ?? "Image", ref: n.attrs?["assetId"]?.string ?? n.attrs?["src"]?.string ?? ""))
         }
@@ -128,4 +131,18 @@ public func attachmentsOf(_ root: Node) -> [AttachmentInfo] {
         }
     }
     return out
+}
+
+public extension Node {
+    /// The tree without the blocks whose ids are given; lists and quotes left empty are dropped.
+    func removingBlocks(_ ids: Set<String>) -> Node {
+        var out = self
+        out.content = content?.compactMap { child -> Node? in
+            if let id = child.id, ids.contains(id) { return nil }
+            let c = child.removingBlocks(ids)
+            let container = ["bulletList", "orderedList", "taskList", "toggleList", "blockquote", "callout"].contains(c.type)
+            return container && (c.content ?? []).isEmpty ? nil : c
+        }
+        return out
+    }
 }

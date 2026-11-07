@@ -24,11 +24,15 @@ swift run Draft               # run without bundling
 ```
 
 ```bash
-swift test                    # 62 tests: format, vault, migrations, export, search, trash/backups, editor, blocks, paste, grouping
+swift test                    # 77 tests: format, vault, migrations, export, search, trash/backups, editor, blocks, paste, grouping, media, toggles, crop
 ```
 
 ```bash
 scripts/smoke.sh              # end-to-end: edit, group, trash, quit, relaunch; verify content, page, trash, backups, search, link, ungroup
+```
+
+```bash
+scripts/perf.sh               # opens a 10,000-block document and checks editing budgets
 ```
 
 ```bash

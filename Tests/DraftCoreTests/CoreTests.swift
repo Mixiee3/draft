@@ -184,3 +184,60 @@ final class StyleTests: XCTestCase {
         }
     }
 }
+
+final class RemoveBlocksTests: XCTestCase {
+    func testRemovesNestedBlocksAndEmptyContainers() {
+        let d = Node("doc", content: [
+            Node("paragraph", attrs: ["id": "a"]),
+            Node("bulletList", attrs: ["id": "l"], content: [Node("listItem", attrs: ["id": "i1"], content: [Node("paragraph", attrs: ["id": "p1"])])]),
+            Node("blockquote", attrs: ["id": "q"], content: [Node("paragraph", attrs: ["id": "q1"]), Node("paragraph", attrs: ["id": "q2"])]),
+        ])
+        let r = d.removingBlocks(["i1", "q1"])
+        XCTAssertEqual(r.content?.map(\.id), ["a", "q"], "an emptied list is dropped")
+        XCTAssertEqual(r.content?.last?.content?.map(\.id), ["q2"])
+    }
+}
+
+final class FileAssetTests: XCTestCase {
+    func testAnyExtensionIsStoredAndFilesExport() throws {
+        let dir = FileManager.default.temporaryDirectory.appendingPathComponent("draft-f-\(UUID().uuidString)")
+        defer { try? FileManager.default.removeItem(at: dir) }
+        let v = Vault(dir: dir); try v.prepare()
+        let a = try v.putAsset(Data("x".utf8), ext: "Numbers")
+        XCTAssertTrue(a.hasSuffix(".numbers"))
+        XCTAssertEqual(try v.putAsset(Data("y".utf8), ext: "").split(separator: ".").last, "bin")
+        XCTAssertNoThrow(try v.assetURL(a))
+        var d = DocFile.empty(id: "d_f", title: "")
+        d.content = Node("doc", content: [Node("file", attrs: ["id": "b_f", "assetId": .string(a), "name": "Budget 2026.numbers", "size": 1]),
+                                          Node("image", attrs: ["id": "b_i", "assetId": "abcdef0123456789.png", "alt": "Chart", "caption": "Q3 results", "width": 0.5])])
+        let r = Markdown.render(d, assetPath: { "assets/" + $0 }, pageLink: { _, _ in nil })
+        XCTAssertTrue(r.markdown.contains("[Budget 2026.numbers](assets/\(a))"))
+        XCTAssertTrue(r.markdown.contains("![Chart](assets/abcdef0123456789.png)\n*Q3 results*"))
+        XCTAssertEqual(Set(r.assets), [a, "abcdef0123456789.png"])
+        XCTAssertEqual(attachmentsOf(d.content).map(\.kind), ["file", "image"])
+    }
+}
+
+final class CoverCropTests: XCTestCase {
+    func testFittedRatiosClampAndDefault() {
+        // 1600×900 image (aspect 16:9)
+        let a = 16.0 / 9
+        let c3 = CoverCrop.fitted(ratio: 3, imageAspect: a)
+        XCTAssertEqual(CoverCrop.aspect(of: c3, imageAspect: a), 3, accuracy: 0.0001)
+        XCTAssertEqual(c3.w, 1); XCTAssertEqual(c3.y + c3.h / 2, 0.5, accuracy: 0.0001)
+        let c43 = CoverCrop.fitted(ratio: 4.0 / 3, imageAspect: a)
+        XCTAssertEqual(c43.h, 1); XCTAssertEqual(CoverCrop.aspect(of: c43, imageAspect: a), 4.0 / 3, accuracy: 0.0001)
+        XCTAssertEqual(CoverCrop.fitted(ratio: nil, imageAspect: a), CropRect(x: 0, y: 0, w: 1, h: 1))
+        let moved = CoverCrop.clamped(CropRect(x: 0.9, y: -0.2, w: 0.5, h: 0.4))
+        XCTAssertEqual(moved, CropRect(x: 0.5, y: 0, w: 0.5, h: 0.4))
+        let def = CoverCrop.effective(Cover(assetId: "a", focalY: 0.0), imageAspect: a)
+        XCTAssertEqual(def.y, 0, "default band follows the focal point, clamped")
+    }
+
+    func testOldCoversDecodeAndNewFieldsRoundTrip() throws {
+        let old = try JSONDecoder().decode(Cover.self, from: Data(#"{"assetId":"x.png","focalY":0.3}"#.utf8))
+        XCTAssertNil(old.crop)
+        let c = Cover(assetId: "x.png", crop: CropRect(x: 0.1, y: 0.2, w: 0.5, h: 0.25), ratio: "2:1")
+        XCTAssertEqual(try JSONDecoder().decode(Cover.self, from: DraftJSON.encode(c)), c)
+    }
+}

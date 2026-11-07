@@ -21,6 +21,9 @@ enum Automation {
             case "screenshots": await screenshots()
             case "drag-write": await dragWrite()
             case "drag-read": dragRead()
+            case "showcase": await showcase()
+            case "perf": await perf()
+            case "a11y": await a11yAudit()
             default: break
             }
             NSApp.terminate(nil)
@@ -51,10 +54,25 @@ enum Automation {
         // Styling is stored separately from content.
         m.updateAppearance(id) { $0.styleId = "ember" }
         if let t = m.createDoc(open: false, title: "Trash me") { m.flushAll(); m.requestDelete(t) }
+        // Long enough to scroll: remember a scroll position and caret for this tab.
+        let tv = ed.controller.textView
+        tv.setSelectedRange(NSRange(location: (tv.string as NSString).length, length: 0))
+        ed.controller.pastePlainForAutomation(String(repeating: "Scroll filler line.\n", count: 70) + "Caret lands here.")
+        await wait(0.3)
         // ⌘G: group the heading and the bold paragraph into a nested page.
         let blocks = ed.controller.document().content ?? []
         ed.controller.selectBlocks(ids: [blocks[0].id!, blocks[1].id!])
         EditorCommands.command("block.group")!.run(ed.controller)
+        // Move the checklist into "Morning pages".
+        if let task = (ed.controller.document().content ?? []).first(where: { $0.type == "taskList" })?.content?.first?.id,
+           let morning = m.library.liveDocs.first(where: { $0.title == "Morning pages" }) {
+            ed.controller.selectBlocks(ids: [task])
+            ed.controller.moveSelectedBlocks(toDocument: morning.id)
+        }
+        let caretLoc = ((tv.string as NSString).range(of: "Caret lands here.")).location + 5
+        tv.setSelectedRange(NSRange(location: caretLoc, length: 3))
+        ed.scrollView.contentView.scroll(to: NSPoint(x: 0, y: 900)); ed.scrollView.reflectScrolledClipView(ed.scrollView.contentView)
+        try? "\(caretLoc),\(Int(ed.scrollView.contentView.bounds.origin.y))".write(to: out.appendingPathComponent("smoke-tabstate.txt"), atomically: true, encoding: .utf8)
         await wait(1.0)
         try? Data(id.utf8).write(to: out.appendingPathComponent("smoke-doc-id.txt"))
         // Quit immediately: the quit path itself must flush pending saves.
@@ -63,6 +81,12 @@ enum Automation {
     static func smokeRead() async {
         let id = (try? String(contentsOf: out.appendingPathComponent("smoke-doc-id.txt"), encoding: .utf8)) ?? ""
         var result: [String: String] = ["docId": id]
+        await wait(0.8) // let the reopened tab restore itself
+        if let ed = m.editors[id], let expected = try? String(contentsOf: out.appendingPathComponent("smoke-tabstate.txt"), encoding: .utf8) {
+            let sel = ed.controller.textView.selectedRange()
+            result["tabState"] = "\(sel.location),\(Int(ed.scrollView.contentView.bounds.origin.y))"
+            result["tabStateExpected"] = expected + " len3=\(sel.length == 3)"
+        }
         if let meta = m.library.docs[id], let doc = m.ensureDoc(id) {
             result["title"] = meta.title
             result["style"] = doc.appearance.styleId
@@ -98,7 +122,11 @@ enum Automation {
                 result["jumpMatches"] = "\(c.findMatches.count)"
             }
             // Block link opens the document; then ⇧⌘G ungroups the page in place.
-            if let taskId = (m.ensureDoc(id)?.content.content ?? []).first(where: { $0.type == "taskList" })?.content?.first?.id,
+            if let morning = m.library.liveDocs.first(where: { $0.title == "Morning pages" }), let md = m.ensureDoc(morning.id) {
+                result["movedTo"] = docPlainText(md.content).contains("a task") ? "yes" : "no"
+                result["movedFrom"] = docPlainText(doc.content).contains("a task") ? "still here" : "gone"
+            }
+            if let taskId = (m.ensureDoc(id)?.content.content ?? []).first(where: { $0.type == "pageCard" })?.id,
                let url = AppModel.blockLink(doc: id, block: taskId) {
                 m.activateTab(m.library.tabs[0].id)
                 m.openLink(url)
@@ -111,7 +139,7 @@ enum Automation {
                 EditorCommands.command("block.ungroup")!.run(c)
                 await wait(0.3)
                 result["afterUngroup"] = (c.document().content ?? []).map(\.type).filter { $0 != "paragraph" || true }.suffix(4).joined(separator: ",")
-                result["ungroupedTrashed"] = m.library.docs[pageId]?.deletedAt != nil ? "yes" : "no"
+                result["ungroupedGone"] = m.library.docs[pageId] == nil && !m.library.trashedDocs.contains { $0.id == pageId } ? "yes" : "no"
                 result["ungroupedText"] = docPlainText(c.document())
             }
         } else { result["error"] = "document not found after restart" }
@@ -341,5 +369,208 @@ enum Automation {
         let res = ["idsPreserved": ids(r["before"]) == ids(r["afterDrag"]) && !ids(r["before"]).isEmpty ? "yes" : "no", "relaunchMatchesDrag": reloaded == r["afterDrag"] ? "yes" : "no", "undoRestored": r["afterUndo"] == r["before"] ? "yes" : "no",
                    "redoMatchesDrag": r["afterRedo"] == r["afterDrag"] ? "yes" : "no", "order": r["order"] ?? "", "afterDrag": r["afterDrag"] ?? ""]
         if let o = try? JSONSerialization.data(withJSONObject: res, options: [.prettyPrinted, .sortedKeys]) { try? o.write(to: out.appendingPathComponent("drag-result.json")) }
+    }
+
+    // MARK: Visual check of block types (normal + narrow)
+
+    static func showcaseDoc() -> Node {
+        func p(_ t: String) -> Node { Node("paragraph", content: [.text(t)]) }
+        return ensureBlockIds(Node("doc", content: [
+            p("Block types in Draft v0.2.1."),
+            Node("callout", attrs: ["icon": "💡"], content: [p("Callouts hold a tip or a warning."), p("They can span several paragraphs.")]),
+            Node("toggleList", content: [
+                Node("toggleItem", attrs: ["open": true], content: [p("An open toggle"), Node("bulletList", content: [Node("listItem", content: [p("Its child is visible")])])]),
+                Node("toggleItem", attrs: ["open": false], content: [p("A collapsed toggle"), Node("bulletList", content: [Node("listItem", content: [p("Hidden child")])])]),
+            ]),
+            Node("taskList", content: [Node("taskItem", attrs: ["checked": false], content: [p("Typed with “x ”")])]),
+            p("Regular separator"), Node("horizontalRule"),
+            p("Strong"), Node("horizontalRule", attrs: ["variant": "strong"]),
+            p("Dotted"), Node("horizontalRule", attrs: ["variant": "dotted"]),
+            p("Three dots"), Node("horizontalRule", attrs: ["variant": "dots"]),
+            p("Next comes a page break"), Node("pageBreak"),
+            p("End."),
+        ]))
+    }
+
+    static func showcase() async {
+        guard let w = NSApp.windows.first(where: { $0.isVisible }), let id = m.createDoc(title: "Block showcase") else { return }
+        m.updateAppearance(id) { $0.styleId = ProcessInfo.processInfo.environment["DRAFT_STYLE"] ?? "paper" }
+        w.setFrame(NSRect(x: 60, y: 60, width: 1440, height: 900), display: true)
+        await wait(0.6)
+        m.editors[id]?.controller.load(showcaseDoc())
+        await capture("showcase-normal")
+        w.setFrame(NSRect(x: 60, y: 60, width: 720, height: 900), display: true)
+        await capture("showcase-narrow")
+        // Image bar and file block.
+        guard let c = m.editors[id]?.controller else { return }
+        let art = NSImage(size: NSSize(width: 1200, height: 600), flipped: false) { r in
+            NSGradient(colors: [NSColor(hex: "#8fd3e6"), NSColor(hex: "#1f6475")])!.draw(in: r, angle: -90); return true
+        }
+        let rep = NSBitmapImageRep(data: art.tiffRepresentation!)!
+        let tmp = FileManager.default.temporaryDirectory.appendingPathComponent("Field notes.txt")
+        try? "Draft attachment".write(to: tmp, atomically: true, encoding: .utf8)
+        c.textView.setSelectedRange(NSRange(location: 0, length: 0))
+        _ = c.insertFiles([tmp])
+        if let aid = m.storeImage(data: rep.representation(using: .png, properties: [:])!, ext: "png") {
+            c.textView.setSelectedRange(NSRange(location: 0, length: 0))
+            c.insertImage(assetId: aid, alt: "Gradient study")
+            if let i = c.document().content?.first(where: { $0.type == "image" })?.id, let pr = c.paragraph(withId: i) {
+                c.textView.setSelectedRange(NSRange(location: pr.location, length: 1))
+                c.setImageCaption("A calm gradient, resized to medium")
+                c.setImageWidth(0.5)
+                w.makeFirstResponder(c.textView)
+                c.textView.scrollRangeToVisible(pr)
+            }
+        }
+        m.docRailTab = .attachments
+        await capture("media-narrow")
+        // Cover: generated scene, cropped to 2:1 around the upper third.
+        let sceneArt = NSImage(size: NSSize(width: 1600, height: 1000), flipped: true) { r in
+            NSGradient(colors: [NSColor(hex: "#f06a4a"), NSColor(hex: "#f9c79a")])!.draw(in: r, angle: 90)
+            NSColor(hex: "#fff1c9").setFill(); NSBezierPath(ovalIn: NSRect(x: 1050, y: 180, width: 220, height: 220)).fill()
+            NSColor(hex: "#8e3a42").setFill(); NSBezierPath(rect: NSRect(x: 0, y: 700, width: 1600, height: 300)).fill()
+            return true
+        }
+        if let png = NSBitmapImageRep(data: sceneArt.tiffRepresentation!)?.representation(using: .png, properties: [:]), let cid = m.storeImage(data: png, ext: "png") {
+            m.updateAppearance(id) { $0.cover = Cover(assetId: cid, crop: CoverCrop.fitted(ratio: 2, imageAspect: 1.6, cy: 0.3), ratio: "2:1") }
+            m.editors[id]?.scrollView.contentView.scroll(to: .zero)
+            await capture("cover-narrow")
+            m.coverEditorDoc = id
+            await capture("cover-crop-sheet-narrow")
+            m.coverEditorDoc = nil
+        }
+        w.setFrame(NSRect(x: 60, y: 60, width: 1440, height: 900), display: true)
+        await capture("media-normal")
+        m.editors[id]?.scrollView.contentView.scroll(to: .zero)
+        await capture("cover-normal")
+        m.coverEditorDoc = id
+        await capture("cover-crop-sheet")
+        m.coverEditorDoc = nil
+    }
+
+    // MARK: Performance (10,000 blocks)
+
+    static func bigDoc(_ n: Int) -> Node {
+        var blocks: [Node] = []
+        func p(_ t: String, _ marks: [Mark]? = nil) -> Node { Node("paragraph", content: [.text(t, marks: marks)]) }
+        var i = 0
+        while blocks.count < n {
+            switch i % 10 {
+            case 0: blocks.append(Node("heading", attrs: ["level": 2], content: [.text("Section \(i / 10)")]))
+            case 1, 2, 3: blocks.append(p("Paragraph \(i): a sentence of ordinary length to make lines wrap like real notes do in a long document."))
+            case 4: blocks.append(Node("bulletList", content: (0..<3).map { k in Node("listItem", content: [p("Bullet \(i).\(k) with some text")]) }))
+            case 5: blocks.append(Node("taskList", content: [Node("taskItem", attrs: ["checked": .bool(i % 20 == 5)], content: [p("Task \(i)")])]))
+            case 6: blocks.append(p("Bold and highlighted ", [Mark("bold")]))
+            case 7: blocks.append(Node("orderedList", attrs: ["start": 1], content: (0..<2).map { k in Node("listItem", content: [p("Step \(k)")]) }))
+            case 8: blocks.append(Node("toggleList", content: [Node("toggleItem", attrs: ["open": .bool(i % 40 != 8)], content: [p("Toggle \(i)"), Node("bulletList", content: [Node("listItem", content: [p("inside")])])])]))
+            default: blocks.append(Node("blockquote", content: [p("A quote \(i)")]))
+            }
+            i += 1
+        }
+        return ensureBlockIds(Node("doc", content: blocks))
+    }
+
+    static func ms(_ t0: CFAbsoluteTime) -> Double { ((CFAbsoluteTimeGetCurrent() - t0) * 1000 * 10).rounded() / 10 }
+    static func settle() async { await Task.yield(); await MainActor.run { RunLoop.main.run(mode: .default, before: Date()) }; await Task.yield() }
+    static func stats(_ xs: [Double]) -> [String: Double] {
+        let s = xs.sorted()
+        return ["p50": s[s.count / 2], "p95": s[min(s.count - 1, Int(Double(s.count) * 0.95))], "max": s.last ?? 0]
+    }
+
+    static func perf() async {
+        guard let w = NSApp.windows.first(where: { $0.isVisible }) else { return }
+        w.setFrame(NSRect(x: 60, y: 60, width: 1440, height: 900), display: true)
+        var r: [String: Any] = [:]
+        let content = bigDoc(10_000)
+        let id = newId("d_")
+        var doc = DocFile.empty(id: id, title: "Ten thousand blocks")
+        doc.content = content
+        try? m.vault.saveDoc(doc)
+        var meta = DocMeta(id: id); meta.applyDerived(from: doc)
+        m.library.docs[id] = meta
+        r["blocks"] = docStats(content).blocks
+        var t0 = CFAbsoluteTimeGetCurrent()
+        m.openView(.doc(id))
+        await settle()
+        guard let ed = m.editors[id] else { return }
+        ed.layoutSubtreeIfNeeded()
+        r["openMs"] = ms(t0)
+        let c = ed.controller, tv = c.textView
+        w.makeFirstResponder(tv)
+        let mid = c.paragraphRange(at: (tv.string as NSString).length / 2)
+        tv.setSelectedRange(NSRange(location: NSMaxRange(mid) - 1, length: 0))
+        tv.scrollRangeToVisible(tv.selectedRange())
+        await settle()
+        var keys: [Double] = []
+        for ch in "quick typing in the middle of a long document" {
+            t0 = CFAbsoluteTimeGetCurrent()
+            tv.insertText(String(ch), replacementRange: tv.selectedRange())
+            await settle()
+            keys.append(ms(t0))
+        }
+        r["keystrokeMs"] = stats(keys)
+        var enters: [Double] = []
+        for _ in 0..<10 {
+            t0 = CFAbsoluteTimeGetCurrent(); tv.insertNewline(nil); await settle(); enters.append(ms(t0))
+            tv.insertText("x", replacementRange: tv.selectedRange()); await settle()
+        }
+        r["returnMs"] = stats(enters)
+        var moves: [Double] = []
+        for _ in 0..<5 { t0 = CFAbsoluteTimeGetCurrent(); c.moveSelectedBlocks(by: 1); await settle(); moves.append(ms(t0)) }
+        r["moveMs"] = stats(moves)
+        if let tp = (0..<(tv.string as NSString).length).lazy.map({ c.paragraphRange(at: $0) }).first(where: { c.block(at: $0).kind == .toggle }) {
+            t0 = CFAbsoluteTimeGetCurrent(); c.toggleOpen(at: tp); await settle(); r["toggleMs"] = ms(t0)
+        }
+        t0 = CFAbsoluteTimeGetCurrent(); m.flushAll(); r["saveMs"] = ms(t0)
+        m.activateTab(m.library.tabs[0].id)
+        m.librarySearch = "Paragraph 7771:"
+        t0 = CFAbsoluteTimeGetCurrent(); let hits = m.searchHits; r["searchMs"] = ms(t0); r["searchHits"] = hits.count
+        m.librarySearch = ""
+        if let d = try? JSONSerialization.data(withJSONObject: r, options: [.prettyPrinted, .sortedKeys]) { try? d.write(to: out.appendingPathComponent("perf.json")) }
+    }
+
+    // MARK: Accessibility audit: every control in the window's accessibility tree has a name
+
+    static func unlabeled(_ v: NSView, into out: inout [String]) {
+        if let c = v as? NSControl, !v.isHiddenOrHasHiddenAncestor, !(v is NSTextView) {
+            let field = v as? NSTextField
+            let isInput = field.map { $0.isEditable } ?? true
+            let names = [c.accessibilityLabel(), c.accessibilityTitle(), (c as? NSButton)?.title, field?.placeholderString, c.toolTip]
+            if isInput && names.allSatisfy({ ($0 ?? "").isEmpty }) { out.append("\(Swift.type(of: c)) at \(Int(c.frame.minX)),\(Int(c.frame.minY))") }
+        }
+        for sub in v.subviews { unlabeled(sub, into: &out) }
+    }
+
+    static func a11yAudit() async {
+        guard let w = NSApp.windows.first(where: { $0.isVisible }), let id = m.createDoc(title: "A11y") else { return }
+        w.setFrame(NSRect(x: 60, y: 60, width: 1440, height: 900), display: true)
+        await wait(0.5)
+        guard let c = m.editors[id]?.controller else { return }
+        c.load(showcaseDoc())
+        let art = NSImage(size: NSSize(width: 600, height: 300), flipped: false) { r in NSColor.systemTeal.setFill(); r.fill(); return true }
+        if let png = NSBitmapImageRep(data: art.tiffRepresentation!)?.representation(using: .png, properties: [:]), let aid = m.storeImage(data: png, ext: "png") {
+            c.textView.setSelectedRange(NSRange(location: 0, length: 0))
+            c.insertImage(assetId: aid)
+            m.updateAppearance(id) { $0.cover = Cover(assetId: aid) }
+            if let i = c.selectedImageIndex ?? c.document().content?.first(where: { $0.type == "image" }).flatMap({ c.paragraph(withId: $0.id!)?.location }) {
+                c.textView.setSelectedRange(NSRange(location: i, length: 1))
+            }
+        }
+        var report: [String: [String]] = [:]
+        for (name, setup) in [("document+imageBar", { m.panel = nil }), ("format", { m.panel = .format }), ("style", { m.panel = .style }),
+                              ("info", { m.panel = .info }), ("share", { m.panel = .share }), ("cropSheet", { m.panel = nil; m.coverEditorDoc = id })] as [(String, () -> Void)] {
+            setup()
+            await wait(0.6)
+            var out: [String] = []
+            if let root = w.contentView { unlabeled(root, into: &out) }
+            report[name] = out
+        }
+        m.coverEditorDoc = nil
+        // Keyboard: Tab on a selected image moves into the image bar.
+        w.makeFirstResponder(c.textView)
+        if let i = c.document().content?.first(where: { $0.type == "image" }).flatMap({ c.paragraph(withId: $0.id!)?.location }) { c.textView.setSelectedRange(NSRange(location: i, length: 1)) }
+        c.textView.insertTab(nil)
+        report["tabIntoImageBar"] = [w.firstResponder === c.imageBar.size ? "yes" : "no: \(String(describing: w.firstResponder))"]
+        if let d = try? JSONSerialization.data(withJSONObject: report, options: [.prettyPrinted, .sortedKeys]) { try? d.write(to: out.appendingPathComponent("a11y.json")) }
     }
 }

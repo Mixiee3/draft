@@ -53,6 +53,9 @@ public final class DocumentEditorView: NSView, NSTextViewDelegate {
     let handle = BlockHandleView(frame: .zero)
     public var handleView: NSView { handle }
     public var onLayout: (() -> Void)?
+    public var onEditCover: (() -> Void)?
+    public var onRemoveCover: (() -> Void)?
+    let coverControls = NSStackView()
     /// Height reserved at the top for the host's floating controls.
     public var topInset: CGFloat = 0 { didSet { needsLayout = true } }
 
@@ -100,6 +103,17 @@ public final class DocumentEditorView: NSView, NSTextViewDelegate {
         coverView.isHidden = true
         coverView.setAccessibilityLabel("Cover image")
         paper.addSubview(coverView)
+        // Hover controls on the cover: edit (crop) and remove.
+        for (symbol, label, sel) in [("pencil", "Edit cover", #selector(editCover)), ("xmark", "Remove cover", #selector(removeCover))] {
+            let b = NSButton(image: NSImage(systemSymbolName: symbol, accessibilityDescription: label)!, target: self, action: sel)
+            b.bezelStyle = .circular
+            b.setAccessibilityLabel(label)
+            b.toolTip = label
+            coverControls.addArrangedSubview(b)
+        }
+        coverControls.spacing = 6
+        coverControls.isHidden = true
+        paper.addSubview(coverControls)
 
         titleView.isRichText = false
         titleView.drawsBackground = false
@@ -146,8 +160,8 @@ public final class DocumentEditorView: NSView, NSTextViewDelegate {
         titleView.insertionPointColor = t.text
         title_.placeholderColor = t.text.withAlphaComponent(0.28)
         controller.textView.insertionPointColor = t.text
-        controller.textView.selectedTextAttributes = [.backgroundColor: t.accentColor.withAlphaComponent(t.isDarkPage ? 0.45 : 0.22)]
-        titleView.selectedTextAttributes = controller.textView.selectedTextAttributes
+        controller.refreshSelectionStyle()
+        titleView.selectedTextAttributes = [.backgroundColor: t.accentColor.withAlphaComponent(t.isDarkPage ? 0.45 : 0.22)]
         ruleView.layer?.backgroundColor = t.text.withAlphaComponent(0.1).cgColor
         pageColor = NSColor(hex: t.pageColor)
         relayout()
@@ -178,7 +192,13 @@ public final class DocumentEditorView: NSView, NSTextViewDelegate {
 
     @objc func relayoutNote() { relayout() }
 
-    public override func mouseMoved(with event: NSEvent) { updateHandle(at: paper.convert(event.locationInWindow, from: nil)) }
+    public override func mouseMoved(with event: NSEvent) {
+        let p = paper.convert(event.locationInWindow, from: nil)
+        updateHandle(at: p)
+        coverControls.isHidden = coverImage == nil || !coverView.frame.contains(p)
+    }
+    @objc func editCover() { onEditCover?() }
+    @objc func removeCover() { onRemoveCover?() }
     public override func mouseExited(with event: NSEvent) { if !handle.isDragging { handle.isHidden = true } }
     @objc func scrolled() {
         if controller.toolbar.isVisible { controller.toolbar.position() }
@@ -206,9 +226,10 @@ public final class DocumentEditorView: NSView, NSTextViewDelegate {
         let top: CGFloat = topInset > 0 ? 14 : 70
         let pad: CGFloat = paperW < 560 ? 22 : (paperW < 700 ? 44 : 68)
         var y = top
-        if coverImage != nil {
-            let h = min(240, paperW * 0.32)
+        if let img = coverImage, img.size.width > 0 {
+            let h = min(460, max(90, (paperW * img.size.height / img.size.width).rounded()))
             coverView.frame = NSRect(x: paperX, y: top, width: paperW, height: h)
+            coverControls.frame = NSRect(x: paperX + paperW - 92, y: top + 12, width: 80, height: 32)
             y += h + 36
         } else { y += 52 }
         let innerW = paperW - pad * 2
@@ -223,16 +244,16 @@ public final class DocumentEditorView: NSView, NSTextViewDelegate {
         if abs(tv.frame.width - innerW) > 0.5 || tv.frame.minX != paperX + pad || tv.frame.minY != y {
             tv.frame = NSRect(x: paperX + pad, y: y, width: innerW, height: tv.frame.height)
         }
-        controller.layout.ensureLayout(for: controller.container)
-        let used = controller.layout.usedRect(for: controller.container).height + controller.layout.extraLineFragmentRect.height
-        let bodyH = max(used + 8, 160)
-        if abs(tv.frame.height - bodyH) > 0.5 { tv.setFrameSize(NSSize(width: innerW, height: bodyH)) }
+        // The text view sizes itself; forcing a full layout here cost ~90 ms per height change in a 10k-block document.
+        if tv.frame.height < 160 { tv.setFrameSize(NSSize(width: innerW, height: 160)) }
         let paperBottom = tv.frame.maxY + 90
         paper.paperRect = NSRect(x: paperX, y: top, width: paperW, height: paperBottom - top)
         paperBackground.frame = paper.paperRect
         paperBackground.layer?.shadowPath = CGPath(roundedRect: paperBackground.bounds, cornerWidth: 22, cornerHeight: 22, transform: nil)
         let docH = max(paperBottom + 60, scrollView.contentSize.height)
         if paper.frame.size != NSSize(width: width, height: docH) { paper.frame = NSRect(x: 0, y: 0, width: width, height: docH) }
+        if controller.imageBar.isVisible { controller.imageBar.update() }
+        if controller.toolbar.isVisible { controller.toolbar.position() }
         onLayout?()
     }
 }

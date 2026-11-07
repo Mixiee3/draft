@@ -18,7 +18,9 @@ struct FormatPanel: View {
 
     func chip(_ id: String, _ title: String, font: Font = .system(size: 13, weight: .medium), symbol: String? = nil) -> some View {
         let c = cmd(id)
-        return ChipButton(title: title, symbol: symbol, font: font, isActive: c.active, isEnabled: c.enabled, action: c.run)
+        let k = EditorCommands.command(id)
+        let spoken = k.map { $0.title + ($0.shortcut.map { ", \($0)" } ?? "") }
+        return ChipButton(title: title, symbol: symbol, font: font, isActive: c.active, isEnabled: c.enabled, label: title.isEmpty ? spoken : nil, action: c.run)
     }
 
     var body: some View {
@@ -43,6 +45,7 @@ struct FormatPanel: View {
                     }
                     HStack(spacing: 6) {
                         chip("block.quote", "Quote", symbol: "text.quote")
+                        chip("block.callout", "Callout", symbol: "lightbulb")
                         chip("block.code", "Code", symbol: "curlybraces")
                     }
                 }
@@ -65,7 +68,7 @@ struct FormatPanel: View {
                     HStack(spacing: 6) {
                         chip("block.outdent", "", symbol: "decrease.indent"); chip("block.indent", "", symbol: "increase.indent")
                         ForEach([("left", "text.alignleft"), ("center", "text.aligncenter"), ("right", "text.alignright"), ("justify", "text.justify")], id: \.0) { a, s in
-                            ChipButton(title: "", symbol: s, isActive: (block?.align ?? "left") == a, isEnabled: !(block?.kind.isAttachment ?? true)) { c?.setAlign(a); model.editorTick &+= 1 }
+                            ChipButton(title: "", symbol: s, isActive: (block?.align ?? "left") == a, isEnabled: !(block?.kind.isAttachment ?? true), label: "Align \(a)") { c?.setAlign(a); model.editorTick &+= 1 }
                         }
                     }
                 }
@@ -172,6 +175,7 @@ struct StylePanel: View {
                 PanelSection(title: "Cover") {
                     row("Cover Image") {
                         if a.cover != nil {
+                            Button("Crop…") { model.coverEditorDoc = docId }.controlSize(.small)
                             Button("Remove") { model.updateAppearance(docId) { $0.cover = nil } }.controlSize(.small)
                         }
                         IconButton(symbol: "plus", label: "Add cover image", size: 26) {

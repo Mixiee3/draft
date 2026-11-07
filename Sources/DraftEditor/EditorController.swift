@@ -19,6 +19,8 @@ public final class EditorController: NSObject, NSTextStorageDelegate, NSTextView
     var trailing: BlockInfo = .paragraph() { didSet { layout.trailingBlock = trailing } }
     public private(set) var lastColor: (kind: String, hex: String)? = nil
     var isLoading = false
+    var isProgrammaticEdit = false
+    var hiddenChars = IndexSet()
     var pendingTrigger: (location: Int, text: String)?
     /// Ids of blocks selected as whole units (block mode); empty when editing text.
     public internal(set) var blockSelectionIds: [String] = []
@@ -26,6 +28,7 @@ public final class EditorController: NSObject, NSTextStorageDelegate, NSTextView
 
     public lazy var toolbar = SelectionToolbar(controller: self)
     public lazy var slash = SlashMenu(controller: self)
+    public lazy var imageBar = ImageBar(controller: self)
 
     public override init() {
         storage.addLayoutManager(layout)
@@ -35,7 +38,13 @@ public final class EditorController: NSObject, NSTextStorageDelegate, NSTextView
         textView = DraftTextView(frame: NSRect(x: 0, y: 0, width: 640, height: 400), textContainer: container)
         super.init()
         textView.controller = self
+        layout.delegate = self
         layout.selectedBlockIds = { [weak self] in self?.blockSelectionIds ?? [] }
+        layout.isHidden = { [weak self] in self?.hiddenChars.contains($0) ?? false }
+        layout.selectionIsOutlined = { [weak self] in
+            guard let self else { return false }
+            return self.isBlockMode || (self.selectedImageIndex != nil && self.textView.selectedRange().length == 1)
+        }
         textView.delegate = self
         storage.delegate = self
         textView.isRichText = true
@@ -66,6 +75,8 @@ public final class EditorController: NSObject, NSTextStorageDelegate, NSTextView
         self.trailing = trailing
         assignCells(in: NSRange(location: 0, length: storage.length))
         restyleAll()
+        hiddenChars = IndexSet()
+        refreshHidden()
         textView.undoManager?.removeAllActions()
         textView.setSelectedRange(NSRange(location: 0, length: 0))
         updateTypingAttributes()
@@ -104,7 +115,14 @@ public final class EditorController: NSObject, NSTextStorageDelegate, NSTextView
             case .divider: cell = DividerCell()
             case .image: cell = ImageCell()
             case .page: cell = PageCardCell()
+            case .file: cell = FileCell()
             default: cell = OpaqueCell()
+            }
+            switch a.kind {
+            case .image: cell.setAccessibilityLabel((a.node.attrs?["alt"]?.string).flatMap { $0.isEmpty ? nil : "Image: \($0)" } ?? "Image without description")
+            case .file: cell.setAccessibilityLabel("File: \(a.node.attrs?["name"]?.string ?? "attachment")")
+            case .page: cell.setAccessibilityLabel("Page: \(a.node.attrs?["title"]?.string ?? "Untitled")")
+            default: cell.setAccessibilityLabel(a.kind == .divider ? "Separator" : "Preserved block")
             }
             cell.controller = self
             a.attachmentCell = cell
@@ -153,6 +171,8 @@ public final class EditorController: NSObject, NSTextStorageDelegate, NSTextView
     // MARK: - Undoable primitives
 
     func replace(_ range: NSRange, with s: NSAttributedString, select: NSRange? = nil) {
+        isProgrammaticEdit = true
+        defer { isProgrammaticEdit = false }
         guard textView.shouldChangeText(in: range, replacementString: s.string) else { return }
         storage.beginEditing()
         storage.replaceCharacters(in: range, with: s)
@@ -196,11 +216,14 @@ public final class EditorController: NSObject, NSTextStorageDelegate, NSTextView
         let last = ns.paragraphRange(for: NSRange(location: max(start, endLoc - (endLoc > start ? 1 : 0)), length: 0))
         let range = NSUnionRange(first, last)
         if editedMask.contains(.editedCharacters) {
-            normalizeBlocks(in: range, fullDedupe: range != first)
+            // Splits and merges can only duplicate a neighbor's id (checked in normalizeBlocks);
+            // a full scan is needed only when several paragraphs arrive at once.
+            normalizeBlocks(in: range, fullDedupe: blockCount(in: range) > 2)
             assignCells(in: range)
         }
         Styler.restyle(textStorage, range: range, theme: theme)
         layout.invalidateNumbers()
+        if hasToggles || !hiddenChars.isEmpty { DispatchQueue.main.async { [weak self] in self?.refreshHidden() } }
     }
 
     func normalizeBlocks(in range: NSRange, fullDedupe: Bool) {
@@ -229,6 +252,12 @@ public final class EditorController: NSObject, NSTextStorageDelegate, NSTextView
             loc = NSMaxRange(pr)
         }
         if fullDedupe { dedupeAll() }
+    }
+
+    func blockCount(in r: NSRange) -> Int {
+        var n = 0, loc = r.location
+        while loc < NSMaxRange(r), n <= 3 { loc = NSMaxRange(ns.paragraphRange(for: NSRange(location: loc, length: 0))); n += 1 }
+        return n
     }
 
     func dedupeAll() {
@@ -265,11 +294,22 @@ public final class EditorController: NSObject, NSTextStorageDelegate, NSTextView
 
     // MARK: - NSTextViewDelegate
 
+    /// Keep the caret out of collapsed toggles.
+    public func textView(_ textView: NSTextView, willChangeSelectionFromCharacterRange old: NSRange, toCharacterRange new: NSRange) -> NSRange {
+        guard new.length == 0, hiddenChars.contains(new.location) else { return new }
+        if new.location > old.location, let after = (new.location..<storage.length).first(where: { !hiddenChars.contains($0) }) { return NSRange(location: after, length: 0) }
+        var i = new.location
+        while i > 0, hiddenChars.contains(i) { i -= 1 }
+        return NSRange(location: contentRange(paragraphRange(at: i)).upperBound, length: 0)
+    }
+
     public func textViewDidChangeSelection(_ notification: Notification) {
         guard !isLoading else { return }
         selectionChangedForBlockMode()
+        refreshSelectionStyle()
         updateTypingAttributes()
         toolbar.update()
+        imageBar.update()
         slash.selectionChanged()
         host?.editorStateDidChange()
     }
@@ -279,7 +319,9 @@ public final class EditorController: NSObject, NSTextStorageDelegate, NSTextView
         // Typing into an attachment block (image/divider/card) goes to a new paragraph instead.
         let pr = paragraphRange(at: range.location)
         let b = block(at: pr)
-        if b.kind.isAttachment && !s.isEmpty && s != "\n" && range.length == 0 && pr.length > 0 {
+        let um = textView.undoManager
+        let userTyping = !isProgrammaticEdit && !(um?.isUndoing ?? false) && !(um?.isRedoing ?? false)
+        if userTyping && b.kind.isAttachment && !s.isEmpty && s != "\n" && range.length == 0 && pr.length > 0 {
             DispatchQueue.main.async { [weak self] in self?.insertParagraphAfter(pr, text: s) }
             return false
         }
@@ -340,17 +382,19 @@ public final class EditorController: NSObject, NSTextStorageDelegate, NSTextView
             }
             return true
         }
-        if text.isEmpty && (b.kind.isList || b.kind == .quote) {
+        if text.isEmpty && (b.kind.isList || b.kind == .quote || b.kind == .callout) {
             if b.kind.isList && b.indent > 0 { setBlock(pr, b.with(indent: b.indent - 1, continuation: false)) }
             else { setBlock(pr, b.with(kind: .paragraph, indent: 0, checked: false, start: .some(nil), continuation: false, innerId: .some(nil), containerId: .some(nil))) }
             return true
         }
         let next: BlockInfo
         switch b.kind {
-        case .bullet, .ordered, .task:
-            next = BlockInfo(kind: b.kind, indent: b.indent, containerId: b.containerId)
+        case .bullet, .ordered, .task, .toggle:
+            next = BlockInfo(kind: b.kind, indent: b.indent, checked: b.kind == .toggle, containerId: b.containerId)
         case .quote:
             next = BlockInfo(kind: .quote, containerId: b.containerId)
+        case .callout:
+            next = BlockInfo(kind: .callout, icon: b.icon, containerId: b.containerId)
         default:
             next = .paragraph()
         }
@@ -383,7 +427,7 @@ public final class EditorController: NSObject, NSTextStorageDelegate, NSTextView
             else { setBlock(pr, b.with(kind: .paragraph, checked: false, start: .some(nil), innerId: .some(nil), containerId: .some(nil))) }
             return true
         }
-        if [.quote, .heading, .code].contains(b.kind) || b.variant != nil || b.decoration != nil || b.blockColor != nil {
+        if [.quote, .callout, .heading, .code].contains(b.kind) || b.variant != nil || b.decoration != nil || b.blockColor != nil {
             setBlock(pr, b.with(kind: .paragraph, indent: 0, variant: .some(nil), blockColor: .some(nil), decoration: .some(nil), containerId: .some(nil)))
             return true
         }
@@ -470,6 +514,8 @@ public final class EditorController: NSObject, NSTextStorageDelegate, NSTextView
         ("[]", { $0.with(kind: .task, indent: $0.kind.isList ? $0.indent : 0, checked: false) }),
         ("[ ]", { $0.with(kind: .task, indent: $0.kind.isList ? $0.indent : 0, checked: false) }),
         ("[x]", { $0.with(kind: .task, indent: $0.kind.isList ? $0.indent : 0, checked: true) }),
+        ("x", { $0.with(kind: .task, indent: $0.kind.isList ? $0.indent : 0, checked: false) }),
+        ("+", { $0.with(kind: .toggle, indent: $0.kind.isList ? $0.indent : 0, checked: true) }),
         (">", { $0.with(kind: .quote, containerId: .some(newId("b_"))) }),
         ("|", { $0.with(kind: .quote, containerId: .some(newId("b_"))) }),
     ]
@@ -508,9 +554,11 @@ public final class EditorController: NSObject, NSTextStorageDelegate, NSTextView
             }
             return
         }
-        if typed == "-" && text == "---" {
+        let separators: [String: Node] = ["---": Node("horizontalRule"), "=--": Node("horizontalRule", attrs: ["variant": "strong"]),
+                                          ".--": Node("horizontalRule", attrs: ["variant": "dotted"]), "..-": Node("horizontalRule", attrs: ["variant": "dots"]),
+                                          "===": Node("pageBreak")]
+        if typed == "-" || typed == "=", let div = separators[text] {
             undoGroup {
-                let div = Node("horizontalRule")
                 let att = NSMutableAttributedString(attachment: BlockAttachment(kind: .divider, node: div))
                 att.addAttribute(.draftBlock, value: BlockInfo(id: b.id, kind: .divider, raw: div), range: NSRange(location: 0, length: att.length))
                 replace(contentRange(pr), with: att)
@@ -547,12 +595,18 @@ public final class EditorController: NSObject, NSTextStorageDelegate, NSTextView
     // MARK: - Block commands
 
     public func setBlockKind(_ kind: BlockKind, level: Int = 1, variant: String? = nil) {
+        let groupContainer = newId("b_") // selected paragraphs become one quote/callout
         undoGroup {
             for pr in selectedParagraphs() {
                 let b = block(at: pr)
                 guard !b.kind.isAttachment else { continue }
                 var nb = b.with(kind: kind, level: level, variant: .some(variant), continuation: false)
-                if !kind.isList { nb = nb.with(indent: 0, checked: false, start: .some(nil), innerId: .some(nil), containerId: .some(kind == .quote ? (b.containerId ?? newId("b_")) : nil)) }
+                if !kind.isList {
+                    let keepContainer = kind == b.kind && (kind == .quote || kind == .callout)
+                    nb = BlockInfo(id: b.id, kind: kind, level: level, variant: variant, blockColor: b.blockColor, decoration: b.decoration, align: b.align,
+                                   icon: kind == .callout ? (b.icon ?? "💡") : nil,
+                                   containerId: kind == .quote || kind == .callout ? (keepContainer ? b.containerId : groupContainer) : nil)
+                }
                 if kind == .code {
                     // Code keeps only plain text.
                     let cr = contentRange(pr)
@@ -582,7 +636,7 @@ public final class EditorController: NSObject, NSTextStorageDelegate, NSTextView
                 for pr in selectedParagraphs() {
                     let b = block(at: pr)
                     guard !b.kind.isAttachment else { continue }
-                    setBlock(pr, b.with(kind: kind, indent: b.kind.isList ? b.indent : 0, checked: false, variant: .some(nil), containerId: .some(b.kind.isList ? b.containerId : cid)))
+                    setBlock(pr, b.with(kind: kind, indent: b.kind.isList ? b.indent : 0, checked: kind == .toggle, variant: .some(nil), containerId: .some(b.kind.isList ? b.containerId : cid)))
                 }
             }
         }
@@ -604,6 +658,52 @@ public final class EditorController: NSObject, NSTextStorageDelegate, NSTextView
         setBlock(pr, b.with(checked: !b.checked))
         textView.needsDisplay = true
         host?.editorDidChange()
+    }
+
+    /// Expand or collapse a toggle (undoable). Its children are hidden from layout, not removed.
+    public func toggleOpen(at pr: NSRange) {
+        let b = block(at: pr)
+        guard b.kind == .toggle else { return }
+        setBlock(pr, b.with(checked: !b.checked))
+        refreshHidden()
+    }
+
+    public func toggleCurrentOpen() {
+        let pr = paragraphRange(at: textView.selectedRange().location)
+        if block(at: pr).kind == .toggle { toggleOpen(at: pr) } else { NSSound.beep() }
+    }
+
+    /// Characters inside collapsed toggles.
+    func computeHidden() -> IndexSet {
+        var hidden = IndexSet()
+        var collapsedIndent: Int? = nil
+        var loc = 0
+        let len = storage.length
+        while loc < len {
+            let pr = ns.paragraphRange(for: NSRange(location: loc, length: 0))
+            let b = block(at: pr)
+            if let ci = collapsedIndent, b.kind.isList, b.indent > ci || (b.continuation && b.indent == ci) {
+                hidden.insert(integersIn: pr.location..<NSMaxRange(pr))
+            } else {
+                collapsedIndent = (b.kind == .toggle && !b.continuation && !b.checked) ? b.indent : nil
+            }
+            loc = NSMaxRange(pr)
+        }
+        return hidden
+    }
+
+    /// Recompute hidden text and relayout what changed.
+    func refreshHidden() {
+        let new = computeHidden()
+        guard new != hiddenChars else { return }
+        let changed = new.symmetricDifference(hiddenChars)
+        hiddenChars = new
+        if let lo = changed.first, let hi = changed.last {
+            let r = NSRange(location: lo, length: min(storage.length, hi + 1) - lo)
+            layout.invalidateGlyphs(forCharacterRange: r, changeInLength: 0, actualCharacterRange: nil)
+            layout.invalidateLayout(forCharacterRange: r, actualCharacterRange: nil)
+        }
+        textView.needsDisplay = true
     }
 
     public func toggleTask(blockId: String) {
@@ -765,12 +865,78 @@ public final class EditorController: NSObject, NSTextStorageDelegate, NSTextView
     /// Toggle a page block between card and compact page presentation.
     public func setPagePresentation(_ p: String) {
         let pr = paragraphRange(at: textView.selectedRange().location)
-        guard block(at: pr).kind == .page, let a = storage.attribute(.attachment, at: pr.location, effectiveRange: nil) as? BlockAttachment else { insertPage(presentation: p); return }
+        guard block(at: pr).kind == .page else { insertPage(presentation: p); return }
+        updateAttachment(at: pr.location) { $0[attr: "presentation"] = .string(p) }
+    }
+
+    /// Change an attachment block's node (one undo step), keeping its id and the selection.
+    public func updateAttachment(at charIndex: Int, _ change: (inout Node) -> Void) {
+        guard charIndex < storage.length, let a = storage.attribute(.attachment, at: charIndex, effectiveRange: nil) as? BlockAttachment else { return }
+        let pr = paragraphRange(at: charIndex)
         var n = a.node
-        n[attr: "presentation"] = .string(p)
-        let att = NSMutableAttributedString(attachment: BlockAttachment(kind: .page, node: n))
+        change(&n)
+        guard n != a.node else { return }
+        let sel = textView.selectedRange()
+        let att = NSMutableAttributedString(attachment: BlockAttachment(kind: a.kind, node: n))
         att.addAttribute(.draftBlock, value: block(at: pr).with(raw: .some(n)), range: NSRange(location: 0, length: 1))
-        replace(NSRange(location: pr.location, length: 1), with: att)
+        undoGroup { replace(NSRange(location: charIndex, length: 1), with: att) }
+        textView.setSelectedRange(sel)
+        imageBar.update()
+        host?.editorDidChange()
+    }
+
+    // MARK: Images and files
+
+    /// Character index of the image the selection is on, if any.
+    public var selectedImageIndex: Int? {
+        let sel = textView.selectedRange()
+        guard storage.length > 0 else { return nil }
+        let pr = paragraphRange(at: min(sel.location, storage.length - 1))
+        guard NSMaxRange(sel) <= NSMaxRange(pr), block(at: pr).kind == .image, pr.length > 0 else { return nil }
+        return pr.location
+    }
+
+    /// Text selections are tinted; whole blocks and a selected image are outlined instead.
+    func refreshSelectionStyle() {
+        let outlined = isBlockMode || (selectedImageIndex != nil && textView.selectedRange().length == 1)
+        textView.selectedTextAttributes = [.backgroundColor: outlined ? NSColor.clear : theme.accentColor.withAlphaComponent(theme.isDarkPage ? 0.45 : 0.22)]
+    }
+
+    func isImageSelected(_ cell: ImageCell) -> Bool {
+        guard let i = selectedImageIndex else { return false }
+        return (storage.attribute(.attachment, at: i, effectiveRange: nil) as? NSTextAttachment)?.attachmentCell === cell
+    }
+
+    public func setImageWidth(_ fraction: Double) {
+        if let i = selectedImageIndex { updateAttachment(at: i) { $0[attr: "width"] = fraction >= 1 ? nil : .number(fraction) } }
+    }
+    public func setImageCaption(_ text: String) {
+        if let i = selectedImageIndex { updateAttachment(at: i) { $0[attr: "caption"] = text.isEmpty ? nil : .string(text) } }
+    }
+    public func setImageAlt(_ text: String) {
+        if let i = selectedImageIndex { updateAttachment(at: i) { $0[attr: "alt"] = .string(text) } }
+    }
+
+    public func insertFile(assetId: String, name: String, size: Int) {
+        insertAttachmentBlock(kind: .file, node: Node("file", attrs: ["assetId": .string(assetId), "name": .string(name), "size": .number(Double(size))]))
+    }
+
+    public func insertFileFromPicker() {
+        host?.pickFile { [weak self] f in if let f { self?.insertFile(assetId: f.assetId, name: f.name, size: f.size) } }
+    }
+
+    /// Dropped or pasted Finder files: images become image blocks, everything else file blocks.
+    public func insertFiles(_ urls: [URL]) -> Bool {
+        var any = false
+        for url in urls {
+            let ext = url.pathExtension.lowercased()
+            if ["png", "jpg", "jpeg", "gif", "heic", "webp", "tiff"].contains(ext), let data = try? Data(contentsOf: url), let id = host?.storeImage(data: data, ext: ext == "jpeg" ? "jpg" : ext) {
+                insertImage(assetId: id, alt: url.deletingPathExtension().lastPathComponent); any = true
+            } else if let f = host?.storeFile(at: url) {
+                insertFile(assetId: f.assetId, name: f.name, size: f.size); any = true
+            }
+        }
+        return any
     }
 
     /// Keep page-card titles in sync with the child documents (no undo entry, no dirtying).
@@ -874,6 +1040,41 @@ public final class EditorController: NSObject, NSTextStorageDelegate, NSTextView
     func pasteImage(_ data: Data, ext: String) -> Bool {
         guard let id = host?.storeImage(data: data, ext: ext) else { return false }
         insertImage(assetId: id)
+        return true
+    }
+}
+
+extension EditorController: NSLayoutManagerDelegate {
+    var hasToggles: Bool {
+        var found = false
+        storage.enumerateAttribute(.draftBlock, in: NSRange(location: 0, length: storage.length)) { v, _, stop in
+            if (v as? BlockInfo)?.kind == .toggle { found = true; stop.pointee = true }
+        }
+        return found
+    }
+
+    public func layoutManager(_ lm: NSLayoutManager, shouldGenerateGlyphs glyphs: UnsafePointer<CGGlyph>, properties props: UnsafePointer<NSLayoutManager.GlyphProperty>,
+                              characterIndexes: UnsafePointer<Int>, font: NSFont, forGlyphRange range: NSRange) -> Int {
+        guard !hiddenChars.isEmpty else { return 0 }
+        var newProps = Array(UnsafeBufferPointer(start: props, count: range.length))
+        var any = false
+        let text = storage.string as NSString
+        for i in 0..<range.length where hiddenChars.contains(characterIndexes[i]) && text.character(at: characterIndexes[i]) != 10 {
+            newProps[i] = .null; any = true // newlines stay, so each hidden paragraph keeps its own (zero-height) line
+        }
+        guard any else { return 0 }
+        newProps.withUnsafeBufferPointer { lm.setGlyphs(glyphs, properties: $0.baseAddress!, characterIndexes: characterIndexes, font: font, forGlyphRange: range) }
+        return range.length
+    }
+
+    public func layoutManager(_ lm: NSLayoutManager, shouldSetLineFragmentRect lineFragmentRect: UnsafeMutablePointer<NSRect>, lineFragmentUsedRect: UnsafeMutablePointer<NSRect>,
+                              baselineOffset: UnsafeMutablePointer<CGFloat>, in textContainer: NSTextContainer, forGlyphRange glyphRange: NSRange) -> Bool {
+        guard !hiddenChars.isEmpty else { return false }
+        let cr = lm.characterRange(forGlyphRange: glyphRange, actualGlyphRange: nil)
+        guard cr.length > 0, hiddenChars.contains(integersIn: cr.location..<NSMaxRange(cr)) else { return false }
+        lineFragmentRect.pointee.size.height = 0
+        lineFragmentUsedRect.pointee.size.height = 0
+        baselineOffset.pointee = 0
         return true
     }
 }

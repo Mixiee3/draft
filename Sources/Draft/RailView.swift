@@ -219,7 +219,7 @@ struct DocumentRail: View {
     var body: some View {
         let meta = model.library.docs[docId]
         let _ = model.editorTick
-        let content = model.editors[docId]?.controller.document() ?? model.docs[docId]?.content ?? Node("doc")
+        let content = model.docs[docId]?.content ?? Node("doc") // the saved snapshot (≤0.5 s behind typing), not a per-keystroke conversion
         VStack(alignment: .leading, spacing: 0) {
             HStack(spacing: 10) {
                 MiniPage(meta: meta, size: 34)
@@ -344,7 +344,7 @@ struct AttachmentsPane: View {
     var body: some View {
         let items = attachmentsOf(content)
         PaneTitle(title: "Attachments")
-        if items.isEmpty { EmptyHint(text: "Images and links added to this document will appear here. Files arrive in v0.2.1.") }
+        if items.isEmpty { EmptyHint(text: "Images, links and files added to this document will appear here.") }
         ScrollView {
             VStack(alignment: .leading, spacing: 6) {
                 ForEach(items) { a in
@@ -352,11 +352,11 @@ struct AttachmentsPane: View {
                         if a.kind == "image", let img = model.image(forAsset: a.ref) {
                             Image(nsImage: img).resizable().aspectRatio(contentMode: .fill).frame(width: 40, height: 40).clipShape(RoundedRectangle(cornerRadius: 7))
                         } else {
-                            Image(systemName: a.kind == "link" ? "link" : "photo").frame(width: 40, height: 40).background(RoundedRectangle(cornerRadius: 7).fill(t.hover))
+                            Image(systemName: a.kind == "link" ? "link" : a.kind == "file" ? "doc" : "photo").frame(width: 40, height: 40).background(RoundedRectangle(cornerRadius: 7).fill(t.hover))
                         }
                         VStack(alignment: .leading, spacing: 2) {
                             Text(a.label).font(.system(size: 12.5)).lineLimit(1).foregroundStyle(t.text)
-                            Text(a.kind == "link" ? a.ref : "Image").font(.system(size: 11)).lineLimit(1).foregroundStyle(t.secondary)
+                            Text(a.kind == "link" ? a.ref : a.kind == "file" ? "File" : "Image").font(.system(size: 11)).lineLimit(1).foregroundStyle(t.secondary)
                         }
                         Spacer()
                     }
@@ -405,8 +405,8 @@ struct FindPane: View {
                 Text(model.findQuery.isEmpty ? " " : (model.findCount == 0 ? "No results on page" : "\(min((c?.findIndex ?? 0) + 1, model.findCount)) of \(model.findCount)"))
                     .font(.system(size: 12)).foregroundStyle(t.secondary)
                 Spacer()
-                IconButton(symbol: "chevron.up", label: "Previous match (⇧⌘G)", size: 24) { c?.findStep(-1); model.editorTick &+= 1 }
-                IconButton(symbol: "chevron.down", label: "Next match (⌘G)", size: 24) { c?.findStep(1); model.editorTick &+= 1 }
+                IconButton(symbol: "chevron.up", label: "Previous match", size: 24) { c?.findStep(-1); model.editorTick &+= 1 }
+                IconButton(symbol: "chevron.down", label: "Next match (Return)", size: 24) { c?.findStep(1); model.editorTick &+= 1 }
             }
         }
         .padding(.horizontal, 14)
