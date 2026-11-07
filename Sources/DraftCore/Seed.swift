@@ -79,7 +79,7 @@ public extension DocMeta {
         let tokens = Styles.resolve(d.appearance)
         title = d.title
         excerpt = excerptOf(d.content, max: 700)
-        searchText = String((d.title + "\n" + docPlainText(d.content)).lowercased().prefix(50_000))
+        searchText = String((d.title + "\n" + docPlainText(d.content)).prefix(50_000)) // original case; search is case-insensitive
         words = s.words
         blocks = s.blocks
         styleId = d.appearance.styleId

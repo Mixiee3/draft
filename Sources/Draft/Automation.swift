@@ -17,7 +17,7 @@ enum Automation {
             try? await Task.sleep(for: .seconds(1.2))
             switch mode {
             case "smoke-write": await smokeWrite()
-            case "smoke-read": smokeRead()
+            case "smoke-read": await smokeRead()
             case "screenshots": await screenshots()
             default: break
             }
@@ -54,7 +54,7 @@ enum Automation {
         // Quit immediately: the quit path itself must flush pending saves.
     }
 
-    static func smokeRead() {
+    static func smokeRead() async {
         let id = (try? String(contentsOf: out.appendingPathComponent("smoke-doc-id.txt"), encoding: .utf8)) ?? ""
         var result: [String: String] = ["docId": id]
         if let meta = m.library.docs[id], let doc = m.ensureDoc(id) {
@@ -68,6 +68,22 @@ enum Automation {
             result["backups"] = "\(m.snapshots(id).count)"
             result["trashed"] = m.library.trashedDocs.map(\.title).joined(separator: ",")
             result["listed"] = m.docsFor(.all).map(\.title).sorted().joined(separator: ",")
+            // Search across documents and jump: long body so the match must be scrolled to.
+            if let ed = m.editors[id] ?? Optional(m.editor(for: id)) {
+                ed.controller.textView.setSelectedRange(NSRange(location: 0, length: 0))
+                ed.controller.pastePlainForAutomation(String(repeating: "Filler paragraph.\n", count: 60) + "The zeppelin keyword lives far down.")
+            }
+            m.flushAll()
+            m.activateTab(m.library.tabs[0].id)
+            m.librarySearch = "ZEPPELIN"
+            result["searchHits"] = m.searchHits.map(\.meta.title).joined(separator: ",")
+            m.openSearchResult(id)
+            await wait(1.0)
+            if let c = m.editors[id]?.controller, let r = c.findMatches.first {
+                let rect = c.layout.boundingRect(forGlyphRange: c.layout.glyphRange(forCharacterRange: r, actualCharacterRange: nil), in: c.container)
+                result["jumpVisible"] = c.textView.visibleRect.intersects(rect.offsetBy(dx: c.textView.textContainerOrigin.x, dy: c.textView.textContainerOrigin.y)) ? "yes" : "no"
+                result["jumpMatches"] = "\(c.findMatches.count)"
+            }
         } else { result["error"] = "document not found after restart" }
         if let d = try? JSONSerialization.data(withJSONObject: result, options: [.prettyPrinted, .sortedKeys]) {
             try? d.write(to: out.appendingPathComponent("smoke-result.json"))

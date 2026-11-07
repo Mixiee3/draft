@@ -122,6 +122,9 @@ extension EditorController {
         insertFragment(Converter.flatten(ensureBlockIds(Node("doc", content: MarkdownImport.blocks(t)))))
     }
 
+    /// Same path as a ⌘V of plain text (used by the app's automation).
+    public func pastePlainForAutomation(_ text: String) { pastePlain(text) }
+
     func pasteRich(_ s: NSAttributedString) {
         let flat = RichImport.blocks(from: s)
         if flat.isEmpty { pastePlain(s.string); return }

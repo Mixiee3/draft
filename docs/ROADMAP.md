@@ -76,7 +76,7 @@ sharing, publishing (need a proven local format — v1.x/v2.0); signing/notariza
 - ✅ Local snapshots: automatic (time/size based) + "View Backups" + restore.
 - ⬜ Cover crop/reposition (ratios, focal point) as data.
 - ⬜ Tab state across restarts (scroll + caret), real back/forward stacks.
-- ⬜ Space Search panel: one result per doc, match count, jump-and-flash block.
+- ✅ Space Search: one result per doc, match count, snippet, jump to the first match (Find in Page pre-filled).
 - ⬜ Image block: resize, caption, alt text; file attachment block (QuickLook).
 
 **Prerequisites.** Snapshot store (`history/<docId>/`), search index separate from library index,

@@ -574,16 +574,7 @@ final class AppModel: ObservableObject {
         case "trash": return library.trashedDocs.sorted { ($0.deletedAt ?? 0) > ($1.deletedAt ?? 0) }
         default: break
         }
-        let q = librarySearch.trimmingCharacters(in: .whitespaces).lowercased()
-        if !q.isEmpty {
-            let terms = q.split(separator: " ").map(String.init)
-            list = library.liveDocs.filter { m in terms.allSatisfy { m.searchText.range(of: $0, options: [.caseInsensitive, .diacriticInsensitive]) != nil } }
-            // Title matches first.
-            return list.sorted { a, b in
-                let ta = a.title.lowercased().contains(q), tb = b.title.lowercased().contains(q)
-                return ta != tb ? ta : a.updatedAt > b.updatedAt
-            }
-        }
+        if !librarySearch.trimmingCharacters(in: .whitespaces).isEmpty { return searchHits.map(\.meta) }
         let s = library.settings.sort
         list.sort { a, b in
             let asc: Bool
@@ -596,6 +587,22 @@ final class AppModel: ObservableObject {
             return s.dir == "asc" ? asc : !asc
         }
         return list
+    }
+
+    var searchHits: [SearchHit] { Search.hits(librarySearch, in: library.liveDocs) }
+
+    /// Open a search result and land on the first match: Find in Page is pre-filled, so every
+    /// match is highlighted and the first one is scrolled into view.
+    func openSearchResult(_ id: String) {
+        let q = librarySearch
+        openView(.doc(id))
+        railShowsFolders = false
+        docRailTab = .find
+        findQuery = Search.terms(q).first ?? q
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) { [weak self] in
+            guard let self, let c = self.editors[id]?.controller else { return }
+            self.findCount = c.find(self.findQuery)
+        }
     }
 
     func folderName(_ id: String?) -> String { id.flatMap { f in library.folders.first { $0.id == f }?.name } ?? "Unsorted" }

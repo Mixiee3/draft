@@ -39,7 +39,7 @@ struct RailView: View {
             .frame(height: 38)
             .padding(.horizontal, 8)
             if let id = docId, !model.railShowsFolders {
-                DocumentRail(docId: id)
+                DocumentRail(docId: id).id(id)
             } else {
                 LibraryRail()
             }

@@ -124,7 +124,7 @@ Last updated: v0.1 (native macOS) — 2026‑11‑07.
 |---|---|---|---|---|---|---|---|
 | S1 | Library inline search | Expands in header | S26 | working | — | 0.1 | `library-search.png`; all terms must match title or text; title matches first |
 | S2 | Quick Open ⌘O | By name; create new | B§H | working | — | 0.1 | ↑/↓/Return; "Create …" row |
-| S3 | Space Search with counts + jump | One result per doc | B§H | missing | index | 0.2 | — |
+| S3 | Space Search with counts + jump | One result per doc | B§H | verified | — | 0.2 | All terms, case/diacritic-insensitive, title matches first, match-count badge, highlighted snippet; Return/click opens the doc with Find in Page filled and the first match scrolled into view (`SearchTests`, smoke `jumpVisible`) |
 | S4 | Find in Page ⌘F | Rail pane, next/prev | S35, B§H | working | — | 0.1 | Highlights all, current stronger; ⌘G/⇧⌘G |
 | S5 | Replace | — | B§H | verified | S4 | 0.1 | Replace all is one undo (test) |
 | S6 | Phrase / exclusion / regex | macOS options | B§H | missing | S3 | 0.3 | — |
