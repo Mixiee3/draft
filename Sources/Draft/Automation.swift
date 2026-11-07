@@ -34,6 +34,8 @@ enum Automation {
             case "polish": await polish()
             case "structure-write": await structureWrite()
             case "structure-read": await structureRead()
+            case "workflow-write": await workflowWrite()
+            case "workflow-read": await workflowRead()
             default: break
             }
             NSApp.terminate(nil)

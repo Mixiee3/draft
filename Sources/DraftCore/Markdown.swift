@@ -200,7 +200,7 @@ public enum ExportBuilder {
         public var lossy: [String]
     }
 
-    public static func build(rootIds: [String], metas: [String: DocMeta], folders: [Folder], groupByFolder: Bool, load: (String) -> DocFile?) throws -> Bundle {
+    public static func build(rootIds: [String], metas: [String: DocMeta], folders: [Folder], groupByFolder: Bool, styles: [UserStyle] = [], load: (String) -> DocFile?) throws -> Bundle {
         var files: [(String, String)] = []
         var allAssets: [String] = []
         var lossy = Set<String>()
@@ -255,6 +255,8 @@ public enum ExportBuilder {
             "formatVersion": 1,
             "docs": try JSONDecoder().decode(JSONValue.self, from: DraftJSON.encode(natives)),
             "metas": try JSONDecoder().decode(JSONValue.self, from: DraftJSON.encode(natives.compactMap { metas[$0.id] })),
+            "folders": try JSONDecoder().decode(JSONValue.self, from: DraftJSON.encode(folders.filter { f in natives.contains { metas[$0.id]?.folderId == f.id } })),
+            "styles": try JSONDecoder().decode(JSONValue.self, from: DraftJSON.encode(styles.filter { s in natives.contains { $0.appearance.styleId == s.id } })),
         ])
         files.append(("draft-export.json", String(decoding: try DraftJSON.encode(native, pretty: true), as: UTF8.self)))
         return Bundle(files: files, assets: allAssets, lossy: lossy.sorted())

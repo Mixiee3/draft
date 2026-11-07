@@ -41,6 +41,7 @@ final class AppModel: ObservableObject {
     @Published var docRailTab: DocRailTab = .outline
     @Published var railShowsFolders = false
     @Published var quickOpen = false
+    @Published var templatePicker = false
     @Published var styleGallery = false
     @Published var toasts: [Toast] = []
     @Published var confirm: ConfirmRequest?
@@ -862,7 +863,7 @@ final class AppModel: ObservableObject {
         saveDirtyDocs()
         let go: (URL) -> Void = { parent in
             do {
-                let b = try ExportBuilder.build(rootIds: docIds, metas: self.library.docs, folders: self.library.folders, groupByFolder: groupByFolder, load: { self.ensureDoc($0) })
+                let b = try ExportBuilder.build(rootIds: docIds, metas: self.library.docs, folders: self.library.folders, groupByFolder: groupByFolder, styles: self.library.userStyles, load: { self.ensureDoc($0) })
                 let url = try self.vault.writeExport(parent: parent, name: name, files: b.files, assets: b.assets)
                 let note = b.lossy.isEmpty ? "" : " Some styling isn't representable in Markdown; it's kept in draft-export.json."
                 self.toast("Exported to \(url.lastPathComponent).\(note)", action: "Show in Finder") { NSWorkspace.shared.activateFileViewerSelecting([url]) }

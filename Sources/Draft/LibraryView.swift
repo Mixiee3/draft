@@ -55,7 +55,7 @@ struct LibraryView: View {
             PillGroup {
                 Menu {
                     Button("New Document") { model.createDoc() }
-                    Button("From Template… (planned v0.5)") {}.disabled(true)
+                    Button("From Template…") { model.templatePicker = true }
                     Divider()
                     Button("New Folder") { model.createFolder() }
                 } label: { Image(systemName: "plus").font(.system(size: 14, weight: .semibold)).frame(width: 30, height: 30) }
@@ -94,7 +94,7 @@ struct LibraryView: View {
             PillGroup {
                 Menu {
                     Button("Export All as Markdown…") { model.exportAll() }
-                    Button("Import… (planned v0.5)") {}.disabled(true)
+                    Button("Import…") { model.chooseImport() }
                     Button("Show Data Folder in Finder") { model.revealVault() }
                     Divider()
                     Button("Stats") { model.openView(ViewRef(kind: "settings", section: "stats")) }
