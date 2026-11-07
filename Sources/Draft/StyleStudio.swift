@@ -161,7 +161,10 @@ struct StyleGallery: View {
                 .keyboardShortcut(.defaultAction).disabled(id == current)
             HStack {
                 Button("Duplicate") { selected = model.duplicateStyle(id) }
-                if id.hasPrefix("u_") { Button("Rename…") { newName = s.name; renaming = id } }
+                if id.hasPrefix("u_") {
+                    Button("Rename…") { newName = s.name; renaming = id }
+                    Button(model.library.userStyles.first { $0.id == id }?.pinned == true ? "Unpin" : "Pin") { model.togglePin(id) }
+                }
             }.controlSize(.small)
         }
     }

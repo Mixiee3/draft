@@ -280,7 +280,7 @@ struct StylePreviewCard: View {
             RoundedRectangle(cornerRadius: 8, style: .continuous).fill(Color(hex: tokens.pageColor))
                 .overlay(alignment: .topLeading) {
                     VStack(alignment: .leading, spacing: 4) {
-                        Text(name).font(.system(size: 11, weight: .bold, design: design)).foregroundStyle(Color(hex: tokens.textColor)).lineLimit(2)
+                        Text(name).font(.system(size: 11, weight: .bold, design: design)).foregroundStyle(Color(hex: tokens.textColor)).lineLimit(2).minimumScaleFactor(0.6)
                         ForEach(0..<3, id: \.self) { i in Capsule().fill(Color(hex: tokens.textColor).opacity(0.18)).frame(width: CGFloat(52 - i * 9), height: 2.5) }
                     }.padding(8)
                 }
@@ -509,7 +509,7 @@ struct SharePanel: View {
                     exportRow("doc.on.clipboard", "Copy as Markdown") { model.copyMarkdown(docId) }
                     exportRow("printer", "Print… (Save as PDF from the dialog)") { model.editors[docId]?.controller.textView.printView(nil) }
                     exportRow("plus.square.on.square", "Duplicate") { model.duplicate(docId) }
-                    Toggle("Use document style", isOn: $useStyle).toggleStyle(.switch).controlSize(.small).font(.system(size: 12))
+                    Toggle("Use document style", isOn: $useStyle).toggleStyle(.switch).controlSize(.small).font(.system(size: 12)).accessibilityLabel("Use document style in PDF, HTML and image export")
                     exportRow("doc", "PDF…") { model.exportStyled(docId, as: "pdf", useStyle: useStyle) }
                     exportRow("globe", "Web page (HTML)…") { model.exportStyled(docId, as: "html", useStyle: useStyle) }
                     exportRow("photo", "Image (PNG)…") { model.exportStyled(docId, as: "png", useStyle: useStyle) }

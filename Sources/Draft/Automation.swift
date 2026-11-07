@@ -30,6 +30,7 @@ enum Automation {
             case "permissions": await permissions()
             case "style-write": await styleWrite()
             case "style-read": await styleRead()
+            case "screens-v04": await screensV04()
             default: break
             }
             NSApp.terminate(nil)

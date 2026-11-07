@@ -1,4 +1,5 @@
 import AppKit
+import SwiftUI
 import PDFKit
 import DraftCore
 import DraftEditor
@@ -145,5 +146,89 @@ extension Automation {
         r["tapeDiffers"] = rules.count == 2 && Variation.unit(rules[0], 2) != Variation.unit(rules[1], 2) ? "yes" : "no"
         r["gradient"] = m.docs[a].map { "\(Styles.resolve($0.appearance).backdrop.angle ?? -1)" } ?? ""
         save(r, "style-read.json")
+    }
+}
+
+extension Automation {
+    /// A popover's content shown in its own real window and captured (popovers are separate windows).
+    static func renderComponent<V: View>(_ v: V, _ name: String, dark: Bool) async {
+        let host = NSHostingView(rootView: v.environmentObject(m).environment(\.tokens, Tokens.make(dark: dark, accent: m.settings.accent, tint: nil))
+            .padding(4).background(dark ? Color(hex: "#2a2a2b") : Color.white).environment(\.colorScheme, dark ? .dark : .light))
+        let size = host.fittingSize
+        let win = NSWindow(contentRect: NSRect(x: 200, y: 200, width: max(200, size.width), height: max(200, size.height)), styleMask: [.titled], backing: .buffered, defer: false)
+        win.appearance = NSAppearance(named: dark ? .darkAqua : .aqua)
+        win.contentView = host
+        win.orderFrontRegardless()
+        await wait(0.6)
+        if let cg = CGWindowListCreateImage(.null, .optionIncludingWindow, CGWindowID(win.windowNumber), [.boundsIgnoreFraming, .bestResolution]),
+           let png = NSBitmapImageRep(cgImage: cg).representation(using: .png, properties: [:]) {
+            try? png.write(to: out.appendingPathComponent(name + ".png"))
+        }
+        win.orderOut(nil)
+    }
+
+    static func screensV04() async {
+        guard let w = NSApp.windows.first(where: { $0.isVisible }) else { return }
+        var checks: [String: String] = [:]
+        guard let a = m.createDoc(title: "Studio notes") else { return }
+        await wait()
+        let ea = m.editors[a]!, c = ea.controller
+        ea.focusBody(atStart: true)
+        await type("A calm page for long thoughts.\nThis block uses the mono font.", into: c)
+        await boundary()
+        c.textView.setSelectedRange(NSRange(location: (c.textView.string as NSString).length - 3, length: 0))
+        c.setBlockFont("mono"); await boundary()
+        c.textView.setSelectedRange(NSRange(location: (c.textView.string as NSString).length, length: 0))
+        c.insertDivider(); await boundary(); c.insertDivider(); await boundary()
+        for (size, preview) in [("compact", "standard"), ("medium", "icon"), ("feature", "gallery")] {
+            guard let k = m.createDoc(open: false, title: "\(size.capitalized) card") else { continue }
+            m.updateAppearance(k) { $0.styleId = size == "feature" ? "aurora" : "linen" }
+            c.textView.setSelectedRange(NSRange(location: (c.textView.string as NSString).length, length: 0))
+            c.insertAttachmentBlock(kind: .page, node: Node("pageCard", attrs: ["docId": .string(k), "title": .string("\(size.capitalized) card"), "presentation": "card", "size": .string(size), "preview": .string(preview)]))
+            await boundary()
+        }
+        c.textView.setSelectedRange(NSRange(location: (c.textView.string as NSString).length, length: 0))
+        c.insertAttachmentBlock(kind: .bookmark, node: Node("linkPreview", attrs: ["url": "https://example.org/essay", "title": "An essay on quiet tools", "summary": "Preview cards appear only when link previews are turned on.", "site": "example.org"]))
+        await boundary()
+        m.updateAppearance(a) { $0.styleId = "sorbet" }
+        _ = m.saveStyle(from: a, name: "Studio")
+        m.flushAll()
+        for theme in ["light", "dark"] {
+            m.setSettings { $0.theme = theme }
+            for (width, height, tag) in [(1440.0, 900.0, ""), (720.0, 640.0, "narrow-")] {
+                let p = tag + (theme == "dark" ? "dark-" : "")
+                w.setFrame(NSRect(x: 60, y: 60, width: width, height: height), display: true)
+                m.openView(.doc(a)); await wait(0.6)
+                ea.scrollView.contentView.scroll(to: .zero)
+                await capture(p + "v04-document")
+                ea.scrollView.contentView.scroll(to: NSPoint(x: 0, y: 360)); ea.scrollView.reflectScrolledClipView(ea.scrollView.contentView)
+                await capture(p + "v04-cards")
+                m.panel = .style; await capture(p + "v04-style-panel")
+                m.panel = nil
+                m.styleGallery = true; await capture(p + "v04-style-gallery"); m.styleGallery = false
+                if let pr = (c.document().content ?? []).first(where: { $0.type == "pageCard" })?.id.flatMap({ c.paragraph(withId: $0) }) {
+                    c.textView.setSelectedRange(NSRange(location: pr.location, length: 0))
+                }
+                m.panel = .format; await capture(p + "v04-format-panel")
+                m.panel = .share; await capture(p + "v04-export-panel")
+                m.panel = nil
+                if tag == "" { m.openView(ViewRef(kind: "settings", section: "advanced")); await capture(p + "v04-settings-advanced") }
+            }
+            await renderComponent(BackdropPicker(docId: a).frame(width: 300), (theme == "dark" ? "dark-" : "") + "v04-backdrop-picker", dark: theme == "dark")
+            m.updateAppearance(a) { $0.overrides.backdrop = Backdrop(kind: "image", image: "aurora") }
+            await renderComponent(BackdropPicker(docId: a).frame(width: 300), (theme == "dark" ? "dark-" : "") + "v04-backdrop-library", dark: theme == "dark")
+            m.updateAppearance(a) { $0.overrides.backdrop = nil }
+        }
+        m.setSettings { $0.theme = "light" }
+        // Low contrast warning with the hue-keeping fix.
+        m.updateAppearance(a) { $0.overrides.textColor = "#c9a0b4" }
+        w.setFrame(NSRect(x: 60, y: 60, width: 1440, height: 900), display: true)
+        m.openView(.doc(a)); m.panel = .style; await capture("v04-contrast-adjust")
+        m.panel = nil
+        m.addTask("Send the draft", on: m.todayKey); m.flushAll()
+        if let t = m.index.tasks(live: m.liveIds).first { await renderComponent(DuePicker(doc: t.doc, task: t.task), "v04-due-picker", dark: false) }
+        checks["userStyles"] = m.library.userStyles.map(\.name).joined(separator: ",")
+        save(checks, "v04-checks.json")
+        m.flushAll()
     }
 }
