@@ -9,6 +9,11 @@ final class LinkFakeHost: FakeHost, LinkHost {
     var linkOpened: [(String, String?)] = []
     var created: [(String, Node)] = []
     var today = "d_today"
+    var previews = false
+    var fetched: [URL] = []
+    var pending: ((LinkPreview?) -> Void)?
+    func wantsLinkPreviews() -> Bool { previews }
+    func fetchLinkPreview(_ url: URL, _ done: @escaping (LinkPreview?) -> Void) { fetched.append(url); pending = done }
 
     func mentionItems(trigger: String, query: String) -> [MentionItem] {
         switch trigger {

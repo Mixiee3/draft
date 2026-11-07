@@ -83,18 +83,23 @@ final class DividerCell: BlockCell {
             var x = f.minX + 4
             while x < f.maxX - 4 { NSBezierPath(ovalIn: NSRect(x: x, y: midY - 1.5, width: 3, height: 3)).fill(); x += 10 }
         case "wave":
+            let id = node.id ?? ""
+            let period = 13 + 8 * Variation.unit(id, 1), amp = 3.5 + 3 * Variation.unit(id, 2)
             let p = NSBezierPath()
             p.move(to: NSPoint(x: f.minX, y: midY))
             var x = f.minX
-            while x < f.maxX { p.curve(to: NSPoint(x: x + 16, y: midY), controlPoint1: NSPoint(x: x + 5, y: midY - 5), controlPoint2: NSPoint(x: x + 11, y: midY + 5)); x += 16 }
+            while x < f.maxX { p.curve(to: NSPoint(x: x + period, y: midY), controlPoint1: NSPoint(x: x + period * 0.31, y: midY - amp), controlPoint2: NSPoint(x: x + period * 0.69, y: midY + amp)); x += period }
             p.lineWidth = 1.6; p.lineCapStyle = .round
             theme.accentColor.withAlphaComponent(0.55).setStroke(); p.stroke()
         case "tape":
             // Original "paper tape": a slightly rotated translucent strip with torn ends.
-            let w = min(220, f.width * 0.5)
-            let r = NSRect(x: f.midX - w / 2, y: midY - 9, width: w, height: 18)
+            // Each strip of tape is cut and stuck a little differently (stable per block).
+            let id = node.id ?? ""
+            let w = min(260, f.width * (0.38 + 0.24 * Variation.unit(id, 1)))
+            let shift = (Variation.unit(id, 3) - 0.5) * f.width * 0.2
+            let r = NSRect(x: f.midX - w / 2 + shift, y: midY - 9, width: w, height: 18)
             NSGraphicsContext.saveGraphicsState()
-            let t = NSAffineTransform(); t.translateX(by: r.midX, yBy: r.midY); t.rotate(byDegrees: -1.6); t.translateX(by: -r.midX, yBy: -r.midY); t.concat()
+            let t = NSAffineTransform(); t.translateX(by: r.midX, yBy: r.midY); t.rotate(byDegrees: -3 + 6 * Variation.unit(id, 2)); t.translateX(by: -r.midX, yBy: -r.midY); t.concat()
             let p = NSBezierPath()
             p.move(to: NSPoint(x: r.minX, y: r.minY))
             var y = r.minY
@@ -229,7 +234,16 @@ final class FileCell: BlockCell {
 /// A nested page shown as a card (or a compact page row). Same model either way.
 final class PageCardCell: BlockCell {
     var isCard: Bool { node.attrs?["presentation"]?.string != "page" }
-    override func height(forWidth w: CGFloat) -> CGFloat { isCard ? 84 : 36 }
+    var size: String { node.attrs?["size"]?.string ?? "medium" }
+    var preview: String { node.attrs?["preview"]?.string ?? "standard" }
+    override func height(forWidth w: CGFloat) -> CGFloat {
+        guard isCard else { return 36 }
+        switch size {
+        case "compact": return 52
+        case "feature": return min(260, max(180, w * 0.36))
+        default: return 84
+        }
+    }
     override func wantsToTrackMouse() -> Bool { true }
     override func trackMouse(with event: NSEvent, in cellFrame: NSRect, of controlView: NSView?, untilMouseUp flag: Bool) -> Bool {
         if event.type == .leftMouseDown, let id = node.attrs?["docId"]?.string {
@@ -237,38 +251,99 @@ final class PageCardCell: BlockCell {
         }
         return true
     }
+
+    /// Picture area of a card: gallery = cover image, icon = monogram tile, standard = tinted page.
+    func drawThumb(_ rect: NSRect, title: String, tint: NSColor, cover: NSImage?) {
+        let clip = NSBezierPath(roundedRect: rect, xRadius: 9, yRadius: 9)
+        NSGraphicsContext.saveGraphicsState(); clip.addClip()
+        tint.withAlphaComponent(0.85).setFill(); rect.fill()
+        if preview == "gallery", let cover {
+            let s = cover.size, scale = max(rect.width / max(1, s.width), rect.height / max(1, s.height))
+            let d = NSRect(x: rect.midX - s.width * scale / 2, y: rect.midY - s.height * scale / 2, width: s.width * scale, height: s.height * scale)
+            cover.draw(in: d, from: .zero, operation: .sourceOver, fraction: 1, respectFlipped: true, hints: nil)
+        } else if preview == "icon" || preview == "gallery" {
+            let letter = String(title.trimmingCharacters(in: .whitespaces).prefix(1)).uppercased()
+            let f = theme.font(size: min(rect.height, rect.width) * 0.48, weight: .bold)
+            let a: [NSAttributedString.Key: Any] = [.font: f, .foregroundColor: NSColor(hex: theme.pageColor)]
+            let sz = (letter as NSString).size(withAttributes: a)
+            (letter as NSString).draw(at: NSPoint(x: rect.midX - sz.width / 2, y: rect.midY - sz.height / 2), withAttributes: a)
+        } else {
+            NSColor(hex: theme.pageColor).withAlphaComponent(0.92).setFill()
+            NSBezierPath(roundedRect: rect.insetBy(dx: rect.width * 0.18, dy: rect.height * 0.2), xRadius: 2, yRadius: 2).fill()
+        }
+        NSGraphicsContext.restoreGraphicsState()
+    }
+
     override func draw(withFrame f: NSRect, in controlView: NSView?) {
         let docId = node.attrs?["docId"]?.string ?? ""
         let info = controller?.host?.pageInfo(docId: docId)
         let title = info?.title.isEmpty == false ? info!.title : (node.attrs?["title"]?.string.flatMap { $0.isEmpty ? nil : $0 } ?? "Untitled page")
         let missing = info == nil
         let r = f.insetBy(dx: 0, dy: 2)
-        let iconRect: NSRect
+        let tint = info?.tint ?? theme.accentColor
+        let sub = missing ? "This page was deleted" : (info!.excerpt.isEmpty ? "Empty page" : info!.excerpt)
+        let ps = NSMutableParagraphStyle(); ps.lineBreakMode = .byTruncatingTail
         if isCard {
             let path = NSBezierPath(roundedRect: r, xRadius: 14, yRadius: 14)
             theme.text.withAlphaComponent(theme.isDarkPage ? 0.08 : 0.035).setFill(); path.fill()
             theme.text.withAlphaComponent(0.12).setStroke(); path.lineWidth = 1; path.stroke()
-            let tintBar = NSRect(x: r.minX + 14, y: r.minY + 14, width: 40, height: r.height - 28)
-            (info?.tint ?? theme.accentColor).withAlphaComponent(0.85).setFill()
-            NSBezierPath(roundedRect: tintBar, xRadius: 8, yRadius: 8).fill()
-            NSColor(hex: theme.pageColor).withAlphaComponent(0.92).setFill()
-            NSBezierPath(roundedRect: tintBar.insetBy(dx: 7, dy: 8), xRadius: 2, yRadius: 2).fill()
-            iconRect = tintBar
-            let titleFont = theme.font(size: 16, weight: .semibold)
-            (title as NSString).draw(in: NSRect(x: iconRect.maxX + 14, y: r.minY + 16, width: r.width - 90, height: 22), withAttributes: [.font: titleFont, .foregroundColor: missing ? theme.secondary : theme.text])
-            let sub = missing ? "This page was deleted" : (info!.excerpt.isEmpty ? "Empty page" : info!.excerpt)
-            let ps = NSMutableParagraphStyle(); ps.lineBreakMode = .byTruncatingTail
-            (sub as NSString).draw(in: NSRect(x: iconRect.maxX + 14, y: r.minY + 42, width: r.width - 110, height: 20), withAttributes: [.font: theme.font(size: 13, weight: .regular), .foregroundColor: theme.secondary, .paragraphStyle: ps])
+            let cover = preview == "gallery" ? (controller?.linkHost?.pageCover(docId: docId)) : nil
+            switch size {
+            case "feature":
+                let band = NSRect(x: r.minX + 10, y: r.minY + 10, width: r.width - 20, height: r.height - 74)
+                drawThumb(band, title: title, tint: tint, cover: cover)
+                (title as NSString).draw(in: NSRect(x: r.minX + 18, y: band.maxY + 10, width: r.width - 60, height: 24), withAttributes: [.font: theme.font(size: 18, weight: .semibold), .foregroundColor: missing ? theme.secondary : theme.text, .paragraphStyle: ps])
+                (sub as NSString).draw(in: NSRect(x: r.minX + 18, y: band.maxY + 34, width: r.width - 60, height: 20), withAttributes: [.font: theme.font(size: 13, weight: .regular), .foregroundColor: theme.secondary, .paragraphStyle: ps])
+            case "compact":
+                let thumb = NSRect(x: r.minX + 10, y: r.minY + 9, width: 30, height: r.height - 18)
+                drawThumb(thumb, title: title, tint: tint, cover: cover)
+                (title as NSString).draw(in: NSRect(x: thumb.maxX + 12, y: r.midY - 11, width: r.width - 90, height: 22), withAttributes: [.font: theme.font(size: 15, weight: .semibold), .foregroundColor: missing ? theme.secondary : theme.text, .paragraphStyle: ps])
+            default:
+                let thumb = NSRect(x: r.minX + 14, y: r.minY + 14, width: preview == "standard" ? 40 : 56, height: r.height - 28)
+                drawThumb(thumb, title: title, tint: tint, cover: cover)
+                (title as NSString).draw(in: NSRect(x: thumb.maxX + 14, y: r.minY + 16, width: r.width - thumb.width - 70, height: 22), withAttributes: [.font: theme.font(size: 16, weight: .semibold), .foregroundColor: missing ? theme.secondary : theme.text, .paragraphStyle: ps])
+                (sub as NSString).draw(in: NSRect(x: thumb.maxX + 14, y: r.minY + 42, width: r.width - thumb.width - 90, height: 20), withAttributes: [.font: theme.font(size: 13, weight: .regular), .foregroundColor: theme.secondary, .paragraphStyle: ps])
+            }
         } else {
             let icon = NSImage(systemSymbolName: "doc.text", accessibilityDescription: nil)
-            iconRect = NSRect(x: r.minX + 2, y: r.minY + 8, width: 16, height: 18)
+            let iconRect = NSRect(x: r.minX + 2, y: r.minY + 8, width: 16, height: 18)
             icon?.withSymbolConfiguration(.init(paletteColors: [theme.secondary]))?.draw(in: iconRect)
             let ul: [NSAttributedString.Key: Any] = [.font: theme.font(size: 17, weight: .medium), .foregroundColor: theme.text, .underlineStyle: NSUnderlineStyle.single.rawValue, .underlineColor: theme.text.withAlphaComponent(0.25)]
             (title as NSString).draw(at: NSPoint(x: iconRect.maxX + 10, y: r.minY + 6), withAttributes: ul)
         }
-        // chevron
         let chev = NSImage(systemSymbolName: "chevron.right", accessibilityDescription: nil)
         chev?.withSymbolConfiguration(.init(paletteColors: [theme.secondary]))?.draw(in: NSRect(x: r.maxX - 24, y: r.midY - 7, width: 8, height: 14))
+    }
+}
+
+/// A web link shown as a card (title, summary, site). Opens in the browser.
+final class BookmarkCell: BlockCell {
+    override func height(forWidth w: CGFloat) -> CGFloat { node.attrs?["summary"]?.string?.isEmpty == false ? 86 : 62 }
+    override func wantsToTrackMouse() -> Bool { true }
+    override func trackMouse(with event: NSEvent, in cellFrame: NSRect, of controlView: NSView?, untilMouseUp flag: Bool) -> Bool {
+        if event.type == .leftMouseDown, let s = node.attrs?["url"]?.string, let u = URL(string: s) {
+            DispatchQueue.main.async { [weak controller] in controller?.host?.open(url: u) }
+        }
+        return true
+    }
+    override func draw(withFrame f: NSRect, in controlView: NSView?) {
+        let r = f.insetBy(dx: 0, dy: 3)
+        let path = NSBezierPath(roundedRect: r, xRadius: 12, yRadius: 12)
+        theme.text.withAlphaComponent(theme.isDarkPage ? 0.08 : 0.035).setFill(); path.fill()
+        theme.text.withAlphaComponent(0.12).setStroke(); path.lineWidth = 1; path.stroke()
+        let icon = NSRect(x: r.minX + 14, y: r.minY + 14, width: 30, height: 30)
+        theme.accentColor.withAlphaComponent(0.14).setFill(); NSBezierPath(roundedRect: icon, xRadius: 8, yRadius: 8).fill()
+        NSImage(systemSymbolName: "link", accessibilityDescription: nil)?.withSymbolConfiguration(.init(paletteColors: [theme.accentColor]))?.draw(in: icon.insetBy(dx: 7, dy: 7))
+        let ps = NSMutableParagraphStyle(); ps.lineBreakMode = .byTruncatingTail
+        let x = icon.maxX + 12, w = r.width - (x - r.minX) - 16
+        let title = node.attrs?["title"]?.string ?? ""
+        (title as NSString).draw(in: NSRect(x: x, y: r.minY + 11, width: w, height: 20), withAttributes: [.font: theme.font(size: 15, weight: .semibold), .foregroundColor: theme.text, .paragraphStyle: ps])
+        var y = r.minY + 32
+        if let sum = node.attrs?["summary"]?.string, !sum.isEmpty {
+            (sum as NSString).draw(in: NSRect(x: x, y: y, width: w, height: 20), withAttributes: [.font: theme.font(size: 13, weight: .regular), .foregroundColor: theme.secondary, .paragraphStyle: ps])
+            y += 22
+        }
+        ((node.attrs?["url"]?.string ?? "") as NSString).draw(in: NSRect(x: x, y: y, width: w, height: 18), withAttributes: [.font: NSFont.systemFont(ofSize: 11.5), .foregroundColor: theme.secondary.withAlphaComponent(0.8), .paragraphStyle: ps])
     }
 }
 

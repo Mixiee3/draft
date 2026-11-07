@@ -43,9 +43,9 @@ public enum Converter {
         switch n.type {
         case "paragraph":
             let caption = n.attrs?["variant"]?.string == "caption" ? "caption" : nil
-            out.append(FlatBlock(info: BlockInfo(id: id, kind: quoteId != nil ? (container?.kind ?? .quote) : .paragraph, variant: caption, blockColor: color, decoration: deco, align: align, icon: container?.icon, containerId: quoteId), inline: n.content ?? []))
+            out.append(FlatBlock(info: BlockInfo(id: id, kind: quoteId != nil ? (container?.kind ?? .quote) : .paragraph, variant: caption, blockColor: color, decoration: deco, align: align, icon: container?.icon, containerId: quoteId, font: n.attrs?["font"]?.string), inline: n.content ?? []))
         case "heading":
-            out.append(FlatBlock(info: BlockInfo(id: id, kind: .heading, level: max(1, min(4, n.attrs?["level"]?.int ?? 1)), blockColor: color, decoration: deco, align: align), inline: n.content ?? []))
+            out.append(FlatBlock(info: BlockInfo(id: id, kind: .heading, level: max(1, min(4, n.attrs?["level"]?.int ?? 1)), blockColor: color, decoration: deco, align: align, font: n.attrs?["font"]?.string), inline: n.content ?? []))
         case "blockquote":
             for c in n.content ?? [] { flattenNode(c, indent: indent, into: &out, quoteId: id) }
         case "callout":
@@ -61,6 +61,8 @@ public enum Converter {
             out.append(FlatBlock(info: BlockInfo(id: id, kind: .image, raw: n), inline: []))
         case "pageCard":
             out.append(FlatBlock(info: BlockInfo(id: id, kind: .page, raw: n), inline: []))
+        case "linkPreview":
+            out.append(FlatBlock(info: BlockInfo(id: id, kind: .bookmark, raw: n), inline: []))
         case "bulletList", "orderedList", "taskList", "toggleList":
             let kind: BlockKind = n.type == "bulletList" ? .bullet : n.type == "orderedList" ? .ordered : n.type == "toggleList" ? .toggle : .task
             for (i, item) in (n.content ?? []).enumerated() {
@@ -70,7 +72,7 @@ public enum Converter {
                 let firstIsPara = first?.type == "paragraph"
                 out.append(FlatBlock(info: BlockInfo(id: item.id ?? newId("b_"), kind: kind, indent: indent, checked: kind == .toggle ? (item.attrs?["open"]?.bool ?? true) : (item.attrs?["checked"]?.bool ?? false),
                                                      start: i == 0 && kind == .ordered ? (n.attrs?["start"]?.int ?? 1) : nil, blockColor: ic, decoration: idc, align: ia ?? (firstIsPara ? styleAttrs(first!).2 : nil),
-                                                     innerId: firstIsPara ? first?.id : nil, containerId: id),
+                                                     innerId: firstIsPara ? first?.id : nil, containerId: id, font: item.attrs?["font"]?.string),
                                      inline: firstIsPara ? (first?.content ?? []) : []))
                 for c in children.dropFirst(firstIsPara ? 1 : 0) {
                     if c.type == "paragraph" {
@@ -209,6 +211,7 @@ public enum Converter {
         if let c = i.blockColor { attrs["blockColor"] = .string(c) }
         if let d = i.decoration { attrs["decoration"] = .string(d) }
         if let a = i.align { attrs["textAlign"] = .string(a) }
+        if let f = i.font { attrs["font"] = .string(f) }
         let content: [Node]? = b.inline.isEmpty ? nil : b.inline
         switch i.kind {
         case .heading:
@@ -218,7 +221,7 @@ public enum Converter {
             if let l = i.language { attrs["language"] = .string(l) }
             let text = b.inline.map { $0.text ?? "" }.joined()
             return Node("codeBlock", attrs: attrs, content: text.isEmpty ? nil : [.text(text)])
-        case .divider, .image, .page, .file, .opaque:
+        case .divider, .image, .page, .file, .bookmark, .opaque:
             var n = i.raw ?? Node(i.kind == .divider ? "horizontalRule" : "paragraph")
             // Unknown nodes are preserved verbatim; known attachment blocks keep a stable id.
             if i.kind != .opaque || n.id != nil { n[attr: "id"] = .string(i.id) }
@@ -268,6 +271,7 @@ public enum Converter {
                     if kind == .toggle { itemAttrs["open"] = .bool(item.info.checked) }
                     if let c = item.info.blockColor { itemAttrs["blockColor"] = .string(c) }
                     if let d = item.info.decoration { itemAttrs["decoration"] = .string(d) }
+                    if let f = item.info.font { itemAttrs["font"] = .string(f) }
                     items.append(Node(kind == .task ? "taskItem" : kind == .toggle ? "toggleItem" : "listItem", attrs: itemAttrs, content: children))
                 }
                 if items.isEmpty { // stray continuation: treat as plain paragraph

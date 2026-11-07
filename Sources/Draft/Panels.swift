@@ -49,6 +49,30 @@ struct FormatPanel: View {
                         chip("block.code", "Code", symbol: "curlybraces")
                     }
                 }
+                PanelSection(title: "Block Font") {
+                    HStack(spacing: 6) {
+                        chip("font.document", "Doc", font: .system(size: 12.5))
+                        chip("font.system", "Aa", font: .system(size: 13, weight: .medium))
+                        chip("font.serif", "Ss", font: .system(size: 13, weight: .medium, design: .serif))
+                        chip("font.mono", "00", font: .system(size: 13, weight: .medium, design: .monospaced))
+                        chip("font.rounded", "Rr", font: .system(size: 13, weight: .medium, design: .rounded))
+                    }
+                    Text("Overrides the document font for the selected blocks.").font(.system(size: 11)).foregroundStyle(t.tertiary)
+                }
+                if block?.kind == .page && block?.raw?.attrs?["presentation"]?.string != "page" {
+                    PanelSection(title: "Card") {
+                        HStack(spacing: 6) {
+                            ForEach([("compact", "Compact"), ("medium", "Medium"), ("feature", "Feature")], id: \.0) { k, label in
+                                ChipButton(title: label, font: .system(size: 12, weight: .medium), isActive: (block?.raw?.attrs?["size"]?.string ?? "medium") == k, label: "Card size \(label)") { c?.setCardOption("size", k); model.editorTick &+= 1 }
+                            }
+                        }
+                        HStack(spacing: 6) {
+                            ForEach([("standard", "Standard", "rectangle.split.2x1"), ("icon", "Icon", "app"), ("gallery", "Gallery", "photo")], id: \.0) { k, label, sym in
+                                ChipButton(title: label, symbol: sym, font: .system(size: 12, weight: .medium), isActive: (block?.raw?.attrs?["preview"]?.string ?? "standard") == k, label: "Card preview \(label)") { c?.setCardOption("preview", k); model.editorTick &+= 1 }
+                            }
+                        }
+                    }
+                }
                 PanelSection(title: "Groups") {
                     HStack(spacing: 6) {
                         ChipButton(title: "Page", symbol: "doc.text", isActive: block?.kind == .page && block?.raw?.attrs?["presentation"]?.string == "page") { c?.setPagePresentation("page") }
@@ -123,6 +147,8 @@ struct StylePanel: View {
     @State private var backdropOpen = false
     @State private var pageOpen = false
     @State private var textOpen = false
+    @State private var savingStyle = false
+    @State private var styleName = ""
 
     var body: some View {
         let doc = model.docs[docId]
@@ -139,7 +165,14 @@ struct StylePanel: View {
                     ChipButton(title: "Reset", symbol: "arrow.counterclockwise", isEnabled: !a.overrides.isEmpty, height: 30) {
                         model.updateAppearance(docId) { $0.overrides = StyleOverrides() }
                     }
+                    ChipButton(title: "Save", symbol: "square.and.arrow.down", height: 30) { styleName = a.overrides.isEmpty ? style.name + " copy" : style.name + " tailored"; savingStyle = true }
+                        .help("Save this look as a style").accessibilityLabel("Save as style")
                 }
+                .alert("Save Style", isPresented: $savingStyle) {
+                    TextField("Name", text: $styleName)
+                    Button("Save") { model.saveStyle(from: docId, name: styleName) }
+                    Button("Cancel", role: .cancel) {}
+                } message: { Text("Saves the backdrop, colors, font and separator so you can use them in other documents.") }
                 PanelSection(title: "Color") {
                     row("Backdrop") {
                         Button { backdropOpen.toggle() } label: {
@@ -165,8 +198,10 @@ struct StylePanel: View {
                             Image(systemName: "exclamationmark.triangle.fill").foregroundStyle(.orange)
                             VStack(alignment: .leading, spacing: 4) {
                                 Text(String(format: "Low contrast (%.1f:1). Text may be hard to read.", contrast)).font(.system(size: 11.5)).foregroundStyle(t.text)
-                                Button("Use a readable text color") {
-                                    model.updateAppearance(docId) { $0.overrides.textColor = ColorMath.isDark(tok.pageColor) ? "#f4f1ea" : "#252521" }
+                                let fix = ColorMath.readable(tok.textColor, on: tok.pageColor)
+                                Text(String(format: "Adjusting keeps the hue and darkens or lightens the text to %.1f:1.", fix.ratio)).font(.system(size: 11)).foregroundStyle(t.secondary).fixedSize(horizontal: false, vertical: true)
+                                Button(String(format: "Adjust text color (%.1f:1 → %.1f:1)", contrast, fix.ratio)) {
+                                    model.updateAppearance(docId) { $0.overrides.textColor = fix.hex }
                                 }.buttonStyle(.link).font(.system(size: 11.5))
                             }
                         }
@@ -282,10 +317,23 @@ struct BackdropPicker: View {
             case "solid":
                 grid(solidBackdrops.map { hex in AnyView(Color(hex: hex)) }, selected: solidBackdrops.firstIndex { b.kind == "solid" && b.color == $0 }) { i in set(Backdrop(kind: "solid", color: solidBackdrops[i])) }
             case "gradient":
+                if b.kind == "gradient" {
+                    HStack {
+                        ColorPicker("Start", selection: colorBinding(b.from ?? "#ffd36e") { v in var n = b; n.from = v; set(n) }, supportsOpacity: false)
+                        ColorPicker("End", selection: colorBinding(b.to ?? "#ff8a5c") { v in var n = b; n.to = v; set(n) }, supportsOpacity: false)
+                    }.font(.system(size: 12))
+                    HStack {
+                        Text("Direction").font(.system(size: 12))
+                        Slider(value: Binding(get: { b.angle ?? 135 }, set: { v in var n = b; n.angle = v.rounded(); set(n) }), in: 0...360, step: 5)
+                            .accessibilityLabel("Gradient direction").accessibilityValue("\(Int(b.angle ?? 135)) degrees")
+                        Text("\(Int(b.angle ?? 135))°").font(.system(size: 11, design: .monospaced)).frame(width: 36, alignment: .trailing)
+                    }
+                }
                 grid(gradientBackdrops.map { g in AnyView(LinearGradient(colors: [Color(hex: g.0), Color(hex: g.1)], startPoint: .topLeading, endPoint: .bottomTrailing)) },
                      selected: gradientBackdrops.firstIndex { b.kind == "gradient" && b.from == $0.0 }) { i in set(Backdrop(kind: "gradient", from: gradientBackdrops[i].0, to: gradientBackdrops[i].1, angle: 135)) }
             default:
-                grid(Scenes.order.map { id in AnyView(SceneView(sceneId: id)) }, selected: Scenes.order.firstIndex { b.kind == "image" && b.image == $0 }) { i in
+                Text("LIBRARY · \(Scenes.order.count) ORIGINAL SCENES, OFFLINE").font(.system(size: 10, weight: .semibold)).foregroundStyle(.secondary)
+                grid(Scenes.order.map { id in AnyView(SceneView(sceneId: id)) }, selected: Scenes.order.firstIndex { b.kind == "image" && b.image == $0 }, names: Scenes.order.map { Scenes.all[$0]?.name ?? $0 }) { i in
                     set(Backdrop(kind: "image", image: Scenes.order[i], blur: b.blur, effect: b.effect))
                 }
                 HStack(spacing: 8) {
@@ -297,6 +345,7 @@ struct BackdropPicker: View {
                         model.pickImage { id in if let id { set(Backdrop(kind: "image", image: "asset:" + id, blur: b.blur, effect: b.effect)) } }
                     }
                 }
+                OnlineImagePicker { id in set(Backdrop(kind: "image", image: "asset:" + id, blur: b.blur, effect: b.effect)) }
             }
             if b.kind != "none" {
                 Divider()
@@ -313,61 +362,22 @@ struct BackdropPicker: View {
 
     func set(_ b: Backdrop) { model.updateAppearance(docId) { $0.overrides.backdrop = b } }
 
-    func grid(_ items: [AnyView], selected: Int?, pick: @escaping (Int) -> Void) -> some View {
+    func colorBinding(_ hex: String, _ write: @escaping (String) -> Void) -> Binding<Color> {
+        Binding(get: { Color(hex: hex) }, set: { c in
+            let n = NSColor(c).usingColorSpace(.sRGB) ?? .black
+            write(ColorMath.hex(Double(n.redComponent), Double(n.greenComponent), Double(n.blueComponent)))
+        })
+    }
+
+    func grid(_ items: [AnyView], selected: Int?, names: [String]? = nil, pick: @escaping (Int) -> Void) -> some View {
         LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 8), count: 3), spacing: 8) {
             ForEach(items.indices, id: \.self) { i in
                 Button { pick(i) } label: {
                     items[i].frame(height: 46).clipShape(RoundedRectangle(cornerRadius: 9, style: .continuous))
                         .overlay(RoundedRectangle(cornerRadius: 9, style: .continuous).strokeBorder(selected == i ? Color.accentColor : Color.black.opacity(0.08), lineWidth: selected == i ? 2.5 : 0.5))
-                }.buttonStyle(.plain).accessibilityLabel("Backdrop option \(i + 1)")
+                }.buttonStyle(.plain).accessibilityLabel(names.map { "Backdrop \($0[i])" } ?? "Backdrop option \(i + 1)").help(names?[i] ?? "")
             }
         }
-    }
-}
-
-struct StyleGallery: View {
-    @EnvironmentObject var model: AppModel
-    @Environment(\.tokens) var t
-    let docId: String
-    @State private var query = ""
-    var body: some View {
-        let styles = Styles.builtIn.filter { query.isEmpty || $0.name.localizedCaseInsensitiveContains(query) }
-        let current = model.docs[docId]?.appearance.styleId
-        ZStack {
-            Color.black.opacity(0.28).onTapGesture { model.styleGallery = false }
-            VStack(alignment: .leading, spacing: 12) {
-                HStack {
-                    Text("Style Gallery").font(.system(size: 15, weight: .semibold))
-                    Spacer()
-                    IconButton(symbol: "xmark", label: "Close gallery", size: 26) { model.styleGallery = false }
-                }
-                HStack { Image(systemName: "magnifyingglass").foregroundStyle(t.secondary); TextField("Search styles", text: $query).textFieldStyle(.plain) }
-                    .padding(9).background(RoundedRectangle(cornerRadius: 10).fill(t.hover))
-                Text("DRAFT STYLES").font(.system(size: 10.5, weight: .semibold)).foregroundStyle(t.tertiary)
-                ScrollView {
-                    LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 14), count: 3), spacing: 14) {
-                        ForEach(styles) { s in
-                            Button {
-                                model.updateAppearance(docId) { $0.styleId = s.id; $0.overrides = StyleOverrides() }
-                                model.styleGallery = false
-                            } label: {
-                                VStack(alignment: .leading, spacing: 6) {
-                                    StylePreviewCard(tokens: s.tokens, name: s.name, height: 170)
-                                        .overlay(RoundedRectangle(cornerRadius: 14).strokeBorder(current == s.id ? t.accent : .clear, lineWidth: 3))
-                                    Text(s.name).font(.system(size: 12.5)).foregroundStyle(t.text)
-                                }
-                            }.buttonStyle(.plain).accessibilityLabel("Apply style \(s.name)")
-                        }
-                    }
-                }
-                Text("Saving your own styles arrives in v0.4.").font(.system(size: 11)).foregroundStyle(t.tertiary)
-            }
-            .padding(18)
-            .frame(maxWidth: 560, maxHeight: 620)
-            .background(PanelBackground())
-            .padding(30)
-        }
-        .onExitCommand { model.styleGallery = false }
     }
 }
 
@@ -552,6 +562,69 @@ struct BackupsList: View {
                     }.controlSize(.small)
                 }.padding(8).background(RoundedRectangle(cornerRadius: 9).fill(t.hover))
             }
+        }
+    }
+}
+
+/// Online image search for backdrops: only when turned on in Settings, and it asks before the
+/// first request of each session.
+struct OnlineImagePicker: View {
+    @EnvironmentObject var model: AppModel
+    var choose: (String) -> Void
+    @State private var query = ""
+    @State private var results: [WebImage] = []
+    @State private var status = ""
+    @State private var confirming = false
+    static var confirmed = false
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Divider()
+            Text("ONLINE (OPENVERSE)").font(.system(size: 10, weight: .semibold)).foregroundStyle(.secondary)
+            if !model.settings.onlineImageSearch {
+                Text("Off. Turn on in Settings → Advanced → Online to search openly licensed images.").font(.system(size: 11)).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
+                Button("Open Settings") { model.openView(ViewRef(kind: "settings", section: "advanced")) }.controlSize(.small)
+            } else {
+                HStack {
+                    TextField("Search images", text: $query).textFieldStyle(.roundedBorder).onSubmit(search).accessibilityLabel("Search online images")
+                    Button("Search", action: search).controlSize(.small).disabled(query.trimmingCharacters(in: .whitespaces).isEmpty)
+                }
+                if !status.isEmpty { Text(status).font(.system(size: 11)).foregroundStyle(.secondary) }
+                LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 6), count: 3), spacing: 6) {
+                    ForEach(results) { r in
+                        Button { pick(r) } label: {
+                            AsyncImage(url: URL(string: r.thumbnail ?? r.url)) { $0.resizable().aspectRatio(contentMode: .fill) } placeholder: { Color.gray.opacity(0.15) }
+                                .frame(height: 46).clipShape(RoundedRectangle(cornerRadius: 8))
+                        }.buttonStyle(.plain).help([r.title, r.creator.map { "by " + $0 }, r.license.map { "CC " + $0.uppercased() }].compactMap { $0 }.joined(separator: " · "))
+                        .accessibilityLabel("Image \(r.title ?? "")")
+                    }
+                }
+            }
+        }
+        .alert("Search online?", isPresented: $confirming) {
+            Button("Search Openverse") { Self.confirmed = true; search() }
+            Button("Cancel", role: .cancel) {}
+        } message: { Text("Draft will send “\(query)” to api.openverse.org and load image previews from it. Nothing else is sent.") }
+    }
+
+    func search() {
+        guard Self.confirmed else { confirming = true; return }
+        status = "Searching…"
+        model.online.searchImages(query, enabled: model.settings.onlineImageSearch) { r in
+            switch r {
+            case .success(let imgs): results = imgs; status = imgs.isEmpty ? "No images found." : "Openly licensed images from Openverse."
+            case .failure(let e): results = []; status = e.localizedDescription
+            }
+        }
+    }
+
+    func pick(_ r: WebImage) {
+        status = "Downloading…"
+        model.online.download(r.url, enabled: model.settings.onlineImageSearch) { d in
+            guard let d, let img = NSImage(data: d), let png = img.tiffRepresentation.flatMap({ NSBitmapImageRep(data: $0)?.representation(using: .jpeg, properties: [.compressionFactor: 0.88]) }),
+                  let id = model.storeImage(data: png, ext: "jpg") else { status = "Could not download that image."; return }
+            status = ""
+            choose(id)
         }
     }
 }

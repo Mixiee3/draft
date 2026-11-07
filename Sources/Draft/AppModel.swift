@@ -32,7 +32,7 @@ struct ConfirmRequest: Identifiable {
 final class AppModel: ObservableObject {
     static let shared = AppModel()
 
-    @Published var library = Library.empty()
+    @Published var library = Library.empty() { didSet { if library.userStyles != oldValue.userStyles { Styles.user = library.userStyles } } }
     @Published var docs: [String: DocFile] = [:]
     @Published var ready = false
     @Published var fatal: String?
@@ -67,6 +67,7 @@ final class AppModel: ObservableObject {
     var watchedDay = ""
     var clock: () -> Date = Date.init // replaced only by automation checks
     let reminders = ReminderScheduler()
+    let online = OnlineServices()
 
     let vault = Vault(dir: Vault.defaultURL())
     private(set) var editors: [String: DocumentEditorView] = [:]
@@ -96,6 +97,7 @@ final class AppModel: ObservableObject {
             if lib.tabs.first?.view.kind != "all" { lib.tabs.insert(Tab(view: .all), at: 0) }
             if !lib.tabs.contains(where: { $0.id == lib.activeTabId }) { lib.activeTabId = lib.tabs[0].id }
             library = lib
+            Styles.user = lib.userStyles
             let expired = lib.expiredTrash()
             if !expired.isEmpty { deleteForever(expired) }
             loadIndex()
@@ -439,12 +441,36 @@ final class AppModel: ObservableObject {
 
     func updateAppearance(_ id: String, _ f: (inout DocumentAppearance) -> Void) {
         guard var d = docs[id], readOnly == nil else { return }
+        let old = d.appearance
         f(&d.appearance)
+        guard d.appearance != old else { return }
+        setAppearance(id, d.appearance, previous: old)
+    }
+
+    private var lastStyleUndo: (doc: String, at: Date)?
+
+    /// Appearance changes are undoable in the document (⌘Z) and never touch its content. A run of
+    /// changes within a second (a slider or color drag) is one undo step.
+    func setAppearance(_ id: String, _ a: DocumentAppearance, previous: DocumentAppearance?, registering: Bool = true) {
+        guard var d = docs[id] else { return }
+        let old = previous ?? d.appearance
+        d.appearance = a
         d.updatedAt = nowMs()
         docs[id] = d
+        library.docs[id]?.styleId = a.styleId
         if let e = editors[id] {
             e.theme = theme(for: d)
             e.coverImage = coverImage(d.appearance.cover)
+        }
+        if registering, let um = editors[id]?.controller.undo, !(um.isUndoing || um.isRedoing) {
+            if lastStyleUndo?.doc != id || Date().timeIntervalSince(lastStyleUndo!.at) > 1 {
+                um.registerUndo(withTarget: self) { m in MainActor.assumeIsolated { m.setAppearance(id, old, previous: a) } }
+                um.setActionName("Style Change")
+            }
+            lastStyleUndo = (id, Date())
+        } else if let um = editors[id]?.controller.undo {
+            um.registerUndo(withTarget: self) { m in MainActor.assumeIsolated { m.setAppearance(id, old, previous: a) } }
+            um.setActionName("Style Change")
         }
         markDocDirty(id)
         editorTick &+= 1

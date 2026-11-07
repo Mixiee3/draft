@@ -34,6 +34,11 @@ public protocol LinkHost: AnyObject {
     func createDocument(title: String, content: Node) -> String?
     /// Today's daily note, created on demand.
     func dailyNoteId(create: Bool) -> String?
+    /// The linked document's cover (or a picture of its backdrop) for gallery cards.
+    func pageCover(docId: String) -> NSImage?
+    /// Settings → Online → Link previews (off by default).
+    func wantsLinkPreviews() -> Bool
+    func fetchLinkPreview(_ url: URL, _ done: @escaping (LinkPreview?) -> Void)
 }
 
 public extension LinkHost {
@@ -46,6 +51,9 @@ public extension LinkHost {
     func todayKey() -> String { Day.today() }
     func createDocument(title: String, content: Node) -> String? { nil }
     func dailyNoteId(create: Bool) -> String? { nil }
+    func pageCover(docId: String) -> NSImage? { nil }
+    func wantsLinkPreviews() -> Bool { false }
+    func fetchLinkPreview(_ url: URL, _ done: @escaping (LinkPreview?) -> Void) { done(nil) }
 }
 
 extension EditorController {
@@ -156,6 +164,37 @@ extension EditorController {
             } else { undoGroup(apply); undo.setActionName("Update Link Titles") }
         }
         return textChanged || any
+    }
+
+    /// A pasted web address becomes a preview card; the title and summary arrive later and fill
+    /// it in place (no extra undo step). Without them it is still a working link.
+    func insertLinkPreview(_ u: URL) {
+        let site = (u.host ?? "").replacingOccurrences(of: "www.", with: "")
+        insertAttachmentBlock(kind: .bookmark, node: Node("linkPreview", attrs: ["url": .string(u.absoluteString), "title": .string(site), "site": .string(site)]))
+        guard let id = paragraphIdOfLastBookmark(url: u.absoluteString) else { return }
+        linkHost?.fetchLinkPreview(u) { [weak self] p in
+            guard let self, let p else { return }
+            self.fillLinkPreview(blockId: id, p)
+        }
+    }
+
+    func paragraphIdOfLastBookmark(url: String) -> String? {
+        var found: String?
+        storage.enumerateAttribute(.attachment, in: NSRange(location: 0, length: storage.length)) { v, r, _ in
+            if let a = v as? BlockAttachment, a.kind == .bookmark, a.node.attrs?["url"]?.string == url, r.location <= textView.selectedRange().location { found = a.node.id }
+        }
+        return found
+    }
+
+    public func fillLinkPreview(blockId: String, _ p: LinkPreview) {
+        guard let pr = paragraph(withId: blockId), pr.length > 0, let a = storage.attribute(.attachment, at: pr.location, effectiveRange: nil) as? BlockAttachment, a.kind == .bookmark else { return }
+        a.node[attr: "title"] = .string(p.title)
+        a.node[attr: "site"] = .string(p.site)
+        if let s = p.summary { a.node[attr: "summary"] = .string(s) }
+        storage.addAttribute(.draftBlock, value: block(at: pr).with(raw: .some(a.node)), range: pr)
+        layout.invalidateLayout(forCharacterRange: pr, actualCharacterRange: nil)
+        textView.needsDisplay = true
+        host?.editorDidChange()
     }
 
     /// Set or clear a task's due date (one undo step in this document).

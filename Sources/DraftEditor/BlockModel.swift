@@ -3,9 +3,9 @@ import DraftCore
 
 /// Semantic block kinds as edited in TextKit. Each text paragraph is exactly one block.
 public enum BlockKind: String, Sendable {
-    case paragraph, heading, quote, callout, code, bullet, ordered, task, toggle, divider, image, page, file, opaque
+    case paragraph, heading, quote, callout, code, bullet, ordered, task, toggle, divider, image, page, file, bookmark, opaque
     public var isList: Bool { self == .bullet || self == .ordered || self == .task || self == .toggle }
-    public var isAttachment: Bool { self == .divider || self == .image || self == .page || self == .file || self == .opaque }
+    public var isAttachment: Bool { self == .divider || self == .image || self == .page || self == .file || self == .bookmark || self == .opaque }
 }
 
 /// Immutable block descriptor stored on every character of its paragraph (attribute
@@ -31,28 +31,30 @@ public final class BlockInfo: NSObject, @unchecked Sendable {
     public let containerId: String?
     /// Raw node for attachment-like and unknown blocks (preserved verbatim).
     public let raw: Node?
+    /// Per-block font (`system`/`serif`/`mono`/`rounded`); nil = the document's font.
+    public let font: String?
 
-    public init(id: String = newId("b_"), kind: BlockKind = .paragraph, level: Int = 1, indent: Int = 0, checked: Bool = false, start: Int? = nil, variant: String? = nil, blockColor: String? = nil, decoration: String? = nil, align: String? = nil, language: String? = nil, icon: String? = nil, continuation: Bool = false, innerId: String? = nil, containerId: String? = nil, raw: Node? = nil) {
+    public init(id: String = newId("b_"), kind: BlockKind = .paragraph, level: Int = 1, indent: Int = 0, checked: Bool = false, start: Int? = nil, variant: String? = nil, blockColor: String? = nil, decoration: String? = nil, align: String? = nil, language: String? = nil, icon: String? = nil, continuation: Bool = false, innerId: String? = nil, containerId: String? = nil, raw: Node? = nil, font: String? = nil) {
         self.id = id; self.kind = kind; self.level = level; self.indent = indent; self.checked = checked; self.start = start
         self.variant = variant; self.blockColor = blockColor; self.decoration = decoration; self.align = align; self.language = language; self.icon = icon
-        self.continuation = continuation; self.innerId = innerId; self.containerId = containerId; self.raw = raw
+        self.continuation = continuation; self.innerId = innerId; self.containerId = containerId; self.raw = raw; self.font = font
     }
 
     public static func paragraph() -> BlockInfo { BlockInfo() }
 
     /// Copy with changes. `id` changes only when asked.
-    public func with(id: String? = nil, kind: BlockKind? = nil, level: Int? = nil, indent: Int? = nil, checked: Bool? = nil, start: Int?? = nil, variant: String?? = nil, blockColor: String?? = nil, decoration: String?? = nil, align: String?? = nil, continuation: Bool? = nil, innerId: String?? = nil, containerId: String?? = nil, raw: Node?? = nil) -> BlockInfo {
+    public func with(id: String? = nil, kind: BlockKind? = nil, level: Int? = nil, indent: Int? = nil, checked: Bool? = nil, start: Int?? = nil, variant: String?? = nil, blockColor: String?? = nil, decoration: String?? = nil, align: String?? = nil, continuation: Bool? = nil, innerId: String?? = nil, containerId: String?? = nil, raw: Node?? = nil, font: String?? = nil) -> BlockInfo {
         BlockInfo(id: id ?? self.id, kind: kind ?? self.kind, level: level ?? self.level, indent: indent ?? self.indent, checked: checked ?? self.checked,
                   start: start ?? self.start, variant: variant ?? self.variant, blockColor: blockColor ?? self.blockColor, decoration: decoration ?? self.decoration,
                   align: align ?? self.align, language: language, icon: icon, continuation: continuation ?? self.continuation, innerId: innerId ?? self.innerId,
-                  containerId: containerId ?? self.containerId, raw: raw ?? self.raw)
+                  containerId: containerId ?? self.containerId, raw: raw ?? self.raw, font: font ?? self.font)
     }
 
     public override func isEqual(_ object: Any?) -> Bool {
         guard let o = object as? BlockInfo else { return false }
         return id == o.id && kind == o.kind && level == o.level && indent == o.indent && checked == o.checked && start == o.start && variant == o.variant
             && blockColor == o.blockColor && decoration == o.decoration && align == o.align && language == o.language && continuation == o.continuation
-            && innerId == o.innerId && containerId == o.containerId && raw == o.raw && icon == o.icon
+            && innerId == o.innerId && containerId == o.containerId && raw == o.raw && icon == o.icon && font == o.font
     }
     public override var hash: Int { id.hashValue }
 }

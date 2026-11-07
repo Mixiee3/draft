@@ -116,6 +116,7 @@ public final class EditorController: NSObject, NSTextStorageDelegate, NSTextView
             case .divider: cell = DividerCell()
             case .image: cell = ImageCell()
             case .page: cell = PageCardCell()
+            case .bookmark: cell = BookmarkCell()
             case .file: cell = FileCell()
             default: cell = OpaqueCell()
             }
@@ -123,6 +124,7 @@ public final class EditorController: NSObject, NSTextStorageDelegate, NSTextView
             case .image: cell.setAccessibilityLabel((a.node.attrs?["alt"]?.string).flatMap { $0.isEmpty ? nil : "Image: \($0)" } ?? "Image without description")
             case .file: cell.setAccessibilityLabel("File: \(a.node.attrs?["name"]?.string ?? "attachment")")
             case .page: cell.setAccessibilityLabel("Page: \(a.node.attrs?["title"]?.string ?? "Untitled")")
+            case .bookmark: cell.setAccessibilityLabel("Link: \(a.node.attrs?["title"]?.string ?? a.node.attrs?["url"]?.string ?? "")")
             default: cell.setAccessibilityLabel(a.kind == .divider ? "Separator" : "Preserved block")
             }
             cell.controller = self
@@ -653,6 +655,17 @@ public final class EditorController: NSObject, NSTextStorageDelegate, NSTextView
         }
         host?.editorStateDidChange()
     }
+
+    /// Card size (`compact`/`medium`/`feature`) or preview (`standard`/`icon`/`gallery`) of the page card at the caret.
+    public func setCardOption(_ key: String, _ value: String) {
+        let pr = paragraphRange(at: textView.selectedRange().location)
+        guard block(at: pr).kind == .page, pr.length > 0 else { return }
+        updateAttachment(at: pr.location) { $0[attr: key] = .string(value) }
+        layout.invalidateLayout(forCharacterRange: pr, actualCharacterRange: nil)
+    }
+
+    public func setBlockFont(_ f: String?) { mapBlocks { $0.kind == .code ? $0 : $0.with(font: .some(f)) } }
+    public func isBlockFont(_ f: String?) -> Bool { currentBlock.font == f }
 
     public func setAlign(_ a: String?) { mapBlocks { $0.with(align: .some(a == "left" ? nil : a)) } }
     public func setDecoration(_ d: String?) { mapBlocks { $0.with(decoration: .some($0.decoration == d ? nil : d)) } }

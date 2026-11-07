@@ -115,6 +115,10 @@ extension EditorController {
     }
 
     func pastePlain(_ text: String) {
+        if let u = LinkPreviews.soleURL(text), linkHost?.wantsLinkPreviews() == true, currentBlock.kind == .paragraph,
+           contentRange(paragraphRange(at: textView.selectedRange().location)).length == 0 {
+            insertLinkPreview(u); return
+        }
         let t = text.replacingOccurrences(of: "\r\n", with: "\n")
         if !t.contains("\n") { textView.insertText(t, replacementRange: textView.selectedRange()); return }
         let inCode = currentBlock.kind == .code

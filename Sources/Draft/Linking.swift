@@ -332,6 +332,9 @@ extension EditorHostAdapter: LinkHost {
     func createDocument(title: String, content: Node) -> String? {
         MainActor.assumeIsolated { model.createNestedPage(parent: docId, title: title, content: content, nested: false) }
     }
+    func pageCover(docId: String) -> NSImage? { MainActor.assumeIsolated { model.ensureDoc(docId).flatMap { model.coverImage($0.appearance.cover) } } }
+    func wantsLinkPreviews() -> Bool { MainActor.assumeIsolated { model.settings.linkPreviews } }
+    func fetchLinkPreview(_ url: URL, _ done: @escaping (LinkPreview?) -> Void) { MainActor.assumeIsolated { model.online.linkPreview(url, enabled: model.settings.linkPreviews, done) } }
     func dailyNoteId(create: Bool) -> String? {
         MainActor.assumeIsolated {
             let id = model.dailyNote(model.todayKey, create: create)

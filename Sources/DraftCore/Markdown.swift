@@ -107,6 +107,10 @@ public enum Markdown {
                 assets.append(a)
                 let p = assetPath(a)
                 return [indent + "[\(escape(name))](\(p.addingPercentEncoding(withAllowedCharacters: .urlPathAllowed) ?? p))"]
+            case "linkPreview":
+                let u = n.attrs?["url"]?.string ?? ""
+                let t = n.attrs?["title"]?.string ?? u
+                return [indent + "[\(escape(t.isEmpty ? u : t))](\(u))"]
             case "pageCard":
                 let t = n.attrs?["title"]?.string ?? ""
                 let title = t.isEmpty ? "Untitled page" : t
