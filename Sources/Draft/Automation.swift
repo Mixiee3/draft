@@ -26,6 +26,8 @@ enum Automation {
             case "a11y": await a11yAudit()
             case "links-write": await linksWrite()
             case "links-read": await linksRead()
+            case "screens-v03": await screensV03()
+            case "permissions": await permissions()
             default: break
             }
             NSApp.terminate(nil)

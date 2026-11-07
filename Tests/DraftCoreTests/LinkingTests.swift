@@ -111,6 +111,8 @@ final class LinkingTests: XCTestCase {
         XCTAssertEqual(Day.today(now: at3am, startHour: 4, cal: cal), "2026-11-07", "before the day starts it is still yesterday")
         XCTAssertEqual(Day.today(now: at3am, startHour: 0, cal: cal), "2026-11-08")
         XCTAssertEqual(DateParse.suggestions("", today: today, weekStart: 2, cal: cal), [today, "2026-11-08", "2026-11-09"])
+        XCTAssertEqual(DateParse.suggestions("nex", today: today, weekStart: 2, cal: cal).prefix(2), ["2026-11-09", "2026-12-01"], "partly typed words still suggest dates")
+        XCTAssertEqual(DateParse.suggestions("fr", today: today, weekStart: 2, cal: cal).first, "2026-11-13")
     }
 
     func testTaskBucketsAndReminderPlan() {

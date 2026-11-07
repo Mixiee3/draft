@@ -1,4 +1,6 @@
 import AppKit
+import EventKit
+import UserNotifications
 import DraftCore
 import DraftEditor
 
@@ -144,5 +146,101 @@ extension Automation {
         r["dailyCount"] = "\(m.library.liveDocs.filter { $0.dailyDate == m.todayKey }.count)"
         r["futureTask"] = m.tasks(on: w["futureDay"] ?? "").first?.task.text ?? ""
         save(r, ProcessInfo.processInfo.environment["DRAFT_RESULT"] ?? "links-read.json")
+    }
+
+    static func screensV03() async {
+        guard let w = NSApp.windows.first(where: { $0.isVisible }) else { return }
+        m.setSettings { $0.theme = ProcessInfo.processInfo.environment["DRAFT_THEME"] ?? "light" }
+        var checks: [String: String] = [:]
+        guard let b = m.createDoc(title: "Launch plan") else { return }
+        await wait()
+        let eb = m.editors[b]!
+        eb.focusBody(atStart: true)
+        await type("Goal: ship linked thinking #launch\n[] write release notes @tomor", into: eb.controller); eb.controller.textView.insertNewline(nil)
+        eb.controller.textView.insertNewline(nil)
+        await type("[] book the venue #launch", into: eb.controller)
+        let today = m.todayKey
+        m.addTask("Review backlinks", on: today)
+        m.addTask("Send invites", on: Day.add(today, days: 2))
+        guard let a = m.createDoc(title: "Weekly review") else { return }
+        await wait()
+        let ea = m.editors[a]!, c = ea.controller
+        ea.focusBody(atStart: true)
+        await type("This week: [[Launch", into: c); c.textView.insertNewline(nil)
+        await type("and [[goal: ship", into: c)
+        if let i = c.mention.results.firstIndex(where: { $0.kind == .block }) { c.mention.choose(i) }
+        await type("#review #launch #fff\n[] call the printer @next mon", into: c); c.textView.insertNewline(nil)
+        m.flushAll()
+        for (width, height, tag) in [(1440.0, 900.0, ""), (720.0, 640.0, "narrow-")] {
+            w.setFrame(NSRect(x: 60, y: 60, width: width, height: height), display: true)
+            m.openView(.doc(a)); await wait(0.6)
+            await capture(tag + "v03-document-links")
+            for (trigger, name) in [("[[La", "link-picker"), ("@nex", "date-picker"), ("#la", "tag-picker")] {
+                w.makeFirstResponder(c.textView)
+                c.textView.setSelectedRange(NSRange(location: (c.textView.string as NSString).length, length: 0))
+                c.textView.insertNewline(nil)
+                await type(trigger, into: c)
+                c.textView.scrollRangeToVisible(c.textView.selectedRange()); c.mention.position()
+                await capture(tag + "v03-" + name)
+                checks[tag + name + ".inside"] = c.mention.isOpen && ea.paperView.visibleRect.insetBy(dx: -1, dy: -1).contains(c.mention.frame) ? "yes" : "no \(c.mention.isOpen) \(c.mention.frame)"
+                checks[tag + name + ".rows"] = "\(c.mention.results.count)"
+                c.mention.close()
+                let tv = c.textView, s = tv.string as NSString
+                let start = s.range(of: "\n", options: .backwards).location
+                if start != NSNotFound { tv.setSelectedRange(NSRange(location: start, length: s.length - start)); tv.delete(nil) }
+            }
+            m.openView(.doc(b)); await wait(0.4)
+            m.docRailTab = .backlinks
+            await capture(tag + "v03-backlinks")
+            m.docRailTab = .outline
+            m.openView(ViewRef(kind: "tag", section: "launch")); await wait(0.4)
+            await capture(tag + "v03-tag-view")
+            m.openView(ViewRef(kind: "tasks", section: "today")); await wait(0.4)
+            await capture(tag + "v03-tasks-today")
+            m.openView(ViewRef(kind: "tasks", section: "upcoming")); await wait(0.4)
+            await capture(tag + "v03-tasks-upcoming")
+            m.openView(ViewRef(kind: "calendar")); await wait(0.6)
+            await capture(tag + "v03-calendar")
+            m.openDaily(); await wait(0.5)
+            await capture(tag + "v03-daily-note")
+            m.activateTab(m.library.tabs[0].id)
+            m.librarySearchOpen = true; m.searchRegex = true; m.librarySearch = "(unclosed"
+            await wait(0.3)
+            await capture(tag + "v03-search-regex-error")
+            m.librarySearch = ""; m.searchRegex = false; m.librarySearchOpen = false
+            m.quickOpen = true
+            await wait(0.3)
+            await capture(tag + "v03-quick-open")
+            m.quickOpen = false
+        }
+        w.setFrame(NSRect(x: 60, y: 60, width: 1440, height: 900), display: true)
+        for sec in ["daily", "tags", "advanced"] {
+            m.openView(ViewRef(kind: "settings", section: sec)); await wait(0.3)
+            await capture("v03-settings-" + sec)
+        }
+        m.setSettings { $0.theme = "dark" }
+        m.openView(ViewRef(kind: "calendar")); await wait(0.5)
+        await capture("v03-calendar-dark")
+        m.setSettings { $0.theme = "light" }
+        save(checks, "v03-checks.json")
+        m.flushAll()
+    }
+
+    /// Reports permission state and exercises scheduling/cancelling without showing a prompt.
+    static func permissions() async {
+        var r: [String: String] = ["bundle": Bundle.main.bundleIdentifier ?? "none", "remindersAvailable": m.reminders.available ? "yes" : "no",
+                                   "calendarUsageKey": CalendarEvents.shared.canAsk ? "yes" : "no", "calendarStatus": "\(EKEventStore.authorizationStatus(for: .event).rawValue)"]
+        let settings = await UNUserNotificationCenter.current().notificationSettings()
+        r["notificationStatus"] = "\(settings.authorizationStatus.rawValue)"
+        m.addTask("Reminder probe", on: Day.add(m.todayKey, days: 1))
+        m.library.settings.reminders = true
+        m.syncReminders(requestIfNeeded: false)
+        await wait(1.0)
+        r["plan"] = "\(m.reminders.planned.count)"
+        r["pendingWhenOn"] = await withCheckedContinuation { c in m.reminders.pending { c.resume(returning: "\($0.count)") } }
+        m.setSettings { $0.reminders = false }
+        await wait(1.0)
+        r["pendingWhenOff"] = await withCheckedContinuation { c in m.reminders.pending { c.resume(returning: "\($0.count)") } }
+        save(r, "permissions.json")
     }
 }

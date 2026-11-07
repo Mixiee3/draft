@@ -90,10 +90,11 @@ struct DraftCommands: Commands {
             Button("Forward") { model.goForward() }.keyboardShortcut("]").disabled(!model.canGoForward)
             Divider()
             Button("Today’s Daily Note") { model.openDaily() }
-            if let d = model.activeDocId.flatMap({ model.library.docs[$0]?.dailyDate }) {
-                Button("Previous Day") { model.openDaily(Day.add(d, days: -1), inPlace: true) }.keyboardShortcut(.leftArrow, modifiers: [.command, .option, .shift])
-                Button("Next Day") { model.openDaily(Day.add(d, days: 1), inPlace: true) }.keyboardShortcut(.rightArrow, modifiers: [.command, .option, .shift])
-            }
+            let day = model.activeDocId.flatMap { model.library.docs[$0]?.dailyDate }
+            Button("Previous Day") { if let d = day { model.openDaily(Day.add(d, days: -1), inPlace: true) } }
+                .keyboardShortcut(.leftArrow, modifiers: [.command, .option, .shift]).disabled(day == nil)
+            Button("Next Day") { if let d = day { model.openDaily(Day.add(d, days: 1), inPlace: true) } }
+                .keyboardShortcut(.rightArrow, modifiers: [.command, .option, .shift]).disabled(day == nil)
             Button("Calendar") { model.openView(ViewRef(kind: "calendar")) }.keyboardShortcut("1", modifiers: [.command, .option, .shift])
             Button("Tasks") { model.openView(ViewRef(kind: "tasks")) }.keyboardShortcut("2", modifiers: [.command, .option, .shift])
         }

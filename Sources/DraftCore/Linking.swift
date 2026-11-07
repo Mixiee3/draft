@@ -129,10 +129,15 @@ public enum DateParse {
 
     /// What the `@` menu offers for a typed query (parsed date first, then common choices).
     public static func suggestions(_ q: String, today: String, weekStart: Int = 0, cal: Calendar = .current) -> [String] {
+        let ql = q.lowercased().trimmingCharacters(in: .whitespaces)
         var out: [String] = []
         if let d = parse(q, today: today, weekStart: weekStart, cal: cal) { out.append(d) }
-        if q.trimmingCharacters(in: .whitespaces).isEmpty {
+        if ql.isEmpty {
             out += [today, Day.add(today, days: 1, cal: cal), parse("next monday", today: today, weekStart: weekStart, cal: cal)!]
+        } else {
+            // Words still being typed: "nex" offers next week, next month, next monday…
+            let words = ["today", "tomorrow", "yesterday", "next week", "next month"] + weekdays + weekdays.map { "next " + $0 }
+            for w in words where w.hasPrefix(ql) && out.count < 6 { if let d = parse(w, today: today, weekStart: weekStart, cal: cal) { out.append(d) } }
         }
         var seen = Set<String>()
         return out.filter { seen.insert($0).inserted }

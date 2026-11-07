@@ -356,7 +356,7 @@ final class AppModel: ObservableObject {
         view.title = doc.title
         view.coverImage = coverImage(doc.appearance.cover)
         view.controller.refreshPageTitles { self.library.docs[$0]?.title }
-        view.controller.refreshLinks()
+        view.controller.refreshLinks(afterLoad: true)
         view.onTitleChange = { [weak self] t in self?.setTitle(id, t) }
         view.onEditCover = { [weak self] in self?.coverEditorDoc = id }
         view.onRemoveCover = { [weak self] in self?.updateAppearance(id) { $0.cover = nil } }

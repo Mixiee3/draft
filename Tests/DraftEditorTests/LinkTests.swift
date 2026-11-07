@@ -68,6 +68,16 @@ final class LinkTests: XCTestCase {
         XCTAssertEqual(c.document().content?.first.map(nodeText), "See [[pl")
     }
 
+    func testPickerIsAccessible() {
+        type("[[pl")
+        let items = c.mention.accessibilityChildren() as? [NSAccessibilityElement] ?? []
+        XCTAssertEqual(items.count, c.mention.results.count)
+        XCTAssertEqual(items.first?.accessibilityLabel(), "Plan")
+        XCTAssertEqual(items.first?.accessibilityRole(), .menuItem)
+        XCTAssertTrue(items.first?.isAccessibilitySelected() ?? false)
+        XCTAssertEqual(c.mention.accessibilityRole(), .menu)
+    }
+
     func testBlockReferenceAndCreateNew() {
         type("[[ship")
         XCTAssertEqual(c.mention.results.map(\.kind), [.block, .create])
@@ -130,10 +140,17 @@ final class LinkTests: XCTestCase {
         XCTAssertEqual(c.document().content?.first.map(nodeText), "See Plan ")
     }
 
-    func testEachDocumentHasItsOwnUndoHistory() {
-        let other = DocumentEditorView(frame: view.frame)
-        XCTAssertFalse(other.controller.textView.undoManager === tv.undoManager)
-        XCTAssertNotNil(other.controller.textView.undoManager, "works off-screen too")
+    func testOffscreenDocumentWaitsUntilShown() {
+        c.insertDocLink(docId: "d_plan", title: "Plan")
+        pump()
+        let w = window
+        view.removeFromSuperview()
+        host.titles["d_plan"] = "Plan C"
+        c.refreshLinks()
+        XCTAssertEqual(c.document().content?.first.map(nodeText), "See Plan ", "no text changes while its undo steps live in a window it isn't in")
+        w?.contentView = view
+        c.refreshLinks()
+        XCTAssertEqual(c.document().content?.first.map(nodeText), "See Plan C ")
     }
 
     func testBackspaceRemovesWholeChipAndClickOpensIt() {

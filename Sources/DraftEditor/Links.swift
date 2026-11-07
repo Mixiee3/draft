@@ -105,10 +105,10 @@ extension EditorController {
         return false
     }
 
-    /// Bring link titles, block-reference locations and date labels up to date. Title changes are
-    /// recorded as their own undo step in this document; other undo history is kept.
+    /// Bring link titles, block-reference locations and date labels up to date. In a shown
+    /// document, title changes are their own undo step and no history is cleared.
     @discardableResult
-    public func refreshLinks() -> Bool {
+    public func refreshLinks(afterLoad: Bool = false) -> Bool {
         guard let h = linkHost, storage.length > 0 else { return false }
         let today = h.todayKey()
         var edits: [(NSRange, NSAttributedString.Key, String, String?, Bool)] = [] // range, key, value, newText, missing
@@ -140,9 +140,12 @@ extension EditorController {
         // Title text changes go through the undo stack so earlier undo steps keep valid ranges.
         let textEdits = sorted.filter { $0.3 != nil && ns.substring(with: $0.0) != $0.3 }
         if !textEdits.isEmpty {
+            // Off screen, this document's undo steps still sit in the window's history, so its text
+            // waits until it is shown (DocumentScreen refreshes on appear).
+            if !afterLoad && !isLoading && textView.window == nil { return any }
             textChanged = true
-            // With no history to protect (just loaded), refresh silently without dirtying the file.
-            let direct = isLoading || !(textView.undoManager?.canUndo ?? false)
+            // Just loaded: no history yet, so refresh silently without dirtying the file.
+            let direct = afterLoad || isLoading
             let apply = {
                 for (r, _, _, text, _) in textEdits {
                     let a = self.storage.attributes(at: r.location, effectiveRange: nil)

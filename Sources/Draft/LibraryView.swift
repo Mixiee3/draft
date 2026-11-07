@@ -121,8 +121,9 @@ struct LibraryView: View {
                     .onExitCommand { model.librarySearch = ""; model.librarySearchOpen = false }
                     .onSubmit { if let first = model.searchHits.first { model.openSearchResult(first.meta.id) } }
                     .accessibilityLabel("Search documents")
-                Button { model.searchRegex.toggle() } label: { Text(".*").font(.system(size: 12, weight: .bold, design: .monospaced)) }
-                    .buttonStyle(.plain).foregroundStyle(model.searchRegex ? t.accent : t.pillText.opacity(0.5))
+                Button { model.searchRegex.toggle() } label: { Text(".*").font(.system(size: 12, weight: .bold, design: .monospaced)).fixedSize().padding(.horizontal, 5).padding(.vertical, 3)
+                    .background(Capsule().fill(model.searchRegex ? t.accent.opacity(0.15) : .clear)) }
+                    .buttonStyle(.plain).fixedSize().foregroundStyle(model.searchRegex ? t.accent : t.pillText.opacity(0.5))
                     .help("Regular expression").accessibilityLabel("Regular expression").accessibilityAddTraits(model.searchRegex ? .isSelected : [])
                 Button { model.librarySearch = ""; model.librarySearchOpen = false } label: { Image(systemName: "xmark.circle.fill") }
                     .buttonStyle(.plain).foregroundStyle(t.pillText.opacity(0.5)).accessibilityLabel("Close search")

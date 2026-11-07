@@ -258,7 +258,8 @@ struct BacklinksPane: View {
                 ForEach(groups, id: \.key) { src, items in
                     VStack(alignment: .leading, spacing: 3) {
                         RailRow(icon: "doc.text", title: model.docTitle(src)) { model.openView(.doc(src), inPlace: true) }
-                        ForEach(items) { l in
+                        let unique = items.reduce(into: [VaultIndex.Backlink]()) { acc, l in if !acc.contains(where: { $0.link.block == l.link.block }) { acc.append(l) } } // one row per mentioning block
+                        ForEach(unique) { l in
                             Button { model.openDocLink(src, block: l.link.block) } label: {
                                 Text(l.link.text).font(.system(size: 12)).foregroundStyle(t.secondary).lineLimit(3)
                                     .frame(maxWidth: .infinity, alignment: .leading).padding(.horizontal, 10).padding(.vertical, 6)
