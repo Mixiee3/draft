@@ -331,6 +331,11 @@ public final class EditorController: NSObject, NSTextStorageDelegate, NSTextView
         return true
     }
 
+    /// Each document keeps its own undo history; edits made by the app in one document
+    /// (link titles, moved blocks) never touch another document's history.
+    public let undo = UndoManager()
+    public func undoManager(for view: NSTextView) -> UndoManager? { undo }
+
     public func textDidChange(_ notification: Notification) {
         if !isLoading, let t = pendingTrigger {
             pendingTrigger = nil

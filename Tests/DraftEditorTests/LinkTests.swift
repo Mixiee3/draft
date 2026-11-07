@@ -114,6 +114,28 @@ final class LinkTests: XCTestCase {
         XCTAssertFalse(String(data: try! DraftJSON.encode(c.document()), encoding: .utf8)!.contains("issing"))
     }
 
+    func testRenameRefreshKeepsUndoHistory() {
+        c.insertDocLink(docId: "d_plan", title: "Plan")
+        pump()
+        type("typed")
+        pump()
+        let before = c.document().content?.first.map(nodeText)
+        host.titles["d_plan"] = "Plan B"
+        c.refreshLinks()
+        XCTAssertEqual(c.document().content?.first.map(nodeText), "See Plan B typed")
+        XCTAssertTrue(tv.undoManager!.canUndo, "the user's history survives a title refresh")
+        tv.undoManager?.undo() // the refresh is its own step
+        XCTAssertEqual(c.document().content?.first.map(nodeText), before)
+        tv.undoManager?.undo() // then the typing, with valid ranges
+        XCTAssertEqual(c.document().content?.first.map(nodeText), "See Plan ")
+    }
+
+    func testEachDocumentHasItsOwnUndoHistory() {
+        let other = DocumentEditorView(frame: view.frame)
+        XCTAssertFalse(other.controller.textView.undoManager === tv.undoManager)
+        XCTAssertNotNil(other.controller.textView.undoManager, "works off-screen too")
+    }
+
     func testBackspaceRemovesWholeChipAndClickOpensIt() {
         c.insertDocLink(docId: "d_plan", title: "Plan")
         pump() // separate user actions are separate undo steps

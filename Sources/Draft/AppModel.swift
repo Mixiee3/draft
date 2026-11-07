@@ -62,6 +62,7 @@ final class AppModel: ObservableObject {
     var indexTimer: Timer?
     var forward: [String: [HistEntry]] = [:]
     var lastIndexSeconds = 0.0
+    var linkRefreshTimer: Timer?
     let reminders = ReminderScheduler()
 
     let vault = Vault(dir: Vault.defaultURL())
@@ -423,9 +424,11 @@ final class AppModel: ObservableObject {
         library.docs[id]?.title = title
         markDocDirty(id)
         // Keep page cards and link chips in other open documents in sync.
-        for (eid, e) in editors {
-            e.controller.refreshPageTitles { self.library.docs[$0]?.title }
-            if eid != id { e.controller.refreshLinks() }
+        for (_, e) in editors { e.controller.refreshPageTitles { self.library.docs[$0]?.title } }
+        // Link chips elsewhere follow once typing pauses: one undo step per rename, not per letter.
+        linkRefreshTimer?.invalidate()
+        linkRefreshTimer = Timer.scheduledTimer(withTimeInterval: 0.6, repeats: false) { _ in
+            Task { @MainActor in for (eid, e) in self.editors where eid != id { e.controller.refreshLinks() } }
         }
     }
 

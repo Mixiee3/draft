@@ -105,8 +105,8 @@ extension EditorController {
         return false
     }
 
-    /// Bring link titles, block-reference locations and date labels up to date. Text edits
-    /// here are not user edits: the undo history is cleared when any text had to change.
+    /// Bring link titles, block-reference locations and date labels up to date. Title changes are
+    /// recorded as their own undo step in this document; other undo history is kept.
     @discardableResult
     public func refreshLinks() -> Bool {
         guard let h = linkHost, storage.length > 0 else { return false }
@@ -127,21 +127,35 @@ extension EditorController {
             edits.append((r, .draftDate, v, Day.label(String(v.prefix(10)), today: today), false))
         }
         var textChanged = false, any = false
+        let sorted = edits.sorted(by: { $0.0.location > $1.0.location })
         isProgrammaticEdit = true
         storage.beginEditing()
-        for (r, key, value, text, missing) in edits.sorted(by: { $0.0.location > $1.0.location }) {
+        for (r, key, value, _, missing) in sorted {
             let had = storage.attribute(.draftLinkMissing, at: r.location, effectiveRange: nil) != nil
             if had != missing { any = true; if missing { storage.addAttribute(.draftLinkMissing, value: true, range: r) } else { storage.removeAttribute(.draftLinkMissing, range: r) } }
             if (storage.attribute(key, at: r.location, effectiveRange: nil) as? String) != value { any = true; storage.addAttribute(key, value: value, range: r) }
-            if let text, ns.substring(with: r) != text {
-                let a = storage.attributes(at: r.location, effectiveRange: nil)
-                storage.replaceCharacters(in: r, with: NSAttributedString(string: text, attributes: a))
-                textChanged = true
-            }
         }
         storage.endEditing()
         isProgrammaticEdit = false
-        if textChanged && !isLoading { textView.undoManager?.removeAllActions() }
+        // Title text changes go through the undo stack so earlier undo steps keep valid ranges.
+        let textEdits = sorted.filter { $0.3 != nil && ns.substring(with: $0.0) != $0.3 }
+        if !textEdits.isEmpty {
+            textChanged = true
+            // With no history to protect (just loaded), refresh silently without dirtying the file.
+            let direct = isLoading || !(textView.undoManager?.canUndo ?? false)
+            let apply = {
+                for (r, _, _, text, _) in textEdits {
+                    let a = self.storage.attributes(at: r.location, effectiveRange: nil)
+                    if direct {
+                        self.storage.replaceCharacters(in: r, with: NSAttributedString(string: text!, attributes: a))
+                    } else {
+                        self.replace(r, with: NSAttributedString(string: text!, attributes: a))
+                    }
+                }
+            }
+            if direct { isProgrammaticEdit = true; storage.beginEditing(); apply(); storage.endEditing(); isProgrammaticEdit = false }
+            else { undoGroup(apply); textView.undoManager?.setActionName("Update Link Titles") }
+        }
         return textChanged || any
     }
 
