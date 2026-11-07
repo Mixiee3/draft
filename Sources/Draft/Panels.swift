@@ -373,7 +373,7 @@ struct InfoPanel: View {
     @EnvironmentObject var model: AppModel
     @Environment(\.tokens) var t
     let docId: String
-    @State private var tab = "info"
+    @Binding var tab: String
 
     var body: some View {
         let m = model.library.docs[docId]

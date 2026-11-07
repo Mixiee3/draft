@@ -74,7 +74,7 @@ public final class SlashMenu: NSView {
         needsDisplay = true
     }
 
-    func position() {
+    public func position() {
         guard let host = controller.overlayHost else { return }
         let tv = controller.textView
         let gr = controller.layout.glyphRange(forCharacterRange: NSRange(location: anchor, length: 1), actualCharacterRange: nil)

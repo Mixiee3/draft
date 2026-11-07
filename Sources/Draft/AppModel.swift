@@ -49,6 +49,7 @@ final class AppModel: ObservableObject {
     @Published var findQuery = ""
     @Published var findCount = 0
     @Published var findFocusNonce = 0
+    @Published var infoTab = "info"
 
     let vault = Vault(dir: Vault.defaultURL())
     private(set) var editors: [String: DocumentEditorView] = [:]

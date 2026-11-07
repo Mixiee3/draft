@@ -157,7 +157,7 @@ public final class SelectionToolbar: NSView {
     var shouldShow: Bool {
         let tv = controller.textView
         let sel = tv.selectedRange()
-        guard sel.length > 0, controller.overlayHost != nil else { return false }
+        guard sel.length > 0, controller.overlayHost != nil, !controller.isBlockMode else { return false }
         if let d = dismissedSelection, d == sel { return false }
         // Pure attachment selections (one image/card) have no text to format.
         if sel.length == 1, controller.storage.attribute(.attachment, at: sel.location, effectiveRange: nil) != nil { return false }

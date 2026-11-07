@@ -43,6 +43,7 @@ public final class DocumentEditorView: NSView, NSTextViewDelegate {
     public let controller = EditorController()
     public let scrollView = NSScrollView()
     let paper = PaperView()
+    public var paperView: NSView { paper }
     let paperBackground = NSView()
     let coverView = NSImageView()
     public let titleView: NSTextView
@@ -195,6 +196,7 @@ public final class DocumentEditorView: NSView, NSTextViewDelegate {
         guard !inLayout else { return }
         inLayout = true
         defer { inLayout = false }
+        if !handle.isDragging { handle.isHidden = true } // the next mouse move places it again
         let width = scrollView.contentSize.width
         guard width > 0 else { return }
         let margin: CGFloat = width < 640 ? 10 : 28

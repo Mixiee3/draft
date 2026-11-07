@@ -65,6 +65,7 @@ struct LibraryView: View {
             }
             Text(title).font(.system(size: 17, weight: .semibold)).foregroundStyle(t.text)
             Spacer()
+            if view.kind != "trash" && view.kind != "shared" {
             PillGroup {
                 PillButton(symbol: "rectangle.grid.2x2", label: "Gallery (⌃⌘1)", isActive: model.library.settings.libraryView == .gallery) { model.setSettings { $0.libraryView = .gallery } }
                 PillButton(symbol: "square.grid.3x3", label: "Grid (⌃⌘2)", isActive: model.library.settings.libraryView == .grid) { model.setSettings { $0.libraryView = .grid } }
@@ -88,6 +89,7 @@ struct LibraryView: View {
                 } label: { Image(systemName: "arrow.up.arrow.down").frame(width: 30, height: 30) }
                 .menuStyle(.borderlessButton).menuIndicator(.hidden).fixedSize().foregroundStyle(t.pillText).tint(t.pillText).tint(t.pillText)
                 .accessibilityLabel("Sort")
+            }
             }
             PillGroup {
                 Menu {

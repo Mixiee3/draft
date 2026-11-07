@@ -63,26 +63,40 @@ sharing, publishing (need a proven local format — v1.x/v2.0); signing/notariza
 
 ---
 
-## v0.2 — "Writer's desk" (macOS)
+## v0.2 — "Writer's desk" (macOS) ✅ requested scope done
 
 **Theme.** Single-document writing that feels finished and safe.
 
-- ✅ Block gutter handle, drag reorder with insertion line, block selection (Esc, ⇧↑/↓), delete,
-  Move up/down/top/bottom (⌥⌘↑/↓). ⬜ Block context menu (turn into, duplicate, copy link).
-- ⬜ Group selected blocks into a page (⌘G) / ungroup; move blocks to another doc.
-- ⬜ Toggle list (`+ `), callout block, page break (`===`), strong/dotted/three-dot separators, `x ` task trigger.
-- ✅ Rich paste from other apps (HTML/RTF → blocks), Markdown paste, multi-line plain paste that splits blocks.
-- ✅ Recently Deleted (tombstones for documents *and* nested pages), restore, empty.
-- ✅ Local snapshots: automatic (time/size based) + "View Backups" + restore.
-- ⬜ Cover crop/reposition (ratios, focal point) as data.
-- ⬜ Tab state across restarts (scroll + caret), real back/forward stacks.
-- ✅ Space Search: one result per doc, match count, snippet, jump to the first match (Find in Page pre-filled).
-- ⬜ Image block: resize, caption, alt text; file attachment block (QuickLook).
+- ✅ Block gutter handle, drag reorder with insertion line and autoscroll, block selection (Esc,
+  ↑/↓, ⇧↑/↓), delete blocks, Move up/down/top/bottom (⌥⌘↑/↓, ⌃⌥⌘↑/↓). One undo per operation.
+- ✅ Paste: multi-line text → one block per line with Markdown recognized; RTF/HTML → headings,
+  lists and marks; Draft → Draft keeps blocks and marks; surrounding block keeps its id.
+- ✅ Recently Deleted for documents *and* nested pages: Undo toast, Restore, Delete Permanently,
+  Empty, 30-day purge.
+- ✅ Automatic local backups (≤ 1 per 10 min while editing, 30 kept) with View Backups → Restore.
+- ✅ Space Search: one result per doc, match count, highlighted snippet, opens the doc on the first
+  match (Find in Page pre-filled).
+- ✅ Layout: text scrolls only below the document controls; the slash menu flips/shrinks to stay in
+  the window (checked at 1440×900 and 720×640).
 
-**Prerequisites.** Snapshot store (`history/<docId>/`), search index separate from library index,
-block-selection mode in the editor. **Data risk.** Snapshot growth → retention policy + Stats.
-**Release gate.** 10,000-block document keystroke latency < 16 ms p95 on M1; undo covers move/delete;
-deleting and restoring a nested page keeps child ids.
+**Data/format.** `DocMeta.deletedAt` (optional, schema 1 compatible); `history/<docId>/<ms>.json`
+backups; `searchText` keeps original case (derived, rebuilt on save).
+**Release gate.** Met: undo covers move/delete/paste; deleting and restoring a nested page keeps
+child ids; 56 tests + smoke test (restart, trash, backups, search jump). **Not yet measured:**
+10,000-block keystroke latency — moved to v0.2.1 with the remaining items.
+
+## v0.2.1 — "Writer's desk, continued" (macOS)
+
+- ⬜ Block context menu (turn into, duplicate, copy link); group selected blocks into a page (⌘G) /
+  ungroup; move blocks to another doc.
+- ⬜ Toggle list (`+ `), callout block, page break (`===`), strong/dotted/three-dot separators, `x ` task trigger.
+- ⬜ Cover crop/reposition (ratios, focal point) as data.
+- ⬜ Tab state across restarts (scroll + caret), back/forward stacks.
+- ⬜ Image block: resize, caption, alt text; file attachment block (QuickLook).
+- ⬜ Performance: incremental block moves (today the document is rebuilt per move), 10k-block budget.
+
+**Gate.** 10,000-block document keystroke latency < 16 ms p95 on M1; every new block type
+round-trips through Markdown export and import.
 
 ## v0.3 — "Linked thinking" (macOS)
 
@@ -169,8 +183,9 @@ Assistant (opt-in, bring-your-own or local model, never required); local API/MCP
 
 ## Next smallest coherent slice (prioritized by user value)
 
-1. **Block gutter + block selection + drag reorder + move up/down** — the largest remaining gap in
-   "feels like a block editor", and the prerequisite for group-into-page.
-2. **Recently Deleted + automatic local snapshots** — today deletion is permanent (with confirmation).
-3. **Space Search with jump-to-block** — library search finds documents but does not land on the match.
-4. **Rich/multi-line paste** that creates proper blocks from other apps.
+*(updated after v0.2)*
+
+1. **Block context menu + group into page (⌘G)** — builds directly on block selection.
+2. **Callout, toggle list and page-break blocks** with their Markdown triggers.
+3. **Performance pass**: incremental moves and a measured 10k-block budget.
+4. **Tab state across restarts** (scroll and caret per tab).

@@ -59,7 +59,7 @@ public final class DraftLayoutManager: NSLayoutManager {
         return rect.isNull ? nil : rect
     }
 
-    func firstLineRect(_ pr: NSRange) -> (rect: NSRect, used: NSRect)? {
+    public func firstLineRect(_ pr: NSRange) -> (rect: NSRect, used: NSRect)? {
         let gr = glyphRange(forCharacterRange: pr, actualCharacterRange: nil)
         if gr.length == 0 { return nil }
         var eff = NSRange()

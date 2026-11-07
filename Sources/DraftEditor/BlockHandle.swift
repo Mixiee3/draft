@@ -72,7 +72,7 @@ final class BlockHandleView: NSView {
 
 extension DocumentEditorView {
     /// Show the handle next to the block under `p` (paper coordinates).
-    func updateHandle(at p: NSPoint) {
+    public func updateHandle(at p: NSPoint) {
         let tv = controller.textView
         guard !handle.isDragging else { return }
         let local = tv.convert(p, from: paper)

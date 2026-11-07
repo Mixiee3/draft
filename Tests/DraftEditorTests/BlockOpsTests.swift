@@ -64,6 +64,7 @@ final class BlockOpsTests: XCTestCase {
         tv.moveDownAndModifySelection(nil)
         XCTAssertEqual(c.blockSelectionIds, ["b_a", "b_b"])
         XCTAssertEqual(c.selectedBlockRange, 0...1)
+        XCTAssertFalse(c.toolbar.isVisible, "text formatting bar stays hidden for block selections")
         tv.deleteBackward(nil)
         XCTAssertFalse(c.isBlockMode)
         XCTAssertEqual(ids(), ["b_c", "b_hr", "b_d"])

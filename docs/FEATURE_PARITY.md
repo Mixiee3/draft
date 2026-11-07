@@ -12,7 +12,7 @@ app or screenshots) · `verified` (covered by `swift test` or `scripts/smoke.sh`
 
 Platform: all statuses are for the native macOS app. Windows: see §22.
 
-Last updated: v0.1 (native macOS) — 2026‑11‑07.
+Last updated: v0.2 (native macOS) — 2026‑11‑07.
 
 ## 1. Editor primitives and keyboard
 
@@ -255,7 +255,7 @@ Last updated: v0.1 (native macOS) — 2026‑11‑07.
 
 | ID | Capability | Evidence | Status | Target | Acceptance check |
 |---|---|---|---|---|---|
-| W1 | Narrow window | B§9 | working | 0.1 | < 820 pt: rail becomes overlay; paper margins shrink; breadcrumb hides (`narrow-document.png`) |
+| W1 | Narrow window | B§9 | verified | 0.1 | < 820 pt: rail becomes overlay; paper margins shrink; breadcrumb hides; text starts below controls and the slash menu stays inside at 1440×900 and 720×640 (automation layout checks, `testSlashMenuStaysInsideVisibleAreaInShortWindow`) |
 | W2 | iPad / iPhone | B§9 | missing | later | Apps on top of `DraftCore` |
 
 ## 20. Localization

@@ -173,10 +173,74 @@ enum Automation {
         m.openView(ViewRef(kind: "settings", section: "appearance"))
         await capture("settings-appearance-dark")
         m.setSettings { $0.theme = "light" }
-        // Narrow window
+        var checks: [String: String] = [:]
+        // Scrolled: text must start below the top controls.
+        m.setSettings { $0.libraryView = .gallery }
         m.openView(.doc(welcome.id))
-        w.setFrame(NSRect(x: 60, y: 60, width: 720, height: 860), display: true)
+        await wait(0.8)
+        if let ed = m.editors[welcome.id] {
+            ed.scrollView.contentView.scroll(to: NSPoint(x: 0, y: 260)); ed.scrollView.reflectScrolledClipView(ed.scrollView.contentView)
+            await capture("document-scrolled")
+            checks["normal.scrollTopBelowControls"] = "\(ed.bounds.height - ed.scrollView.frame.maxY)"
+            // Block selection + handle
+            let c = ed.controller
+            ed.scrollView.contentView.scroll(to: .zero)
+            w.makeFirstResponder(c.textView)
+            if let pr = c.paragraph(withId: (c.document().content ?? [])[1].id ?? "") {
+                c.textView.setSelectedRange(NSRange(location: pr.location, length: 0))
+                c.enterBlockMode(); c.stepBlockSelection(1, extend: true)
+                let r = c.layout.firstLineRect(pr)!.rect
+                ed.updateHandle(at: c.textView.convert(NSPoint(x: 10, y: r.midY + c.textView.textContainerOrigin.y), to: ed.paperView))
+                await capture("block-selection")
+                c.exitBlockMode()
+            }
+            // Backups list
+            m.flushAll()
+            m.infoTab = "backups"; m.panel = .info
+            await capture("backups-panel")
+            m.panel = nil; m.infoTab = "info"
+        }
+        // Search results
+        m.activateTab(m.library.tabs[0].id)
+        m.librarySearchOpen = true; m.librarySearch = "markdown"
+        await capture("search-results")
+        m.librarySearch = ""; m.librarySearchOpen = false
+        // Recently Deleted
+        if let morning = m.library.docs.values.first(where: { $0.title == "Morning pages" }) {
+            m.requestDelete(morning.id)
+            m.openView(ViewRef(kind: "trash"))
+            await capture("recently-deleted")
+            m.restore(morning.id)
+            m.activateTab(m.library.tabs[0].id)
+        }
+        // Narrow window: scrolled text and the slash menu at the bottom edge.
+        m.openView(.doc(welcome.id))
+        w.setFrame(NSRect(x: 60, y: 60, width: 720, height: 640), display: true)
+        await wait(0.6)
         await capture("narrow-document")
+        if let ed = m.editors[welcome.id] {
+            let c = ed.controller
+            checks["narrow.scrollTopBelowControls"] = "\(ed.bounds.height - ed.scrollView.frame.maxY)"
+            w.makeFirstResponder(c.textView)
+            c.textView.setSelectedRange(NSRange(location: (c.textView.string as NSString).length, length: 0))
+            c.textView.insertNewline(nil)
+            await type("/", into: c)
+            c.textView.scrollRangeToVisible(c.textView.selectedRange()); c.slash.position()
+            await capture("narrow-slash-menu")
+            checks["narrow.slashInside"] = ed.paperView.visibleRect.insetBy(dx: -1, dy: -1).contains(c.slash.frame) ? "yes" : "no \(c.slash.frame) \(ed.paperView.visibleRect)"
+            c.slash.close()
+            c.textView.undoManager?.undo(); c.textView.undoManager?.undo()
+            w.setFrame(NSRect(x: 60, y: 60, width: 1440, height: 900), display: true)
+            await wait(0.6)
+            c.textView.setSelectedRange(NSRange(location: (c.textView.string as NSString).length, length: 0))
+            c.textView.insertNewline(nil)
+            await type("/", into: c)
+            c.textView.scrollRangeToVisible(c.textView.selectedRange()); c.slash.position()
+            checks["normal.slashInside"] = ed.paperView.visibleRect.insetBy(dx: -1, dy: -1).contains(c.slash.frame) ? "yes" : "no"
+            await capture("slash-menu")
+            c.slash.close()
+        }
+        if let d = try? JSONSerialization.data(withJSONObject: checks, options: [.prettyPrinted, .sortedKeys]) { try? d.write(to: out.appendingPathComponent("layout-checks.json")) }
         // Export
         m.export(docIds: [welcome.id], name: "Welcome export", groupByFolder: false, to: URL(fileURLWithPath: NSTemporaryDirectory()))
         await wait(0.3)

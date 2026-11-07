@@ -36,7 +36,7 @@ struct DocumentScreen: View {
                         switch p {
                         case .format: FormatPanel(docId: docId)
                         case .style: StylePanel(docId: docId)
-                        case .info: InfoPanel(docId: docId)
+                        case .info: InfoPanel(docId: docId, tab: $model.infoTab)
                         case .share: SharePanel(docId: docId)
                         }
                     }
