@@ -80,10 +80,13 @@ public enum DateParse {
         let s = raw.lowercased().trimmingCharacters(in: .whitespaces).replacingOccurrences(of: ",", with: " ")
         let w = s.split(separator: " ").map(String.init)
         guard !w.isEmpty else { return nil }
+        // Partly typed words count once they are unambiguous (3+ letters): "tom" → tomorrow.
+        if s.count >= 3 || s == "tmr" {
+            if "today".hasPrefix(s) || s == "now" { return today }
+            if "tomorrow".hasPrefix(s) || s == "tmr" { return Day.add(today, days: 1, cal: cal) }
+            if "yesterday".hasPrefix(s) { return Day.add(today, days: -1, cal: cal) }
+        }
         switch s {
-        case "today", "tod", "now": return today
-        case "tomorrow", "tmr", "tom", "tomo": return Day.add(today, days: 1, cal: cal)
-        case "yesterday", "yes", "yest": return Day.add(today, days: -1, cal: cal)
         case "next week": return Day.add(Day.startOfWeek(today, weekStart: weekStart, cal: cal), days: 7, cal: cal)
         case "next month":
             guard let d = Day.date(today, cal: cal), let n = cal.date(byAdding: .month, value: 1, to: d) else { return nil }

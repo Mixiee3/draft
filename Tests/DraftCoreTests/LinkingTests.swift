@@ -96,7 +96,8 @@ final class LinkingTests: XCTestCase {
     func testDatesAndWeekStartAndStartOfDay() {
         let today = "2026-11-07" // a Saturday
         func p(_ s: String) -> String? { DateParse.parse(s, today: today, weekStart: 2, cal: cal) }
-        XCTAssertEqual(p("today"), today); XCTAssertEqual(p("Tomorrow"), "2026-11-08"); XCTAssertEqual(p("yesterday"), "2026-11-06")
+        XCTAssertEqual(p("today"), today); XCTAssertEqual(p("tomorr"), "2026-11-08"); XCTAssertEqual(p("yest"), "2026-11-06"); XCTAssertNil(p("to"))
+        XCTAssertEqual(p("Tomorrow"), "2026-11-08"); XCTAssertEqual(p("yesterday"), "2026-11-06")
         XCTAssertEqual(p("monday"), "2026-11-09"); XCTAssertEqual(p("sat"), "2026-11-14", "a bare weekday is the next one")
         XCTAssertEqual(p("this monday"), "2026-11-02"); XCTAssertEqual(p("next monday"), "2026-11-09")
         XCTAssertEqual(DateParse.parse("next monday", today: today, weekStart: 1, cal: cal), "2026-11-09")
