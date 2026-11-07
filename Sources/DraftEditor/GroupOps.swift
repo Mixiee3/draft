@@ -27,6 +27,16 @@ extension EditorController {
     /// page title and the page card keeps that block's id; every other block keeps its id.
     public func groupSelectionIntoPage() {
         guard canGroup, let host else { NSSound.beep(); return }
+        moveSelectionIntoNewPage(presentation: "page") { host.createGroupedPage(title: $0, content: $1) }
+    }
+
+    /// ⌥⌘N: like Group into Page, but the blocks become a new top-level document (same folder).
+    public func moveSelectedBlocksToNewDocument() {
+        guard canGroup, let h = linkHost else { NSSound.beep(); return }
+        moveSelectionIntoNewPage(presentation: "card") { h.createDocument(title: $0, content: $1) }
+    }
+
+    func moveSelectionIntoNewPage(presentation: String, create: (String, Node) -> String?) {
         var (flat, r) = selectedFlat
         var blocks = Array(flat[r])
         var title = ""
@@ -39,8 +49,8 @@ extension EditorController {
             blocks.removeFirst()
         }
         let content = Converter.tree(from: blocks)
-        guard let pageId = host.createGroupedPage(title: title, content: content) else { return }
-        var attrs: [String: JSONValue] = ["id": .string(cardId), "docId": .string(pageId), "title": .string(title), "presentation": "page"]
+        guard let pageId = create(title, content) else { NSSound.beep(); return }
+        var attrs: [String: JSONValue] = ["id": .string(cardId), "docId": .string(pageId), "title": .string(title), "presentation": .string(presentation)]
         if let t = titleNode, let v = try? JSONDecoder().decode(JSONValue.self, from: DraftJSON.encode(t)) { attrs["titleNode"] = v }
         let card = Node("pageCard", attrs: attrs)
         flat.replaceSubrange(r, with: [FlatBlock(info: BlockInfo(id: cardId, kind: .page, raw: card), inline: [])])
@@ -94,6 +104,21 @@ extension EditorController {
         clearBlockModeState()
         rebuild(flat, select: before.map { [$0] } ?? [flat[0].info.id], blockMode: false,
                 alsoUndo: { self.registerMoveState(content: content, ids: moving.map(\.info.id), target: target, present: true) })
+    }
+
+    /// Move the selected blocks to today's daily note and leave a card that opens it.
+    public func moveSelectedBlocksToToday() {
+        guard canGroup, let h = linkHost, let today = h.dailyNoteId(create: true), let host else { NSSound.beep(); return }
+        var (flat, r) = selectedFlat
+        let moving = Array(flat[r])
+        let content = Converter.tree(from: moving)
+        guard host.appendBlocks(content, toDocument: today) else { NSSound.beep(); return }
+        let cardId = newId("b_")
+        let card = Node("pageCard", attrs: ["id": .string(cardId), "docId": .string(today), "title": .string(host.pageInfo(docId: today)?.title ?? ""), "presentation": "card"])
+        flat.replaceSubrange(r, with: [FlatBlock(info: BlockInfo(id: cardId, kind: .page, raw: card), inline: [])])
+        clearBlockModeState()
+        rebuild(flat, select: [cardId], blockMode: true,
+                alsoUndo: { self.registerMoveState(content: content, ids: moving.map(\.info.id), target: today, present: true) })
     }
 
     func registerMoveState(content: Node, ids: [String], target: String, present: Bool) {
@@ -162,13 +187,16 @@ extension EditorController {
         item("block.ungroup", into: menu)
         let targets = host?.moveTargets() ?? []
         let moveMenu = NSMenu(title: "Move to")
+        item("block.moveToNewDoc", "New Document", into: moveMenu)
+        item("block.moveToToday", "Today’s Daily Note", into: moveMenu)
+        if !targets.isEmpty { moveMenu.addItem(.separator()) }
         for t in targets {
             moveMenu.addItem(ClosureMenuItem(title: t.title) { [weak self] in self?.moveSelectedBlocks(toDocument: t.id) })
         }
         let moveItem = NSMenuItem(title: "Move to", action: nil, keyEquivalent: "")
         moveItem.submenu = moveMenu
         moveItem.image = NSImage(systemSymbolName: "arrow.turn.up.right", accessibilityDescription: nil)
-        moveItem.isEnabled = !targets.isEmpty
+        moveItem.isEnabled = moveMenu.items.contains { $0.isEnabled && !$0.isSeparatorItem }
         menu.addItem(moveItem)
         menu.addItem(.separator())
         item("block.moveUp", into: menu)

@@ -46,6 +46,7 @@ struct DraftCommands: Commands {
             Button("New Folder") { model.createFolder() }.keyboardShortcut("n", modifiers: [.command, .shift])
             Divider()
             Button("Quick Open…") { model.quickOpen = true }.keyboardShortcut("o")
+            Button("Today’s Daily Note") { model.openDaily() }.keyboardShortcut("d", modifiers: [.command, .shift])
         }
         CommandGroup(replacing: .saveItem) {
             Button("Close Tab") {
@@ -83,6 +84,19 @@ struct DraftCommands: Commands {
                 Button(cmd.plannedFor.map { "\(cmd.title) (planned \($0))" } ?? cmd.title) { run(cmd.id) }
                     .disabled(model.activeDocId == nil || cmd.plannedFor != nil)
             }
+        }
+        CommandMenu("Go") {
+            Button("Back") { model.goBack() }.keyboardShortcut("[").disabled(!model.canGoBack)
+            Button("Forward") { model.goForward() }.keyboardShortcut("]").disabled(!model.canGoForward)
+            Divider()
+            Button("Today’s Daily Note") { model.openDaily() }
+            let day = model.activeDocId.flatMap { model.library.docs[$0]?.dailyDate }
+            Button("Previous Day") { if let d = day { model.openDaily(Day.add(d, days: -1), inPlace: true) } }
+                .keyboardShortcut(.leftArrow, modifiers: [.command, .option, .shift]).disabled(day == nil)
+            Button("Next Day") { if let d = day { model.openDaily(Day.add(d, days: 1), inPlace: true) } }
+                .keyboardShortcut(.rightArrow, modifiers: [.command, .option, .shift]).disabled(day == nil)
+            Button("Calendar") { model.openView(ViewRef(kind: "calendar")) }.keyboardShortcut("1", modifiers: [.command, .option, .shift])
+            Button("Tasks") { model.openView(ViewRef(kind: "tasks")) }.keyboardShortcut("2", modifiers: [.command, .option, .shift])
         }
         CommandGroup(before: .sidebar) {
             Button(model.library.settings.railCollapsed ? "Show Sidebar" : "Hide Sidebar") {

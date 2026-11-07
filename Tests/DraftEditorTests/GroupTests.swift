@@ -4,7 +4,7 @@ import DraftCore
 @testable import DraftEditor
 
 /// Records what the editor asks of the app.
-final class FakeHost: EditorHost {
+class FakeHost: EditorHost {
     var pages: [String: (title: String, content: Node)] = [:]
     var active: [String: Bool] = [:]
     func image(forAsset id: String) -> NSImage? {

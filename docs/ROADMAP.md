@@ -19,6 +19,7 @@ Legend: ✅ done · 🟡 partial · ⬜ not started
 
 ### Change log of this plan
 
+- **2026‑11‑07** — v0.3 shipped; v0.4 expanded with the items deferred from v0.3.
 - **2026‑11‑07** — Architecture change (not a scope reset): the Electron prototype was replaced by a
   native macOS app. Kept: data model, layer separation, styles, migrations design, export rules,
   seed copy. Added: Windows as a separate later track (below). TextKit 1 chosen over TextKit 2 for
@@ -117,49 +118,69 @@ contiguous relayout and moves to v0.8 with the layout-scaling work.
 
 
 
-## v0.3 — "Linked thinking" (macOS)
+## v0.3 — "Linked thinking" (macOS) ✅ shipped
 
 **Theme.** Notes that know about each other and about time: links, backlinks, tags, daily notes,
 a calendar, and tasks across documents. Everything is derived from block ids in a local index.
 
-**Implementation order** (each step builds on the previous one):
-
-| # | Feature | Status | Acceptance check |
+| # | Feature | Status | Acceptance check (result) |
 |---|---|---|---|
-| 1 | Local link/tag/task index (`index/` in the vault, rebuilt from documents, incremental on save) | ⬜ planned | Deleting `index/` and relaunching rebuilds the same results; a 10,000-block vault indexes in < 3 s; no document file is ever written by indexing |
-| 2 | Linked documents: `[[` and `@` picker (documents, nested pages, blocks), inline link chips, ⌘-click / click to open | ⬜ planned (block links via `draft://` ✅ in v0.2.1) | Type `[[Plan` → pick → chip shows the live title; renaming or moving the target keeps the link working; Markdown export writes relative links |
-| 3 | Back / forward history across links and nested pages (⌘[ / ⌘]) | ⬜ planned (Back ✅) | Follow three links, ⌘[ three times returns through each with scroll restored |
-| 4 | Backlinks pane (document rail segment) grouped by source with context snippet; jump to the linking block | ⬜ planned | A link added in doc A appears in B's backlinks within 1 s; clicking it opens A at the block |
-| 5 | Block references that survive moves (render referenced block text, update when it changes) | ⬜ planned | Move or group the referenced block — the reference still resolves; deleting it shows a recoverable "missing" state |
-| 6 | Tags `#tag`: inline chips, autocomplete, colors, tag results view in the rail, ignore rules (hex colors, numbers, custom) | ⬜ planned | `#ideas` autocompletes existing tags; `#ff0000` and `#1` are ignored by default (S17); tag view lists every block with the tag |
-| 7 | Daily notes: one page per date in a "Daily Notes" folder, today via ⌘⇧D, previous/next day, optional template; "Show Daily Notes" toggle in All Docs (S25) | ⬜ planned | Opening today twice never creates two notes; dates follow the week-start setting |
-| 8 | Calendar stream (S33): day cards (Today highlighted, upcoming dimmed), Add Task, Create Daily Note, filters Daily Notes / Tasks (/ Events with optional, permission-gated system calendar read) | ⬜ planned | Add Task on a future day creates a task with that due date in the daily note; filters persist |
-| 9 | Tasks across documents: due dates (`@today`, `@tomorrow`, date picker), Inbox / Today / Upcoming / Overdue / Completed views, source context, completion with one undo | ⬜ planned (per-document Tasks pane ✅) | Completing a task in the Tasks view updates the source block; ⌘Z reverts both; overdue tasks show after midnight |
-| 10 | Reminders as local notifications (opt-in) | ⬜ planned | A task due at 09:00 posts one notification; turning reminders off cancels pending ones |
-| 11 | Move blocks to a new document / to today's daily note (S42) | ⬜ planned (Move to existing ✅) | ⌥⌘N moves the selection into a new doc and leaves a page card |
-| 12 | Search options: exact "phrase", -exclusion, regex (S6, B§H); Quick Open includes blocks of the current Space | ⬜ planned (Space Search ✅) | `"quiet place" -draft` returns only matching docs; invalid regex shows an inline error |
-| 13 | Date links / mentions of dates (Advanced settings: badge or text, S12) | ⬜ planned | `@next monday` becomes a date chip that opens that daily note |
+| 1 | Local link/tag/task index (`index/index.json`, rebuilt from documents, incremental on save) | ✅ | Deleting `index/` and relaunching gives identical backlinks, tags, task buckets and block locations, and no document file changes (`scripts/links-test.sh`); 10,000-block vault rebuilt from disk in 0.8 s (perf `indexRebuildMs`, budget 3 s) |
+| 2 | Linked documents: `[[` / `@` picker (documents, nested pages, blocks, "New document …"), link chips with live titles, click to open | ✅ | Chip follows a rename, a folder move and grouping, also after relaunch; Markdown export writes `[Title](Title.md)` relative links (links test) |
+| 3 | Back / forward (⌘[ / ⌘]) across links, restoring scroll | ✅ | Follow link → back → forward lands on each document (links test); scroll offset is stored per history entry |
+| 4 | Backlinks pane (rail segment), grouped by source, one row per mentioning block, click opens it | ✅ | A new link appears in the target's backlinks 0.52 s after typing stops (links test, budget 1 s) |
+| 5 | Block references that survive moves; missing state | ✅ | Grouping the referenced block into a nested page: the reference resolves to the new page; a deleted target shows struck-through "missing" and recovers when restored (links test, `LinkTests`) |
+| 6 | Tags: `#` autocomplete, colors, sidebar list, tag view, ignore rules (hex, numbers, custom) | ✅ | `#fff` and `#123` are not tags by default; custom words apply after re-index (`LinkingTests`, `testTagsAreColoredButHexIsNot`) |
+| 7 | Daily notes: ⇧⌘D, previous/next day, template, "Show daily notes in All Docs" | ✅ | Opening today twice returns the same note, also after relaunch (links test `dailyUnique`, `dailyCount` = 1) |
+| 8 | Calendar stream: day cards, Today highlighted, Create Daily Note, Add Task, All/Tasks/Notes filter, Completed toggle, optional calendar events | 🟡 | A task added on a future day is due that day and listed under Upcoming (links test); filters do not persist across relaunch (→ v0.4) |
+| 9 | Tasks across documents: Inbox / Today / Upcoming / Overdue / Completed, due dates from `@date` chips or the daily note's day | ✅ | Completing a task in the Tasks view updates the source block in the editor and on disk; one undo reverts it (links test `undoSteps` = one) |
+| 10 | Reminders (opt-in local notifications) | 🟡 | Bundled app: enabling schedules exactly one pending notification per due task; turning reminders off removes them (permission probe: 1 → 0). The macOS permission prompt itself was not clicked through in automation |
+| 11 | Move blocks to a new document (⌥⌘N) or today's daily note | ✅ | Both leave a page card; moved blocks keep ids; one undo restores (`testMoveToNewDocumentAndTodayLeaveCards`) |
+| 12 | Search options: `"phrase"`, `-exclusion`, regex (`.*` toggle); Quick Open finds blocks | ✅ | Invalid regex shows an inline error (`testSearchOptions`, `v03-search-regex-error.png`) |
+| 13 | Date mentions `@next monday` → date chips that open that day | 🟡 | Chips, prefix suggestions while typing (`@nex`), week start and start-of-day settings work; the S12 "badge or plain text" display setting is not built (→ v0.4) |
 
-**Prerequisites.** Stable block ids (✅), block links (✅), the index (step 1), week-start / start-of-day
-settings (S12, moved here from v0.6).
-**Data risk.** New inline node for links and tags (`docLink`, `tag`) and task attributes (`due`,
-`priority`) — additive; older builds keep them as text with a preserved mark. The index is derived
-data and never the source of truth.
-**Release gate.** Renaming or moving a target never breaks a link; toggling a task in Tasks view
-updates the source block with one undo; tags, backlinks and tasks survive relaunch and index rebuild;
-perf budget holds with links in a 10,000-block document.
-**Out of scope (why).** Mentions of people and comments need collaboration (v2.0); Events editing
-needs a calendar provider (later, optional); recurring tasks wait for usage feedback (v0.5+).
+**Deviations from the plan.** Tags stay plain text (no `tag` node): portable and readable everywhere.
+Links and dates are marks (`docLink`, `date`), not new node types, so older builds keep the text.
+Daily notes live in Unsorted with `dailyDate`, not in a separate folder; Calendar is their home.
+Due dates come from date chips (or the daily note); `taskItem.due` is read but not written.
+
+**Release gate (met).** Links never break on rename, move or group; task completion is one undo;
+links, tags, tasks and daily notes survive relaunch and an index rebuild; perf budget holds
+(keystroke p95 ≈ 23–28 ms, open 2.1 s, index rebuild 0.8 s on 10,000 blocks). 99 unit tests, smoke,
+drag, links and perf scripts pass.
+
+**Known limitations.**
+- Renaming a document refreshes link titles in open documents; an off-screen document updates its
+  chips when it is shown, as a separate undo step there.
+- Today/Overdue roll over when the app next updates (any edit or navigation), not exactly at midnight.
+- The real Allow/Don't Allow prompts for notifications and calendars were not exercised (they need
+  a person); both start in "not determined" and are requested only from Settings.
+- VoiceOver itself was not run; the picker exposes a menu with labelled, selectable items (tested).
 
 ## v0.4 — "Style studio" (macOS)
 
-- ⬜ Save/duplicate/rename user styles, pin and set default, preview before apply; more original presets.
-- ⬜ Gradient editor; image backdrop library + search provider (opt-in network); per-instance doodle/tape variation.
-- ⬜ Contrast auto-adjust with explanation; per-block font.
-- ⬜ Card sizes (compact/medium/feature) and preview modes (standard, icon, gallery).
-- ⬜ PDF/HTML export with "use style" toggle; image export; static HTML site export.
+**Theme.** Make documents look the way you want and export them the way they look.
 
-**Gate.** Same document renders consistently in editor, HTML and PDF.
+| # | Feature | Status | Acceptance check |
+|---|---|---|---|
+| 1 | Save, duplicate, rename and delete user styles; pin and set default; preview before apply (T4) | 🟡 partial ("Use for new documents" ✅) | Save the current look as "Studio", apply it to another document, relaunch: both render identically; deleting a style in use falls back to its base without touching content |
+| 2 | More original style presets | ⬜ planned | At least 5 new presets, all original artwork; each passes the 4.5:1 text-contrast check |
+| 3 | Gradient editor: start/end colors, direction (T6) | 🟡 partial (presets ✅) | Dragging the angle updates the backdrop live; the gradient round-trips through the file and export |
+| 4 | Image backdrop library + opt-in search provider | ⬜ planned | Works fully offline with the bundled library; the search provider is off by default and asks before any network request |
+| 5 | Per-instance doodle/tape variation | ⬜ planned | Two tape separators in one document look different and keep their look after relaunch |
+| 6 | Contrast auto-adjust with explanation (T9) | 🟡 partial (warning + one-click fix ✅) | Choosing low-contrast text offers an adjusted color with the before/after ratio stated |
+| 7 | Per-block font (F20) | ⬜ planned | A block set to Mono stays Mono after restyling the document, in export and after relaunch |
+| 8 | Card sizes (compact/medium/feature) and preview modes (standard, icon, gallery) (P3) | ⬜ planned | Size and mode are stored on the card, shown in the editor and kept by Markdown/JSON export |
+| 9 | Styled PDF and HTML export with "use style" toggle; image export (X4) | 🟡 partial (Print → PDF ✅) | The same document renders consistently in editor, HTML and PDF (visual diff within tolerance) |
+| 10 | Static HTML site export (U3) | ⬜ planned | Exporting a folder writes an offline site whose links between pages (including `docLink` chips) all resolve |
+| 11 | Link previews for web links (A5, opt-in network) | ⬜ planned | Off by default; when on, a pasted URL becomes a preview card that still exports as a plain link |
+| 12 | Calendar filters persist (deferred from v0.3 step 8) | 🟡 partial | All/Tasks/Notes and Completed survive tab switches and relaunch |
+| 13 | Date display setting: chip or plain text (S12, deferred from v0.3 step 13) | 🟡 partial (chips ✅) | Switching to plain text re-renders every date without changing stored dates |
+| 14 | Task due-date picker and due times (deferred polish from v0.3 step 9) | 🟡 partial (`@` dates ✅) | A date/time popover on a task sets a `date` chip with a time; its reminder fires at that time |
+| 15 | Midnight rollover of Today/Overdue (deferred from v0.3 limitations) | 🟡 partial | With the app idle across the day start, Today and Overdue update within a minute |
+
+**Gate.** Same document renders consistently in editor, HTML and PDF; every style change is undoable
+and never touches content.
 
 ## v0.5 — "Structure" (macOS)
 
@@ -231,6 +252,6 @@ Assistant (opt-in, bring-your-own or local model, never required); local API/MCP
 
 ## Next smallest coherent slice (prioritized by user value)
 
-*(updated after v0.2.1)* — start v0.3 with steps 1–2: the local index and `[[` linked documents,
-then backlinks (4) and back/forward (3). Daily notes (7) and the Tasks view (9) follow, since they
-share the date model.
+*(updated after v0.3)* — start v0.4 with user styles (1) and per-block font (7), which share the
+style model, then styled HTML/PDF export (9–10) so the "renders the same everywhere" gate can be
+measured early. The small v0.3 carry-overs (12–15) fit between them.

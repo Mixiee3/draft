@@ -29,7 +29,8 @@ cat > "$APP/Contents/Info.plist" <<PLIST
   <key>CFBundleIdentifier</key><string>org.draftnotes.Draft</string>
   <key>CFBundleExecutable</key><string>Draft</string>
   <key>CFBundlePackageType</key><string>APPL</string>
-  <key>CFBundleShortVersionString</key><string>0.1.0</string>
+  <key>CFBundleShortVersionString</key><string>0.3.0</string>
+  <key>NSCalendarsFullAccessUsageDescription</key><string>Draft shows your calendar events next to daily notes when you turn this on in Settings. Events are read on this Mac only and never changed.</string>
   <key>CFBundleVersion</key><string>1</string>
   <key>CFBundleIconFile</key><string>AppIcon</string>
   <key>LSMinimumSystemVersion</key><string>14.0</string>
