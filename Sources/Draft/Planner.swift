@@ -12,8 +12,8 @@ struct PlannerHeader<Trailing: View>: View {
     var body: some View {
         HStack(spacing: 10) {
             PillGroup { PillButton(symbol: "chevron.left", label: "Back (⌘[)") { model.goBack() } }
-            Image(systemName: symbol).font(.system(size: 17, weight: .semibold)).foregroundStyle(tint ?? t.accent).accessibilityHidden(true)
-            Text(title).font(.system(size: 20, weight: .bold)).foregroundStyle(t.text).lineLimit(1).accessibilityAddTraits(.isHeader)
+            Image(systemName: symbol).font(.system(size: DS.title3, weight: .semibold)).foregroundStyle(tint ?? t.accent).accessibilityHidden(true)
+            Text(title).font(.system(size: DS.title2, weight: .bold)).foregroundStyle(t.text).lineLimit(1).accessibilityAddTraits(.isHeader)
             Spacer(minLength: 8)
             trailing
         }
@@ -33,12 +33,12 @@ struct TaskRow: View {
     var body: some View {
         HStack(alignment: .firstTextBaseline, spacing: 10) {
             Button { model.setTask(doc, task.block, checked: !task.checked, undo: undo) } label: {
-                Image(systemName: task.checked ? "checkmark.circle.fill" : "circle").font(.system(size: 15)).foregroundStyle(task.checked ? t.accent : t.secondary)
+                Image(systemName: task.checked ? "checkmark.circle.fill" : "circle").font(.system(size: DS.headline)).foregroundStyle(task.checked ? t.accent : t.secondary)
             }
             .buttonStyle(.plain)
             .accessibilityLabel(task.checked ? "Mark “\(task.text)” not done" : "Mark “\(task.text)” done")
             VStack(alignment: .leading, spacing: 2) {
-                Text(task.text.isEmpty ? "Empty task" : task.text).font(.system(size: 13.5)).foregroundStyle(task.checked ? t.tertiary : t.text).strikethrough(task.checked)
+                Text(task.text.isEmpty ? "Empty task" : task.text).font(.system(size: DS.body)).foregroundStyle(task.checked ? t.tertiary : t.text).strikethrough(task.checked)
                 HStack(spacing: 6) {
                     if showDue, let d = task.dueDay {
                         let overdue = !task.checked && d < model.todayKey
@@ -46,7 +46,7 @@ struct TaskRow: View {
                             .foregroundStyle(overdue ? Color.red : t.secondary)
                     }
                     Text(model.docTitle(doc)).foregroundStyle(t.tertiary)
-                }.font(.system(size: 11.5)).labelStyle(.titleAndIcon)
+                }.font(.system(size: DS.footnote)).labelStyle(.titleAndIcon)
             }
             Spacer(minLength: 0)
             Button { duePicker = true } label: { Image(systemName: "calendar.badge.clock").foregroundStyle(t.secondary) }
@@ -54,7 +54,7 @@ struct TaskRow: View {
                 .popover(isPresented: $duePicker, arrowEdge: .trailing) { DuePicker(doc: doc, task: task) }
         }
         .padding(.horizontal, 12).padding(.vertical, 7)
-        .background(RoundedRectangle(cornerRadius: 10, style: .continuous).fill(t.card))
+        .background(RoundedRectangle(cornerRadius: DS.rControl, style: .continuous).fill(t.card))
         .contentShape(Rectangle())
         .onTapGesture { model.openBlock(doc, task.block) }
         .accessibilityElement(children: .combine)
@@ -73,20 +73,17 @@ struct TasksView: View {
         let rows = model.tasks(bucket)
         VStack(spacing: 0) {
             PlannerHeader(title: "Tasks", symbol: "checklist") { EmptyView() }
-            Picker("Show", selection: $bucket) {
-                ForEach(TaskBucket.allCases, id: \.self) { b in
-                    let n = b == .completed ? 0 : model.tasks(b).count
-                    Text(b.title + (n > 0 ? " \(n)" : "")).tag(b)
-                }
-            }
-            .pickerStyle(.segmented).labelsHidden().padding(.horizontal, 18).padding(.bottom, 10)
+            DraftSegmented("Show", selection: $bucket, options: TaskBucket.allCases.map { b in
+                let n = b == .completed ? 0 : model.tasks(b).count
+                return (b, b.title + (n > 0 ? " \(n)" : ""))
+            }).padding(.horizontal, 18).padding(.bottom, 10).frame(maxWidth: .infinity, alignment: .leading)
             .accessibilityLabel("Task list")
             if rows.isEmpty {
                 EmptyLibrary(message: emptyText)
             } else {
                 ScrollView {
                     LazyVStack(spacing: 6) { ForEach(rows, id: \.task.block) { TaskRow(doc: $0.doc, task: $0.task) } }
-                        .padding(.horizontal, 18).padding(.bottom, 18).frame(maxWidth: 760)
+                        .padding(.horizontal, 18).padding(.bottom, 18).frame(maxWidth: 760, alignment: .leading).frame(maxWidth: .infinity, alignment: .leading)
                 }
             }
         }
@@ -118,9 +115,8 @@ struct CalendarView: View {
         let days = (-before...after).map { Day.add(today, days: $0) }
         VStack(spacing: 0) {
             PlannerHeader(title: "Calendar", symbol: "calendar") {
-                Picker("Show", selection: model.settingBinding(\.calendarFilter)) { Text("All").tag("all"); Text("Tasks").tag("tasks"); Text("Notes").tag("notes") }
-                    .pickerStyle(.segmented).labelsHidden().fixedSize().accessibilityLabel("Show")
-                Toggle("Completed", isOn: model.settingBinding(\.calendarShowCompleted)).toggleStyle(.checkbox).foregroundStyle(t.secondary)
+                DraftSegmented("Show", selection: model.settingBinding(\.calendarFilter), options: [("all", "All"), ("tasks", "Tasks"), ("notes", "Notes")])
+                DraftToggleChip(title: "Completed", isOn: model.settingBinding(\.calendarShowCompleted))
                 PillGroup { PillButton(symbol: "sun.max", label: "Today (⇧⌘D)", text: "Today") { model.openDaily() } }
             }
             ScrollViewReader { proxy in
@@ -130,7 +126,7 @@ struct CalendarView: View {
                         ForEach(days, id: \.self) { d in DayCard(day: d, filter: model.settings.calendarFilter, showCompleted: model.settings.calendarShowCompleted).id(d) }
                         Button("Show later days") { after += 30 }.buttonStyle(.link).padding(.leading, 4)
                     }
-                    .padding(.horizontal, 18).padding(.bottom, 24).frame(maxWidth: 760)
+                    .padding(.horizontal, 18).padding(.bottom, 24).frame(maxWidth: 760, alignment: .leading).frame(maxWidth: .infinity, alignment: .leading)
                 }
                 .onAppear {
                     if let f = focus, !days.contains(f) { let n = Day.distance(from: today, to: f); if n < 0 { before = -n } else { after = n + 7 } }
@@ -158,8 +154,8 @@ struct DayCard: View {
         let evs = model.settings.calendarEvents ? events.events(on: day) : []
         VStack(alignment: .leading, spacing: 8) {
             HStack(alignment: .firstTextBaseline, spacing: 8) {
-                Text(Day.title(day)).font(.system(size: 14, weight: .semibold)).foregroundStyle(day == today ? t.accent : t.text).accessibilityAddTraits(.isHeader)
-                if day == today { Text("Today").font(.system(size: 11, weight: .semibold)).padding(.horizontal, 7).padding(.vertical, 2).background(Capsule().fill(t.accent.opacity(0.15))).foregroundStyle(t.accent) }
+                Text(Day.title(day)).font(.system(size: DS.headline, weight: .semibold)).foregroundStyle(day == today ? t.accent : t.text).accessibilityAddTraits(.isHeader)
+                if day == today { Text("Today").font(.system(size: DS.caption, weight: .semibold)).padding(.horizontal, 7).padding(.vertical, 2).background(Capsule().fill(t.accent.opacity(0.15))).foregroundStyle(t.accent) }
                 Spacer()
             }
             if filter != "tasks" {
@@ -169,25 +165,25 @@ struct DayCard: View {
                             Image(systemName: "doc.text").foregroundStyle(t.accent)
                             Text(note.excerpt.isEmpty ? "Daily note" : note.excerpt).lineLimit(2).foregroundStyle(t.text)
                             Spacer()
-                        }.font(.system(size: 13)).contentShape(Rectangle())
+                        }.font(.system(size: DS.body)).contentShape(Rectangle())
                     }.buttonStyle(.plain).accessibilityLabel("Open daily note for \(Day.title(day))")
                 } else {
                     Button { model.openDaily(day) } label: { Label("Create Daily Note", systemImage: "plus.circle") }
-                        .buttonStyle(.plain).font(.system(size: 13)).foregroundStyle(t.secondary)
+                        .buttonStyle(.plain).font(.system(size: DS.body)).foregroundStyle(t.secondary)
                 }
                 ForEach(evs, id: \.eventIdentifier) { e in
                     HStack(spacing: 8) {
                         Circle().fill(Color(nsColor: e.calendar.color)).frame(width: 7, height: 7)
                         Text(e.isAllDay ? "All day" : e.startDate.formatted(date: .omitted, time: .shortened)).foregroundStyle(t.secondary).frame(width: 64, alignment: .leading)
                         Text(e.title ?? "Event").foregroundStyle(t.text).lineLimit(1)
-                    }.font(.system(size: 12.5)).accessibilityElement(children: .combine)
+                    }.font(.system(size: DS.body)).accessibilityElement(children: .combine)
                 }
             }
             if filter != "notes" {
                 ForEach(tasks, id: \.task.block) { TaskRow(doc: $0.doc, task: $0.task, showDue: false) }
                 HStack(spacing: 8) {
                     Image(systemName: "plus").foregroundStyle(t.tertiary).accessibilityHidden(true)
-                    TextField("Add Task", text: $newTask).textFieldStyle(.plain).font(.system(size: 13))
+                    TextField("Add Task", text: $newTask).textFieldStyle(.plain).font(.system(size: DS.body))
                         .onSubmit { model.addTask(newTask, on: day); newTask = "" }
                         .accessibilityLabel("Add a task for \(Day.title(day))")
                 }.padding(.horizontal, 12).padding(.vertical, 4)
@@ -224,20 +220,20 @@ struct TagView: View {
             } else {
                 ScrollView {
                     LazyVStack(alignment: .leading, spacing: 14) {
-                        Text("\(hits.count) block\(hits.count == 1 ? "" : "s") in \(byDoc.count) document\(byDoc.count == 1 ? "" : "s")").font(.system(size: 12.5)).foregroundStyle(t.secondary)
+                        Text("\(hits.count) block\(hits.count == 1 ? "" : "s") in \(byDoc.count) document\(byDoc.count == 1 ? "" : "s")").font(.system(size: DS.body)).foregroundStyle(t.secondary)
                         ForEach(byDoc, id: \.key) { doc, items in
                             VStack(alignment: .leading, spacing: 4) {
-                                Button(model.docTitle(doc)) { model.openView(.doc(doc)) }.buttonStyle(.plain).font(.system(size: 13.5, weight: .semibold)).foregroundStyle(t.text)
+                                Button(model.docTitle(doc)) { model.openView(.doc(doc)) }.buttonStyle(.plain).font(.system(size: DS.body, weight: .semibold)).foregroundStyle(t.text)
                                 ForEach(Array(Set(items.map(\.tag.block))).sorted(), id: \.self) { b in
                                     let text = items.first { $0.tag.block == b }?.tag.text ?? ""
                                     Button { model.openBlock(doc, b) } label: {
-                                        Text(text).font(.system(size: 13)).foregroundStyle(t.secondary).lineLimit(3).frame(maxWidth: .infinity, alignment: .leading)
-                                            .padding(10).background(RoundedRectangle(cornerRadius: 10, style: .continuous).fill(t.card))
+                                        Text(text).font(.system(size: DS.body)).foregroundStyle(t.secondary).lineLimit(3).frame(maxWidth: .infinity, alignment: .leading)
+                                            .padding(10).background(RoundedRectangle(cornerRadius: DS.rControl, style: .continuous).fill(t.card))
                                     }.buttonStyle(.plain)
                                 }
                             }
                         }
-                    }.padding(.horizontal, 18).padding(.bottom, 24).frame(maxWidth: 760)
+                    }.padding(.horizontal, 18).padding(.bottom, 24).frame(maxWidth: 760, alignment: .leading).frame(maxWidth: .infinity, alignment: .leading)
                 }
             }
         }
@@ -263,9 +259,9 @@ struct BacklinksPane: View {
                         let unique = items.reduce(into: [VaultIndex.Backlink]()) { acc, l in if !acc.contains(where: { $0.link.block == l.link.block }) { acc.append(l) } } // one row per mentioning block
                         ForEach(unique) { l in
                             Button { model.openDocLink(src, block: l.link.block) } label: {
-                                Text(l.link.text).font(.system(size: 12)).foregroundStyle(t.secondary).lineLimit(3)
+                                Text(l.link.text).font(.system(size: DS.footnote)).foregroundStyle(t.secondary).lineLimit(3)
                                     .frame(maxWidth: .infinity, alignment: .leading).padding(.horizontal, 10).padding(.vertical, 6)
-                                    .background(RoundedRectangle(cornerRadius: 8, style: .continuous).fill(t.hover))
+                                    .background(RoundedRectangle(cornerRadius: DS.rControl, style: .continuous).fill(t.hover))
                             }
                             .buttonStyle(.plain).padding(.leading, 8)
                             .accessibilityLabel("Mention in \(model.docTitle(src)): \(l.link.text)")

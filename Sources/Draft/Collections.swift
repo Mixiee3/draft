@@ -130,10 +130,10 @@ struct CollectionScreen: View {
         VStack(alignment: .leading, spacing: 10) {
             HStack(spacing: 10) {
                 PillGroup { PillButton(symbol: "chevron.left", label: "Back (⌘[)") { model.goBack() } }
-                TextField("Collection name", text: $name).textFieldStyle(.plain).font(.system(size: 20, weight: .bold)).foregroundStyle(t.text)
+                TextField("Collection name", text: $name).textFieldStyle(.plain).font(.system(size: DS.title2, weight: .bold)).foregroundStyle(t.text)
                     .onSubmit { update("Rename Collection") { $0.name = name } }.accessibilityLabel("Collection name")
                 Spacer(minLength: 8)
-                Text("\(data.rows(view, title: model.pageTitle).count) of \(data.items.count)").font(.system(size: 12)).foregroundStyle(t.secondary)
+                Text("\(data.rows(view, title: model.pageTitle).count) of \(data.items.count)").font(.system(size: DS.footnote)).foregroundStyle(t.secondary)
                 Button { model.addCollectionItem(docId, blockId, undo: undo) } label: { Label("New Item", systemImage: "plus") }
                     .buttonStyle(.borderedProminent).controlSize(.regular).keyboardShortcut("n", modifiers: [.command, .option, .shift])
                 Menu {
@@ -144,9 +144,8 @@ struct CollectionScreen: View {
                 } label: { Image(systemName: "ellipsis") }.menuStyle(.borderlessButton).menuIndicator(.hidden).frame(width: 28).accessibilityLabel("More")
             }
             HStack(spacing: 8) {
-                Picker("View", selection: Binding(get: { view.id }, set: { v in update("Switch View") { $0.activeView = v } })) {
-                    ForEach(data.views) { v in Label(v.name, systemImage: v.type == "kanban" ? "rectangle.split.3x1" : v.type == "gallery" ? "square.grid.2x2" : "tablecells").tag(v.id) }
-                }.pickerStyle(.segmented).labelsHidden().fixedSize().accessibilityLabel("View")
+                DraftSegmented("View", selection: Binding(get: { view.id }, set: { v in update("Switch View") { $0.activeView = v } }),
+                               symbols: data.views.map { v in (v.id, v.name, v.type == "kanban" ? "rectangle.split.3x1" : v.type == "gallery" ? "square.grid.2x2" : "tablecells") })
                 Menu {
                     ForEach([("table", "Table"), ("gallery", "Gallery"), ("kanban", "Board")], id: \.0) { k, label in
                         Button(label) { update("Add View") { var v = CollectionView(name: label, type: k); if k == "kanban" { v.groupBy = $0.fields.first { $0.type == "select" }?.id }; $0.views.append(v); $0.activeView = v.id } }
@@ -165,7 +164,7 @@ struct CollectionScreen: View {
                 Button { fieldsOpen.toggle() } label: { Label("Fields", systemImage: "slider.horizontal.3") }
                     .popover(isPresented: $fieldsOpen) { FieldsEditor(data: data, view: view, update: update, updateView: updateView) }
             }
-            .buttonStyle(.borderless).font(.system(size: 12.5))
+            .buttonStyle(.borderless).font(.system(size: DS.body))
         }
         .padding(.horizontal, 18).padding(.vertical, 12)
     }
@@ -238,7 +237,7 @@ struct ValueCell: View {
             if let s = v?.string, let d = Day.date(s) {
                 DatePicker("", selection: Binding(get: { d }, set: { set(.string(Day.key($0))) }), displayedComponents: .date).labelsHidden().datePickerStyle(.field).accessibilityLabel(field.name)
             } else {
-                Button("Add date") { set(.string(model.todayKey)) }.buttonStyle(.borderless).foregroundStyle(t.tertiary).font(.system(size: 12))
+                Button("Add date") { set(.string(model.todayKey)) }.buttonStyle(.borderless).foregroundStyle(t.tertiary).font(.system(size: DS.footnote))
             }
         default:
             TextField("", text: $text).textFieldStyle(.plain).foregroundStyle(field.type == "url" ? t.accent : t.text)
@@ -254,7 +253,7 @@ struct ValueCell: View {
     }
 
     func chip(_ s: String?) -> some View {
-        Text(s ?? "—").font(.system(size: 12.5)).foregroundStyle(s == nil ? t.tertiary : t.text).lineLimit(1)
+        Text(s ?? "—").font(.system(size: DS.body)).foregroundStyle(s == nil ? t.tertiary : t.text).lineLimit(1)
             .padding(.horizontal, s == nil ? 0 : 7).padding(.vertical, 2)
             .background(Capsule().fill(s == nil ? .clear : Color(hex: Tags.defaultColor(s ?? "")).opacity(0.16)))
     }
@@ -277,7 +276,7 @@ struct CollectionTable: View {
             LazyVStack(alignment: .leading, spacing: 0, pinnedViews: [.sectionHeaders, .sectionFooters]) {
                 Section {
                     ForEach(rows) { it in row(it) }
-                    Button { model.addCollectionItem(docId, blockId, undo: undo) } label: { Label("New", systemImage: "plus").font(.system(size: 12.5)) }
+                    Button { model.addCollectionItem(docId, blockId, undo: undo) } label: { Label("New", systemImage: "plus").font(.system(size: DS.body)) }
                         .buttonStyle(.borderless).foregroundStyle(t.secondary).padding(.horizontal, 12).frame(height: Self.rowHeight)
                 } header: { headerRow } footer: { calcRow(rows) }
             }
@@ -290,7 +289,7 @@ struct CollectionTable: View {
             Text("Name").frame(width: Self.titleWidth, alignment: .leading).padding(.leading, 12)
             ForEach(fields) { f in Text(f.name).lineLimit(1).frame(width: Self.width, alignment: .leading).padding(.leading, 10) }
         }
-        .font(.system(size: 12, weight: .semibold)).foregroundStyle(t.secondary)
+        .font(.system(size: DS.footnote, weight: .semibold)).foregroundStyle(t.secondary)
         .frame(height: 30).background(t.canvas)
     }
 
@@ -323,7 +322,7 @@ struct CollectionTable: View {
                 .frame(width: Self.width - 10, alignment: .leading).padding(.leading, 10)
             }
         }
-        .font(.system(size: 13))
+        .font(.system(size: DS.body))
         .frame(height: Self.rowHeight)
         .background(alignment: .bottom) { t.line.frame(height: 0.5) }
     }
@@ -341,7 +340,7 @@ struct CollectionTable: View {
                 .accessibilityLabel("Calculation for \(f.name)")
             }
         }
-        .font(.system(size: 11.5)).foregroundStyle(t.secondary)
+        .font(.system(size: DS.footnote)).foregroundStyle(t.secondary)
         .frame(height: 30).background(t.canvas)
     }
 }
@@ -353,7 +352,7 @@ struct TitleField: View {
     let docId: String
     @State private var text = ""
     var body: some View {
-        TextField("Untitled", text: $text).textFieldStyle(.roundedBorder).font(.system(size: 13, weight: .medium)).frame(width: 260).padding(10)
+        TextField("Untitled", text: $text).textFieldStyle(.roundedBorder).font(.system(size: DS.body, weight: .medium)).frame(width: 260).padding(10)
             .onAppear { text = model.library.docs[docId]?.title ?? "" }
             .onSubmit { model.setTitle(docId, text); model.collectionTick &+= 1 }
             .accessibilityLabel("Name")
@@ -377,16 +376,16 @@ struct CollectionGallery: View {
                         VStack(alignment: .leading, spacing: 8) {
                             ZStack {
                                 if let img = model.ensureDoc(it.docId).flatMap({ model.coverImage($0.appearance.cover) }) { Image(nsImage: img).resizable().aspectRatio(contentMode: .fill) }
-                                else { Color(hex: Tags.defaultColor(model.pageTitle(it.docId))).opacity(0.25); Text(String(model.pageTitle(it.docId).prefix(1)).uppercased()).font(.system(size: 30, weight: .bold)).foregroundStyle(t.secondary) }
-                            }.frame(height: 110).clipped().clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
-                            Text(model.pageTitle(it.docId)).font(.system(size: 14, weight: .semibold)).foregroundStyle(t.text).lineLimit(2)
+                                else { Color(hex: Tags.defaultColor(model.pageTitle(it.docId))).opacity(0.25); Text(String(model.pageTitle(it.docId).prefix(1)).uppercased()).font(.system(size: DS.display, weight: .bold)).foregroundStyle(t.secondary) }
+                            }.frame(height: 110).clipped().clipShape(RoundedRectangle(cornerRadius: DS.rControl, style: .continuous))
+                            Text(model.pageTitle(it.docId)).font(.system(size: DS.headline, weight: .semibold)).foregroundStyle(t.text).lineLimit(2)
                             ForEach(Array(fields)) { f in
                                 let s = data.display(it, f.id, title: model.pageTitle)
-                                if !s.isEmpty { Text("\(f.name): \(s)").font(.system(size: 12)).foregroundStyle(t.secondary).lineLimit(1) }
+                                if !s.isEmpty { Text("\(f.name): \(s)").font(.system(size: DS.footnote)).foregroundStyle(t.secondary).lineLimit(1) }
                             }
                         }
                         .padding(12).frame(maxWidth: .infinity, alignment: .leading)
-                        .background(RoundedRectangle(cornerRadius: 14, style: .continuous).fill(t.card))
+                        .background(RoundedRectangle(cornerRadius: DS.rCard, style: .continuous).fill(t.card))
                     }
                     .buttonStyle(.plain)
                     .contextMenu { Button("Delete Item", role: .destructive) { model.deleteCollectionItems(docId, blockId, [it.id], undo: undo) } }
@@ -416,8 +415,8 @@ struct CollectionBoard: View {
     func column(_ key: String?, _ items: [CollectionItem]) -> some View {
         VStack(alignment: .leading, spacing: 8) {
             HStack {
-                Text(key ?? "No value").font(.system(size: 13, weight: .semibold)).foregroundStyle(key == nil ? t.tertiary : t.text)
-                Text("\(items.count)").font(.system(size: 12)).foregroundStyle(t.tertiary)
+                Text(key ?? "No value").font(.system(size: DS.body, weight: .semibold)).foregroundStyle(key == nil ? t.tertiary : t.text)
+                Text("\(items.count)").font(.system(size: DS.footnote)).foregroundStyle(t.tertiary)
                 Spacer()
                 Button { addItem(key) } label: { Image(systemName: "plus") }.buttonStyle(.borderless).foregroundStyle(t.secondary).accessibilityLabel("New item in \(key ?? "No value")")
             }
@@ -426,14 +425,14 @@ struct CollectionBoard: View {
                     ForEach(items) { it in
                         Button { model.openView(.doc(it.docId)) } label: {
                             VStack(alignment: .leading, spacing: 4) {
-                                Text(model.pageTitle(it.docId)).font(.system(size: 13.5, weight: .medium)).foregroundStyle(t.text).lineLimit(3)
+                                Text(model.pageTitle(it.docId)).font(.system(size: DS.body, weight: .medium)).foregroundStyle(t.text).lineLimit(3)
                                 ForEach(data.fields.filter { $0.id != view.groupBy }.prefix(2)) { f in
                                     let s = data.display(it, f.id, title: model.pageTitle)
-                                    if !s.isEmpty { Text(s).font(.system(size: 11.5)).foregroundStyle(t.secondary).lineLimit(1) }
+                                    if !s.isEmpty { Text(s).font(.system(size: DS.footnote)).foregroundStyle(t.secondary).lineLimit(1) }
                                 }
                             }
                             .padding(10).frame(maxWidth: .infinity, alignment: .leading)
-                            .background(RoundedRectangle(cornerRadius: 10, style: .continuous).fill(t.card))
+                            .background(RoundedRectangle(cornerRadius: DS.rControl, style: .continuous).fill(t.card))
                         }
                         .buttonStyle(.plain)
                         .draggable(it.id)
@@ -446,7 +445,7 @@ struct CollectionBoard: View {
             }
         }
         .padding(10).frame(width: 260).frame(maxHeight: .infinity, alignment: .top)
-        .background(RoundedRectangle(cornerRadius: 14, style: .continuous).fill(t.text.opacity(0.04)))
+        .background(RoundedRectangle(cornerRadius: DS.rCard, style: .continuous).fill(t.text.opacity(0.04)))
         .dropDestination(for: String.self) { ids, _ in
             guard let id = ids.first else { return false }
             move(id, key)
@@ -477,10 +476,9 @@ struct FilterEditor: View {
         let fields = [CollectionField(id: CollectionData.titleField, name: "Name", type: "text")] + data.fields
         VStack(alignment: .leading, spacing: 10) {
             HStack {
-                Text("Show items matching").font(.system(size: 13, weight: .semibold))
-                Picker("", selection: Binding(get: { view.match }, set: { v in update { $0.match = v } })) { Text("all").tag("all"); Text("any").tag("any") }
-                    .pickerStyle(.segmented).labelsHidden().fixedSize().accessibilityLabel("Match")
-                Text("of these:").font(.system(size: 13))
+                Text("Show items matching").font(.system(size: DS.body, weight: .semibold))
+                DraftSegmented("Match", selection: Binding(get: { view.match }, set: { v in update { $0.match = v } }), options: [("all", "all"), ("any", "any")])
+                Text("of these:").font(.system(size: DS.body))
             }
             ForEach(view.filters) { r in
                 HStack {
@@ -519,14 +517,14 @@ struct FieldsEditor: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
-            Text("Fields").font(.system(size: 13, weight: .semibold))
+            Text("Fields").font(.system(size: DS.body, weight: .semibold))
             ForEach(data.fields) { f in
                 HStack(spacing: 8) {
                     Toggle("", isOn: Binding(get: { (view.visible ?? data.fields.map(\.id)).contains(f.id) }, set: { on in
                         updateView("Show Field") { v in var vis = v.visible ?? data.fields.map(\.id); if on { vis.append(f.id) } else { vis.removeAll { $0 == f.id } }; v.visible = vis }
                     })).labelsHidden().toggleStyle(.checkbox).accessibilityLabel("Show \(f.name)")
                     FieldNameField(name: f.name) { n in update("Rename Field") { if let i = $0.fields.firstIndex(where: { $0.id == f.id }) { $0.fields[i].name = n } } }
-                    Text(f.type).font(.system(size: 11)).foregroundStyle(.secondary).frame(width: 74, alignment: .leading)
+                    Text(f.type).font(.system(size: DS.caption)).foregroundStyle(.secondary).frame(width: 74, alignment: .leading)
                     if ["select", "multiSelect"].contains(f.type) {
                         FieldNameField(name: (f.options ?? []).joined(separator: ", "), placeholder: "Options, comma separated") { s in
                             update("Edit Options") { if let i = $0.fields.firstIndex(where: { $0.id == f.id }) { $0.fields[i].options = s.split(separator: ",").map { $0.trimmingCharacters(in: .whitespaces) }.filter { !$0.isEmpty } } }
@@ -562,7 +560,7 @@ struct EditableCell<Editor: View>: View {
     @ViewBuilder let editor: () -> Editor
     @State private var editing = false
     var body: some View {
-        Text(label.isEmpty ? "—" : label).font(.system(size: 13, weight: weight)).foregroundStyle(label.isEmpty ? t.tertiary : t.text).lineLimit(1)
+        Text(label.isEmpty ? "—" : label).font(.system(size: DS.body, weight: weight)).foregroundStyle(label.isEmpty ? t.tertiary : t.text).lineLimit(1)
             .frame(maxWidth: .infinity, alignment: .leading).contentShape(Rectangle())
             .onTapGesture { editing = true }
             .popover(isPresented: $editing, arrowEdge: .bottom) { editor().environment(\.tokens, t) }

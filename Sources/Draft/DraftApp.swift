@@ -27,7 +27,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         Automation.startIfRequested()
     }
     func applicationWillTerminate(_ notification: Notification) {
-        onMain { AppModel.shared.flushAll() }
+        onMain { AppModel.shared.flushAll(); AppModel.shared.assistant.shutdown() }
     }
     func applicationShouldTerminateAfterLastWindowClosed(_ sender: NSApplication) -> Bool { true }
 }
@@ -97,6 +97,7 @@ struct DraftCommands: Commands {
                 .keyboardShortcut(.leftArrow, modifiers: [.command, .option, .shift]).disabled(day == nil)
             Button("Next Day") { if let d = day { model.openDaily(Day.add(d, days: 1), inPlace: true) } }
                 .keyboardShortcut(.rightArrow, modifiers: [.command, .option, .shift]).disabled(day == nil)
+            Button("Assistant") { model.toggleAssistant() }.keyboardShortcut("j")
             Button("Calendar") { model.openView(ViewRef(kind: "calendar")) }.keyboardShortcut("1", modifiers: [.command, .option, .shift])
             Button("Tasks") { model.openView(ViewRef(kind: "tasks")) }.keyboardShortcut("2", modifiers: [.command, .option, .shift])
         }

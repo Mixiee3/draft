@@ -38,6 +38,12 @@ enum Automation {
             case "workflow-read": await workflowRead()
             case "online-live": await onlineLive()
             case "screens-v05": await screensV05()
+            case "assistant-bench": await assistantBench()
+            case "assistant-write": await assistantWrite()
+            case "assistant-read": await assistantRead()
+            case "motion-frames": await motionFrames()
+            case "ux-perf": await uxPerf()
+            case "idle": await idle()
             default: break
             }
             NSApp.terminate(nil)
@@ -602,7 +608,9 @@ enum Automation {
             }
         }
         for (name, setup, done) in [("templatePicker", { m.templatePicker = true }, { m.templatePicker = false }),
-                                    ("settingsSpaces", { m.openView(ViewRef(kind: "settings", section: "space")) }, {})] as [(String, () -> Void, () -> Void)] {
+                                    ("settingsSpaces", { m.openView(ViewRef(kind: "settings", section: "space")) }, {}),
+                                    ("assistant", { m.openView(.doc(id)); m.setSettings { $0.assistantPinned = true }; m.toggleAssistant() }, { m.toggleAssistant() }),
+                                    ("settingsAssistant", { m.openView(ViewRef(kind: "settings", section: "assistant")) }, {})] as [(String, () -> Void, () -> Void)] {
             setup(); await wait(0.5)
             var out: [String] = []; if let root = w.contentView { unlabeled(root, into: &out) }; report[name] = out
             done()

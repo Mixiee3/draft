@@ -255,6 +255,8 @@ Last updated: v0.4 shipped (native macOS) — 2026‑11‑08.
 | Y13 | Menus: arrows, Return, Esc | B§5.1 | working | 0.1 | Slash menu, Quick Open, palette |
 | Y14 | Contrast over backdrops | prompt | working | 0.1 | Built-in styles ≥ 7:1 text/page (test); controls on opaque pills |
 | Y15 | VoiceOver audit | B§12 | missing | 0.6 | Recorded VoiceOver pass |
+| Y16 | Reduce Motion and Reduce Animations | B§10 | working | 0.5.1 | One motion helper honours both Draft's setting and macOS Reduce Motion; Thinking Orbs, Border Beam and the liquid-metal edge show still frames when either is on or the window is inactive (`assistant-answering-reduced.mp4`) |
+| Y17 | One design system | prompt | working | 0.5.1 | Shell uses one type scale, spacing grid, three radii, control sizes, one floating-surface shadow and shared segmented control (12 AppKit segmented pickers replaced); before/after in `docs/screenshots/v051/` |
 
 ## 19. Narrow / mobile layouts
 
@@ -274,7 +276,7 @@ Last updated: v0.4 shipped (native macOS) — 2026‑11‑08.
 
 | ID | Capability | Reference behavior | Evidence | Status | Target | Acceptance check |
 |---|---|---|---|---|---|---|
-| J1 | Assistant | Lower-right pill | S01 | missing | later | Not shown (no remote service in v0.1) |
+| J1 | Assistant | Lower-right pill | S01 | working | 0.5.1 | Toolbar button and ⌘J; pinned panel or floating window; runs LFM2.5 on this Mac via llama.cpp (no account, key or cloud); opt-in verified download with size, progress, cancel and remove; Selection / Document / Space context, Space answers retrieve blocks from the vault index and cite them as source cards that open the block; summarize, explain, rewrite, shorten, expand, outline; streamed with Stop; history per Space; preview with word diff before Insert or Replace, one undo step (`scripts/assistant-test.sh` runs with networking denied; `AssistantTests`, `AssistantEditTests`, `ModelStoreTests`, `PrivacyTests`, `v051-assistant-*.png`) |
 | J2 | MCP / API connections | Scenic connection view | S32 | missing | later | — |
 | J3 | Writing suggestions in toolbar | Dynamic slot | S06 | missing | later | — |
 

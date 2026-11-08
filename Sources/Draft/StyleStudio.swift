@@ -79,21 +79,21 @@ struct StyleGallery: View {
             Color.black.opacity(0.28).onTapGesture { model.styleGallery = false }
             VStack(alignment: .leading, spacing: 12) {
                 HStack {
-                    Text("Style Gallery").font(.system(size: 15, weight: .semibold)).accessibilityAddTraits(.isHeader)
+                    Text("Style Gallery").font(.system(size: DS.headline, weight: .semibold)).accessibilityAddTraits(.isHeader)
                     Spacer()
                     IconButton(symbol: "xmark", label: "Close gallery", size: 26) { model.styleGallery = false }
                 }
                 HStack(alignment: .top, spacing: 16) {
                     VStack(alignment: .leading, spacing: 10) {
                         HStack { Image(systemName: "magnifyingglass").foregroundStyle(t.secondary); TextField("Search styles", text: $query).textFieldStyle(.plain) }
-                            .padding(9).background(RoundedRectangle(cornerRadius: 10).fill(t.hover))
+                            .padding(9).background(RoundedRectangle(cornerRadius: DS.rControl).fill(t.hover))
                         ScrollView {
                             VStack(alignment: .leading, spacing: 10) {
                                 if !mine.isEmpty {
-                                    Text("MY STYLES").font(.system(size: 10.5, weight: .semibold)).foregroundStyle(t.tertiary)
+                                    Text("MY STYLES").font(.system(size: DS.caption, weight: .semibold)).foregroundStyle(t.tertiary)
                                     grid(mine, current: current, pick: pick)
                                 }
-                                Text("DRAFT STYLES").font(.system(size: 10.5, weight: .semibold)).foregroundStyle(t.tertiary)
+                                Text("DRAFT STYLES").font(.system(size: DS.caption, weight: .semibold)).foregroundStyle(t.tertiary)
                                 grid(builtIn, current: current, pick: pick)
                             }
                         }
@@ -121,11 +121,11 @@ struct StyleGallery: View {
                 Button { selected = s.id } label: {
                     VStack(alignment: .leading, spacing: 5) {
                         StylePreviewCard(tokens: s.tokens, name: s.name, height: 130)
-                            .overlay(RoundedRectangle(cornerRadius: 14).strokeBorder(pick == s.id ? t.accent : (current == s.id ? t.line : .clear), lineWidth: pick == s.id ? 3 : 1.5))
+                            .overlay(RoundedRectangle(cornerRadius: DS.rCard).strokeBorder(pick == s.id ? t.accent : (current == s.id ? t.line : .clear), lineWidth: pick == s.id ? 3 : 1.5))
                         HStack(spacing: 4) {
-                            if model.library.userStyles.first(where: { $0.id == s.id })?.pinned == true { Image(systemName: "pin.fill").font(.system(size: 9)).foregroundStyle(t.secondary) }
-                            Text(s.name).font(.system(size: 12)).foregroundStyle(t.text).lineLimit(1)
-                            if model.library.settings.defaultStyleId == s.id { Text("Default").font(.system(size: 9.5, weight: .semibold)).foregroundStyle(t.accent) }
+                            if model.library.userStyles.first(where: { $0.id == s.id })?.pinned == true { Image(systemName: "pin.fill").font(.system(size: DS.micro)).foregroundStyle(t.secondary) }
+                            Text(s.name).font(.system(size: DS.footnote)).foregroundStyle(t.text).lineLimit(1)
+                            if model.library.settings.defaultStyleId == s.id { Text("Default").font(.system(size: DS.micro, weight: .semibold)).foregroundStyle(t.accent) }
                         }
                     }
                 }
@@ -153,10 +153,10 @@ struct StyleGallery: View {
         let s = Styles.style(id)
         let title = model.library.docs[docId]?.title ?? ""
         return VStack(alignment: .leading, spacing: 10) {
-            Text("PREVIEW").font(.system(size: 10.5, weight: .semibold)).foregroundStyle(t.tertiary)
+            Text("PREVIEW").font(.system(size: DS.caption, weight: .semibold)).foregroundStyle(t.tertiary)
             StylePreviewCard(tokens: s.tokens, name: title.isEmpty ? s.name : title, height: 260)
-            Text(s.name).font(.system(size: 13, weight: .semibold)).foregroundStyle(t.text)
-            Text(String(format: "Text contrast %.1f:1", ColorMath.contrast(s.tokens.textColor, s.tokens.pageColor))).font(.system(size: 11.5)).foregroundStyle(t.secondary)
+            Text(s.name).font(.system(size: DS.body, weight: .semibold)).foregroundStyle(t.text)
+            Text(String(format: "Text contrast %.1f:1", ColorMath.contrast(s.tokens.textColor, s.tokens.pageColor))).font(.system(size: DS.footnote)).foregroundStyle(t.secondary)
             Button(id == current ? "In Use" : "Apply to This Document") { apply(id) }
                 .keyboardShortcut(.defaultAction).disabled(id == current)
             HStack {
@@ -204,6 +204,7 @@ extension AppModel {
         scheduleLibrarySave()
         saveLibraryNowIfNeeded()
         indexTick &+= 1
+        assistant.spaceChanged()
         toast("Switched to \(target.name)")
     }
 
