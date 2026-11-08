@@ -36,16 +36,32 @@ let toolList: [[String: Any]] = [
     tool("draft_read_block", "Read one block from a Draft document as Markdown.", ["document_id": textField, "block_id": textField], required: ["document_id", "block_id"]),
     tool("draft_document_revision", "Get the current revision token for a document before proposing edits.", ["document_id": textField], required: ["document_id"]),
     tool("draft_formatting_guide", "Read Draft's visual formatting options and guidance for making a note clear and attractive.", [:]),
-    proposalTool("draft_propose_note_edits", "Propose reviewed edits using Draft formatting. Does not change the document until the user accepts in Draft. Actions: replace_document (whole note Markdown, block_id=the document ID, text=Markdown); document_style (standalone, block_id=the document ID, value=style ID); replace_text (one block, inline Markdown, with expected_text); heading (body/title/subtitle/heading/strong/caption); insert_separator (after block_id, value=default/line/strong/dotted/dots/wave/tape/page_break); separator_style (existing separator block, same values); block_kind (body/quote/callout/code); list (bullet/numbered/task/none); font (document/system/serif/mono/rounded); align (left/center/right/justify); decoration (none/focus/block); block_color (#RRGGBB); bold/italic/underline/strike/code (exact phrase in text); highlight/text_color (exact phrase in text and #RRGGBB value). Read draft_formatting_guide first. Use targeted block edits to preserve links and attachments. Get revision first.", [
+    proposalTool("draft_propose_note_edits", "Propose reviewed edits to one note. Nothing changes until the user applies them in Draft, which rechecks the revision, keeps a backup, updates the index and makes the whole proposal one Undo step. Get expected_revision from draft_read_structure. Read draft_formatting_guide first and format with restraint. Actions — text: replace_text (one block, inline Markdown, expected_text = exact current text); append (block_id = the document ID, text = Markdown blocks added at the end); insert_blocks (text = Markdown blocks, block_id = anchor, position before/after); delete_block (text blocks and separators only; images, files, tables and page cards are kept); move_block (block_id, target = another block ID, position before/after). Structure: heading (body/title/subtitle/heading/strong/caption); block_kind (body/quote/callout/code); list (bullet/numbered/task/none); task_checked (value true/false). Inline, on an exact phrase given in text that occurs once in the block: bold/italic/underline/strike/code; highlight and text_color (value #RRGGBB); link (value https/http/mailto/draft:// URL); unlink. Block look: block_color (#RRGGBB), decoration (none/focus/block), font (document/system/serif/mono/rounded), align (left/center/right/justify). Separators: insert_separator after block_id and separator_style on an existing one (default/line/strong/dotted/dots/wave/tape/page_break). Standalone proposals: replace_document (block_id = document ID, text = whole-note Markdown; refused for notes with images, files or page cards) and document_style (block_id = document ID, value = style ID). Tags are #words in text and links to other notes are draft:// links; use replace_text, append or link for them.", [
         "document_id": textField, "expected_revision": textField, "instruction": textField,
-        "edits": ["type": "array", "minItems": 1, "maxItems": 100, "items": ["type": "object", "properties": ["action": textField, "block_id": textField, "value": textField, "text": textField, "expected_text": textField], "required": ["action", "block_id"], "additionalProperties": false]]
+        "edits": ["type": "array", "minItems": 1, "maxItems": 100, "items": ["type": "object", "properties": ["action": textField, "block_id": textField, "value": textField, "text": textField, "expected_text": textField, "target": textField, "position": ["type": "string", "enum": ["before", "after"]]], "required": ["action", "block_id"], "additionalProperties": false]]
     ], required: ["document_id", "expected_revision", "instruction", "edits"]),
+    proposalTool("draft_propose_create_document", "Propose a new note. Draft shows it for review and creates it only when the user applies it, with fresh block IDs, in the given folder (or Unsorted) and Space (default: the current one). One Undo moves it to Recently Deleted.", [
+        "title": textField, "markdown": textField, "folder_id": textField, "space_id": textField, "instruction": textField
+    ], required: ["title", "instruction"]),
+    proposalTool("draft_propose_rename_document", "Propose a new title for a note. Applied only after review; one Undo restores the old title.", [
+        "document_id": textField, "expected_revision": textField, "title": textField, "instruction": textField
+    ], required: ["document_id", "expected_revision", "title", "instruction"]),
+    proposalTool("draft_propose_move_document", "Propose moving a note (with its nested pages) to a folder (folder_id, or \"unsorted\") and/or another Space (space_id). Applied only after review; one Undo moves it back.", [
+        "document_id": textField, "expected_revision": textField, "folder_id": textField, "space_id": textField, "instruction": textField
+    ], required: ["document_id", "expected_revision", "instruction"]),
+    tool("draft_list_folders", "List folders in a Space (default: the current one).", ["space_id": textField]),
     tool("draft_request_status", "Check whether a proposed edit was accepted or rejected in Draft.", ["request_id": textField], required: ["request_id"]),
 ]
 
 func resultText(_ value: Any) throws -> String {
     let bytes = try JSONSerialization.data(withJSONObject: value, options: [.prettyPrinted, .sortedKeys, .fragmentsAllowed])
     return String(decoding: bytes, as: UTF8.self)
+}
+
+/// Writes the proposal file only; the note is changed by Draft after the user applies it.
+func queue(_ proposal: AgentProposal) throws -> String {
+    try AgentProposalStore.save(proposal, vaultURL: selectedVault)
+    return try resultText(["request_id": proposal.id, "status": proposal.status, "message": "Review this proposal in Draft. Nothing was changed yet."])
 }
 
 func call(_ name: String, _ args: [String: Any]) throws -> String {
@@ -86,8 +102,10 @@ func call(_ name: String, _ args: [String: Any]) throws -> String {
                 "Use one decorative separator at a meaningful transition. Wave is gentle; tape is playful; dots are quiet. Avoid repeating them between every section.",
                 "Highlight only the few words a reader should notice first. Keep long paragraphs unhighlighted.",
                 "Choose one accent color and keep text contrast readable. Use callouts for genuinely important notes, not every paragraph.",
-                "Preserve the author's meaning, links, block IDs, tasks, and attachments. Review the complete proposal before requesting approval."
-            ]
+                "Preserve the author's meaning, links, block IDs, tasks, and attachments. Review the complete proposal before requesting approval.",
+                "For “make this look better”: a title heading, subtitle-level headings for real sections, at most one callout or focus block, a highlight on one or two key phrases, one separator before a change of topic, and a document style that suits the content. Leave most paragraphs as plain text."
+            ],
+            "recipe_make_it_look_better": ["heading title on the first line", "heading subtitle for each real section", "list or task for steps", "callout for one warning or decision", "highlight #fff3a3 on one key phrase", "insert_separator wave or dots before the closing section", "document_style that matches the tone"]
         ])
     case "draft_propose_note_edits":
         guard let id = args["document_id"] as? String, let revision = args["expected_revision"] as? String,
@@ -98,12 +116,32 @@ func call(_ name: String, _ args: [String: Any]) throws -> String {
         guard try AgentProposalStore.revision(document) == revision else { throw AgentEditError.invalid("The document changed. Read it again before proposing edits.") }
         let edits: [AgentEdit] = try raw.map { item in
             guard let action = item["action"] as? String, let block = item["block_id"] as? String else { throw AgentEditError.invalid("Each edit needs action and block_id.") }
-            guard (["replace_document", "document_style"].contains(action) && block == id) || document.content.block(block) != nil else { throw DraftToolError.missingBlock }
-            return AgentEdit(action: action, blockId: block, value: item["value"] as? String, text: item["text"] as? String, expectedText: item["expected_text"] as? String)
+            guard !AgentEdit.documentActions.contains(action) else { throw AgentEditError.invalid("Use the create, rename or move tools for \(action).") }
+            guard (["replace_document", "document_style", "append"].contains(action) && block == id) || document.content.block(block) != nil else { throw DraftToolError.missingBlock }
+            if let target = item["target"] as? String, document.content.block(target) == nil { throw DraftToolError.missingBlock }
+            return AgentEdit(action: action, blockId: block, value: item["value"] as? String, text: item["text"] as? String, expectedText: item["expected_text"] as? String,
+                             target: item["target"] as? String, position: item["position"] as? String)
         }
-        let proposal = try AgentProposal(documentId: id, documentTitle: document.title, instruction: instruction, expectedRevision: revision, edits: edits)
-        try AgentProposalStore.save(proposal, vaultURL: selectedVault)
-        return try resultText(["request_id": proposal.id, "status": proposal.status, "message": "Review this proposal in Draft. No note was changed."])
+        return try queue(AgentProposal(documentId: id, documentTitle: document.title, instruction: instruction, expectedRevision: revision, edits: edits))
+    case "draft_list_folders":
+        let space = args["space_id"] as? String ?? draft.library.space.id
+        return try resultText(draft.library.folders.filter { ($0.spaceId ?? draft.library.spaces.first?.id) == space }.map {
+            ["id": $0.id, "name": $0.name, "parent_id": $0.parentId ?? ""] as [String: Any]
+        })
+    case "draft_propose_create_document":
+        guard let title = args["title"] as? String, let instruction = args["instruction"] as? String else { throw DraftToolError.unavailable("title and instruction are required") }
+        let edit = AgentEdit(action: "create_document", blockId: "new", value: args["folder_id"] as? String, text: args["markdown"] as? String, expectedText: title, target: args["space_id"] as? String)
+        return try queue(AgentProposal(documentId: "new", documentTitle: title, instruction: instruction, expectedRevision: AgentProposalStore.libraryRevision(draft.library), edits: [edit]))
+    case "draft_propose_rename_document", "draft_propose_move_document":
+        guard let id = args["document_id"] as? String, let revision = args["expected_revision"] as? String, let instruction = args["instruction"] as? String else {
+            throw DraftToolError.unavailable("document_id, expected_revision and instruction are required")
+        }
+        let document = try draft.document(id)
+        guard try AgentProposalStore.revision(document) == revision else { throw AgentEditError.invalid("The document changed. Read it again before proposing.") }
+        let edit = name == "draft_propose_rename_document"
+            ? AgentEdit(action: "rename_document", blockId: id, expectedText: args["title"] as? String)
+            : AgentEdit(action: "move_document", blockId: id, value: args["folder_id"] as? String, target: args["space_id"] as? String)
+        return try queue(AgentProposal(documentId: id, documentTitle: document.title, instruction: instruction, expectedRevision: revision, edits: [edit]))
     case "draft_request_status":
         guard let id = args["request_id"] as? String else { throw DraftToolError.unavailable("request_id is required") }
         let proposal = try AgentProposalStore.load(id, vaultURL: selectedVault)
@@ -121,7 +159,7 @@ while let line = readLine() {
     switch method {
     case "initialize":
         let requested = (message["params"] as? [String: Any])?["protocolVersion"] as? String ?? "2025-03-26"
-        send(base.merging(["result": ["protocolVersion": requested, "capabilities": ["tools": [String: Any]()], "serverInfo": ["name": "draft-mcp", "version": "0.1.0"]] as [String: Any]]) { _, new in new })
+        send(base.merging(["result": ["protocolVersion": requested, "capabilities": ["tools": [String: Any]()], "serverInfo": ["name": "draft-mcp", "version": "0.2.0"]] as [String: Any]]) { _, new in new })
     case "ping":
         send(base.merging(["result": [String: Any]()]) { _, new in new })
     case "tools/list":

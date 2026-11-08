@@ -39,3 +39,41 @@ final class AgentProposalTests: XCTestCase {
         XCTAssertThrowsError(try AgentEdit(action: "insert_separator", blockId: "b_test", value: "sparkle").validate())
     }
 }
+
+final class AgentLibraryProposalTests: XCTestCase {
+    let rev = String(repeating: "a", count: 64)
+
+    func testCreateRenameMoveAreStandaloneAndValidated() throws {
+        XCTAssertNoThrow(try AgentProposal(documentId: "new", documentTitle: "Trip", instruction: "New note", expectedRevision: rev,
+                                           edits: [AgentEdit(action: "create_document", blockId: "new", value: "unsorted", text: "# Trip", expectedText: "Trip")]))
+        // create must use the "new" id, and nothing else may.
+        XCTAssertThrowsError(try AgentProposal(documentId: "d1", documentTitle: "x", instruction: "i", expectedRevision: rev,
+                                               edits: [AgentEdit(action: "create_document", blockId: "d1", expectedText: "T")]))
+        XCTAssertThrowsError(try AgentProposal(documentId: "new", documentTitle: "x", instruction: "i", expectedRevision: rev,
+                                               edits: [AgentEdit(action: "append", blockId: "new", text: "x")]))
+        // standalone: no mixing with block edits
+        XCTAssertThrowsError(try AgentProposal(documentId: "d1", documentTitle: "x", instruction: "i", expectedRevision: rev,
+                                               edits: [AgentEdit(action: "rename_document", blockId: "d1", expectedText: "New"), AgentEdit(action: "bold", blockId: "b1", text: "x")]))
+        XCTAssertThrowsError(try AgentEdit(action: "rename_document", blockId: "d1", expectedText: "two\nlines").validate())
+        XCTAssertThrowsError(try AgentEdit(action: "move_document", blockId: "d1").validate(), "needs a folder or a Space")
+        XCTAssertThrowsError(try AgentEdit(action: "link", blockId: "b1", value: "javascript:alert(1)", text: "x").validate())
+        XCTAssertThrowsError(try AgentEdit(action: "move_block", blockId: "b1", target: "b1").validate())
+        XCTAssertNoThrow(try AgentEdit(action: "insert_blocks", blockId: "b1", text: "- a", position: "before").validate())
+    }
+
+    func testLibraryRevisionFollowsSpacesAndFolders() {
+        var lib = Library.empty()
+        let before = AgentProposalStore.libraryRevision(lib)
+        lib.docs["x"] = DocMeta(id: "x") // documents don't matter for where a note can go
+        XCTAssertEqual(AgentProposalStore.libraryRevision(lib), before)
+        lib.folders.append(Folder(name: "Trips", order: 0, spaceId: lib.space.id))
+        XCTAssertNotEqual(AgentProposalStore.libraryRevision(lib), before)
+    }
+
+    func testOlderProposalFilesStillDecode() throws {
+        let json = #"{"id":"request_x","documentId":"d1","documentTitle":"t","instruction":"i","expectedRevision":"\#(rev)","edits":[{"action":"bold","blockId":"b1","text":"x"}],"createdAt":0,"status":"pending"}"#
+        let p = try JSONDecoder().decode(AgentProposal.self, from: Data(json.utf8))
+        XCTAssertNil(p.edits[0].target)
+        XCTAssertFalse(p.changesLibrary)
+    }
+}

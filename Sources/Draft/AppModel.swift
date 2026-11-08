@@ -52,6 +52,9 @@ final class AppModel {
     /// A Codex edit proposal waiting for review (read from agent-requests/).
     var agentProposal: AgentProposal?
     @ObservationIgnored var agentProposalTimer: Timer?
+    /// Undo for accepted create/rename/move proposals (note edits use the note's own undo).
+    @ObservationIgnored let agentUndo: UndoManager = { let u = UndoManager(); u.groupsByEvent = false; return u }()
+    var agentUndoName: String?
 
     /// Derived data that views read many times per render (task lists, folder contents,
     /// collections) is computed once per change instead of once per view.

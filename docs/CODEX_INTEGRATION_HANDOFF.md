@@ -1,5 +1,27 @@
 # Draft AI integration handoff
 
+## Status on 8 November 2026 (v0.7 MCP operations)
+
+- Merged into `main`. Codex runs `~/Documents/Draft/scripts/draft-mcp.sh`; Claude Code has the same
+  server registered for this project (`~/.claude.json`, project `/Users/danielpekarek/Documents/Draft`,
+  server `draft`) and its CLI reports it connected.
+- DraftMCP 0.2.0 tools (14): `draft_list_spaces`, `draft_list_documents`, `draft_list_folders`,
+  `draft_search`, `draft_read_document`, `draft_read_structure`, `draft_read_block`,
+  `draft_document_revision`, `draft_formatting_guide`, `draft_propose_note_edits`,
+  `draft_propose_create_document`, `draft_propose_rename_document`, `draft_propose_move_document`,
+  `draft_request_status`.
+- Every change is a reviewed proposal: the server only writes `agent-requests/`. Draft applies it
+  after the user clicks Apply, rechecks the revision, saves with a backup, updates the index and makes
+  it one Undo step (note edits in the note's undo; create/rename/move in Edit › Undo Agent Change and
+  the toast). Reject, stale and refused edits leave everything unchanged.
+- Checks: `scripts/mcp-test.sh` (39 checks over real stdio in a throwaway vault),
+  `scripts/agent-test.sh`, unit tests (`AgentBlockOpsTests`, `AgentLibraryProposalTests`).
+- Not yet: folder creation, deleting whole notes, multi-note proposals, tables and collections,
+  inserting images or files (existing ones are always kept), and a genuine Codex app-server mode.
+
+The original handoff follows.
+
+
 This branch adds an optional OpenAI API provider to Draft's existing Assistant and a local MCP bridge through which Codex can read notes and propose changes. It was built from `main` while the v0.6 UI polish branch had uncommitted changes. Merge the polish work first, then resolve UI conflicts against this branch. The user's vault and the existing polish checkout were not edited.
 
 ## Implemented
