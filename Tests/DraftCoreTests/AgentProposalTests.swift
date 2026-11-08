@@ -77,3 +77,35 @@ final class AgentLibraryProposalTests: XCTestCase {
         XCTAssertFalse(p.changesLibrary)
     }
 }
+
+final class AgentPermissionTests: XCTestCase {
+    func testDestructiveEditsNeedTheirOwnPermission() throws {
+        let rev = String(repeating: "b", count: 64)
+        let bold = try AgentProposal(documentId: "d1", documentTitle: "t", instruction: "i", expectedRevision: rev, edits: [AgentEdit(action: "bold", blockId: "b1", text: "x")])
+        let delete = try AgentProposal(documentId: "d1", documentTitle: "t", instruction: "i", expectedRevision: rev, edits: [AgentEdit(action: "bold", blockId: "b1", text: "x"), AgentEdit(action: "delete_block", blockId: "b2")])
+        let move = try AgentProposal(documentId: "d1", documentTitle: "t", instruction: "i", expectedRevision: rev, edits: [AgentEdit(action: "move_document", blockId: "d1", value: "unsorted")])
+        XCTAssertEqual(bold.requiredAccess, .propose)
+        XCTAssertEqual(delete.requiredAccess, .destructive)
+        XCTAssertEqual(move.requiredAccess, .destructive)
+        let normal = AgentPermission()
+        XCTAssertTrue(normal.allows(.read) && normal.allows(.propose) && !normal.allows(.destructive))
+        XCTAssertFalse(AgentPermission(read: true, propose: false, destructive: true).allows(.destructive), "destructive needs propose too")
+    }
+
+    func testSettingsKeepPermissionsAndDefaultUnknownClients() throws {
+        var s = Settings(); s.agentPermissions["codex"] = AgentPermission(read: true, propose: true, destructive: true)
+        let back = try JSONDecoder().decode(Settings.self, from: JSONEncoder().encode(s))
+        XCTAssertTrue(back.agentPermission("codex").destructive)
+        XCTAssertEqual(back.agentPermission("someone-new"), AgentPermission())
+        XCTAssertEqual(try JSONDecoder().decode(Settings.self, from: Data("{}".utf8)).agentPermissions, [:])
+    }
+
+    func testActivityLogKeepsNoText() throws {
+        let dir = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+        AgentActivity.record(.init(time: 1, client: "codex", tool: "draft_read_document", document: "d1"), vault: dir)
+        AgentActivity.record(.init(time: 2, client: "claude-code", tool: "draft_search", document: nil), vault: dir)
+        XCTAssertEqual(AgentActivity.entries(dir).map(\.tool), ["draft_read_document", "draft_search"])
+        AgentActivity.clear(dir)
+        XCTAssertTrue(AgentActivity.entries(dir).isEmpty)
+    }
+}

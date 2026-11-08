@@ -178,7 +178,13 @@ An MCP client (Codex, Claude Code) may queue a proposed change here; it never wr
 
 `{"id": "request_…", "documentId": "d_…" | "new", "documentTitle", "instruction", "expectedRevision",
 "edits": [{"action", "blockId", "value?", "text?", "expectedText?", "target?", "position?"}], "createdAt",
-"status": "pending" | "accepted" | "rejected" | "stale" | "failed", "result?"}`.
+"status": "pending" | "accepted" | "rejected" | "stale" | "failed", "result?", "client?"}` (`client` is the
+MCP client's reported name).
+
+`agent-requests/activity.jsonl` holds one line per MCP call, `{"time", "client", "tool", "document?"}`,
+never note text; Draft keeps about the last 1,000 lines. Per-client permissions live in
+`settings.agentPermissions`: `{"<client name>": {"read": true, "propose": true, "destructive": false}}`;
+a client not listed gets those defaults.
 
 `expectedRevision` is the SHA-256 of the document's JSON (sorted keys) for note proposals, and of the
 sorted list of Space and folder ids (`s:<id>`, `f:<id>:<spaceId>`) for `create_document`. Library

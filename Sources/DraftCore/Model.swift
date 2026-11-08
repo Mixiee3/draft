@@ -189,6 +189,10 @@ public struct Settings: Codable, Hashable, Sendable {
     public var sidebarHidden: [String] = []
     public var sidebarOrder: [String] = Settings.sidebarSections
     public static let sidebarSections = ["starred", "folders", "tags"]
+    /// What each MCP client (by the name it reports) may do; clients not listed get the default
+    /// (read and propose, nothing destructive).
+    public var agentPermissions: [String: AgentPermission] = [:]
+    public func agentPermission(_ client: String?) -> AgentPermission { agentPermissions[client ?? ""] ?? AgentPermission() }
 
     public init() {}
 
@@ -225,6 +229,7 @@ public struct Settings: Codable, Hashable, Sendable {
         paperFollowsAppearance = try c.decodeIfPresent(Bool.self, forKey: .paperFollowsAppearance) ?? def.paperFollowsAppearance
         onboardingSeen = try c.decodeIfPresent(Int.self, forKey: .onboardingSeen) ?? def.onboardingSeen
         sidebarHidden = try c.decodeIfPresent([String].self, forKey: .sidebarHidden) ?? def.sidebarHidden
+        agentPermissions = (try? c.decodeIfPresent([String: AgentPermission].self, forKey: .agentPermissions)) ?? [:]
         let order = try c.decodeIfPresent([String].self, forKey: .sidebarOrder) ?? def.sidebarOrder
         // Keep every known section exactly once, whatever an older or edited file says.
         sidebarOrder = order.filter(Settings.sidebarSections.contains).reduce(into: []) { if !$0.contains($1) { $0.append($1) } }

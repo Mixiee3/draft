@@ -58,14 +58,30 @@ func resultText(_ value: Any) throws -> String {
     return String(decoding: bytes, as: UTF8.self)
 }
 
+/// The connected client's name from `initialize`; permissions in Draft's settings are per name.
+var clientName = "unknown"
+
+func denied(_ what: String) -> DraftToolError {
+    .unavailable("Draft doesn't allow \(clientName) to \(what). The user can change this in Draft › Settings › Agents.")
+}
+
 /// Writes the proposal file only; the note is changed by Draft after the user applies it.
-func queue(_ proposal: AgentProposal) throws -> String {
+func queue(_ proposal: AgentProposal, _ draft: DraftTools) throws -> String {
+    var proposal = proposal
+    proposal.client = clientName
+    if proposal.requiredAccess == .destructive, !draft.library.settings.agentPermission(clientName).allows(.destructive) {
+        throw denied("propose destructive changes (deleting content, replacing a whole note or moving notes)")
+    }
     try AgentProposalStore.save(proposal, vaultURL: selectedVault)
     return try resultText(["request_id": proposal.id, "status": proposal.status, "message": "Review this proposal in Draft. Nothing was changed yet."])
 }
 
 func call(_ name: String, _ args: [String: Any]) throws -> String {
     let draft = try DraftTools(vaultURL: selectedVault)
+    let permission = draft.library.settings.agentPermission(clientName)
+    let proposes = name.hasPrefix("draft_propose_")
+    guard permission.allows(proposes ? .propose : .read) else { throw denied(proposes ? "propose changes" : "read notes") }
+    AgentActivity.record(.init(time: nowMs(), client: clientName, tool: name, document: args["document_id"] as? String), vault: selectedVault)
     switch name {
     case "draft_list_spaces":
         return try resultText(draft.spaces.map { ["id": $0.id, "name": $0.name] })
@@ -122,7 +138,7 @@ func call(_ name: String, _ args: [String: Any]) throws -> String {
             return AgentEdit(action: action, blockId: block, value: item["value"] as? String, text: item["text"] as? String, expectedText: item["expected_text"] as? String,
                              target: item["target"] as? String, position: item["position"] as? String)
         }
-        return try queue(AgentProposal(documentId: id, documentTitle: document.title, instruction: instruction, expectedRevision: revision, edits: edits))
+        return try queue(AgentProposal(documentId: id, documentTitle: document.title, instruction: instruction, expectedRevision: revision, edits: edits), draft)
     case "draft_list_folders":
         let space = args["space_id"] as? String ?? draft.library.space.id
         return try resultText(draft.library.folders.filter { ($0.spaceId ?? draft.library.spaces.first?.id) == space }.map {
@@ -131,7 +147,7 @@ func call(_ name: String, _ args: [String: Any]) throws -> String {
     case "draft_propose_create_document":
         guard let title = args["title"] as? String, let instruction = args["instruction"] as? String else { throw DraftToolError.unavailable("title and instruction are required") }
         let edit = AgentEdit(action: "create_document", blockId: "new", value: args["folder_id"] as? String, text: args["markdown"] as? String, expectedText: title, target: args["space_id"] as? String)
-        return try queue(AgentProposal(documentId: "new", documentTitle: title, instruction: instruction, expectedRevision: AgentProposalStore.libraryRevision(draft.library), edits: [edit]))
+        return try queue(AgentProposal(documentId: "new", documentTitle: title, instruction: instruction, expectedRevision: AgentProposalStore.libraryRevision(draft.library), edits: [edit]), draft)
     case "draft_propose_rename_document", "draft_propose_move_document":
         guard let id = args["document_id"] as? String, let revision = args["expected_revision"] as? String, let instruction = args["instruction"] as? String else {
             throw DraftToolError.unavailable("document_id, expected_revision and instruction are required")
@@ -141,7 +157,7 @@ func call(_ name: String, _ args: [String: Any]) throws -> String {
         let edit = name == "draft_propose_rename_document"
             ? AgentEdit(action: "rename_document", blockId: id, expectedText: args["title"] as? String)
             : AgentEdit(action: "move_document", blockId: id, value: args["folder_id"] as? String, target: args["space_id"] as? String)
-        return try queue(AgentProposal(documentId: id, documentTitle: document.title, instruction: instruction, expectedRevision: revision, edits: [edit]))
+        return try queue(AgentProposal(documentId: id, documentTitle: document.title, instruction: instruction, expectedRevision: revision, edits: [edit]), draft)
     case "draft_request_status":
         guard let id = args["request_id"] as? String else { throw DraftToolError.unavailable("request_id is required") }
         let proposal = try AgentProposalStore.load(id, vaultURL: selectedVault)
@@ -158,6 +174,7 @@ while let line = readLine() {
     let base: [String: Any] = ["jsonrpc": "2.0", "id": id]
     switch method {
     case "initialize":
+        if let info = (message["params"] as? [String: Any])?["clientInfo"] as? [String: Any], let n = info["name"] as? String, !n.isEmpty { clientName = String(n.prefix(64)) }
         let requested = (message["params"] as? [String: Any])?["protocolVersion"] as? String ?? "2025-03-26"
         send(base.merging(["result": ["protocolVersion": requested, "capabilities": ["tools": [String: Any]()], "serverInfo": ["name": "draft-mcp", "version": "0.2.0"]] as [String: Any]]) { _, new in new })
     case "ping":

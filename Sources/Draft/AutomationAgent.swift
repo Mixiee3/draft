@@ -142,6 +142,10 @@ extension Automation {
         if let theme = env["DRAFT_AGENT_THEME"] { m.setSettings { $0.theme = theme } }
         if env["DRAFT_AGENT_NARROW"] != nil, let w = NSApp.windows.first(where: { $0.isVisible }) { w.setFrame(NSRect(x: 60, y: 60, width: 760, height: 720), display: true) }
         await wait(0.3)
+        if let theme = env["DRAFT_AGENT_SETTINGS"], let w = NSApp.windows.first(where: { $0.isVisible }) {
+            m.setSettings { $0.theme = theme }
+            m.openView(ViewRef(kind: "settings", section: "agents")); await shot("agents-settings-\(theme)", w, settle: 0.8); return
+        }
         m.showNextAgentProposal()
         guard let p = m.agentProposal else { r["error"] = "no pending proposal"; return }
         await wait(0.8)
@@ -149,6 +153,8 @@ extension Automation {
             await captureWindow(sheet, name)
         }
         r["requestId"] = p.id
+        if env["DRAFT_AGENT_REVOKE"] != nil { m.setSettings { $0.agentPermissions[p.client ?? ""] = AgentPermission(read: true, propose: true, destructive: false) } }
+        r["client"] = p.client ?? ""
         let decision = env["DRAFT_AGENT_DECISION"] ?? "accept"
         if let w = NSApp.windows.first(where: { $0.isVisible }), let sheet = w.attachedSheet {
             r["sheetSize"] = "\(Int(sheet.frame.width))x\(Int(sheet.frame.height))"
@@ -167,6 +173,14 @@ extension Automation {
             }
             await wait(0.6)
             r["sheetClosedByKey"] = w.attachedSheet == nil ? "yes" : "no"
+        } else if decision == "later" {
+            m.deferAgentProposal(); await wait(0.3)
+            r["hiddenAfterLater"] = m.agentProposal == nil ? "yes" : "no"
+            m.showNextAgentProposal()
+            r["notReshownByWatcher"] = m.agentProposal == nil ? "yes" : "no"
+            m.reviewPendingAgentProposals()
+            r["reshownOnRequest"] = m.agentProposal?.id == p.id ? "yes" : "no"
+            m.deferAgentProposal()
         } else if decision == "reject" { m.rejectAgentProposal() } else { m.acceptAgentProposal() }
         await wait(0.5)
         let saved = (try? AgentProposalStore.load(p.id, vaultURL: m.vault.dir))
@@ -209,6 +223,10 @@ extension Automation {
     static func agentSeed() async {
         m.agentProposalTimer?.invalidate(); m.agentProposal = nil // queued proposals wait for agent-review
         await wait(0.3)
+        m.setSettings {
+            $0.agentPermissions["mcp-test"] = AgentPermission(read: true, propose: true, destructive: true)
+            $0.agentPermissions["blocked"] = AgentPermission(read: false, propose: false, destructive: false)
+        }
         let folder = m.createFolder(); m.renameFolder(folder, "Archive"); m.renamingFolder = nil
         guard let id = m.createDoc(title: "MCP test note") else { return }
         var content = Node("doc", content: MarkdownImport.blocks("Planning zebra-quartz #garden\n- [ ] water the beds\nSee [the guide](https://example.com/guide)\nPlain closing line"))

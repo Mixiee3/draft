@@ -20,10 +20,10 @@ def ok(name, cond, detail=""):
     print(("PASS " if cond else "FAIL ") + name + ("" if cond else "  " + str(detail)[:300]))
 
 class MCP:
-    def __init__(self):
+    def __init__(self, name="mcp-test"):
         self.p = subprocess.Popen([repo + "/.build/debug/DraftMCP", "--vault", vault], stdin=subprocess.PIPE, stdout=subprocess.PIPE, text=True)
         self.n = 0
-        self.rpc("initialize", {"protocolVersion": "2025-06-18", "capabilities": {}, "clientInfo": {"name": "mcp-test", "version": "1"}})
+        self.rpc("initialize", {"protocolVersion": "2025-06-18", "capabilities": {}, "clientInfo": {"name": name, "version": "1"}})
     def rpc(self, method, params):
         self.n += 1
         self.p.stdin.write(json.dumps({"jsonrpc": "2.0", "id": self.n, "method": method, "params": params}) + "\n"); self.p.stdin.flush()
@@ -36,8 +36,9 @@ class MCP:
         except ValueError: return text
     def close(self): self.p.stdin.close(); self.p.wait(timeout=5)
 
-def review(decision="accept", undo=False, shot=None):
+def review(decision="accept", undo=False, shot=None, revoke=False):
     env = dict(os.environ, DRAFT_DATA_DIR=vault, DRAFT_OUT=work, DRAFT_AUTOMATION="agent-review", DRAFT_AGENT_DECISION=decision)
+    if revoke: env["DRAFT_AGENT_REVOKE"] = "1"
     if undo: env["DRAFT_AGENT_UNDO"] = "1"
     if shot: env["DRAFT_AGENT_SHOT"] = shot
     subprocess.run([app], env=env, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, timeout=90)
@@ -153,10 +154,31 @@ st = m.tool("draft_read_structure", document_id=new)
 m.tool("draft_propose_move_document", document_id=new, expected_revision=st["revision"], space_id=work_space["id"], instruction="Move to Work")
 r = review("accept"); ok("move to another Space", r["afterSpace"] == work_space["id"] and any(d["title"] == "Trip plan" for d in m.tool("draft_list_documents", space_id=work_space["id"])), r)
 
+# Permissions: per client, checked by the server and again when applying.
+blocked = MCP("blocked"); r = blocked.tool("draft_list_documents"); blocked.close()
+ok("client without read permission refused", "error" in r and "Settings › Agents" in r["error"], r)
+newcomer = MCP("newcomer"); st = newcomer.tool("draft_read_structure", document_id=note["id"])
+plain = next(b for b in st["blocks"] if b["type"] == "paragraph" and b["text"])
+r = newcomer.tool("draft_propose_note_edits", document_id=note["id"], expected_revision=st["revision"], instruction="Delete", edits=[{"action": "delete_block", "block_id": plain["id"]}])
+ok("new client can't propose destructive changes", "error" in r and "destructive" in r["error"], r)
+r = newcomer.tool("draft_propose_note_edits", document_id=note["id"], expected_revision=st["revision"], instruction="Italic", edits=[{"action": "italic", "block_id": plain["id"], "text": plain["text"].split()[0]}])
+ok("new client can propose ordinary edits", r.get("status") == "pending", r); newcomer.close()
+r = review("reject"); ok("proposal records its client", r.get("client") == "newcomer", r)
+st = m.tool("draft_read_structure", document_id=note["id"]); plain = next(b for b in st["blocks"] if b["type"] == "paragraph" and b["text"]); before = filehash(note["id"])
+m.tool("draft_propose_note_edits", document_id=note["id"], expected_revision=st["revision"], instruction="Delete", edits=[{"action": "delete_block", "block_id": plain["id"]}])
+r = review("accept", revoke=True, shot="mcp-review-destructive")
+ok("permission revoked before Apply: not applied", r["status"] == "failed" and "allowed" in r["result"] and filehash(note["id"]) == before, r)
+m.tool("draft_propose_note_edits", document_id=note["id"], expected_revision=st["revision"], instruction="Later", edits=[{"action": "italic", "block_id": plain["id"], "text": plain["text"].split()[0]}])
+r = review("later")
+ok("Later keeps it pending and out of the way", r["hiddenAfterLater"] == "yes" and r["notReshownByWatcher"] == "yes" and r["reshownOnRequest"] == "yes" and m.tool("draft_request_status", request_id=json.load(open(work + "/agent-review.json"))["requestId"])["status"] == "pending", r)
+r = review("reject")
+log = open(vault + "/agent-requests/activity.jsonl").read()
+ok("activity log has tools and no note text", "draft_read_structure" in log and "zebra" not in log and "Planning" not in log, log[:200])
+
 # Persistence across relaunch and an index rebuild from the files.
 m.close()
 shutil.rmtree(vault + "/index", ignore_errors=True)
-pending = [f for f in os.listdir(vault + "/agent-requests") if json.load(open(vault + "/agent-requests/" + f))["status"] == "pending"]
+pending = [f for f in os.listdir(vault + "/agent-requests") if f.startswith("request_") and json.load(open(vault + "/agent-requests/" + f))["status"] == "pending"]
 ok("no proposal left pending", not pending, pending)
 r = review("accept")  # a plain relaunch: nothing should be left to review
 ok("relaunch with nothing pending", r.get("error") == "no pending proposal", r)
