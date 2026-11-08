@@ -109,3 +109,42 @@ final class AgentPermissionTests: XCTestCase {
         XCTAssertTrue(AgentActivity.entries(dir).isEmpty)
     }
 }
+
+final class AgentFolderTests: XCTestCase {
+    func testFolderNamesPathsAndDuplicates() throws {
+        var lib = Library.empty()
+        let projects = Folder(name: "Projects", spaceId: lib.space.id)
+        let y2026 = Folder(name: "2026", parentId: projects.id, spaceId: lib.space.id)
+        lib.folders = [projects, y2026]
+        XCTAssertEqual(lib.folderPath(y2026.id), "\(lib.space.name) › Projects › 2026")
+        XCTAssertNoThrow(try lib.checkNewFolder(name: "Q1", parent: y2026.id, space: lib.space.id))
+        XCTAssertThrowsError(try lib.checkNewFolder(name: "projects", parent: nil, space: lib.space.id), "case-insensitive duplicate")
+        XCTAssertNoThrow(try lib.checkNewFolder(name: "Projects", parent: y2026.id, space: lib.space.id), "same name under another parent is fine")
+        for bad in ["", "  ", "a/b", "..", "two\nlines", String(repeating: "x", count: 121)] {
+            XCTAssertThrowsError(try lib.checkNewFolder(name: bad, parent: nil, space: lib.space.id), bad)
+        }
+        XCTAssertThrowsError(try lib.checkNewFolder(name: "Q1", parent: "f_missing", space: lib.space.id))
+        XCTAssertThrowsError(try lib.checkNewFolder(name: "Q1", parent: nil, space: "s_missing"))
+        XCTAssertNoThrow(try AgentProposal(documentId: "new", documentTitle: "Q1", instruction: "Folder", expectedRevision: String(repeating: "c", count: 64),
+                                           edits: [AgentEdit(action: "create_folder", blockId: "new", value: y2026.id, expectedText: "Q1")]))
+    }
+}
+
+final class AgentMultiNoteTests: XCTestCase {
+    let rev = String(repeating: "d", count: 64)
+    func part(_ id: String, _ action: String = "bold") -> AgentNoteChange {
+        AgentNoteChange(documentId: id, documentTitle: id, expectedRevision: rev, edits: [AgentEdit(action: action, blockId: action == "delete_document" ? id : "b1", text: "x")])
+    }
+
+    func testMultiNoteRules() throws {
+        let p = try AgentProposal(instruction: "Tidy", parts: [part("d1"), part("d2", "delete_block")])
+        XCTAssertEqual(p.documentId, "multi")
+        XCTAssertEqual(p.allEdits.count, 2)
+        XCTAssertEqual(p.requiredAccess, .destructive, "any destructive part makes the whole proposal destructive")
+        XCTAssertThrowsError(try AgentProposal(instruction: "One", parts: [part("d1")]), "needs two notes")
+        XCTAssertThrowsError(try AgentProposal(instruction: "Dup", parts: [part("d1"), part("d1")]))
+        XCTAssertThrowsError(try AgentProposal(instruction: "Lib", parts: [part("d1"), part("d2", "delete_document")]))
+        let decoded = try JSONDecoder().decode(AgentProposal.self, from: JSONEncoder().encode(p))
+        XCTAssertEqual(decoded.parts?.count, 2)
+    }
+}

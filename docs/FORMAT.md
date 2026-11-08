@@ -191,7 +191,11 @@ sorted list of Space and folder ids (`s:<id>`, `f:<id>:<spaceId>`) for `create_d
 actions are standalone: `create_document` (`documentId` and `blockId` `"new"`, `expectedText` = title,
 `text` = Markdown, `value` = folder id or `unsorted`, `target` = Space id), `rename_document`
 (`expectedText` = new title) and `move_document` (`value` = folder id or `unsorted`, `target` = Space
-id). Note actions are listed in `draft_propose_note_edits`; `target` names the other block for
+id), `create_folder` (`documentId`/`blockId` `"new"`, `expectedText` = name, `value` = parent folder
+id, `target` = Space id) and `delete_document` (moves the note and its nested pages to Recently
+Deleted). A multi-note proposal has `documentId` `"multi"`, empty `edits`, and
+`"parts": [{"documentId", "documentTitle", "expectedRevision", "edits"}]` (2–20 notes, note edits
+only), applied all-or-nothing. Note actions are listed in `draft_propose_note_edits`; `target` names the other block for
 `move_block` and `position` is `before`/`after` for `insert_blocks` and `move_block`.
 
 The running app shows each proposal for review. Applying rechecks the revision (a mismatch sets

@@ -188,6 +188,10 @@ extension Automation {
         r["result"] = saved?.result ?? ""
         let docId = p.documentId == "new" ? (saved?.result?.components(separatedBy: " ").first { $0.hasPrefix("d_") }?.trimmingCharacters(in: .punctuationCharacters) ?? "") : p.documentId
         r["documentId"] = docId
+        if let fid = saved?.result?.components(separatedBy: " ").first(where: { $0.hasPrefix("f_") })?.trimmingCharacters(in: .punctuationCharacters) {
+            r["folderId"] = fid
+            r["folderPath"] = m.library.folderPath(fid)
+        }
         func record(_ prefix: String) {
             let doc = try? m.vault.loadDoc(docId)
             r[prefix + "Text"] = doc.map { docPlainText($0.content) } ?? ""
@@ -202,12 +206,22 @@ extension Automation {
             r[prefix + "Marks"] = marks.sorted().joined(separator: ",")
             r[prefix + "Tasks"] = doc.map { tasksOf($0.content).map { "\($0.checked)" }.joined(separator: ",") } ?? ""
             r[prefix + "Style"] = doc?.appearance.styleId ?? ""
+            r[prefix + "Trashed"] = "\(m.library.docs.values.filter { $0.deletedAt != nil }.count)"
         }
         m.refreshIndex(); await wait(1.2)
         record("after")
+        func recordParts(_ prefix: String) {
+            for part in p.parts ?? [] {
+                let d = try? m.vault.loadDoc(part.documentId)
+                var marks: [String] = []
+                if let c = d?.content { walk(c) { n in for mk in n.marks ?? [] { marks.append(mk.type) } } }
+                r["\(prefix):\(part.documentId)"] = (d.map { docPlainText($0.content) } ?? "") + " |marks:" + marks.sorted().joined(separator: ",")
+            }
+        }
+        recordParts("after")
         r["backups"] = "\(m.snapshots(docId).count)"
         if ProcessInfo.processInfo.environment["DRAFT_AGENT_UNDO"] != nil, saved?.status == "accepted" {
-            if p.changesLibrary { m.undoAgentChange() }
+            if p.changesLibrary || p.parts != nil { m.undoAgentChange() }
             else if let um = m.editors[docId]?.controller.undo {
                 if um.groupingLevel > 0 { um.endUndoGrouping() }
                 um.undo()
@@ -215,6 +229,8 @@ extension Automation {
             }
             m.flushAll(); m.refreshIndex(); await wait(1.2)
             record("undone")
+            recordParts("undone")
+            if let fid = r["folderId"] { r["folderAfterUndo"] = m.library.folders.contains { $0.id == fid } ? "kept" : "removed" }
         }
     }
 
