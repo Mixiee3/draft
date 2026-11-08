@@ -58,6 +58,8 @@ public final class DocumentEditorView: NSView, NSTextViewDelegate {
     let coverControls = NSStackView()
     /// Height reserved at the top for the host's floating controls.
     public var topInset: CGFloat = 0 { didSet { needsLayout = true } }
+    /// Room kept free on the right for an open panel; the page moves aside rather than under it.
+    public var trailingInset: CGFloat = 0 { didSet { if oldValue != trailingInset { needsLayout = true } } }
 
     public var pageColor = NSColor(hex: "#fffdf8") { didSet { paperBackground.layer?.backgroundColor = pageColor.cgColor } }
     public var coverImage: NSImage? { didSet { coverView.image = coverImage; coverView.isHidden = coverImage == nil; needsLayout = true; relayout() } }
@@ -222,8 +224,13 @@ public final class DocumentEditorView: NSView, NSTextViewDelegate {
         let width = scrollView.contentSize.width
         guard width > 0 else { return }
         let margin: CGFloat = width < 640 ? 10 : 28
-        let paperW = min(840, width - margin * 2)
-        let paperX = ((width - paperW) / 2).rounded()
+        var paperW = min(840, width - margin * 2)
+        var paperX = ((width - paperW) / 2).rounded()
+        if trailingInset > 0 {
+            let avail = width - trailingInset - margin
+            if paperX + paperW > avail { paperX = max(margin, avail - paperW) }
+            if paperX + paperW > avail, avail - margin >= 560 { paperW = avail - margin; paperX = margin }
+        }
         let top: CGFloat = topInset > 0 ? 14 : 70
         let pad: CGFloat = paperW < 560 ? 22 : (paperW < 700 ? 44 : 68)
         var y = top

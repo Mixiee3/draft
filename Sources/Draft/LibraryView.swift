@@ -58,12 +58,12 @@ struct LibraryView: View {
                     Button("From Template…") { model.templatePicker = true }
                     Divider()
                     Button("New Folder") { model.createFolder() }
-                } label: { Image(systemName: "plus").font(.system(size: 14, weight: .semibold)).frame(width: 30, height: 30) }
+                } label: { Image(systemName: "plus").font(.system(size: DS.headline, weight: .semibold)).frame(width: 30, height: 30) }
                 .menuStyle(.borderlessButton).menuIndicator(.hidden).frame(width: 32, height: 30)
                 .foregroundStyle(t.pillText).tint(t.pillText)
                 .accessibilityLabel("Create")
             }
-            Text(title).font(.system(size: 17, weight: .semibold)).foregroundStyle(t.text)
+            Text(title).font(.system(size: DS.title3, weight: .semibold)).foregroundStyle(t.text)
             Spacer()
             if view.kind != "trash" && view.kind != "shared" {
             PillGroup {
@@ -121,7 +121,7 @@ struct LibraryView: View {
                     .onExitCommand { model.librarySearch = ""; model.librarySearchOpen = false }
                     .onSubmit { if let first = model.searchHits.first { model.openSearchResult(first.meta.id) } }
                     .accessibilityLabel("Search documents")
-                Button { model.searchRegex.toggle() } label: { Text(".*").font(.system(size: 12, weight: .bold, design: .monospaced)).fixedSize().padding(.horizontal, 5).padding(.vertical, 3)
+                Button { model.searchRegex.toggle() } label: { Text(".*").font(.system(size: DS.footnote, weight: .bold, design: .monospaced)).fixedSize().padding(.horizontal, 5).padding(.vertical, 3)
                     .background(Capsule().fill(model.searchRegex ? t.accent.opacity(0.15) : .clear)) }
                     .buttonStyle(.plain).fixedSize().foregroundStyle(model.searchRegex ? t.accent : t.pillText.opacity(0.5))
                     .help("Regular expression").accessibilityLabel("Regular expression").accessibilityAddTraits(model.searchRegex ? .isSelected : [])
@@ -131,7 +131,7 @@ struct LibraryView: View {
             .padding(.horizontal, 12).frame(height: 36)
             .background(Capsule().fill(t.pill)).overlay(Capsule().strokeBorder(searchErrorText == nil ? t.pillBorder : Color.red, lineWidth: searchErrorText == nil ? 0.5 : 1.5))
             .onAppear { searchFocused = true }
-            if let e = searchErrorText { Text(e).font(.system(size: 12)).foregroundStyle(.red).accessibilityLabel("Search error: \(e)") }
+            if let e = searchErrorText { Text(e).font(.system(size: DS.footnote)).foregroundStyle(.red).accessibilityLabel("Search error: \(e)") }
         } else {
             PillGroup { PillButton(symbol: "magnifyingglass", label: "Search (⌘F)") { model.librarySearchOpen = true } }
                 .keyboardShortcut("f", modifiers: .command)
@@ -144,10 +144,10 @@ struct EmptyLibrary: View {
     var message: String
     var body: some View {
         VStack(spacing: 10) {
-            Text(message).font(.system(size: 13)).foregroundStyle(t.secondary).multilineTextAlignment(.center)
-                .padding(14).frame(maxWidth: .infinity).background(RoundedRectangle(cornerRadius: 12).fill(t.hover))
+            Text(message).font(.system(size: DS.body)).foregroundStyle(t.secondary).multilineTextAlignment(.center)
+                .padding(14).frame(maxWidth: .infinity).background(RoundedRectangle(cornerRadius: DS.rCard).fill(t.hover))
             ForEach(0..<6, id: \.self) { i in
-                RoundedRectangle(cornerRadius: 12).fill(t.hover.opacity(1 - Double(i) * 0.15)).frame(height: 48)
+                RoundedRectangle(cornerRadius: DS.rCard).fill(t.hover.opacity(1 - Double(i) * 0.15)).frame(height: 48)
             }
             Spacer()
         }.padding(.horizontal, 24).padding(.top, 6)
@@ -166,15 +166,15 @@ struct DocPreview: View {
         let ink = Color(hex: style.textColor)
         let fontDesign: Font.Design = style.font == "serif" ? .serif : style.font == "mono" ? .monospaced : style.font == "rounded" ? .rounded : .default
         ZStack(alignment: .topLeading) {
-            RoundedRectangle(cornerRadius: 16, style: .continuous).fill(Color(hex: meta.tint))
-            RoundedRectangle(cornerRadius: 12, style: .continuous).fill(page)
+            RoundedRectangle(cornerRadius: DS.rCard, style: .continuous).fill(Color(hex: meta.tint))
+            RoundedRectangle(cornerRadius: DS.rCard, style: .continuous).fill(page)
                 .overlay(alignment: .topLeading) {
                     VStack(alignment: .leading, spacing: 8) {
                         Text(meta.title.isEmpty ? "Untitled" : meta.title).font(.system(size: titleSize, weight: .bold, design: fontDesign)).foregroundStyle(ink).lineLimit(2)
-                        Text(meta.excerpt).font(.system(size: 8.5, design: fontDesign)).foregroundStyle(ink.opacity(0.78)).lineSpacing(2)
+                        Text(meta.excerpt).font(.system(size: DS.micro, design: fontDesign)).foregroundStyle(ink.opacity(0.78)).lineSpacing(2)
                     }.padding(14)
                 }
-                .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+                .clipShape(RoundedRectangle(cornerRadius: DS.rCard, style: .continuous))
                 .padding(5)
         }
         .frame(height: height)
@@ -213,7 +213,7 @@ struct DocCardMenu: ViewModifier {
 struct HoverLift: ViewModifier {
     @State private var hover = false
     func body(content: Content) -> some View {
-        content.scaleEffect(hover ? 1.012 : 1).animation(.easeOut(duration: 0.12), value: hover).onHover { hover = $0 }
+        content.scaleEffect(hover ? 1.012 : 1).animation(Motion.quick(false), value: hover).onHover { hover = $0 }
     }
 }
 
@@ -258,7 +258,7 @@ struct GridLayout: View {
         let grouped = groupByDate(docs, key: key == .name ? .updatedAt : key)
         LazyVStack(alignment: .leading, spacing: 8) {
             ForEach(grouped, id: \.0) { label, items in
-                Text(label).font(.system(size: 13, weight: .medium)).foregroundStyle(t.secondary).padding(.leading, 6).padding(.top, 10)
+                Text(label).font(.system(size: DS.body, weight: .medium)).foregroundStyle(t.secondary).padding(.leading, 6).padding(.top, 10)
                 LazyVGrid(columns: [GridItem(.adaptive(minimum: 200, maximum: 260), spacing: 16)], alignment: .leading, spacing: 16) {
                     ForEach(items) { m in
                         DocPreview(meta: m, height: 190, titleSize: 15).modifier(HoverLift()).modifier(DocCardMenu(meta: m))
@@ -294,9 +294,9 @@ struct ListLayout: View {
         } label: {
             HStack(spacing: 3) {
                 Text(title)
-                if s.key == key { Image(systemName: s.dir == "asc" ? "arrow.up" : "arrow.down").font(.system(size: 9, weight: .bold)) }
+                if s.key == key { Image(systemName: s.dir == "asc" ? "arrow.up" : "arrow.down").font(.system(size: DS.micro, weight: .bold)) }
             }
-            .font(.system(size: 12.5, weight: s.key == key ? .semibold : .regular))
+            .font(.system(size: DS.body, weight: s.key == key ? .semibold : .regular))
             .foregroundStyle(s.key == key ? t.text : t.secondary)
             .frame(width: width, alignment: .leading)
             .frame(maxWidth: width == nil ? .infinity : nil, alignment: .leading)
@@ -316,7 +316,7 @@ struct ListLayout: View {
                 }.padding(.horizontal, 12).padding(.vertical, 8)
                 Divider().opacity(0.5)
                 ForEach(groupByDate(docs, key: key == .name ? .updatedAt : key), id: \.0) { label, items in
-                    if key != .name { Text(label).font(.system(size: 12.5)).foregroundStyle(t.secondary).padding(.horizontal, 12).padding(.top, 14).padding(.bottom, 4) }
+                    if key != .name { Text(label).font(.system(size: DS.body)).foregroundStyle(t.secondary).padding(.horizontal, 12).padding(.top, 14).padding(.bottom, 4) }
                     ForEach(items) { m in ListRow(meta: m, compact: compact) }
                 }
             }.padding(.horizontal, 18).padding(.bottom, 24)
@@ -335,23 +335,23 @@ struct ListRow: View {
             MiniPage(meta: meta, size: 36)
             VStack(alignment: .leading, spacing: 3) {
                 HStack(spacing: 6) {
-                    Text(meta.title.isEmpty ? "Untitled" : meta.title).font(.system(size: 13.5, weight: .medium)).foregroundStyle(t.text).lineLimit(1)
-                    if meta.starred { Image(systemName: "star.fill").font(.system(size: 9)).foregroundStyle(.yellow) }
+                    Text(meta.title.isEmpty ? "Untitled" : meta.title).font(.system(size: DS.body, weight: .medium)).foregroundStyle(t.text).lineLimit(1)
+                    if meta.starred { Image(systemName: "star.fill").font(.system(size: DS.micro)).foregroundStyle(.yellow) }
                 }
                 HStack(spacing: 4) {
-                    Image(systemName: "folder").font(.system(size: 9.5))
+                    Image(systemName: "folder").font(.system(size: DS.micro))
                     Text(model.folderName(meta.folderId) + (meta.parentDocId != nil ? " · in \(model.library.docs[meta.parentDocId!]?.title ?? "page")" : "") + (meta.excerpt.isEmpty ? "" : " · " + meta.excerpt))
                         .lineLimit(1)
-                }.font(.system(size: 11.5)).foregroundStyle(t.tertiary)
+                }.font(.system(size: DS.footnote)).foregroundStyle(t.tertiary)
             }
             .frame(maxWidth: .infinity, alignment: .leading)
             if !compact { Text(relative(meta.viewedAt)).frame(width: 120, alignment: .leading) }
             Text(relative(meta.updatedAt)).frame(width: 120, alignment: .leading)
             if !compact { Text(relative(meta.createdAt)).frame(width: 110, alignment: .leading) }
         }
-        .font(.system(size: 12.5)).foregroundStyle(t.secondary)
+        .font(.system(size: DS.body)).foregroundStyle(t.secondary)
         .padding(.horizontal, 12).padding(.vertical, 8)
-        .background(RoundedRectangle(cornerRadius: 10).fill(hover ? t.hover : .clear))
+        .background(RoundedRectangle(cornerRadius: DS.rControl).fill(hover ? t.hover : .clear))
         .overlay(alignment: .bottom) { Rectangle().fill(t.line).frame(height: 0.5).padding(.leading, 60) }
         .onHover { hover = $0 }
         .modifier(DocCardMenu(meta: meta))
@@ -367,7 +367,7 @@ struct TrashList: View {
         VStack(alignment: .leading, spacing: 8) {
             HStack {
                 Text("Deleted documents stay here for \(Int(Library.trashRetentionDays)) days, then are removed with their backups.")
-                    .font(.system(size: 12.5)).foregroundStyle(t.secondary)
+                    .font(.system(size: DS.body)).foregroundStyle(t.secondary)
                 Spacer()
                 Button("Empty Recently Deleted…") { model.requestDeleteForever(docs.map(\.id)) }.disabled(docs.isEmpty)
             }.padding(.horizontal, 18)
@@ -380,16 +380,16 @@ struct TrashList: View {
                         HStack(spacing: 12) {
                             MiniPage(meta: m, size: 34)
                             VStack(alignment: .leading, spacing: 2) {
-                                Text(m.title.isEmpty ? "Untitled" : m.title).font(.system(size: 13.5, weight: .medium)).foregroundStyle(t.text)
+                                Text(m.title.isEmpty ? "Untitled" : m.title).font(.system(size: DS.body, weight: .medium)).foregroundStyle(t.text)
                                 Text((m.parentDocId != nil ? "Nested page · " : "") + "Deleted " + relative(m.deletedAt ?? 0) + (m.excerpt.isEmpty ? "" : " · " + m.excerpt))
-                                    .font(.system(size: 11.5)).foregroundStyle(t.tertiary).lineLimit(1)
+                                    .font(.system(size: DS.footnote)).foregroundStyle(t.tertiary).lineLimit(1)
                             }
                             Spacer()
                             Button("Restore") { model.restore(m.id) }
                             Button("Delete Permanently…", role: .destructive) { model.requestDeleteForever([m.id]) }
                         }
                         .padding(.horizontal, 12).padding(.vertical, 8)
-                        .background(RoundedRectangle(cornerRadius: 10).fill(t.hover.opacity(0.6)))
+                        .background(RoundedRectangle(cornerRadius: DS.rControl).fill(t.hover.opacity(0.6)))
                     }
                 }.padding(.horizontal, 18).padding(.bottom, 24)
             }
@@ -405,28 +405,28 @@ struct SearchResults: View {
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 4) {
-                Text("\(hits.count) document\(hits.count == 1 ? "" : "s") match “\(model.librarySearch)”").font(.system(size: 12.5)).foregroundStyle(t.secondary).padding(.horizontal, 12).padding(.bottom, 6)
+                Text("\(hits.count) document\(hits.count == 1 ? "" : "s") match “\(model.librarySearch)”").font(.system(size: DS.body)).foregroundStyle(t.secondary).padding(.horizontal, 12).padding(.bottom, 6)
                 ForEach(hits) { h in
                     Button { model.openSearchResult(h.meta.id) } label: {
                         HStack(alignment: .top, spacing: 12) {
                             MiniPage(meta: h.meta, size: 36)
                             VStack(alignment: .leading, spacing: 3) {
                                 HStack(spacing: 6) {
-                                    Text(h.meta.title.isEmpty ? "Untitled" : h.meta.title).font(.system(size: 13.5, weight: .semibold)).foregroundStyle(t.text)
+                                    Text(h.meta.title.isEmpty ? "Untitled" : h.meta.title).font(.system(size: DS.body, weight: .semibold)).foregroundStyle(t.text)
                                     if h.count > 0 {
-                                        Text("\(h.count)").font(.system(size: 11, weight: .bold)).foregroundStyle(Color(hex: "#3b2f00"))
+                                        Text("\(h.count)").font(.system(size: DS.caption, weight: .bold)).foregroundStyle(Color(hex: "#3b2f00"))
                                             .padding(.horizontal, 6).padding(.vertical, 1).background(Capsule().fill(Color(hex: "#ffd84d")))
                                             .accessibilityLabel("\(h.count) matches")
                                     }
                                     Text(model.folderName(h.meta.folderId) + (h.meta.parentDocId.flatMap { model.library.docs[$0]?.title }.map { " › \($0)" } ?? ""))
-                                        .font(.system(size: 11.5)).foregroundStyle(t.tertiary)
+                                        .font(.system(size: DS.footnote)).foregroundStyle(t.tertiary)
                                 }
-                                snippet(h).font(.system(size: 12.5)).foregroundStyle(t.secondary).lineLimit(2)
+                                snippet(h).font(.system(size: DS.body)).foregroundStyle(t.secondary).lineLimit(2)
                             }
                             Spacer()
                         }
                         .padding(10).contentShape(Rectangle())
-                        .background(RoundedRectangle(cornerRadius: 10).fill(t.hover.opacity(0.5)))
+                        .background(RoundedRectangle(cornerRadius: DS.rControl).fill(t.hover.opacity(0.5)))
                     }.buttonStyle(.plain)
                 }
             }.padding(.horizontal, 18).padding(.bottom, 24)

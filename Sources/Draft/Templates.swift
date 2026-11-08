@@ -149,7 +149,7 @@ struct TemplatePicker: View {
             Color.black.opacity(0.22).ignoresSafeArea().onTapGesture { model.templatePicker = false }
             VStack(alignment: .leading, spacing: 10) {
                 HStack {
-                    Text("New from Template").font(.system(size: 15, weight: .semibold)).accessibilityAddTraits(.isHeader)
+                    Text("New from Template").font(.system(size: DS.headline, weight: .semibold)).accessibilityAddTraits(.isHeader)
                     Spacer()
                     IconButton(symbol: "xmark", label: "Close", size: 26) { model.templatePicker = false }
                 }
@@ -159,26 +159,26 @@ struct TemplatePicker: View {
                     .onKeyPress(.upArrow) { index = max(index - 1, 0); return .handled }
                     .onExitCommand { model.templatePicker = false }
                 ScrollView(.horizontal, showsIndicators: false) {
-                    HStack(spacing: 6) { ForEach(categories, id: \.self) { c in ChipButton(title: c, font: .system(size: 12, weight: .medium), isActive: category == c, height: 28) { category = c; index = 0 } } }
+                    HStack(spacing: 6) { ForEach(categories, id: \.self) { c in ChipButton(title: c, font: .system(size: DS.footnote, weight: .medium), isActive: category == c, height: 28) { category = c; index = 0 } } }
                 }
                 ScrollView {
                     VStack(spacing: 2) {
                         ForEach(Array(rows.enumerated()), id: \.element.id) { i, r in
                             HStack(spacing: 10) {
                                 Image(systemName: r.builtIn ? "doc.text" : "doc.badge.gearshape").frame(width: 20).foregroundStyle(t.secondary)
-                                Text(r.title).font(.system(size: 13.5)).foregroundStyle(t.text)
+                                Text(r.title).font(.system(size: DS.body)).foregroundStyle(t.text)
                                 Spacer()
-                                Text(r.builtIn ? r.category : "\(r.category) · yours").font(.system(size: 12)).foregroundStyle(t.tertiary)
+                                Text(r.builtIn ? r.category : "\(r.category) · yours").font(.system(size: DS.footnote)).foregroundStyle(t.tertiary)
                             }
                             .padding(.horizontal, 10).frame(height: 34)
-                            .background(RoundedRectangle(cornerRadius: 8).fill(i == index ? t.accent.opacity(0.16) : .clear))
+                            .background(RoundedRectangle(cornerRadius: DS.rControl).fill(i == index ? t.accent.opacity(0.16) : .clear))
                             .contentShape(Rectangle()).onTapGesture { choose(r) }
                             .accessibilityElement().accessibilityLabel("\(r.title), \(r.category)").accessibilityAddTraits(.isButton).accessibilityAction { choose(r) }
                         }
                         if rows.isEmpty { Text("No templates match.").foregroundStyle(t.secondary).padding() }
                     }
                 }.frame(maxHeight: 340)
-                Text("Save any document as a template from its Info panel (Actions → Save as Template).").font(.system(size: 11)).foregroundStyle(t.tertiary)
+                Text("Save any document as a template from its Info panel (Actions → Save as Template).").font(.system(size: DS.caption)).foregroundStyle(t.tertiary)
             }
             .padding(16).frame(width: 520).background(PanelBackground()).padding(.top, 90)
         }

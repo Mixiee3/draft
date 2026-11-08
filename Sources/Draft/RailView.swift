@@ -61,14 +61,14 @@ struct RailRow: View {
     @State private var hover = false
     var body: some View {
         HStack(spacing: 8) {
-            Image(systemName: icon).font(.system(size: 12.5)).frame(width: 18).foregroundStyle(tint ?? t.secondary)
-            Text(title.isEmpty ? "Untitled" : title).font(.system(size: 13)).lineLimit(1).foregroundStyle(t.text)
+            Image(systemName: icon).font(.system(size: DS.body)).frame(width: 18).foregroundStyle(tint ?? t.secondary)
+            Text(title.isEmpty ? "Untitled" : title).font(.system(size: DS.body)).lineLimit(1).foregroundStyle(t.text)
             Spacer(minLength: 0)
             trailing
         }
         .padding(.leading, 8 + indent).padding(.trailing, 6)
         .frame(height: 30)
-        .background(RoundedRectangle(cornerRadius: 8, style: .continuous).fill(isSelected ? t.selected : (hover ? t.hover : .clear)))
+        .background(RoundedRectangle(cornerRadius: DS.rControl, style: .continuous).fill(isSelected ? t.selected : (hover ? t.hover : .clear)))
         .contentShape(Rectangle())
         .onHover { hover = $0 }
         .onTapGesture(perform: action)
@@ -84,7 +84,7 @@ struct SectionHeader: View {
     var actionLabel = ""
     var body: some View {
         HStack {
-            Text(title).font(.system(size: 12, weight: .semibold)).foregroundStyle(t.secondary)
+            Text(title).font(.system(size: DS.footnote, weight: .semibold)).foregroundStyle(t.secondary)
             Spacer()
             if let action { IconButton(symbol: "plus", label: actionLabel, size: 22, action: action) }
         }
@@ -116,20 +116,20 @@ struct LibraryRail: View {
                 VStack(alignment: .leading, spacing: 1) {
                     SpaceSwitcher().padding(.horizontal, 4).padding(.bottom, 6)
                     RailRow(icon: "square.grid.2x2", title: "All Docs", isSelected: v.kind == "all") { model.activateTab(model.library.tabs[0].id) }
-                    RailRow(icon: "magnifyingglass", title: "Quick Open", trailing: AnyView(Text("⌘O").font(.system(size: 11)).foregroundStyle(t.tertiary))) { model.quickOpen = true }
+                    RailRow(icon: "magnifyingglass", title: "Quick Open", trailing: AnyView(Text("⌘O").font(.system(size: DS.caption)).foregroundStyle(t.tertiary))) { model.quickOpen = true }
                     RailRow(icon: "person.2", title: "Shared with Me", isSelected: v.kind == "shared") { model.openView(ViewRef(kind: "shared")) }
                     let _ = model.indexTick
                     RailRow(icon: "sun.max", title: "Today", isSelected: model.activeDocId != nil && model.library.docs[model.activeDocId!]?.dailyDate == model.todayKey,
-                            trailing: AnyView(Text("⇧⌘D").font(.system(size: 11)).foregroundStyle(t.tertiary))) { model.openDaily() }
+                            trailing: AnyView(Text("⇧⌘D").font(.system(size: DS.caption)).foregroundStyle(t.tertiary))) { model.openDaily() }
                     RailRow(icon: "calendar", title: "Calendar", isSelected: v.kind == "calendar") { model.openView(ViewRef(kind: "calendar")) }
                     let due = model.tasks(.today).count + model.tasks(.overdue).count
                     RailRow(icon: "checklist", title: "Tasks", isSelected: v.kind == "tasks",
-                            trailing: due == 0 ? nil : AnyView(Text("\(due)").font(.system(size: 11)).foregroundStyle(t.tertiary))) { model.openView(ViewRef(kind: "tasks")) }
+                            trailing: due == 0 ? nil : AnyView(Text("\(due)").font(.system(size: DS.caption)).foregroundStyle(t.tertiary))) { model.openView(ViewRef(kind: "tasks")) }
 
                     SectionHeader(title: "Starred")
                     let starred = model.library.liveDocs.filter(\.starred).sorted { $0.title < $1.title }
                     if starred.isEmpty {
-                        Text("Star documents to keep them close").font(.system(size: 12)).italic().foregroundStyle(t.tertiary).padding(.horizontal, 10).padding(.vertical, 4)
+                        Text("Star documents to keep them close").font(.system(size: DS.footnote)).italic().foregroundStyle(t.tertiary).padding(.horizontal, 10).padding(.vertical, 4)
                     }
                     ForEach(starred) { m in
                         RailRow(icon: "star.fill", title: m.title, isSelected: model.activeDocId == m.id) { model.openView(.doc(m.id)) }
@@ -142,18 +142,18 @@ struct LibraryRail: View {
                     }
 
                     RailRow(icon: "trash", title: "Recently Deleted", isSelected: v.kind == "trash",
-                            trailing: model.library.trashedDocs.isEmpty ? nil : AnyView(Text("\(model.library.trashedDocs.count)").font(.system(size: 11)).foregroundStyle(t.tertiary))) {
+                            trailing: model.library.trashedDocs.isEmpty ? nil : AnyView(Text("\(model.library.trashedDocs.count)").font(.system(size: DS.caption)).foregroundStyle(t.tertiary))) {
                         model.openView(ViewRef(kind: "trash"))
                     }
 
                     SectionHeader(title: "Tags")
                     let tags = model.index.tagCounts(live: model.liveIds)
                     if tags.isEmpty {
-                        Text("Type # and a word in any document").font(.system(size: 12)).italic().foregroundStyle(t.tertiary).padding(.horizontal, 10).padding(.vertical, 4)
+                        Text("Type # and a word in any document").font(.system(size: DS.footnote)).italic().foregroundStyle(t.tertiary).padding(.horizontal, 10).padding(.vertical, 4)
                     }
                     ForEach(tags, id: \.tag) { tag in
                         RailRow(icon: "number", title: tag.tag, isSelected: v.kind == "tag" && v.section?.lowercased() == tag.tag.lowercased(),
-                                trailing: AnyView(Text("\(tag.count)").font(.system(size: 11)).foregroundStyle(t.tertiary)), tint: Color(hex: model.tagColor(tag.tag))) {
+                                trailing: AnyView(Text("\(tag.count)").font(.system(size: DS.caption)).foregroundStyle(t.tertiary)), tint: Color(hex: model.tagColor(tag.tag))) {
                             model.openView(ViewRef(kind: "tag", section: tag.tag))
                         }
                     }
@@ -181,7 +181,7 @@ struct LibraryRail: View {
         } else {
             RailRow(icon: expanded ? "folder.fill" : "folder", title: f.name, isSelected: v.kind == "folder" && v.folderId == f.id,
                     trailing: AnyView(Button { model.toggleExpanded(f.id) } label: {
-                        Image(systemName: "chevron.right").font(.system(size: 9, weight: .bold)).rotationEffect(.degrees(expanded ? 90 : 0)).frame(width: 18, height: 18)
+                        Image(systemName: "chevron.right").font(.system(size: DS.micro, weight: .bold)).rotationEffect(.degrees(expanded ? 90 : 0)).frame(width: 18, height: 18)
                     }.buttonStyle(.plain).foregroundStyle(t.tertiary).accessibilityLabel(expanded ? "Collapse \(f.name)" : "Expand \(f.name)"))) {
                 model.openView(.folder(f.id))
             }
@@ -208,16 +208,16 @@ struct VaultCard: View {
         VStack(alignment: .leading, spacing: 6) {
             HStack(spacing: 6) {
                 Image(systemName: "internaldrive").foregroundStyle(t.accent)
-                Text("Stored on this Mac").font(.system(size: 12.5, weight: .semibold)).foregroundStyle(t.text)
+                Text("Stored on this Mac").font(.system(size: DS.body, weight: .semibold)).foregroundStyle(t.text)
             }
             Text("\(model.library.liveDocs.count) documents · plain files you own. No account, no cloud.")
-                .font(.system(size: 11.5)).foregroundStyle(t.secondary).fixedSize(horizontal: false, vertical: true)
-            Button("Show in Finder") { model.revealVault() }.buttonStyle(.link).font(.system(size: 11.5))
+                .font(.system(size: DS.footnote)).foregroundStyle(t.secondary).fixedSize(horizontal: false, vertical: true)
+            Button("Show in Finder") { model.revealVault() }.buttonStyle(.link).font(.system(size: DS.footnote))
         }
         .padding(12)
         .frame(maxWidth: .infinity, alignment: .leading)
-        .background(RoundedRectangle(cornerRadius: 12, style: .continuous).fill(t.dark ? Color.white.opacity(0.05) : Color.white.opacity(0.7)))
-        .overlay(RoundedRectangle(cornerRadius: 12, style: .continuous).strokeBorder(t.line, lineWidth: 0.5))
+        .background(RoundedRectangle(cornerRadius: DS.rCard, style: .continuous).fill(t.dark ? Color.white.opacity(0.05) : Color.white.opacity(0.7)))
+        .overlay(RoundedRectangle(cornerRadius: DS.rCard, style: .continuous).strokeBorder(t.line, lineWidth: 0.5))
         .padding(.horizontal, 10).padding(.bottom, 8)
     }
 }
@@ -237,9 +237,9 @@ struct DocumentRail: View {
             HStack(spacing: 10) {
                 MiniPage(meta: meta, size: 34)
                 VStack(alignment: .leading, spacing: 2) {
-                    Text((meta?.title.isEmpty ?? true) ? "Untitled" : meta!.title).font(.system(size: 13, weight: .semibold)).lineLimit(1).foregroundStyle(t.text)
+                    Text((meta?.title.isEmpty ?? true) ? "Untitled" : meta!.title).font(.system(size: DS.body, weight: .semibold)).lineLimit(1).foregroundStyle(t.text)
                     HStack(spacing: 4) {
-                        Text(meta.map { "Edited " + relative($0.updatedAt) } ?? "").font(.system(size: 11.5)).foregroundStyle(t.secondary)
+                        Text(meta.map { "Edited " + relative($0.updatedAt) } ?? "").font(.system(size: DS.footnote)).foregroundStyle(t.secondary)
                         SaveBadge()
                     }
                 }
@@ -249,7 +249,7 @@ struct DocumentRail: View {
                 ForEach([(DocRailTab.outline, "list.bullet", "Outline"), (.backlinks, "arrow.uturn.backward", "Backlinks"), (.tasks, "checkmark.circle", "Tasks"), (.attachments, "paperclip", "Attachments"), (.find, "doc.text.magnifyingglass", "Find in Page (⌘F)")], id: \.0) { tab, icon, label in
                     let on = model.docRailTab == tab
                     Button { model.docRailTab = tab } label: {
-                        Image(systemName: icon).font(.system(size: 12.5, weight: .medium))
+                        Image(systemName: icon).font(.system(size: DS.body, weight: .medium))
                             .frame(maxWidth: .infinity, minHeight: 26)
                             .background(Capsule(style: .continuous).fill(on ? (t.dark ? Color.white.opacity(0.16) : Color.white) : .clear).shadow(color: .black.opacity(on && !t.dark ? 0.08 : 0), radius: 2, y: 1))
                             .contentShape(Capsule())
@@ -280,9 +280,9 @@ struct SaveBadge: View {
     @Environment(\.tokens) var t
     var body: some View {
         switch model.saveState {
-        case "saving": Text("· Saving…").font(.system(size: 11.5)).foregroundStyle(t.tertiary)
-        case "error": Text("· Not saved").font(.system(size: 11.5, weight: .semibold)).foregroundStyle(.red)
-        default: Text("· Saved").font(.system(size: 11.5)).foregroundStyle(t.tertiary)
+        case "saving": Text("· Saving…").font(.system(size: DS.footnote)).foregroundStyle(t.tertiary)
+        case "error": Text("· Not saved").font(.system(size: DS.footnote, weight: .semibold)).foregroundStyle(.red)
+        default: Text("· Saved").font(.system(size: DS.footnote)).foregroundStyle(t.tertiary)
         }
     }
 }
@@ -290,13 +290,13 @@ struct SaveBadge: View {
 struct PaneTitle: View {
     @Environment(\.tokens) var t
     var title: String
-    var body: some View { Text(title).font(.system(size: 13, weight: .semibold)).foregroundStyle(t.text).padding(.horizontal, 16).padding(.bottom, 6) }
+    var body: some View { Text(title).font(.system(size: DS.body, weight: .semibold)).foregroundStyle(t.text).padding(.horizontal, 16).padding(.bottom, 6) }
 }
 
 struct EmptyHint: View {
     @Environment(\.tokens) var t
     var text: String
-    var body: some View { Text(text).font(.system(size: 12)).foregroundStyle(t.secondary).padding(.horizontal, 16).fixedSize(horizontal: false, vertical: true) }
+    var body: some View { Text(text).font(.system(size: DS.footnote)).foregroundStyle(t.secondary).padding(.horizontal, 16).fixedSize(horizontal: false, vertical: true) }
 }
 
 struct OutlinePane: View {
@@ -331,7 +331,7 @@ struct TasksPane: View {
         PaneTitle(title: "Tasks")
         if tasks.isEmpty { EmptyHint(text: "Checklist items in this document will appear here. Type [] and a space to start one.") }
         else {
-            Text("\(tasks.filter(\.checked).count) of \(tasks.count) done").font(.system(size: 11.5)).foregroundStyle(t.secondary).padding(.horizontal, 16).padding(.bottom, 4)
+            Text("\(tasks.filter(\.checked).count) of \(tasks.count) done").font(.system(size: DS.footnote)).foregroundStyle(t.secondary).padding(.horizontal, 16).padding(.bottom, 4)
         }
         ScrollView {
             VStack(alignment: .leading, spacing: 2) {
@@ -340,7 +340,7 @@ struct TasksPane: View {
                         Button { model.editors[docId]?.controller.toggleTask(blockId: task.id) } label: {
                             Image(systemName: task.checked ? "checkmark.circle.fill" : "circle").foregroundStyle(task.checked ? t.accent : t.secondary)
                         }.buttonStyle(.plain).accessibilityLabel(task.checked ? "Mark not done" : "Mark done")
-                        Text(task.text.isEmpty ? "Empty task" : task.text).font(.system(size: 13)).foregroundStyle(task.checked ? t.tertiary : t.text)
+                        Text(task.text.isEmpty ? "Empty task" : task.text).font(.system(size: DS.body)).foregroundStyle(task.checked ? t.tertiary : t.text)
                             .strikethrough(task.checked).onTapGesture { model.editors[docId]?.controller.scrollTo(blockId: task.id) }
                         Spacer()
                     }.padding(.horizontal, 10).padding(.vertical, 5)
@@ -364,13 +364,13 @@ struct AttachmentsPane: View {
                 ForEach(items) { a in
                     HStack(spacing: 10) {
                         if a.kind == "image", let img = model.image(forAsset: a.ref) {
-                            Image(nsImage: img).resizable().aspectRatio(contentMode: .fill).frame(width: 40, height: 40).clipShape(RoundedRectangle(cornerRadius: 7))
+                            Image(nsImage: img).resizable().aspectRatio(contentMode: .fill).frame(width: 40, height: 40).clipShape(RoundedRectangle(cornerRadius: DS.rSmall))
                         } else {
-                            Image(systemName: a.kind == "link" ? "link" : a.kind == "file" ? "doc" : "photo").frame(width: 40, height: 40).background(RoundedRectangle(cornerRadius: 7).fill(t.hover))
+                            Image(systemName: a.kind == "link" ? "link" : a.kind == "file" ? "doc" : "photo").frame(width: 40, height: 40).background(RoundedRectangle(cornerRadius: DS.rSmall).fill(t.hover))
                         }
                         VStack(alignment: .leading, spacing: 2) {
-                            Text(a.label).font(.system(size: 12.5)).lineLimit(1).foregroundStyle(t.text)
-                            Text(a.kind == "link" ? a.ref : a.kind == "file" ? "File" : "Image").font(.system(size: 11)).lineLimit(1).foregroundStyle(t.secondary)
+                            Text(a.label).font(.system(size: DS.body)).lineLimit(1).foregroundStyle(t.text)
+                            Text(a.kind == "link" ? a.ref : a.kind == "file" ? "File" : "Image").font(.system(size: DS.caption)).lineLimit(1).foregroundStyle(t.secondary)
                         }
                         Spacer()
                     }
@@ -395,9 +395,9 @@ struct FindPane: View {
         let c = model.editors[docId]?.controller
         VStack(alignment: .leading, spacing: 8) {
             HStack {
-                Text("Find").font(.system(size: 13, weight: .semibold)).foregroundStyle(t.text)
+                Text("Find").font(.system(size: DS.body, weight: .semibold)).foregroundStyle(t.text)
                 Spacer()
-                Toggle("Replace", isOn: $showReplace).toggleStyle(.switch).controlSize(.mini).font(.system(size: 11.5))
+                Toggle("Replace", isOn: $showReplace).toggleStyle(.switch).controlSize(.mini).font(.system(size: DS.footnote))
             }
             HStack(spacing: 6) {
                 Image(systemName: "magnifyingglass").foregroundStyle(t.secondary)
@@ -407,9 +407,9 @@ struct FindPane: View {
                     .accessibilityLabel("Find in page")
             }
             .padding(8)
-            .background(RoundedRectangle(cornerRadius: 9).fill(t.hover))
+            .background(RoundedRectangle(cornerRadius: DS.rControl).fill(t.hover))
             if showReplace {
-                TextField("Replace with", text: $replacement).textFieldStyle(.plain).padding(8).background(RoundedRectangle(cornerRadius: 9).fill(t.hover))
+                TextField("Replace with", text: $replacement).textFieldStyle(.plain).padding(8).background(RoundedRectangle(cornerRadius: DS.rControl).fill(t.hover))
                 HStack {
                     Button("Replace") { c?.replace(query: model.findQuery, with: replacement, all: false); model.findCount = c?.findMatches.count ?? 0 }.disabled(model.findCount == 0)
                     Button("Replace All") { let n = c?.replace(query: model.findQuery, with: replacement, all: true) ?? 0; model.findCount = c?.findMatches.count ?? 0; model.toast("Replaced \(n) match\(n == 1 ? "" : "es")") }.disabled(model.findCount == 0)
@@ -417,7 +417,7 @@ struct FindPane: View {
             }
             HStack {
                 Text(model.findQuery.isEmpty ? " " : (model.findCount == 0 ? "No results on page" : "\(min((c?.findIndex ?? 0) + 1, model.findCount)) of \(model.findCount)"))
-                    .font(.system(size: 12)).foregroundStyle(t.secondary)
+                    .font(.system(size: DS.footnote)).foregroundStyle(t.secondary)
                 Spacer()
                 IconButton(symbol: "chevron.up", label: "Previous match", size: 24) { c?.findStep(-1); model.editorTick &+= 1 }
                 IconButton(symbol: "chevron.down", label: "Next match (Return)", size: 24) { c?.findStep(1); model.editorTick &+= 1 }
@@ -470,8 +470,8 @@ struct SpaceSwitcher: View {
         } label: {
             HStack(spacing: 8) {
                 SpaceAvatar(name: model.library.space.name)
-                Text(model.library.space.name).font(.system(size: 13.5, weight: .semibold)).foregroundStyle(t.text).lineLimit(1)
-                Image(systemName: "chevron.up.chevron.down").font(.system(size: 9, weight: .semibold)).foregroundStyle(t.tertiary)
+                Text(model.library.space.name).font(.system(size: DS.body, weight: .semibold)).foregroundStyle(t.text).lineLimit(1)
+                Image(systemName: "chevron.up.chevron.down").font(.system(size: DS.micro, weight: .semibold)).foregroundStyle(t.tertiary)
                 Spacer(minLength: 0)
             }
             .padding(.horizontal, 6).frame(height: 34).contentShape(Rectangle())

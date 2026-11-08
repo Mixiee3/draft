@@ -53,6 +53,7 @@ struct DocumentScreen: View {
                 CoverCropSheet(docId: docId, cover: cover, image: img)
             }
         }
+        .onChange(of: model.panel, initial: true) { _, p in model.editors[docId]?.trailingInset = p == nil ? 0 : 304 + 24 }
         .onAppear {
             model.editors[docId]?.controller.refreshPageTitles { model.library.docs[$0]?.title }
             model.editors[docId]?.controller.refreshLinks()
@@ -74,7 +75,7 @@ struct DocumentScreen: View {
                             }
                         }
                     }
-                } label: { Image(systemName: "plus").font(.system(size: 13, weight: .bold)).frame(width: 30, height: 30) }
+                } label: { Image(systemName: "plus").font(.system(size: DS.body, weight: .bold)).frame(width: 30, height: 30) }
                 .menuStyle(.borderlessButton).menuIndicator(.hidden).frame(width: 32, height: 30)
                 .foregroundStyle(Color(hex: "#2a2622")).tint(Color(hex: "#2a2622"))
                 .accessibilityLabel("Insert block")
@@ -101,39 +102,38 @@ struct DocumentScreen: View {
     }
 
     func toggle(_ p: Panel) {
-        withAnimation(model.library.settings.reduceMotion ? nil : .easeOut(duration: 0.16)) { model.panel = model.panel == p ? nil : p }
+        withAnimation(Motion.panel(model.library.settings.reduceMotion)) { model.panel = model.panel == p ? nil : p }
     }
 }
 
 struct PanelBackground: View {
     @Environment(\.tokens) var t
     var body: some View {
-        RoundedRectangle(cornerRadius: 18, style: .continuous)
-            .fill(t.dark ? Color(hex: "#2b2b2d") : Color(hex: "#fbfaf8"))
-            .overlay(RoundedRectangle(cornerRadius: 18, style: .continuous).strokeBorder(t.dark ? Color.white.opacity(0.08) : Color.black.opacity(0.08), lineWidth: 0.5))
-            .shadow(color: .black.opacity(0.16), radius: 22, y: 8)
+        Color.clear.floatingSurface(t)
     }
 }
 
 struct Breadcrumb: View {
     @EnvironmentObject var model: AppModel
+    @Environment(\.tokens) var t
     let docId: String
     var light: Bool
     var body: some View {
         let ancestors = model.ancestors(docId)
-        let fg = light ? Color.white : Color(hex: "#3d3a35")
         HStack(spacing: 4) {
-            Image(systemName: "folder").font(.system(size: 10.5))
+            Image(systemName: "folder").font(.system(size: DS.caption))
             Text(model.folderName(model.library.docs[docId]?.folderId)).lineLimit(1)
             ForEach(ancestors) { a in
-                Image(systemName: "chevron.right").font(.system(size: 8, weight: .bold)).opacity(0.7)
+                Image(systemName: "chevron.right").font(.system(size: DS.micro, weight: .bold)).opacity(0.7)
                 Button(a.title.isEmpty ? "Untitled" : a.title) { model.openView(.doc(a.id), inPlace: true) }.buttonStyle(.plain).lineLimit(1)
             }
         }
-        .font(.system(size: 12, weight: .medium))
-        .foregroundStyle(fg.opacity(0.92))
-        .shadow(color: light ? .black.opacity(0.35) : .clear, radius: 2)
-        .padding(.leading, 4)
+        .font(.system(size: DS.footnote, weight: .medium))
+        .foregroundStyle(t.pillText.opacity(0.85))
+        .padding(.horizontal, DS.s3).frame(height: DS.controlSmall + 4)
+        .background(Capsule().fill(t.pill.opacity(0.88)))
+        .overlay(Capsule().strokeBorder(t.pillBorder, lineWidth: 0.5))
+        .padding(.leading, DS.s1)
         .accessibilityElement(children: .contain)
         .accessibilityLabel("Location")
     }
@@ -147,7 +147,7 @@ struct PanelSection<Content: View>: View {
     @ViewBuilder var content: Content
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
-            Text(title.uppercased()).font(.system(size: 10.5, weight: .semibold)).tracking(0.6).foregroundStyle(t.tertiary)
+            Text(title.uppercased()).font(.system(size: DS.caption, weight: .semibold)).tracking(0.6).foregroundStyle(t.tertiary)
             content
         }
     }
@@ -157,7 +157,7 @@ struct ChipButton: View {
     @Environment(\.tokens) var t
     var title: String
     var symbol: String? = nil
-    var font: Font = .system(size: 13, weight: .medium)
+    var font: Font = .system(size: DS.body, weight: .medium)
     var isActive = false
     var isEnabled = true
     var height: CGFloat = 34
@@ -168,18 +168,18 @@ struct ChipButton: View {
     var body: some View {
         Button(action: action) {
             HStack(spacing: 5) {
-                if let symbol { Image(systemName: symbol).font(.system(size: 12.5)) }
+                if let symbol { Image(systemName: symbol).font(.system(size: DS.body)) }
                 if !title.isEmpty { Text(title).font(font).lineLimit(1).minimumScaleFactor(0.8) }
             }
             .padding(.horizontal, 10)
             .frame(maxWidth: .infinity, minHeight: height)
-            .background(RoundedRectangle(cornerRadius: 10, style: .continuous).fill(isActive ? t.accent.opacity(t.dark ? 0.45 : 0.16) : (hover ? t.selected : t.hover)))
-            .overlay(RoundedRectangle(cornerRadius: 10, style: .continuous).strokeBorder(isActive ? t.accent.opacity(0.6) : .clear, lineWidth: 1))
+            .background(RoundedRectangle(cornerRadius: DS.rControl, style: .continuous).fill(isActive ? t.accent.opacity(t.dark ? 0.45 : 0.16) : (hover ? t.selected : t.hover)))
+            .overlay(RoundedRectangle(cornerRadius: DS.rControl, style: .continuous).strokeBorder(isActive ? t.accent.opacity(0.6) : .clear, lineWidth: 1))
             .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
         .foregroundStyle(isActive ? (t.dark ? .white : t.accent) : t.text)
-        .opacity(isEnabled ? 1 : 0.35)
+        .opacity(isEnabled ? 1 : 0.45)
         .disabled(!isEnabled)
         .onHover { hover = $0 }
         .help(label ?? title)
@@ -194,7 +194,7 @@ struct PanelHeader: View {
     var title: String
     var body: some View {
         HStack {
-            Text(title).font(.system(size: 15, weight: .semibold)).foregroundStyle(t.text)
+            Text(title).font(.system(size: DS.headline, weight: .semibold)).foregroundStyle(t.text)
             Spacer()
             IconButton(symbol: "xmark", label: "Close panel", size: 24) { model.panel = nil }
         }

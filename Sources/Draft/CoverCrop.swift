@@ -25,7 +25,7 @@ struct CoverCropSheet: View {
             Color.black.opacity(0.35).ignoresSafeArea().onTapGesture { model.coverEditorDoc = nil }
             VStack(alignment: .leading, spacing: 14) {
                 HStack {
-                    Text("Crop Cover").font(.system(size: 15, weight: .semibold))
+                    Text("Crop Cover").font(.system(size: DS.headline, weight: .semibold))
                     Spacer()
                     IconButton(symbol: "xmark", label: "Cancel", size: 26) { model.coverEditorDoc = nil }
                 }
@@ -62,15 +62,12 @@ struct CoverCropSheet: View {
                 .onKeyPress(.rightArrow) { nudge(0.01, 0) }
                 .onKeyPress(.upArrow) { nudge(0, -0.01) }
                 .onKeyPress(.downArrow) { nudge(0, 0.01) }
-                Picker("Ratio", selection: $ratio) {
-                    ForEach(CoverCrop.ratios, id: \.id) { Text($0.label).tag($0.id) }
-                }
-                .pickerStyle(.segmented)
+                DraftSegmented("Ratio", selection: $ratio, options: CoverCrop.ratios.map { ($0.id, $0.label) })
                 .onChange(of: ratio) { _, r in
                     if r != "free" { crop = CoverCrop.fitted(ratio: CoverCrop.value(of: r), imageAspect: aspect, cx: crop.x + crop.w / 2, cy: crop.y + crop.h / 2) }
                 }
                 Text("Drag the frame to reposition, the corner to resize. Arrow keys move it in small steps.")
-                    .font(.system(size: 11.5)).foregroundStyle(t.secondary)
+                    .font(.system(size: DS.footnote)).foregroundStyle(t.secondary)
                 HStack {
                     Button("Reset") { ratio = "3:1"; crop = CoverCrop.fitted(ratio: 3, imageAspect: aspect, cy: cover.focalY) }
                     Spacer()

@@ -16,7 +16,7 @@ struct FormatPanel: View {
         return (k.isActive(c), k.isEnabled(c) && k.plannedFor == nil, { k.run(c); model.editorTick &+= 1 })
     }
 
-    func chip(_ id: String, _ title: String, font: Font = .system(size: 13, weight: .medium), symbol: String? = nil) -> some View {
+    func chip(_ id: String, _ title: String, font: Font = .system(size: DS.body, weight: .medium), symbol: String? = nil) -> some View {
         let c = cmd(id)
         let k = EditorCommands.command(id)
         let spoken = k.map { $0.title + ($0.shortcut.map { ", \($0)" } ?? "") }
@@ -32,16 +32,16 @@ struct FormatPanel: View {
                 PanelHeader(title: "Format")
                 PanelSection(title: "Titles") {
                     HStack(spacing: 6) {
-                        chip("block.title", "Title", font: .system(size: 15, weight: .bold))
-                        chip("block.subtitle", "Subtitle", font: .system(size: 13.5, weight: .semibold))
-                        chip("block.heading", "Heading", font: .system(size: 12.5, weight: .semibold))
+                        chip("block.title", "Title", font: .system(size: DS.headline, weight: .bold))
+                        chip("block.subtitle", "Subtitle", font: .system(size: DS.body, weight: .semibold))
+                        chip("block.heading", "Heading", font: .system(size: DS.body, weight: .semibold))
                     }
                 }
                 PanelSection(title: "Content") {
                     HStack(spacing: 6) {
-                        chip("block.strong", "Strong", font: .system(size: 13, weight: .bold))
-                        chip("block.body", "Body", font: .system(size: 13))
-                        chip("block.caption", "Caption", font: .system(size: 11.5))
+                        chip("block.strong", "Strong", font: .system(size: DS.body, weight: .bold))
+                        chip("block.body", "Body", font: .system(size: DS.body))
+                        chip("block.caption", "Caption", font: .system(size: DS.footnote))
                     }
                     HStack(spacing: 6) {
                         chip("block.quote", "Quote", symbol: "text.quote")
@@ -51,24 +51,24 @@ struct FormatPanel: View {
                 }
                 PanelSection(title: "Block Font") {
                     HStack(spacing: 6) {
-                        chip("font.document", "Doc", font: .system(size: 12.5))
-                        chip("font.system", "Aa", font: .system(size: 13, weight: .medium))
-                        chip("font.serif", "Ss", font: .system(size: 13, weight: .medium, design: .serif))
-                        chip("font.mono", "00", font: .system(size: 13, weight: .medium, design: .monospaced))
-                        chip("font.rounded", "Rr", font: .system(size: 13, weight: .medium, design: .rounded))
+                        chip("font.document", "Doc", font: .system(size: DS.body))
+                        chip("font.system", "Aa", font: .system(size: DS.body, weight: .medium))
+                        chip("font.serif", "Ss", font: .system(size: DS.body, weight: .medium, design: .serif))
+                        chip("font.mono", "00", font: .system(size: DS.body, weight: .medium, design: .monospaced))
+                        chip("font.rounded", "Rr", font: .system(size: DS.body, weight: .medium, design: .rounded))
                     }
-                    Text("Overrides the document font for the selected blocks.").font(.system(size: 11)).foregroundStyle(t.tertiary)
+                    Text("Overrides the document font for the selected blocks.").font(.system(size: DS.caption)).foregroundStyle(t.tertiary)
                 }
                 if block?.kind == .page && block?.raw?.attrs?["presentation"]?.string != "page" {
                     PanelSection(title: "Card") {
                         HStack(spacing: 6) {
                             ForEach([("compact", "Compact"), ("medium", "Medium"), ("feature", "Feature")], id: \.0) { k, label in
-                                ChipButton(title: label, font: .system(size: 12, weight: .medium), isActive: (block?.raw?.attrs?["size"]?.string ?? "medium") == k, label: "Card size \(label)") { c?.setCardOption("size", k); model.editorTick &+= 1 }
+                                ChipButton(title: label, font: .system(size: DS.footnote, weight: .medium), isActive: (block?.raw?.attrs?["size"]?.string ?? "medium") == k, label: "Card size \(label)") { c?.setCardOption("size", k); model.editorTick &+= 1 }
                             }
                         }
                         HStack(spacing: 6) {
                             ForEach([("standard", "Standard", "rectangle.split.2x1"), ("icon", "Icon", "app"), ("gallery", "Gallery", "photo")], id: \.0) { k, label, sym in
-                                ChipButton(title: label, symbol: sym, font: .system(size: 12, weight: .medium), isActive: (block?.raw?.attrs?["preview"]?.string ?? "standard") == k, label: "Card preview \(label)") { c?.setCardOption("preview", k); model.editorTick &+= 1 }
+                                ChipButton(title: label, symbol: sym, font: .system(size: DS.footnote, weight: .medium), isActive: (block?.raw?.attrs?["preview"]?.string ?? "standard") == k, label: "Card preview \(label)") { c?.setCardOption("preview", k); model.editorTick &+= 1 }
                             }
                         }
                     }
@@ -78,7 +78,7 @@ struct FormatPanel: View {
                         ChipButton(title: "Page", symbol: "doc.text", isActive: block?.kind == .page && block?.raw?.attrs?["presentation"]?.string == "page") { c?.setPagePresentation("page") }
                         ChipButton(title: "Card", symbol: "rectangle.portrait.on.rectangle.portrait", isActive: block?.kind == .page && block?.raw?.attrs?["presentation"]?.string != "page") { c?.setPagePresentation("card") }
                     }
-                    Text(block?.kind == .page ? "Switches how this nested page is presented." : "Creates a nested page here and opens it.").font(.system(size: 11)).foregroundStyle(t.tertiary)
+                    Text(block?.kind == .page ? "Switches how this nested page is presented." : "Creates a nested page here and opens it.").font(.system(size: DS.caption)).foregroundStyle(t.tertiary)
                 }
                 VStack(spacing: 6) {
                     HStack(spacing: 6) {
@@ -111,10 +111,10 @@ struct FormatPanel: View {
                             }.buttonStyle(.plain).help(name).accessibilityLabel("Block color \(name)")
                         }
                     }
-                    Button("Remove block color") { c?.setBlockColor(nil); model.editorTick &+= 1 }.buttonStyle(.link).font(.system(size: 11.5)).disabled(block?.blockColor == nil)
+                    Button("Remove block color") { c?.setBlockColor(nil); model.editorTick &+= 1 }.buttonStyle(.link).font(.system(size: DS.footnote)).disabled(block?.blockColor == nil)
                 }
                 Text("Inline color: select text and use the highlighter in the floating bar. ⌘⇧B reapplies the last color.")
-                    .font(.system(size: 11)).foregroundStyle(t.tertiary).fixedSize(horizontal: false, vertical: true)
+                    .font(.system(size: DS.caption)).foregroundStyle(t.tertiary).fixedSize(horizontal: false, vertical: true)
             }.padding(16)
         }
     }
@@ -129,8 +129,8 @@ struct ColorSwatchButton: View {
     @Binding var isPresented: Bool
     var body: some View {
         Button { isPresented.toggle() } label: {
-            RoundedRectangle(cornerRadius: 8, style: .continuous).fill(Color(hex: hex)).frame(width: 34, height: 24)
-                .overlay(RoundedRectangle(cornerRadius: 8, style: .continuous).strokeBorder(t.line, lineWidth: 1))
+            RoundedRectangle(cornerRadius: DS.rControl, style: .continuous).fill(Color(hex: hex)).frame(width: 34, height: 24)
+                .overlay(RoundedRectangle(cornerRadius: DS.rControl, style: .continuous).strokeBorder(t.line, lineWidth: 1))
         }.buttonStyle(.plain).accessibilityLabel(label)
     }
 }
@@ -160,8 +160,8 @@ struct StylePanel: View {
             VStack(alignment: .leading, spacing: 16) {
                 PanelHeader(title: "Style")
                 StylePreviewCard(tokens: tok, name: style.name + (a.overrides.isEmpty ? "" : " · tailored"), height: 130)
+                ChipButton(title: "All Styles", symbol: "square.grid.2x2", height: 30) { model.styleGallery = true }
                 HStack(spacing: 8) {
-                    ChipButton(title: "All Styles", symbol: "square.grid.2x2", height: 30) { model.styleGallery = true }
                     ChipButton(title: "Reset", symbol: "arrow.counterclockwise", isEnabled: !a.overrides.isEmpty, height: 30) {
                         model.updateAppearance(docId) { $0.overrides = StyleOverrides() }
                     }
@@ -176,8 +176,8 @@ struct StylePanel: View {
                 PanelSection(title: "Color") {
                     row("Backdrop") {
                         Button { backdropOpen.toggle() } label: {
-                            BackdropView(backdrop: tok.backdrop).frame(width: 34, height: 24).clipShape(RoundedRectangle(cornerRadius: 8))
-                                .overlay(RoundedRectangle(cornerRadius: 8).strokeBorder(t.line, lineWidth: 1))
+                            BackdropView(backdrop: tok.backdrop).frame(width: 34, height: 24).clipShape(RoundedRectangle(cornerRadius: DS.rControl))
+                                .overlay(RoundedRectangle(cornerRadius: DS.rControl).strokeBorder(t.line, lineWidth: 1))
                         }.buttonStyle(.plain).accessibilityLabel("Backdrop")
                         .popover(isPresented: $backdropOpen, arrowEdge: .leading) { BackdropPicker(docId: docId).environmentObject(model).environment(\.tokens, t) }
                     }
@@ -197,12 +197,12 @@ struct StylePanel: View {
                         HStack(alignment: .top, spacing: 6) {
                             Image(systemName: "exclamationmark.triangle.fill").foregroundStyle(.orange)
                             VStack(alignment: .leading, spacing: 4) {
-                                Text(String(format: "Low contrast (%.1f:1). Text may be hard to read.", contrast)).font(.system(size: 11.5)).foregroundStyle(t.text)
+                                Text(String(format: "Low contrast (%.1f:1). Text may be hard to read.", contrast)).font(.system(size: DS.footnote)).foregroundStyle(t.text)
                                 let fix = ColorMath.readable(tok.textColor, on: tok.pageColor)
-                                Text(String(format: "Adjusting keeps the hue and darkens or lightens the text to %.1f:1.", fix.ratio)).font(.system(size: 11)).foregroundStyle(t.secondary).fixedSize(horizontal: false, vertical: true)
+                                Text(String(format: "Adjusting keeps the hue and darkens or lightens the text to %.1f:1.", fix.ratio)).font(.system(size: DS.caption)).foregroundStyle(t.secondary).fixedSize(horizontal: false, vertical: true)
                                 Button(String(format: "Adjust text color (%.1f:1 → %.1f:1)", contrast, fix.ratio)) {
                                     model.updateAppearance(docId) { $0.overrides.textColor = fix.hex }
-                                }.buttonStyle(.link).font(.system(size: 11.5))
+                                }.buttonStyle(.link).font(.system(size: DS.footnote))
                             }
                         }
                     }
@@ -219,9 +219,9 @@ struct StylePanel: View {
                     }
                 }
                 PanelSection(title: "Separator Style") {
-                    HStack(spacing: 6) {
+                    LazyVGrid(columns: [GridItem(.flexible(), spacing: 6), GridItem(.flexible(), spacing: 6)], spacing: 6) {
                         ForEach([("line", "Line", "minus"), ("dotted", "Dots", "ellipsis"), ("tape", "Tape", "bandage"), ("wave", "Wave", "water.waves")], id: \.0) { k, label, sym in
-                            ChipButton(title: label, symbol: sym, font: .system(size: 11.5, weight: .medium), isActive: tok.separator == k, height: 30) {
+                            ChipButton(title: label, symbol: sym, font: .system(size: DS.footnote, weight: .medium), isActive: tok.separator == k, height: 30) {
                                 model.updateAppearance(docId) { $0.overrides.separator = k }
                             }
                         }
@@ -230,7 +230,7 @@ struct StylePanel: View {
                 PanelSection(title: "Font") {
                     HStack(spacing: 6) {
                         ForEach([("system", "Aa", Font.Design.default, "System"), ("serif", "Ss", .serif, "Serif"), ("mono", "00", .monospaced, "Mono"), ("rounded", "Rr", .rounded, "Rounded")], id: \.0) { k, glyph, design, label in
-                            ChipButton(title: tok.font == k ? "\(glyph) \(label)" : glyph, font: .system(size: 13, weight: .medium, design: design), isActive: tok.font == k, height: 30) {
+                            ChipButton(title: tok.font == k ? "\(glyph) \(label)" : glyph, font: .system(size: DS.body, weight: .medium, design: design), isActive: tok.font == k, height: 30) {
                                 model.updateAppearance(docId) { $0.overrides.font = k }
                             }
                         }
@@ -238,17 +238,17 @@ struct StylePanel: View {
                 }
                 PanelSection(title: "Advanced") {
                     Toggle("Tint the app with document styles", isOn: Binding(get: { model.library.settings.useDocStyleForApp }, set: { v in model.setSettings { $0.useDocStyleForApp = v } }))
-                        .font(.system(size: 12.5)).toggleStyle(.switch).controlSize(.small)
+                        .font(.system(size: DS.body)).toggleStyle(.switch).controlSize(.small)
                     Button(model.library.settings.defaultStyleId == a.styleId ? "Default style for new documents ✓" : "Use “\(style.name)” for new documents") {
                         model.setSettings { $0.defaultStyleId = a.styleId }
-                    }.buttonStyle(.link).font(.system(size: 12)).disabled(model.library.settings.defaultStyleId == a.styleId)
+                    }.buttonStyle(.link).font(.system(size: DS.footnote)).disabled(model.library.settings.defaultStyleId == a.styleId)
                 }
             }.padding(16)
         }
     }
 
     func row<C: View>(_ label: String, @ViewBuilder _ c: () -> C) -> some View {
-        HStack { Text(label).font(.system(size: 13)).foregroundStyle(t.text); Spacer(); c() }
+        HStack { Text(label).font(.system(size: DS.body)).foregroundStyle(t.text); Spacer(); c() }
     }
 }
 
@@ -277,10 +277,10 @@ struct StylePreviewCard: View {
         let design: Font.Design = tokens.font == "serif" ? .serif : tokens.font == "mono" ? .monospaced : tokens.font == "rounded" ? .rounded : .default
         ZStack {
             BackdropView(backdrop: tokens.backdrop)
-            RoundedRectangle(cornerRadius: 8, style: .continuous).fill(Color(hex: tokens.pageColor))
+            RoundedRectangle(cornerRadius: DS.rControl, style: .continuous).fill(Color(hex: tokens.pageColor))
                 .overlay(alignment: .topLeading) {
                     VStack(alignment: .leading, spacing: 4) {
-                        Text(name).font(.system(size: 11, weight: .bold, design: design)).foregroundStyle(Color(hex: tokens.textColor)).lineLimit(2).minimumScaleFactor(0.6)
+                        Text(name).font(.system(size: DS.caption, weight: .bold, design: design)).foregroundStyle(Color(hex: tokens.textColor)).lineLimit(2).minimumScaleFactor(0.6)
                         ForEach(0..<3, id: \.self) { i in Capsule().fill(Color(hex: tokens.textColor).opacity(0.18)).frame(width: CGFloat(52 - i * 9), height: 2.5) }
                     }.padding(8)
                 }
@@ -289,7 +289,7 @@ struct StylePreviewCard: View {
                 .offset(y: height * 0.08)
         }
         .frame(height: height)
-        .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+        .clipShape(RoundedRectangle(cornerRadius: DS.rCard, style: .continuous))
         .accessibilityElement().accessibilityLabel("Style preview: \(name)")
     }
 }
@@ -304,13 +304,8 @@ struct BackdropPicker: View {
         let tok = model.docs[docId].map { Styles.resolve($0.appearance) } ?? Styles.builtIn[0].tokens
         let b = tok.backdrop
         VStack(alignment: .leading, spacing: 12) {
-            Text("Backdrop").font(.system(size: 14, weight: .semibold))
-            Picker("Kind", selection: $tab) {
-                Image(systemName: "nosign").tag("none")
-                Image(systemName: "square.fill").tag("solid")
-                Image(systemName: "square.bottomhalf.filled").tag("gradient")
-                Image(systemName: "photo").tag("image")
-            }.pickerStyle(.segmented).labelsHidden()
+            Text("Backdrop").font(.system(size: DS.headline, weight: .semibold))
+            DraftSegmented("Backdrop kind", selection: $tab, symbols: [("none", "None", "nosign"), ("solid", "Solid", "square.fill"), ("gradient", "Gradient", "square.bottomhalf.filled"), ("image", "Image", "photo")], stretch: true, iconOnly: true)
             switch tab {
             case "none":
                 Button("Use no backdrop") { set(Backdrop(kind: "none")) }
@@ -321,18 +316,18 @@ struct BackdropPicker: View {
                     HStack {
                         ColorPicker("Start", selection: colorBinding(b.from ?? "#ffd36e") { v in var n = b; n.from = v; set(n) }, supportsOpacity: false)
                         ColorPicker("End", selection: colorBinding(b.to ?? "#ff8a5c") { v in var n = b; n.to = v; set(n) }, supportsOpacity: false)
-                    }.font(.system(size: 12))
+                    }.font(.system(size: DS.footnote))
                     HStack {
-                        Text("Direction").font(.system(size: 12))
+                        Text("Direction").font(.system(size: DS.footnote))
                         Slider(value: Binding(get: { b.angle ?? 135 }, set: { v in var n = b; n.angle = v.rounded(); set(n) }), in: 0...360, step: 5)
                             .accessibilityLabel("Gradient direction").accessibilityValue("\(Int(b.angle ?? 135)) degrees")
-                        Text("\(Int(b.angle ?? 135))°").font(.system(size: 11, design: .monospaced)).frame(width: 36, alignment: .trailing)
+                        Text("\(Int(b.angle ?? 135))°").font(.system(size: DS.caption, design: .monospaced)).frame(width: 36, alignment: .trailing)
                     }
                 }
                 grid(gradientBackdrops.map { g in AnyView(LinearGradient(colors: [Color(hex: g.0), Color(hex: g.1)], startPoint: .topLeading, endPoint: .bottomTrailing)) },
                      selected: gradientBackdrops.firstIndex { b.kind == "gradient" && b.from == $0.0 }) { i in set(Backdrop(kind: "gradient", from: gradientBackdrops[i].0, to: gradientBackdrops[i].1, angle: 135)) }
             default:
-                Text("LIBRARY · \(Scenes.order.count) ORIGINAL SCENES, OFFLINE").font(.system(size: 10, weight: .semibold)).foregroundStyle(.secondary)
+                Text("LIBRARY · \(Scenes.order.count) ORIGINAL SCENES, OFFLINE").font(.system(size: DS.caption, weight: .semibold)).foregroundStyle(.secondary)
                 grid(Scenes.order.map { id in AnyView(SceneView(sceneId: id)) }, selected: Scenes.order.firstIndex { b.kind == "image" && b.image == $0 }, names: Scenes.order.map { Scenes.all[$0]?.name ?? $0 }) { i in
                     set(Backdrop(kind: "image", image: Scenes.order[i], blur: b.blur, effect: b.effect))
                 }
@@ -349,11 +344,9 @@ struct BackdropPicker: View {
             }
             if b.kind != "none" {
                 Divider()
-                Text("EFFECTS").font(.system(size: 10.5, weight: .semibold)).foregroundStyle(.secondary)
+                Text("EFFECTS").font(.system(size: DS.caption, weight: .semibold)).foregroundStyle(.secondary)
                 Toggle("Blur", isOn: Binding(get: { b.blur ?? false }, set: { v in var n = b; n.blur = v; set(n) })).toggleStyle(.switch).controlSize(.small)
-                Picker("Effect", selection: Binding(get: { b.effect ?? "immersive" }, set: { v in var n = b; n.effect = v; set(n) })) {
-                    Text("Immersive").tag("immersive"); Text("Faded").tag("faded")
-                }.pickerStyle(.segmented).labelsHidden()
+                DraftSegmented("Effect", selection: Binding(get: { b.effect ?? "immersive" }, set: { v in var n = b; n.effect = v; set(n) }), options: [("immersive", "Immersive"), ("faded", "Faded")], stretch: true)
             }
         }
         .padding(16).frame(width: 270)
@@ -373,8 +366,8 @@ struct BackdropPicker: View {
         LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 8), count: 3), spacing: 8) {
             ForEach(items.indices, id: \.self) { i in
                 Button { pick(i) } label: {
-                    items[i].frame(height: 46).clipShape(RoundedRectangle(cornerRadius: 9, style: .continuous))
-                        .overlay(RoundedRectangle(cornerRadius: 9, style: .continuous).strokeBorder(selected == i ? Color.accentColor : Color.black.opacity(0.08), lineWidth: selected == i ? 2.5 : 0.5))
+                    items[i].frame(height: 46).clipShape(RoundedRectangle(cornerRadius: DS.rControl, style: .continuous))
+                        .overlay(RoundedRectangle(cornerRadius: DS.rControl, style: .continuous).strokeBorder(selected == i ? Color.accentColor : Color.black.opacity(0.08), lineWidth: selected == i ? 2.5 : 0.5))
                 }.buttonStyle(.plain).accessibilityLabel(names.map { "Backdrop \($0[i])" } ?? "Backdrop option \(i + 1)").help(names?[i] ?? "")
             }
         }
@@ -400,7 +393,7 @@ struct InfoPanel: View {
                     Button("Save") { model.saveAsTemplate(docId, category: templateCategory) }
                     Button("Cancel", role: .cancel) {}
                 } message: { Text("A copy becomes a template in New → From Template. Later edits to either don't change the other.") }
-            Picker("Info", selection: $tab) { Text("Page Info").tag("info"); Text("Actions").tag("actions") }.pickerStyle(.segmented).labelsHidden()
+            DraftSegmented("Info", selection: $tab, options: [("info", "Page Info"), ("actions", "Actions")], stretch: true)
             ScrollView {
                 if tab == "info", let m {
                     VStack(alignment: .leading, spacing: 14) {
@@ -436,14 +429,14 @@ struct InfoPanel: View {
     }
 
     func prop(_ icon: String, _ k: String, _ v: String) -> some View {
-        HStack { Image(systemName: icon).frame(width: 18).foregroundStyle(t.secondary); Text(k).foregroundStyle(t.secondary); Spacer(); Text(v).foregroundStyle(t.text) }.font(.system(size: 12.5))
+        HStack { Image(systemName: icon).frame(width: 18).foregroundStyle(t.secondary); Text(k).foregroundStyle(t.secondary); Spacer(); Text(v).foregroundStyle(t.text) }.font(.system(size: DS.body))
     }
 
     func action(_ icon: String, _ title: String, enabled: Bool = true, destructive: Bool = false, run: @escaping () -> Void) -> some View {
         Button(action: run) {
             HStack { Image(systemName: icon).frame(width: 18); Text(title); Spacer() }
-                .font(.system(size: 13)).padding(.horizontal, 10).frame(height: 30)
-                .background(RoundedRectangle(cornerRadius: 9).fill(destructive ? Color.red.opacity(0.08) : t.hover))
+                .font(.system(size: DS.body)).padding(.horizontal, 10).frame(height: 30)
+                .background(RoundedRectangle(cornerRadius: DS.rControl).fill(destructive ? Color.red.opacity(0.08) : t.hover))
                 .contentShape(Rectangle())
         }
         .buttonStyle(.plain).foregroundStyle(destructive ? Color.red : t.text).disabled(!enabled).opacity(enabled ? 1 : 0.4)
@@ -480,7 +473,7 @@ struct ActionsList: View {
                 let r = rows[i]
                 Button(action: r.4) {
                     HStack { Image(systemName: r.0).frame(width: 18); Text(r.1); Spacer(); if let s = r.2 { Text(s).foregroundStyle(t.tertiary) } }
-                        .font(.system(size: 12.5)).padding(.horizontal, 10).frame(height: 28).contentShape(Rectangle())
+                        .font(.system(size: DS.body)).padding(.horizontal, 10).frame(height: 28).contentShape(Rectangle())
                 }.buttonStyle(.plain).foregroundStyle(t.text).disabled(!r.3).opacity(r.3 ? 1 : 0.4)
             }
         }
@@ -498,9 +491,7 @@ struct SharePanel: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
-            Picker("Share", selection: $tab) {
-                Text("Share").tag("share"); Text("Publish").tag("publish"); Text("Export As").tag("export"); Text("Transfer").tag("transfer")
-            }.pickerStyle(.segmented).labelsHidden()
+            DraftSegmented("Share", selection: $tab, options: [("share", "Share"), ("publish", "Publish"), ("export", "Export As"), ("transfer", "Transfer")], stretch: true)
             switch tab {
             case "share":
                 card(icon: "person.2", title: "Local-only for now", text: "Draft keeps this document on your Mac. Inviting collaborators needs sync, which is planned for v1.x, and real-time collaboration for v2.0.")
@@ -517,7 +508,7 @@ struct SharePanel: View {
                     exportRow("doc.on.clipboard", "Copy as Markdown") { model.copyMarkdown(docId) }
                     exportRow("printer", "Print… (Save as PDF from the dialog)") { model.editors[docId]?.controller.textView.printView(nil) }
                     exportRow("plus.square.on.square", "Duplicate") { model.duplicate(docId) }
-                    Toggle("Use document style", isOn: $useStyle).toggleStyle(.switch).controlSize(.small).font(.system(size: 12)).accessibilityLabel("Use document style in PDF, HTML and image export")
+                    Toggle("Use document style", isOn: $useStyle).toggleStyle(.switch).controlSize(.small).font(.system(size: DS.footnote)).accessibilityLabel("Use document style in PDF, HTML and image export")
                     exportRow("doc", "PDF…") { model.exportStyled(docId, as: "pdf", useStyle: useStyle) }
                     exportRow("globe", "Web page (HTML)…") { model.exportStyled(docId, as: "html", useStyle: useStyle) }
                     exportRow("photo", "Image (PNG)…") { model.exportStyled(docId, as: "png", useStyle: useStyle) }
@@ -525,23 +516,23 @@ struct SharePanel: View {
                     exportRow("doc.text", "Word — later", enabled: false) {}
                     exportRow("envelope", "E-mail — v1.x", enabled: false) {}
                 }
-                Text("Exports include a lossless draft-export.json next to the Markdown.").font(.system(size: 11)).foregroundStyle(t.tertiary)
+                Text("Exports include a lossless draft-export.json next to the Markdown.").font(.system(size: DS.caption)).foregroundStyle(t.tertiary)
             }
         }.padding(16)
     }
 
     func card(icon: String, title: String, text: String) -> some View {
         VStack(alignment: .leading, spacing: 6) {
-            Label(title, systemImage: icon).font(.system(size: 13, weight: .semibold)).foregroundStyle(t.text)
-            Text(text).font(.system(size: 12)).foregroundStyle(t.secondary).fixedSize(horizontal: false, vertical: true)
-        }.padding(12).frame(maxWidth: .infinity, alignment: .leading).background(RoundedRectangle(cornerRadius: 12).fill(t.hover))
+            Label(title, systemImage: icon).font(.system(size: DS.body, weight: .semibold)).foregroundStyle(t.text)
+            Text(text).font(.system(size: DS.footnote)).foregroundStyle(t.secondary).fixedSize(horizontal: false, vertical: true)
+        }.padding(12).frame(maxWidth: .infinity, alignment: .leading).background(RoundedRectangle(cornerRadius: DS.rCard).fill(t.hover))
     }
 
     func exportRow(_ icon: String, _ title: String, enabled: Bool = true, run: @escaping () -> Void) -> some View {
         Button(action: run) {
             HStack { Image(systemName: icon).frame(width: 18); Text(title); Spacer() }
-                .font(.system(size: 13)).padding(.horizontal, 10).frame(height: 32)
-                .background(RoundedRectangle(cornerRadius: 9).fill(t.hover)).contentShape(Rectangle())
+                .font(.system(size: DS.body)).padding(.horizontal, 10).frame(height: 32)
+                .background(RoundedRectangle(cornerRadius: DS.rControl).fill(t.hover)).contentShape(Rectangle())
         }.buttonStyle(.plain).foregroundStyle(t.text).disabled(!enabled).opacity(enabled ? 1 : 0.4)
     }
 }
@@ -556,23 +547,23 @@ struct BackupsList: View {
         let _ = model.editorTick
         let snaps = model.snapshots(docId)
         VStack(alignment: .leading, spacing: 8) {
-            Button { back() } label: { Label("Page Info", systemImage: "chevron.left") }.buttonStyle(.link).font(.system(size: 12))
-            Text("Backups").font(.system(size: 13, weight: .semibold)).foregroundStyle(t.text)
+            Button { back() } label: { Label("Page Info", systemImage: "chevron.left") }.buttonStyle(.link).font(.system(size: DS.footnote))
+            Text("Backups").font(.system(size: DS.body, weight: .semibold)).foregroundStyle(t.text)
             Text("Draft keeps up to \(Vault.snapshotsKept) automatic backups per document on this Mac, one every 10 minutes while you edit.")
-                .font(.system(size: 11.5)).foregroundStyle(t.secondary).fixedSize(horizontal: false, vertical: true)
-            if snaps.isEmpty { Text("No backups yet. The first one is made the next time this document is saved.").font(.system(size: 12)).foregroundStyle(t.tertiary) }
+                .font(.system(size: DS.footnote)).foregroundStyle(t.secondary).fixedSize(horizontal: false, vertical: true)
+            if snaps.isEmpty { Text("No backups yet. The first one is made the next time this document is saved.").font(.system(size: DS.footnote)).foregroundStyle(t.tertiary) }
             ForEach(snaps) { s in
                 HStack {
                     VStack(alignment: .leading, spacing: 1) {
-                        Text(Date(timeIntervalSince1970: s.savedAt / 1000).formatted(date: .abbreviated, time: .shortened)).font(.system(size: 12.5)).foregroundStyle(t.text)
-                        Text(relative(s.savedAt)).font(.system(size: 11)).foregroundStyle(t.tertiary)
+                        Text(Date(timeIntervalSince1970: s.savedAt / 1000).formatted(date: .abbreviated, time: .shortened)).font(.system(size: DS.body)).foregroundStyle(t.text)
+                        Text(relative(s.savedAt)).font(.system(size: DS.caption)).foregroundStyle(t.tertiary)
                     }
                     Spacer()
                     Button("Restore") {
                         model.confirm = ConfirmRequest(title: "Restore this backup?", detail: "The document returns to how it was \(relative(s.savedAt)). The current version is backed up first, so you can switch back.",
                                                        confirmLabel: "Restore", destructive: false) { model.restoreSnapshot(docId, s) }
                     }.controlSize(.small)
-                }.padding(8).background(RoundedRectangle(cornerRadius: 9).fill(t.hover))
+                }.padding(8).background(RoundedRectangle(cornerRadius: DS.rControl).fill(t.hover))
             }
         }
     }
@@ -592,21 +583,21 @@ struct OnlineImagePicker: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
             Divider()
-            Text("ONLINE (OPENVERSE)").font(.system(size: 10, weight: .semibold)).foregroundStyle(.secondary)
+            Text("ONLINE (OPENVERSE)").font(.system(size: DS.caption, weight: .semibold)).foregroundStyle(.secondary)
             if !model.settings.onlineImageSearch {
-                Text("Off. Turn on in Settings → Advanced → Online to search openly licensed images.").font(.system(size: 11)).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
+                Text("Off. Turn on in Settings → Advanced → Online to search openly licensed images.").font(.system(size: DS.caption)).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
                 Button("Open Settings") { model.openView(ViewRef(kind: "settings", section: "advanced")) }.controlSize(.small)
             } else {
                 HStack {
                     TextField("Search images", text: $query).textFieldStyle(.roundedBorder).onSubmit(search).accessibilityLabel("Search online images")
                     Button("Search", action: search).controlSize(.small).disabled(query.trimmingCharacters(in: .whitespaces).isEmpty)
                 }
-                if !status.isEmpty { Text(status).font(.system(size: 11)).foregroundStyle(.secondary) }
+                if !status.isEmpty { Text(status).font(.system(size: DS.caption)).foregroundStyle(.secondary) }
                 LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 6), count: 3), spacing: 6) {
                     ForEach(results) { r in
                         Button { pick(r) } label: {
                             AsyncImage(url: URL(string: r.thumbnail ?? r.url)) { $0.resizable().aspectRatio(contentMode: .fill) } placeholder: { Color.gray.opacity(0.15) }
-                                .frame(height: 46).clipShape(RoundedRectangle(cornerRadius: 8))
+                                .frame(height: 46).clipShape(RoundedRectangle(cornerRadius: DS.rControl))
                         }.buttonStyle(.plain).help([r.title, r.creator.map { "by " + $0 }, r.license.map { "CC " + $0.uppercased() }].compactMap { $0 }.joined(separator: " · "))
                         .accessibilityLabel("Image \(r.title ?? "")")
                     }
