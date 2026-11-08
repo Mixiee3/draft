@@ -231,7 +231,13 @@ struct ValueCell: View {
                 ForEach(field.options ?? [], id: \.self) { o in Button(o) { set(.string(o)) } }
                 if v != nil { Divider(); Button("Clear") { set(nil) } }
             } label: { chip(v?.string) }.menuStyle(.button).buttonStyle(.plain).menuIndicator(.hidden).accessibilityLabel("\(field.name): \(v?.string ?? "empty")")
-        case "multiSelect", "relation":
+        case "relation":
+            let list = v?.items?.compactMap(\.string) ?? []
+            RelationPicker(selected: list) { n in set(n.isEmpty ? nil : .array(n.map { .string($0) })) } label: {
+                chip(data.display(item, field.id, title: model.pageTitle).nilIfEmpty)
+            }
+            .accessibilityLabel("\(field.name): \(data.display(item, field.id, title: model.pageTitle))")
+        case "multiSelect":
             let list = v?.items?.compactMap(\.string) ?? []
             Menu {
                 let choices = field.type == "relation" ? model.library.liveDocs.sorted { $0.title < $1.title }.prefix(40).map { ($0.id, model.docTitle($0.id)) } : (field.options ?? []).map { ($0, $0) }
@@ -598,5 +604,48 @@ struct EditableCell<Editor: View>: View {
             .popover(isPresented: $editing, arrowEdge: .bottom) { editor().environment(\.tokens, t) }
             .accessibilityElement().accessibilityLabel(a11y).accessibilityValue(label.isEmpty ? "empty" : label)
             .accessibilityAddTraits(.isButton).accessibilityAction { editing = true }
+    }
+}
+
+
+/// Links a collection item to any document: a searchable list instead of a 40-item menu.
+struct RelationPicker<Label: View>: View {
+    @Environment(AppModel.self) var model
+    @Environment(\.tokens) var t
+    let selected: [String]
+    let change: ([String]) -> Void
+    @ViewBuilder var label: Label
+    @State private var open = false
+    @State private var query = ""
+
+    var body: some View {
+        Button { open = true } label: { label }.buttonStyle(.plain)
+            .popover(isPresented: $open, arrowEdge: .bottom) {
+                let q = query.trimmingCharacters(in: .whitespaces).lowercased()
+                let docs = model.library.liveDocs.filter { q.isEmpty || $0.title.lowercased().contains(q) }
+                    .sorted { (selected.contains($0.id) ? 0 : 1, $0.title.lowercased()) < (selected.contains($1.id) ? 0 : 1, $1.title.lowercased()) }
+                VStack(spacing: 0) {
+                    DraftTextField(placeholder: "Find a document", text: $query).padding(DS.s2)
+                    Divider().opacity(0.5)
+                    ScrollView {
+                        LazyVStack(alignment: .leading, spacing: 1) {
+                            ForEach(docs.prefix(200)) { d in
+                                let on = selected.contains(d.id)
+                                Button { change(on ? selected.filter { $0 != d.id } : selected + [d.id]) } label: {
+                                    HStack {
+                                        Image(systemName: on ? "checkmark.circle.fill" : "doc.text").foregroundStyle(on ? t.accent : t.secondary).frame(width: 18)
+                                        Text(d.title.isEmpty ? "Untitled" : d.title).foregroundStyle(t.text).lineLimit(1)
+                                        Spacer()
+                                    }.font(.system(size: DS.body)).padding(.horizontal, DS.s2).frame(height: 28).contentShape(Rectangle())
+                                }
+                                .buttonStyle(.plain)
+                                .accessibilityAddTraits(on ? [.isSelected] : [])
+                            }
+                            if docs.isEmpty { Text("No document matches “\(query)”.").font(.system(size: DS.footnote)).foregroundStyle(t.secondary).padding(DS.s3) }
+                        }.padding(DS.s1)
+                    }.frame(height: 280)
+                }
+                .frame(width: 300)
+            }
     }
 }
