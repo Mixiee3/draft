@@ -269,7 +269,7 @@ Last updated: v0.4 shipped (native macOS) — 2026‑11‑08.
 
 | ID | Capability | Evidence | Status | Target | Acceptance check |
 |---|---|---|---|---|---|
-| I1 | String catalog | B§7 | missing | 0.6 | — |
+| I1 | String catalog | B§7 | missing | 0.6→0.8 | Not started in v0.6; strings are still literals in SwiftUI views |
 | I2 | Unicode titles and file names | B§7 | verified | 0.1 | `testSafeFileNameKeepsDiacritics` |
 
 ## 21. Assistant and integrations (optional)
@@ -277,6 +277,10 @@ Last updated: v0.4 shipped (native macOS) — 2026‑11‑08.
 | ID | Capability | Reference behavior | Evidence | Status | Target | Acceptance check |
 |---|---|---|---|---|---|---|
 | J1 | Assistant | Lower-right pill | S01 | working | 0.5.1 | Toolbar button and ⌘J; pinned panel or floating window; runs LFM2.5 on this Mac via llama.cpp (no account, key or cloud); opt-in verified download with size, progress, cancel and remove; Selection / Document / Space context, Space answers retrieve blocks from the vault index and cite them as source cards that open the block; summarize, explain, rewrite, shorten, expand, outline; streamed with Stop; history per Space; preview with word diff before Insert or Replace, one undo step (`scripts/assistant-test.sh` runs with networking denied; `AssistantTests`, `AssistantEditTests`, `ModelStoreTests`, `PrivacyTests`, `v051-assistant-*.png`) |
+| J4 | Assistant on long documents | — | — | verified | 0.6 | Ask/Summarize/Explain/Outline read a document longer than the context in parts and combine the notes; the notice says it read all of it in N parts. Offline test: fact at the end of a 4,686-word note found (2 parts) |
+| J5 | Faster Assistant follow-ups | — | — | verified | 0.6 | Model state saved after the system turn (document text) and restored for the next question: 2nd question first token 0.12–0.39 s vs 2.3–3.0 s (offline test asserts ≥ 2×) |
+| J6 | Assistant voice | — | — | partial | 0.6 | Read Aloud (system voice) verified offline; dictation uses only Apple's on-device recognizer (available on this Mac) but the microphone/speech prompts and a live dictation need a person; VoiceGlow only while listening or speaking |
+| J7 | Assistant quality benchmark | — | — | verified | 0.6 | `scripts/assistant-quality.sh`: 30 fixed questions, expected facts and citations; LFM2.5 2.6B 27/30 (90%), results in `docs/assistant-quality/` |
 | J2 | MCP / API connections | Scenic connection view | S32 | missing | later | — |
 | J3 | Writing suggestions in toolbar | Dynamic slot | S06 | missing | later | — |
 
@@ -289,3 +293,19 @@ Last updated: v0.4 shipped (native macOS) — 2026‑11‑08.
 | PL3 | Conformance fixtures for other implementations | missing | 0.6–0.8 | Language-neutral input/expected-output vaults |
 | PL4 | Windows app | missing | after Mac 1.0 | Reads/writes a Mac vault losslessly |
 | PL5 | Signed + notarized build | missing | 1.0 | Gatekeeper accepts download |
+
+## 23. v0.6 "Every window" additions
+
+| ID | Capability | Status | Target | Acceptance check (result) |
+|---|---|---|---|---|
+| W1 | Shared components and surfaces | working | 0.6 | `Components.swift`: buttons, centred icon menus, rows, empty states, one translucent surface and motion for Format/Style/Info/Share/Quick Open/templates/dialogs/Assistant; captures in `docs/screenshots/v06/` |
+| W2 | First-use welcome and five-step tour | working | 0.6 | Shown once (not during automation); Start Writing, tour with Back/Next/Skip and ←/→/Return/Esc; replay from Help and Settings; the model downloads only from its button |
+| W3 | Keyboard Shortcuts sheet (⌘/) | verified | 0.6 | Read from the live menu bar plus typing triggers, searchable (`MenuShortcutTests`) |
+| W4 | Focus mode (⇧⌘F) | verified | 0.6 | Chrome hidden, other blocks faded; Esc leaves; 10k-block keystroke p95 14–18 ms, Return p95 13–16 ms in Focus mode |
+| W5 | Present mode (⌥⌘P) | partial | 0.6 | Headings (level 1–2) split slides (`SlidesTests`); arrows/Space/Return/Esc; full screen on a second display when one exists — not tested (one display) |
+| W6 | Sidebar customization | verified | 0.6 | Show/hide and reorder in Settings → Appearance → Sidebar; stored in settings, repaired on load (`SpaceSettingsTests`) |
+| W7 | Per-Space theme, daily-note and tag settings | verified | 0.6 | Saved and applied on Space switch without restart (`SpaceSettingsTests`) |
+| W8 | Relation picker search | working | 0.6 | Searchable popover over every live document (was the first 40 in a menu) |
+| W9 | Table column reordering in one undo; rich text in cells | missing | 0.8 | Not done in v0.6 |
+| W10 | Dark Paper | verified | 0.6 | `Styles.forDisplay` (tested); files and exports keep the light page |
+| W11 | Out-of-process accessibility audit | partial | 0.6 | `scripts/ax-audit.swift` written; needs a terminal with Accessibility permission to run — not run |

@@ -18,6 +18,7 @@ migration that backs up first; unknown fields and block types are preserved.
 Legend: ✅ done · 🟡 partial · ⬜ not started
 
 ### Change log of this plan
+- **2026‑11‑08** — v0.6 work: polish pass, performance rows 13–15, Assistant rows 16, 17, 19, Focus/Present/Shortcuts/sidebar/per-Space settings; localization and table reordering moved to v0.8; VoiceOver, permissions and IME checks need a person.
 
 - **2026‑11‑08** — v0.5.1 shipped (UI polish, design system, Local Assistant); v0.6 extended with tab-switch latency, Assistant follow-ups and voice.
 - **2026‑11‑08** — v0.5 shipped; v0.6 planned in full with the carried permission and VoiceOver checks.
@@ -253,33 +254,47 @@ as "Thinking…" with the reasoning on request; first answer words arrive after 
 style/export, structure, workflow, perf (keystroke p95 22 ms, Return p95 12 ms) and the offline
 Assistant test pass.
 
-## v0.6 — "Every window" (macOS + iPad-ready core)
+## v0.6 — "Every window" (macOS + iPad-ready core) 🟡 in progress
 
-| # | Feature | Status | Acceptance check |
+Measured on a MacBook Air M4 (60 Hz) with Parsec running, which keeps the system GPU about 65% busy
+even at idle; all numbers below are under that load and from a limited number of runs.
+
+| # | Feature | Status | Acceptance check (result) |
 |---|---|---|---|
-| 1 | Carried: VoiceOver pass through Calendar, Tasks, `[[` and `#` pickers, Style Gallery, export, tables, collections, template picker, Space switcher | ⬜ planned | Every control is announced with a name and role; pickers, Style Gallery and Kanban moves work without a pointer |
-| 2 | Carried: notification and calendar permission prompts | ⬜ planned | Allow → one notification at the due time and events appear; Don't Allow → the setting turns back off with an explanation |
-| 3 | Automated accessibility check of SwiftUI screens from a separate process (Accessibility API client) | ⬜ planned | Lists every unnamed button, menu and field on each main screen; zero on release. (An in-process walk of the tree was tried in v0.5 and is unreliable: SwiftUI builds the tree only for a connected assistive client) |
-| 4 | Full keyboard path for every panel; visible focus rings (Y12) | 🟡 partial | Every panel, popover and sheet can be opened, used and closed from the keyboard; focus is always visible |
-| 5 | Localization with String Catalogs, two non-English locales; spelling language setting | ⬜ planned | Both locales show no English UI strings and no clipped labels at normal and narrow widths |
-| 6 | Keyboard layouts (AZERTY, QWERTZ, Dvorak) and IME composition matrix | ⬜ planned | Shortcuts work on each layout; Japanese and Chinese composition never commits early or splits blocks |
-| 7 | Shortcuts sheet | ⬜ planned | Lists every menu shortcut; searchable; matches the menus (test compares them) |
-| 8 | Sidebar customization | ⬜ planned | Sections can be hidden and reordered; the choice survives relaunch |
-| 9 | Focus mode | ⬜ planned | Hides chrome and dims all but the current block; Esc returns; typing latency stays within budget |
-| 10 | Present mode | ⬜ planned | Headings split slides; arrow keys move; works full screen on a second display |
-| 11 | From v0.5: relation picker search; table column reordering and rich text in cells | ⬜ planned | Relation picker finds any document by title; a column drag is one undo; bold/links in a cell survive Markdown round-trip |
-| 12 | From v0.5: per-Space settings beyond the name (theme, daily notes, tag rules) | ⬜ planned | Two Spaces keep different settings after relaunch; switching applies them without a restart |
-| 13 | Perf: steady return-key latency | ⬜ planned | Return p95 under 33 ms in 10 consecutive perf runs |
-| 14 | From v0.5.1: tab and Space switching under budget | ⬜ planned | Split `AppModel` into smaller observed models (Observation framework) so a tab switch re-evaluates only what changed; tab switch p95 < 50 ms, Space switch p95 < 100 ms (`scripts/ux-perf.sh`) |
-| 15 | From v0.5.1: opening a document from the library | ⬜ planned | Under 250 ms for a 2,000-block document (now ≈ 450 ms) |
-| 16 | Assistant: long documents | ⬜ planned | Summarize reads a document longer than the context in parts and combines them; the notice says how much was read |
-| 17 | Assistant: faster follow-ups | ⬜ planned | Reuse the model's cached prompt between turns; second question in a thread starts answering at least 2× sooner |
-| 18 | Assistant: voice mode | ⬜ planned | On-device speech recognition and speech output (Speech framework, no network); only then Voice Glow / Voice Ring show listening and speaking |
-| 19 | Assistant: quality checks | ⬜ planned | A fixed set of 30 note questions with expected facts and citations scores ≥ 90% on the default model; the score is tracked per release |
-| 20 | Carried: VoiceOver pass of the Assistant (window, sources, preview sheet) | ⬜ planned | Every control is announced; a source can be opened and an edit applied without a pointer |
+| 1 | Carried: VoiceOver pass through Calendar, Tasks, `[[` and `#` pickers, Style Gallery, export, tables, collections, template picker, Space switcher | ⬜ needs a person | Labels added to every new control (welcome, tour, shortcuts, relation picker, Present, voice); a real VoiceOver walk-through has not been done |
+| 2 | Carried: notification and calendar permission prompts | 🟡 code ready, needs a person | Denial paths turn the setting back off with an explanation; clicking Allow / Don't Allow in the macOS prompts was not tested |
+| 3 | Automated accessibility check from a separate process | 🟡 tool written | `scripts/ax-audit.swift` lists unnamed buttons, menus, fields and toggles; it needs a terminal with Accessibility permission, which this session did not have, so it has not run |
+| 4 | Full keyboard path for every panel; visible focus rings | 🟡 partial | Welcome, tour (←/→/Return/Esc), Shortcuts sheet, Quick Open, Present and Focus mode are keyboard-only; a full panel-by-panel pass is still open |
+| 5 | Localization with String Catalogs, two non-English locales; spelling language | ⬜ planned → v0.8 | Not started; UI strings are still literals |
+| 6 | Keyboard layouts and IME matrix | ⬜ needs a person | Not tested |
+| 7 | Shortcuts sheet | ✅ | Help → Keyboard Shortcuts (⌘/), searchable, read from the live menu bar so it can't disagree with the menus (`MenuShortcutTests`) |
+| 8 | Sidebar customization | ✅ | Show/hide and reorder in Settings → Appearance → Sidebar; stored in settings and repaired on load (`SpaceSettingsTests`) |
+| 9 | Focus mode | ✅ | ⇧⌘F hides chrome and fades all but the current block; Esc leaves; 10k blocks in Focus mode: keystroke p95 14–18 ms, Return p95 13–16 ms (3 runs) |
+| 10 | Present mode | 🟡 | ⌥⌘P or Info → Present: level 1–2 headings split slides (`SlidesTests`), arrows/Space/Return/Esc; second-display full screen implemented but untested (one display) |
+| 11 | Relation picker search; table column reordering; rich text in cells | 🟡 1 of 3 | Relation picker searches every document; column reordering and rich cells moved to v0.8 |
+| 12 | Per-Space settings (theme, daily notes, tag rules) | ✅ | Each Space keeps theme, accent, daily-note and tag settings; applied on switch without restart (`SpaceSettingsTests`) |
+| 13 | Perf: steady return-key latency | ✅ | Return p95 8.0–15.9 ms in 10 consecutive `scripts/perf.sh` runs (budget 33) |
+| 14 | Tab and Space switching under budget | ✅ (under load, 3 runs) | Observation split; lazy document-rail lists; tour anchors read only during the tour. Tab p95 36–46 ms (was 69–91 at the start of the day, 149 ms median in the audit), Space p95 46–85 ms (`scripts/ux-perf.sh`) |
+| 15 | Opening a document from the library | ✅ (under load, 3 runs) | 2,000 blocks: 126–143 ms (was 271–333): cached editor fonts and a JSONSerialization fast path for current-schema documents (equivalence tested) |
+| 16 | Assistant: long documents | ✅ | Reads all parts and combines notes; notice states it; offline test finds a fact at the end of a 4,686-word note |
+| 17 | Assistant: faster follow-ups | ✅ | Saved model state after the system turn; second question first token 0.12–0.39 s vs 2.3–3.0 s (7.7–19×) |
+| 18 | Assistant: voice mode | 🟡 | Read Aloud verified offline; dictation is on-device only (`requiresOnDeviceRecognition`) and available on this Mac, but the permission prompts and a live dictation need a person; VoiceGlow only while listening/speaking |
+| 19 | Assistant: quality checks | ✅ | `scripts/assistant-quality.sh`: 30 questions, LFM2.5 2.6B 27/30 = 90% (was 24/30 before fixing the 200-character index limit, stemming and the prompt) |
+| 20 | Carried: VoiceOver pass of the Assistant | ⬜ needs a person | Not done |
+
+**Polish pass (from `docs/UI_AUDIT_V06.md`).** Shared components and surfaces; centred icon menus;
+Settings rebuilt with grouped rows and a readable shortcut list; one surface and motion for Format,
+Style, Info, Share, Quick Open, templates and dialogs; the page slides aside for panels; new notes
+open as a full page with the caret in the title; arrow cursor off the page and click-away ends
+editing; floating Assistant fits the screen (it was 1,262 pt tall because the hosting view sized the
+window); readable edit preview (before/after or tinted inline diff); Share tabs no longer truncate;
+live Info counts; tab overflow fade; empty states; dark Paper; first-use welcome and tour.
+Screens: `docs/screenshots/v06/`.
 
 ## v0.8 — "Trust" (macOS)
 
+- ⬜ From v0.6: String Catalog localization with two non-English locales and a spelling-language
+  setting; table column reordering in one undo; bold/links in table cells that survive Markdown.
 - ⬜ Layout scaling for very long documents: bounded relayout (e.g. TextKit 2 or chunked layout) so
   wrapping changes and toggles stay under 16 ms at 10,000 blocks; a separate search index.
 

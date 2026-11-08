@@ -68,6 +68,18 @@ Settings added in schema 1 (all optional, defaults in parentheses): `weekStart` 
 (`all`/`tasks`/`notes`), `calendarShowCompleted` (false), `onlineImageSearch` (false), `linkPreviews` (false),
 `assistantModel` (a model id such as `lfm2.5-2.6b-qad-q4`; absent until chosen), `assistantPinned` (true).
 
+Settings added in v0.6 (optional, defaults in parentheses): `paperFollowsAppearance` (true; display
+only: an untouched Paper document is drawn dark in a dark app, the file and exports keep the light
+style), `onboardingSeen` (0; the welcome/tour version already shown), `sidebarHidden` (`[]`; any of
+`shared`, `today`, `calendar`, `tasks`, `starred`, `folders`, `tags`, `trash`) and `sidebarOrder`
+(`["starred", "folders", "tags"]`; readers drop unknown names and add missing ones).
+
+**Per-Space settings (v0.6).** Each entry in `spaces` may carry `settings` with the Space's own
+`theme`, `accent`, `showDailyNotes`, `dailyTemplateId`, `dayStartHour`, `tagRules` and `tagColors`
+(each optional). The active Space's values live in the top-level `settings`; when Draft switches
+Space it saves them into the outgoing Space's `settings` and applies the incoming Space's. A Space
+without `settings` keeps the current values. Older readers ignore the field.
+
 `userStyles` (top-level, optional; written only when non-empty): `[{id: "u_…", name, base: "<built-in id>",
 tokens: {…appearance tokens…}, pinned?, createdAt}]`. A document's `appearance.styleId` may name a user
 style; if it is missing, readers use the built-in style `paper` (Draft itself moves documents to
@@ -160,10 +172,12 @@ part of the vault: they live in `~/Library/Application Support/Draft/Models`.
 
 ### index/index.json (derived)
 
-`{"version": 1, "rules": "<tag rules key>", "entries": {docId: {"updatedAt", "daily?", "links": [{block,
+`{"version": 2, "rules": "<tag rules key>", "entries": {docId: {"updatedAt", "daily?", "links": [{block,
 doc, target?, text}], "tags": [{tag, block, text}], "tasks": [{block, text, checked, due?}], "blocks":
 [{id, text, heading?}]}}}`. An entry is current when its `updatedAt` and `daily` equal the document's
 metadata; anything else is re-indexed from `docs/`. Building the index never writes a document.
+Block `text` keeps up to 1,000 characters (version 2; version 1 kept 200, so a version-1 index is
+rebuilt on launch).
 
 `cover.crop` is the visible part of the original image, normalized to 0…1 of its width and height
 (absent: a 3:1 band centered on `focalY`). `cover.ratio` is the user's choice (`original`, `16:9`,
