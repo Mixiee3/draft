@@ -1,0 +1,75 @@
+import AppKit
+import DraftCore
+import DraftEditor
+
+/// `DRAFT_AUTOMATION=ux-perf`: tab and Space switching, opening from the library, scrolling and
+/// panels, each timed until the window has laid out and drawn. `idle` keeps a document open for
+/// `DRAFT_IDLE_SECONDS` so CPU and GPU can be sampled from outside.
+extension Automation {
+    static func drawn(_ w: NSWindow) async { await settle(); w.contentView?.layoutSubtreeIfNeeded(); w.displayIfNeeded() }
+
+    static func uxPerf() async {
+        guard let w = NSApp.windows.first(where: { $0.isVisible }) else { return }
+        w.setFrame(NSRect(x: 60, y: 60, width: 1440, height: 900), display: true)
+        var r: [String: Any] = [:]
+        var ids: [String] = []
+        for i in 0..<6 {
+            let id = newId("d_")
+            var doc = DocFile.empty(id: id, title: "Notes \(i)")
+            doc.content = bigDoc(i == 0 ? 2000 : 200)
+            try? m.vault.saveDoc(doc)
+            var meta = DocMeta(id: id); meta.applyDerived(from: doc); meta.spaceId = m.library.space.id
+            m.library.docs[id] = meta
+            ids.append(id)
+        }
+        for id in ids.dropFirst() { m.openView(.doc(id), newTab: true); await drawn(w) }
+
+        var t0 = CFAbsoluteTimeGetCurrent()
+        m.openView(.all); await drawn(w); r["libraryOpenMs"] = ms(t0)
+        t0 = CFAbsoluteTimeGetCurrent()
+        m.openView(.doc(ids[0])); await drawn(w); r["docOpenFromLibraryMs"] = ms(t0)
+
+        var tabs: [Double] = []
+        let tabIds = m.library.tabs.map(\.id)
+        for k in 0..<12 { t0 = CFAbsoluteTimeGetCurrent(); m.activateTab(tabIds[k % tabIds.count]); await drawn(w); tabs.append(ms(t0)) }
+        r["tabSwitchMs"] = stats(tabs)
+
+        m.openView(.doc(ids[0])); await drawn(w)
+        if let sv = deepestScrollView(w.contentView!) {
+            var steps: [Double] = []
+            for k in 1...120 {
+                t0 = CFAbsoluteTimeGetCurrent()
+                sv.contentView.scroll(to: NSPoint(x: 0, y: CGFloat(k) * 40))
+                sv.reflectScrolledClipView(sv.contentView)
+                w.contentView?.layoutSubtreeIfNeeded(); w.displayIfNeeded()
+                steps.append(ms(t0))
+            }
+            r["docScrollMs"] = stats(steps)
+        }
+
+        var panels: [String: Double] = [:]
+        for p in [Panel.format, .style, .info, .share] {
+            t0 = CFAbsoluteTimeGetCurrent(); m.panel = p; await drawn(w); panels[p.rawValue] = ms(t0)
+            m.panel = nil; await drawn(w)
+        }
+        r["panelOpenMs"] = panels
+
+        let first = m.library.space.id
+        m.createSpace("Second"); await drawn(w)
+        let second = m.library.space.id
+        var spaces: [Double] = []
+        for k in 0..<6 { t0 = CFAbsoluteTimeGetCurrent(); m.switchSpace(k % 2 == 0 ? first : second); await drawn(w); spaces.append(ms(t0)) }
+        r["spaceSwitchMs"] = stats(spaces)
+        m.switchSpace(first)
+        m.flushAll()
+        if let d = try? JSONSerialization.data(withJSONObject: r, options: [.prettyPrinted, .sortedKeys]) { try? d.write(to: out.appendingPathComponent("ux-perf.json")) }
+    }
+
+    static func idle() async {
+        guard let w = NSApp.windows.first(where: { $0.isVisible }) else { return }
+        w.setFrame(NSRect(x: 60, y: 60, width: 1440, height: 900), display: true)
+        if let id = m.createDoc(title: "Idle") { m.openView(.doc(id)) }
+        let secs = Double(ProcessInfo.processInfo.environment["DRAFT_IDLE_SECONDS"] ?? "20") ?? 20
+        try? await Task.sleep(nanoseconds: UInt64(secs * 1e9))
+    }
+}

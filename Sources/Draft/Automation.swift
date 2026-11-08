@@ -38,6 +38,9 @@ enum Automation {
             case "workflow-read": await workflowRead()
             case "online-live": await onlineLive()
             case "screens-v05": await screensV05()
+            case "assistant-bench": await assistantBench()
+            case "ux-perf": await uxPerf()
+            case "idle": await idle()
             default: break
             }
             NSApp.terminate(nil)
