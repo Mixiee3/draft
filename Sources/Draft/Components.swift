@@ -11,6 +11,7 @@ struct DraftButtonStyle: ButtonStyle {
     var compact = false
     @Environment(\.tokens) var t
     @Environment(\.isEnabled) var enabled
+    @Environment(\.isFocused) var focused
 
     func makeBody(configuration: Configuration) -> some View {
         let pressed = configuration.isPressed
@@ -23,6 +24,8 @@ struct DraftButtonStyle: ButtonStyle {
             .background(RoundedRectangle(cornerRadius: DS.rControl, style: .continuous).fill(background(pressed)))
             .overlay(RoundedRectangle(cornerRadius: DS.rControl, style: .continuous).strokeBorder(role == .secondary ? t.line : .clear, lineWidth: 0.5))
             .contentShape(RoundedRectangle(cornerRadius: DS.rControl, style: .continuous))
+            // Keyboard navigation: the same accent ring as Draft's text fields, outside the control.
+            .overlay(RoundedRectangle(cornerRadius: DS.rControl + 3, style: .continuous).strokeBorder(t.accent.opacity(focused ? 0.75 : 0), lineWidth: 2.5).padding(-3.5))
             .opacity(enabled ? 1 : 0.45)
             .animation(Motion.quick(false), value: pressed)
     }
