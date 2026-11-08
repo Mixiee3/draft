@@ -126,12 +126,37 @@ struct SettingsView: View {
                 SettingsSwitchRow(title: "Paper follows dark mode", detail: "Documents in the Paper style turn dark with the app. Exports keep the light page.", isOn: bind(\.paperFollowsAppearance))
                 SettingsSwitchRow(title: "Reduce animations", detail: "Panels and screens fade instead of moving. macOS Reduce Motion does the same.", isOn: bind(\.reduceMotion))
             }
+            SettingsSection(title: "Sidebar", footer: "Hidden items stay reachable from the menus and Quick Open.") {
+                ForEach(Self.sidebarItems, id: \.0) { key, title in
+                    let order = model.library.settings.sidebarOrder
+                    SettingsRow(title: title) {
+                        HStack(spacing: DS.s2) {
+                            if let i = order.firstIndex(of: key) {
+                                IconButton(symbol: "chevron.up", label: "Move \(title) up", size: 24) { moveSection(i, by: -1) }.disabled(i == 0)
+                                IconButton(symbol: "chevron.down", label: "Move \(title) down", size: 24) { moveSection(i, by: 1) }.disabled(i == order.count - 1)
+                            }
+                            Toggle("Show \(title)", isOn: Binding(get: { !model.library.settings.sidebarHidden.contains(key) },
+                                                                set: { on in model.setSettings { s in s.sidebarHidden.removeAll { $0 == key }; if !on { s.sidebarHidden.append(key) } } }))
+                                .toggleStyle(.switch).controlSize(.small).labelsHidden()
+                        }
+                    }
+                }
+            }
             SettingsSection(title: "Getting started") {
                 SettingsRow(title: "Welcome and tour", detail: "See the short introduction to Draft again.") {
                     Button("Replay Tour") { model.startTour() }.buttonStyle(.draft)
                 }
             }
         }
+    }
+
+    static let sidebarItems: [(String, String)] = {
+        let fixed = [("shared", "Shared with Me"), ("today", "Today"), ("calendar", "Calendar"), ("tasks", "Tasks")]
+        return fixed + [("starred", "Starred"), ("folders", "Folders"), ("tags", "Tags"), ("trash", "Recently Deleted")]
+    }()
+
+    func moveSection(_ i: Int, by d: Int) {
+        model.setSettings { s in let j = i + d; guard s.sidebarOrder.indices.contains(j) else { return }; s.sidebarOrder.swapAt(i, j) }
     }
 
     var editor: some View {
@@ -162,7 +187,7 @@ struct SettingsView: View {
                 .padding(DS.s3 + 2)
                 .onAppear { spaceName = model.library.space.name }
             }
-            SettingsSection(title: "All Spaces", footer: "Each Space has its own folders, documents, tags, tasks and tabs. Templates and styles are shared.") {
+            SettingsSection(title: "All Spaces", footer: "Each Space has its own folders, documents, tags, tasks and tabs, and keeps its own theme, accent, daily-note and tag settings. Templates and styles are shared.") {
                 ForEach(model.library.spaces, id: \.id) { s in
                     let current = s.id == model.library.space.id
                     let name = current ? model.library.space.name : s.name

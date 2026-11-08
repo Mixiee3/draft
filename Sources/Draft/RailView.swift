@@ -119,46 +119,23 @@ struct LibraryRail: View {
                     SpaceSwitcher().padding(.horizontal, 4).padding(.bottom, 6)
                     RailRow(icon: "square.grid.2x2", title: "All Docs", isSelected: v.kind == "all") { model.activateTab(model.tabs[0].id) }
                     RailRow(icon: "magnifyingglass", title: "Quick Open", trailing: AnyView(Text("⌘O").font(.system(size: DS.caption)).foregroundStyle(t.tertiary))) { model.quickOpen = true }
-                    RailRow(icon: "person.2", title: "Shared with Me", isSelected: v.kind == "shared") { model.openView(ViewRef(kind: "shared")) }
+                    if shown("shared") { RailRow(icon: "person.2", title: "Shared with Me", isSelected: v.kind == "shared") { model.openView(ViewRef(kind: "shared")) } }
                     let _ = model.indexTick
-                    RailRow(icon: "sun.max", title: "Today", isSelected: model.activeDocId != nil && model.library.docs[model.activeDocId!]?.dailyDate == model.todayKey,
-                            trailing: AnyView(Text("⇧⌘D").font(.system(size: DS.caption)).foregroundStyle(t.tertiary))) { model.openDaily() }
-                    RailRow(icon: "calendar", title: "Calendar", isSelected: v.kind == "calendar") { model.openView(ViewRef(kind: "calendar")) }
+                    if shown("today") { RailRow(icon: "sun.max", title: "Today", isSelected: model.activeDocId != nil && model.library.docs[model.activeDocId!]?.dailyDate == model.todayKey,
+                            trailing: AnyView(Text("⇧⌘D").font(.system(size: DS.caption)).foregroundStyle(t.tertiary))) { model.openDaily() } }
+                    if shown("calendar") { RailRow(icon: "calendar", title: "Calendar", isSelected: v.kind == "calendar") { model.openView(ViewRef(kind: "calendar")) } }
                     let due = model.tasks(.today).count + model.tasks(.overdue).count
-                    RailRow(icon: "checklist", title: "Tasks", isSelected: v.kind == "tasks",
-                            trailing: due == 0 ? nil : AnyView(Text("\(due)").font(.system(size: DS.caption)).foregroundStyle(t.tertiary))) { model.openView(ViewRef(kind: "tasks")) }
+                    if shown("tasks") { RailRow(icon: "checklist", title: "Tasks", isSelected: v.kind == "tasks",
+                            trailing: due == 0 ? nil : AnyView(Text("\(due)").font(.system(size: DS.caption)).foregroundStyle(t.tertiary))) { model.openView(ViewRef(kind: "tasks")) } }
 
-                    SectionHeader(title: "Starred")
-                    let starred = model.library.liveDocs.filter(\.starred).sorted { $0.title < $1.title }
-                    if starred.isEmpty {
-                        Text("Star documents to keep them close").font(.system(size: DS.footnote)).italic().foregroundStyle(t.tertiary).padding(.horizontal, 10).padding(.vertical, 4)
-                    }
-                    ForEach(starred) { m in
-                        RailRow(icon: "star.fill", title: m.title, isSelected: model.activeDocId == m.id) { model.openView(.doc(m.id)) }
-                    }
-
-                    SectionHeader(title: "Folders", action: { renameText = "New Folder"; model.createFolder() }, actionLabel: "New folder (⇧⌘N)")
-                    RailRow(icon: "tray", title: "Unsorted", isSelected: v.kind == "unsorted") { model.openView(ViewRef(kind: "unsorted")) }
-                    ForEach(model.library.spaceFolders.sorted { $0.order < $1.order }) { f in
-                        folderRow(f)
-                    }
-
-                    RailRow(icon: "trash", title: "Recently Deleted", isSelected: v.kind == "trash",
-                            trailing: model.library.trashedDocs.isEmpty ? nil : AnyView(Text("\(model.library.trashedDocs.count)").font(.system(size: DS.caption)).foregroundStyle(t.tertiary))) {
-                        model.openView(ViewRef(kind: "trash"))
-                    }
-
-                    SectionHeader(title: "Tags")
-                    let tags = model.index.tagCounts(live: model.liveIds)
-                    if tags.isEmpty {
-                        Text("Type # and a word in any document").font(.system(size: DS.footnote)).italic().foregroundStyle(t.tertiary).padding(.horizontal, 10).padding(.vertical, 4)
-                    }
-                    ForEach(tags, id: \.tag) { tag in
-                        RailRow(icon: "number", title: tag.tag, isSelected: v.kind == "tag" && v.section?.lowercased() == tag.tag.lowercased(),
-                                trailing: AnyView(Text("\(tag.count)").font(.system(size: DS.caption)).foregroundStyle(t.tertiary)), tint: Color(hex: model.tagColor(tag.tag))) {
-                            model.openView(ViewRef(kind: "tag", section: tag.tag))
+                    ForEach(model.library.settings.sidebarOrder.filter(shown), id: \.self) { key in
+                        switch key {
+                        case "starred": starredSection(v)
+                        case "folders": foldersSection(v)
+                        default: tagsSection(v)
                         }
                     }
+                    if shown("trash") { trashRow(v) }
                 }.padding(.horizontal, 6)
             }
             Spacer(minLength: 0)
@@ -170,6 +147,48 @@ struct LibraryRail: View {
                 Spacer()
             }.padding(.horizontal, 10).padding(.bottom, 10)
         }
+    }
+
+    func shown(_ key: String) -> Bool { !model.library.settings.sidebarHidden.contains(key) }
+
+    @ViewBuilder func starredSection(_ v: ViewRef) -> some View {
+            SectionHeader(title: "Starred")
+            let starred = model.library.liveDocs.filter(\.starred).sorted { $0.title < $1.title }
+            if starred.isEmpty {
+                Text("Star documents to keep them close").font(.system(size: DS.footnote)).italic().foregroundStyle(t.tertiary).padding(.horizontal, 10).padding(.vertical, 4)
+            }
+            ForEach(starred) { m in
+                RailRow(icon: "star.fill", title: m.title, isSelected: model.activeDocId == m.id) { model.openView(.doc(m.id)) }
+            }
+    }
+
+    @ViewBuilder func foldersSection(_ v: ViewRef) -> some View {
+            SectionHeader(title: "Folders", action: { renameText = "New Folder"; model.createFolder() }, actionLabel: "New folder (⇧⌘N)")
+            RailRow(icon: "tray", title: "Unsorted", isSelected: v.kind == "unsorted") { model.openView(ViewRef(kind: "unsorted")) }
+            ForEach(model.library.spaceFolders.sorted { $0.order < $1.order }) { f in
+                folderRow(f)
+            }
+    }
+
+    @ViewBuilder func trashRow(_ v: ViewRef) -> some View {
+            RailRow(icon: "trash", title: "Recently Deleted", isSelected: v.kind == "trash",
+                    trailing: model.library.trashedDocs.isEmpty ? nil : AnyView(Text("\(model.library.trashedDocs.count)").font(.system(size: DS.caption)).foregroundStyle(t.tertiary))) {
+                model.openView(ViewRef(kind: "trash"))
+            }
+    }
+
+    @ViewBuilder func tagsSection(_ v: ViewRef) -> some View {
+            SectionHeader(title: "Tags")
+            let tags = model.index.tagCounts(live: model.liveIds)
+            if tags.isEmpty {
+                Text("Type # and a word in any document").font(.system(size: DS.footnote)).italic().foregroundStyle(t.tertiary).padding(.horizontal, 10).padding(.vertical, 4)
+            }
+            ForEach(tags, id: \.tag) { tag in
+                RailRow(icon: "number", title: tag.tag, isSelected: v.kind == "tag" && v.section?.lowercased() == tag.tag.lowercased(),
+                        trailing: AnyView(Text("\(tag.count)").font(.system(size: DS.caption)).foregroundStyle(t.tertiary)), tint: Color(hex: model.tagColor(tag.tag))) {
+                    model.openView(ViewRef(kind: "tag", section: tag.tag))
+                }
+            }
     }
 
     @ViewBuilder func folderRow(_ f: Folder) -> some View {

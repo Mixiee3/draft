@@ -192,8 +192,10 @@ extension AppModel {
             library.spaces[i].tabs = tabs
             library.spaces[i].activeTabId = activeTabId
             library.spaces[i].name = library.space.name
+            library.spaces[i].settings = library.settings.spaceScoped
         }
         library.space = target
+        if let own = target.settings { setSettings { $0.apply(own) } }
         var next = target.tabs ?? []
         next.removeAll { $0.view.kind == "doc" && library.docs[$0.view.docId ?? ""].map { library.inSpace($0) && $0.deletedAt == nil } != true }
         if next.first?.view.kind != "all" { next.insert(Tab(view: .all), at: 0) }
