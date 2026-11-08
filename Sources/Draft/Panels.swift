@@ -410,8 +410,12 @@ struct InfoPanel: View {
                             Menu {
                                 Button("Unsorted") { model.move(docId, to: nil) }
                                 ForEach(model.library.spaceFolders) { f in Button(f.name) { model.move(docId, to: f.id) } }
-                            } label: { Label("Move to…", systemImage: "arrow.turn.up.right") }
-                            .menuStyle(.button).buttonStyle(.plain).padding(.horizontal, 10).frame(height: 30)
+                            } label: {
+                                HStack { Image(systemName: "arrow.turn.up.right").frame(width: 18); Text("Move to…"); Spacer() }
+                                    .font(.system(size: DS.body)).padding(.horizontal, 10).frame(height: 30)
+                                    .background(RoundedRectangle(cornerRadius: DS.rControl).fill(t.hover)).contentShape(Rectangle())
+                            }
+                            .menuStyle(.button).buttonStyle(.plain).menuIndicator(.hidden).foregroundStyle(t.text)
                             action(m.starred ? "star.slash" : "star", m.starred ? "Unstar Document" : "Star Document") { model.toggleStar(docId) }
                             action("plus.square.on.square", "Duplicate") { model.duplicate(docId) }
                             action("doc.badge.gearshape", model.library.docs[docId]?.template != nil ? "This is a template" : "Save as Template…", enabled: model.library.docs[docId]?.template == nil) { templateCategory = "General"; savingTemplate = true }

@@ -70,10 +70,12 @@ extension AppModel {
         case .page, .style:
             if tourNote == nil || docs[tourNote!] == nil {
                 tourNote = createDoc(title: "Draft tour")
-                if let id = tourNote, let c = editors[id]?.controller { c.pastePlainForAutomation(Self.tourSample) }
+                if let id = tourNote {
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.15) { [weak self] in self?.editors[id]?.controller.pastePlainForAutomation(Self.tourSample) }
+                }
             } else if activeDocId != tourNote { openView(.doc(tourNote!)) }
             if target == .page, let id = tourNote {
-                DispatchQueue.main.asyncAfter(deadline: .now() + 0.25) { [weak self] in
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) { [weak self] in
                     guard let c = self?.editors[id]?.controller else { return }
                     c.textView.window?.makeFirstResponder(c.textView)
                     c.textView.setSelectedRange((c.textView.string as NSString).range(of: "these words"))
@@ -188,7 +190,12 @@ struct TourOverlay: View {
     var body: some View {
         GeometryReader { proxy in
             let info = AppModel.tourSteps[step]
-            let spot = anchors[info.target].map { proxy[$0].insetBy(dx: -8, dy: -8) }
+            let spot = anchors[info.target].map { a -> CGRect in
+                let r = proxy[a]
+                // The editor fills the window; point at the writing area at the top of the page instead.
+                if info.target == .page { return CGRect(x: r.midX - min(380, r.width / 2 - 24), y: r.minY + 60, width: min(760, r.width - 48), height: 260) }
+                return r.insetBy(dx: -8, dy: -8)
+            }
             ZStack(alignment: .topLeading) {
                 Rectangle().fill(Color.black.opacity(0.42))
                     .mask {
@@ -223,7 +230,8 @@ struct TourOverlay: View {
         guard let s = spot else { return CGPoint(x: size.width / 2, y: size.height / 2) }
         var x = s.maxX + 20 + w / 2
         var y = s.minY + h / 2
-        if x + w / 2 > size.width - 16 { x = s.minX - 20 - w / 2 }
+        if s.minY < 120, s.width < size.width / 2 { x = min(size.width - 16 - w / 2, max(16 + w / 2, s.maxX - w / 2)); y = s.maxY + 16 + h / 2 }
+        else if x + w / 2 > size.width - 16 { x = s.minX - 20 - w / 2 }
         if x - w / 2 < 16 { x = min(size.width - 16 - w / 2, max(16 + w / 2, s.midX)); y = s.maxY + 20 + h / 2 }
         y = min(size.height - 16 - h / 2, max(16 + h / 2, y))
         return CGPoint(x: x, y: y)

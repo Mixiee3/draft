@@ -15,7 +15,7 @@ struct DocumentScreen: View {
 
     var body: some View {
         let doc = model.docs[docId]
-        let tokens = doc.map { Styles.resolve($0.appearance) } ?? Styles.builtIn[0].tokens
+        let tokens = doc.map { model.displayTokens($0.appearance) } ?? Styles.builtIn[0].tokens
         let backdropAsset = tokens.backdrop.image.flatMap { $0.hasPrefix("asset:") ? model.image(forAsset: String($0.dropFirst(6))) : nil }
         let darkPage = ColorMath.isDark(tokens.pageColor)
         ZStack(alignment: .top) {

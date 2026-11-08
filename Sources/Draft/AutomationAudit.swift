@@ -148,6 +148,10 @@ extension Automation {
         try? popups(w.contentView!).map { "\(Swift.type(of: $0.0)) \(Int($0.1.minX)),\(Int($0.1.minY)) \(Int($0.1.width))x\(Int($0.1.height))" }.joined(separator: "\n")
             .write(to: out.appendingPathComponent(p + "popups.txt"), atomically: true, encoding: .utf8)
 
+        m.showWelcome(); await shot(p + "00-welcome", w, settle: 0.8)
+        for i in AppModel.tourSteps.indices { m.tourGo(i); await shot(p + "00-tour-\(i + 1)", w, settle: 0.8) }
+        m.finishOnboarding(startWriting: false); await wait(0.4)
+
         // New-note button, zoomed.
         let header = popups(w.contentView!).sorted { $0.1.minX < $1.1.minX }
         if let (plus, pr) = header.first {

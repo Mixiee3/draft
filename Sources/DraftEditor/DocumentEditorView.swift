@@ -27,12 +27,14 @@ final class TitleTextView: NSTextView {
 /// document backdrop (drawn behind by the app) shows around the paper.
 final class PaperView: NSView {
     weak var owner: DocumentEditorView?
-    var paperRect: NSRect = .zero
+    var paperRect: NSRect = .zero { didSet { if paperRect != oldValue { window?.invalidateCursorRects(for: self) } } }
     override var isFlipped: Bool { true }
+    // I-beam on the page (a click there edits); the backdrop around it keeps the arrow.
+    override func resetCursorRects() { addCursorRect(paperRect, cursor: .iBeam) }
     override func mouseDown(with event: NSEvent) {
-        // Clicking empty paper below the text puts the caret at the end.
+        // Clicking empty paper below the text puts the caret at the end; the backdrop ends editing.
         let p = convert(event.locationInWindow, from: nil)
-        guard let o = owner, paperRect.contains(p) else { return super.mouseDown(with: event) }
+        guard let o = owner, paperRect.contains(p) else { window?.makeFirstResponder(nil); return }
         let tv = o.controller.textView
         window?.makeFirstResponder(tv)
         if p.y > tv.frame.maxY - 4 { tv.setSelectedRange(NSRange(location: (tv.string as NSString).length, length: 0)) }
@@ -270,13 +272,15 @@ public final class DocumentEditorView: NSView, NSTextViewDelegate {
         }
         // The text view sizes itself; forcing a full layout here cost ~90 ms per height change in a 10k-block document.
         if tv.frame.height < 160 { tv.setFrameSize(NSSize(width: innerW, height: 160)) }
-        let paperBottom = tv.frame.maxY + 90
+        // A short note still gets a whole page, down to just above the window edge.
+        let fill = scrollView.contentSize.height - 24
+        let paperBottom = max(tv.frame.maxY + 90, fill)
         paper.paperRect = NSRect(x: paperX, y: top, width: paperW, height: paperBottom - top)
         if paperBackground.frame != paper.paperRect {
             paperBackground.frame = paper.paperRect
             paperBackground.layer?.shadowPath = CGPath(roundedRect: paperBackground.bounds, cornerWidth: 22, cornerHeight: 22, transform: nil)
         }
-        let docH = max(paperBottom + 60, scrollView.contentSize.height)
+        let docH = paperBottom == fill ? scrollView.contentSize.height : max(paperBottom + 60, scrollView.contentSize.height)
         if paper.frame.size != NSSize(width: width, height: docH) { paper.frame = NSRect(x: 0, y: 0, width: width, height: docH) }
         if controller.imageBar.isVisible { controller.imageBar.update() }
         if controller.toolbar.isVisible { controller.toolbar.position() }

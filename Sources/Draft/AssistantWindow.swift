@@ -29,7 +29,9 @@ extension AppModel {
             p.minSize = NSSize(width: 320, height: 420)
             p.isReleasedWhenClosed = false
             p.setFrameAutosaveName("DraftAssistant")
-            p.contentView = NSHostingView(rootView: AssistantWindowRoot().environment(self))
+            let host = NSHostingView(rootView: AssistantWindowRoot().environment(self))
+            host.sizingOptions = [] // the content's ideal height grew the window past the screen (1,262 pt)
+            p.contentView = host
             NotificationCenter.default.addObserver(forName: NSWindow.willCloseNotification, object: p, queue: .main) { [weak self] _ in
                 onMain { if self?.assistant.isOpen == true && self?.library.settings.assistantPinned == false { self?.assistant.toggle() } }
             }

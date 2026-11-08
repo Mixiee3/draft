@@ -19,7 +19,7 @@ struct RootView: View {
 
     var tint: String? {
         guard model.library.settings.useDocStyleForApp, let id = model.activeDocId, let d = model.docs[id] else { return nil }
-        let t = Styles.resolve(d.appearance).shellTint
+        let t = model.displayTokens(d.appearance).shellTint
         // In dark app mode, only dark document tints are applied to avoid a glaring shell.
         return isDark && !ColorMath.isDark(t) ? nil : t
     }
@@ -85,6 +85,7 @@ struct RootView: View {
                 }
             }
             .onChange(of: model.activeTab.id) { _, _ in railOverlay = false }
+            .onChange(of: isDark, initial: true) { _, d in model.appDark = d }
             .overlayPreferenceValue(TourAnchorKey.self) { anchors in
                 if case .tour(let step) = model.onboarding { TourOverlay(step: step, anchors: anchors) }
             }

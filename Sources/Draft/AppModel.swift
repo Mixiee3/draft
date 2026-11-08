@@ -431,8 +431,15 @@ final class AppModel {
         return view
     }
 
+    /// Set by the root view from the effective light/dark appearance.
+    var appDark = false { didSet { if appDark != oldValue { retheme() } } }
+
+    func displayTokens(_ a: DocumentAppearance) -> StyleTokens { Styles.forDisplay(a, dark: appDark && library.settings.paperFollowsAppearance) }
+
+    func retheme() { for (id, e) in editors { if let d = docs[id] { e.theme = theme(for: d) } } }
+
     func theme(for doc: DocFile) -> EditorTheme {
-        var t = EditorTheme(tokens: Styles.resolve(doc.appearance), completedTasks: library.settings.completedTasks)
+        var t = EditorTheme(tokens: displayTokens(doc.appearance), completedTasks: library.settings.completedTasks)
         t.tagRules = library.settings.tagRules
         t.tagColors = library.settings.tagColors
         t.dateChips = library.settings.dateStyle != "text"
@@ -877,8 +884,8 @@ final class AppModel {
         let before = library.settings
         f(&library.settings)
         let now = library.settings
-        if before.completedTasks != now.completedTasks || before.tagRules != now.tagRules || before.tagColors != now.tagColors || before.dateStyle != now.dateStyle {
-            for (id, e) in editors { if let d = docs[id] { e.theme = theme(for: d) } }
+        if before.completedTasks != now.completedTasks || before.tagRules != now.tagRules || before.tagColors != now.tagColors || before.dateStyle != now.dateStyle || before.paperFollowsAppearance != now.paperFollowsAppearance {
+            retheme()
         }
         if before.tagRules != now.tagRules { saveDirtyDocs(); refreshIndex() }
         if before.reminders != now.reminders || before.reminderHour != now.reminderHour { syncReminders(requestIfNeeded: now.reminders && !before.reminders) }
