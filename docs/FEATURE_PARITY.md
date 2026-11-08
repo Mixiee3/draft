@@ -281,7 +281,8 @@ Last updated: v0.4 shipped (native macOS) — 2026‑11‑08.
 | J5 | Faster Assistant follow-ups | — | — | verified | 0.6 | Model state saved after the system turn (document text) and restored for the next question: 2nd question first token 0.12–0.39 s vs 2.3–3.0 s (offline test asserts ≥ 2×) |
 | J6 | Assistant voice | — | — | partial | 0.6 | Read Aloud (system voice) verified offline; dictation uses only Apple's on-device recognizer (available on this Mac) but the microphone/speech prompts and a live dictation need a person; VoiceGlow only while listening or speaking |
 | J7 | Assistant quality benchmark | — | — | verified | 0.6 | `scripts/assistant-quality.sh`: 30 fixed questions, expected facts and citations; LFM2.5 2.6B 27/30 (90%), results in `docs/assistant-quality/` |
-| J2 | MCP / API connections | Scenic connection view | S32 | missing | later | — |
+| J2 | MCP / API connections | Scenic connection view | S32 | partial | 0.6 | `DraftMCP` stdio server: read tools, formatting guide and reviewed edit proposals (text, formatting, separators, document style); accept/undo/reject/stale verified (`scripts/agent-test.sh`, external stdio round-trip). Not yet: create/rename/move notes, insert/delete/reorder blocks, links/tags/tasks management, multi-document changes; no connection UI |
+| J8 | Optional OpenAI provider | — | — | partial | 0.6 | Own API key in Keychain, Responses API with `store: false`, context reviewed before each send; unit-tested (SSE parsing, privacy fields, separate histories); a live request was not made (needs the user's key). Not ChatGPT sign-in, not a Codex agent |
 | J3 | Writing suggestions in toolbar | Dynamic slot | S06 | missing | later | — |
 
 ## 22. Platforms
