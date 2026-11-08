@@ -52,6 +52,7 @@ final class AssistantModel: ObservableObject {
     private var engineModel: String?
     private var cancelFlag: CancelFlag?
     private var cloudTask: Task<Void, Never>?
+    private var cloudRunID: UUID?
     /// Where an editing request came from, so its result can be previewed against the same text.
     private var target: (docId: String, range: NSRange, original: String)?
 
@@ -285,7 +286,13 @@ final class AssistantModel: ObservableObject {
 
     private var lastTarget: [String: (docId: String, range: NSRange, original: String)] = [:]
 
-    func stop() { cancelFlag?.cancel(); cloudTask?.cancel(); cloudTask = nil }
+    func stop() {
+        cancelFlag?.cancel()
+        cloudRunID = nil
+        cloudTask?.cancel()
+        cloudTask = nil
+        streaming = nil
+    }
 
     func clearHistory() {
         stop()
@@ -306,22 +313,29 @@ final class AssistantModel: ObservableObject {
         streaming = Streaming()
         let client = OpenAIResponsesClient()
         let modelName = app.library.settings.openAIModel
+        let runID = UUID()
+        cloudRunID = runID
         cloudTask = Task { [weak self] in
             do {
                 let answer = try await client.generate(consent.prepared.turns, model: modelName, apiKey: key) { piece in
-                    Task { @MainActor [weak self] in self?.streaming?.answer += piece }
+                    Task { @MainActor [weak self] in
+                        guard self?.cloudRunID == runID else { return }
+                        self?.streaming?.answer += piece
+                    }
                 }
                 guard let self else { return }
-                self.finishCloud(answer: answer, consent: consent, failed: false)
+                self.finishCloud(answer: answer, consent: consent, runID: runID, failed: false)
             } catch is CancellationError {
-                self?.finishCloud(answer: "Stopped.", consent: consent, failed: true)
+                self?.finishCloud(answer: "Stopped.", consent: consent, runID: runID, failed: true)
             } catch {
-                self?.finishCloud(answer: error.localizedDescription, consent: consent, failed: true)
+                self?.finishCloud(answer: error.localizedDescription, consent: consent, runID: runID, failed: true)
             }
         }
     }
 
-    private func finishCloud(answer: String, consent: CloudConsent, failed: Bool) {
+    private func finishCloud(answer: String, consent: CloudConsent, runID: UUID, failed: Bool) {
+        guard cloudRunID == runID else { return }
+        cloudRunID = nil
         cloudTask = nil
         streaming = nil
         guard chat.spaceId == consent.spaceId, chat.provider == .openai else { return }
