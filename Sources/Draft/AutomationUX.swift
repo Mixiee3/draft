@@ -31,17 +31,28 @@ extension Automation {
 
         var tabs: [Double] = []
         let tabIds = m.library.tabs.map(\.id)
+        if ProcessInfo.processInfo.environment["DRAFT_UX_TABLOOP"] != nil { for k in 0..<300 { m.activateTab(tabIds[k % tabIds.count]); await drawn(w) } }
         for k in 0..<12 { t0 = CFAbsoluteTimeGetCurrent(); m.activateTab(tabIds[k % tabIds.count]); await drawn(w); tabs.append(ms(t0)) }
         r["tabSwitchMs"] = stats(tabs)
+        var phases: [String: [Double]] = ["model": [], "update": [], "layout": [], "draw": []]
+        for k in 0..<12 {
+            var t = CFAbsoluteTimeGetCurrent(); m.activateTab(tabIds[k % tabIds.count]); phases["model"]!.append(ms(t))
+            t = CFAbsoluteTimeGetCurrent(); await settle(); phases["update"]!.append(ms(t))
+            t = CFAbsoluteTimeGetCurrent(); w.contentView?.layoutSubtreeIfNeeded(); phases["layout"]!.append(ms(t))
+            t = CFAbsoluteTimeGetCurrent(); w.displayIfNeeded(); phases["draw"]!.append(ms(t))
+        }
+        r["tabSwitchPhasesMs"] = phases.mapValues { stats($0) }
 
         m.openView(.doc(ids[0])); await drawn(w)
-        if let sv = deepestScrollView(w.contentView!) {
+        if let sv = m.editors[ids[0]]?.scrollView {
+            r["scrollDebug"] = "doc \(Int(sv.documentView?.frame.height ?? -1)) clip \(Int(sv.contentView.bounds.height)) inWindow \(sv.window != nil)"
             var steps: [Double] = []
             for k in 1...120 {
                 t0 = CFAbsoluteTimeGetCurrent()
                 sv.contentView.scroll(to: NSPoint(x: 0, y: CGFloat(k) * 40))
                 sv.reflectScrolledClipView(sv.contentView)
-                w.contentView?.layoutSubtreeIfNeeded(); w.displayIfNeeded()
+                w.contentView?.layoutSubtreeIfNeeded()
+                if let tv = m.editors[ids[0]]?.controller.textView { tv.setNeedsDisplay(tv.visibleRect); tv.displayIfNeeded() }
                 steps.append(ms(t0))
             }
             r["docScrollMs"] = stats(steps)

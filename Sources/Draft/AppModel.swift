@@ -333,11 +333,11 @@ final class AppModel: ObservableObject {
     }
 
     func activateTab(_ id: String) {
+        guard id != library.activeTabId, let t = library.tabs.first(where: { $0.id == id }) else { return }
         captureTabStates()
-        guard let t = library.tabs.first(where: { $0.id == id }) else { return }
         if let d = t.view.docId, t.view.kind == "doc" { _ = ensureDoc(d) }
         library.activeTabId = id
-        panel = nil
+        if panel != nil { panel = nil }
         scheduleLibrarySave()
     }
 

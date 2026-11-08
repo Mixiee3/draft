@@ -5,10 +5,18 @@ import Foundation
 /// Calendar days as `yyyy-MM-dd` keys in the user's calendar. A day can start after midnight
 /// (Settings → Advanced → Start of day): before that hour, "today" is still the previous day.
 public enum Day {
+    private static let lock = NSLock()
+    nonisolated(unsafe) private static var formatters: [String: DateFormatter] = [:]
+
+    /// One formatter per calendar and time zone: making a DateFormatter costs more than using it.
     static func formatter(_ cal: Calendar) -> DateFormatter {
+        let k = "\(cal.identifier)|\(cal.timeZone.identifier)"
+        lock.lock(); defer { lock.unlock() }
+        if let f = formatters[k] { return f }
         let f = DateFormatter()
         f.calendar = cal; f.timeZone = cal.timeZone; f.locale = Locale(identifier: "en_US_POSIX")
         f.dateFormat = "yyyy-MM-dd"
+        formatters[k] = f
         return f
     }
 

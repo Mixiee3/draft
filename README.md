@@ -1,13 +1,16 @@
 # Draft
 
 A free, open-source, local-first notes and document app. **First release: native macOS.**
-No account, no network, no telemetry — your notes are plain files on your Mac.
+No account and no telemetry — your notes are plain files on your Mac. Nothing goes online unless you
+turn it on (image search, link previews, or downloading the Assistant's local model).
 
 ![Draft document](docs/screenshots/document.png)
 
 ## Build and run
 
-Requirements: macOS 14 or later, Xcode 16+ (Swift 6 toolchain). No other dependencies.
+Requirements: macOS 14 or later, Xcode 16+ (Swift 6 toolchain) with the Metal Toolchain component
+(`xcodebuild -downloadComponent MetalToolchain`). SwiftPM fetches two pinned dependencies: the
+llama.cpp XCFramework and Libraries.dev (see [`THIRD_PARTY_NOTICES.md`](THIRD_PARTY_NOTICES.md)).
 
 ```bash
 scripts/build-app.sh          # builds build/Draft.app (release)
@@ -24,7 +27,7 @@ swift run Draft               # run without bundling
 ```
 
 ```bash
-swift test                    # 126 tests: format, schema 2 migration, vault, index, links, tags, dates, styles, tables, collections, import, HTML/site export, online parsing, editor, blocks, paste, grouping, media, cursor
+swift test                    # 147 tests: format, schema 2 migration, vault, index, links, tags, dates, styles, tables, collections, import, HTML/site export, online parsing, editor, blocks, paste, grouping, media, cursor, Assistant retrieval, citations, prompts, chat history, model download verification, privacy, cancellation, one-step undo
 ```
 
 ```bash
@@ -55,6 +58,23 @@ scripts/structure-test.sh     # tables and collections: views, sort, sums, Kanba
 scripts/workflow-test.sh      # Spaces, templates, Draft JSON and Markdown import round trips
 ```
 
+```bash
+scripts/ux-perf.sh            # tab and Space switching, library, scrolling, panels, idle CPU/GPU
+```
+
+```bash
+scripts/assistant-test.sh     # the Assistant with all networking denied (needs the downloaded model)
+```
+
+## Local Assistant
+
+Press ⌘J (or the Assistant button). The first time, Draft offers to download **LFM2.5-2.6B** by
+Liquid AI (1.6 GB, open weights under the LFM Open License v1.0, not Draft's license). The file is
+checked against its published SHA-256 and stored in `~/Library/Application Support/Draft/Models`,
+outside your vault. Inference runs inside Draft with llama.cpp on Metal: no Python, server, account or
+API key, and it works with networking off. Notes are never sent anywhere. Settings → Assistant
+switches to the smaller 1.2B model or removes the model.
+
 Your notes live in `~/Library/Application Support/Draft/Vault` (Settings → Data & Storage →
 Show in Finder). Set `DRAFT_DATA_DIR=/some/folder` to use a different vault.
 
@@ -64,7 +84,8 @@ Show in Finder). Set `DRAFT_DATA_DIR=/some/folder` to use a different vault.
 |---|---|---|
 | Portable format | `Sources/DraftCore` | Foundation only. Document tree, library index, migrations, vault (atomic writes), Markdown/JSON export, styles, seed content. This is the layer a future Windows app re-implements; see [`docs/FORMAT.md`](docs/FORMAT.md). |
 | Editor | `Sources/DraftEditor` | AppKit + **TextKit 1** (`NSTextView`, custom `NSLayoutManager`). One text paragraph = one block with a stable id. Semantic attributes (block info, inline marks) are separate from derived display attributes. |
-| App shell | `Sources/Draft` | SwiftUI: rail, tabs, library, panels, settings. Hosts the editor through `NSViewRepresentable`. |
+| App shell | `Sources/Draft` | SwiftUI: rail, tabs, library, panels, settings, Assistant. Hosts the editor through `NSViewRepresentable`. Design tokens in `DesignSystem.swift`. |
+| Assistant runtime | `Sources/DraftAssistant` | Model download and verification, llama.cpp engine. Prompting, retrieval and history are in `DraftCore` (`Assistant.swift`). |
 
 Key decisions:
 

@@ -19,6 +19,7 @@ Legend: ✅ done · 🟡 partial · ⬜ not started
 
 ### Change log of this plan
 
+- **2026‑11‑08** — v0.5.1 shipped (UI polish, design system, Local Assistant); v0.6 extended with tab-switch latency, Assistant follow-ups and voice.
 - **2026‑11‑08** — v0.5 shipped; v0.6 planned in full with the carried permission and VoiceOver checks.
 - **2026‑11‑08** — v0.4 shipped; v0.5 planned in full with carried-forward checks.
 - **2026‑11‑07** — v0.3 shipped; v0.4 expanded with the items deferred from v0.3.
@@ -228,6 +229,30 @@ run of three hit 38 ms against a 33 ms budget). v0.4 vaults migrate losslessly (
 
 **Not tested.** The macOS permission prompts and VoiceOver itself (see 12 and 13).
 
+## v0.5.1 — "One app, and a local Assistant" (macOS) ✅ shipped
+
+| # | Feature | Status | Acceptance check (result) |
+|---|---|---|---|
+| 1 | UI audit with before screenshots | ✅ | 100 before shots across library, editor, panels, settings, calendar, tasks, tables, collections, templates, Spaces; issues and fixes below; before/after pairs in `docs/screenshots/v051/` |
+| 2 | One design system | ✅ | `DesignSystem.swift`: type scale (9–30 pt, 8 sizes in place of 19), 4-pt spacing, three radii (10/14/18 in place of 10 values), control heights, one floating-surface shadow, motion timings; 202 font sizes and 50 radii migrated |
+| 3 | Shared controls | ✅ | 12 AppKit segmented pickers (navy selection) and the Calendar checkbox replaced by Draft's segmented control and toggle chip, with selected/toggle traits for VoiceOver |
+| 4 | Fixed issues | ✅ | Format/Style/Info/Share panels no longer cover the page (the page moves aside, re-wrapping only when it must); Style panel labels no longer truncate; breadcrumb readable on scenic backdrops; disabled chips legible in dark mode; Tasks and Calendar columns align under their header; About text no longer claims "no network" |
+| 5 | Lag | 🟡 | Date keys made a new `DateFormatter` per call (hot in link refresh, calendar, tasks) → cached. Redundant tab re-activation and panel publishes removed. Tab switch p50 38 → 30.5 ms, p95 85 → 75 ms; still over the new 50 ms p95 budget: the cost is SwiftUI re-evaluating the whole window from one `AppModel` (moved to v0.6 #14) |
+| 6 | Libraries.dev effects | ✅ | Thinking Orbs (loading, searching, reasoning, writing), Border Beam (composer while answering), liquid metal (send/Stop and Download only), MIT, pinned revision; Metal shaders verified in the release app; still fallbacks for Reduce Animations, macOS Reduce Motion and inactive windows (`assistant-answering-reduced.mp4`). Liquid Metal's package depends on iOS-only MagnetKit, so its shader is vendored. Voice Glow/Ring not used (no voice mode); Gooey and Image FX not used (no native version, no need) |
+| 7 | Local Assistant | ✅ | ⌘J/toolbar; pinned or floating; LFM2.5-2.6B QAD-Q4_0 via llama.cpp b11722 in-process on Metal; opt-in download (1.59 GB) with progress, SHA-256 check, cancel, remove; Selection/Document/Space; Space retrieval over the vault index with cited source cards that open the block; six actions; streaming, Stop, per-Space history; preview with diff before Insert/Replace, one undo step; offline end-to-end test (`scripts/assistant-test.sh` under a no-network sandbox) |
+
+**Model selection (measured on this M4 with 16 GB; GPU shared with a running Parsec session, so absolute
+speeds are low).** llama-bench without load: 2.6B Q4_K_M 34.7 tok/s, QAD Q4_0 31.9, Q8_0 16.4, 1.2B 52.3.
+In Draft under load: QAD Q4_0 14.2 tok/s (1.8 GB resident), Q4_K_M 10.9, Q8_0 8.6, 1.2B 18.9–38.8.
+QAD Q4_0 gave correct cited answers, clean "not in these notes" refusals and kept Markdown task
+structure; the 1.2B dropped checkboxes and leaked citation markers into rewrites (offered as the
+faster, less careful option). LFM2.5-2.6B always reasons before answering (`<think>`), which Draft shows
+as "Thinking…" with the reasoning on request; first answer words arrive after several seconds.
+
+**Release gate (met except tab-switch latency, pre-existing).** 147 unit tests; smoke, drag, links,
+style/export, structure, workflow, perf (keystroke p95 22 ms, Return p95 12 ms) and the offline
+Assistant test pass.
+
 ## v0.6 — "Every window" (macOS + iPad-ready core)
 
 | # | Feature | Status | Acceptance check |
@@ -245,6 +270,13 @@ run of three hit 38 ms against a 33 ms budget). v0.4 vaults migrate losslessly (
 | 11 | From v0.5: relation picker search; table column reordering and rich text in cells | ⬜ planned | Relation picker finds any document by title; a column drag is one undo; bold/links in a cell survive Markdown round-trip |
 | 12 | From v0.5: per-Space settings beyond the name (theme, daily notes, tag rules) | ⬜ planned | Two Spaces keep different settings after relaunch; switching applies them without a restart |
 | 13 | Perf: steady return-key latency | ⬜ planned | Return p95 under 33 ms in 10 consecutive perf runs |
+| 14 | From v0.5.1: tab and Space switching under budget | ⬜ planned | Split `AppModel` into smaller observed models (Observation framework) so a tab switch re-evaluates only what changed; tab switch p95 < 50 ms, Space switch p95 < 100 ms (`scripts/ux-perf.sh`) |
+| 15 | From v0.5.1: opening a document from the library | ⬜ planned | Under 250 ms for a 2,000-block document (now ≈ 450 ms) |
+| 16 | Assistant: long documents | ⬜ planned | Summarize reads a document longer than the context in parts and combines them; the notice says how much was read |
+| 17 | Assistant: faster follow-ups | ⬜ planned | Reuse the model's cached prompt between turns; second question in a thread starts answering at least 2× sooner |
+| 18 | Assistant: voice mode | ⬜ planned | On-device speech recognition and speech output (Speech framework, no network); only then Voice Glow / Voice Ring show listening and speaking |
+| 19 | Assistant: quality checks | ⬜ planned | A fixed set of 30 note questions with expected facts and citations scores ≥ 90% on the default model; the score is tracked per release |
+| 20 | Carried: VoiceOver pass of the Assistant (window, sources, preview sheet) | ⬜ planned | Every control is announced; a source can be opened and an edit applied without a pointer |
 
 ## v0.8 — "Trust" (macOS)
 
@@ -297,6 +329,6 @@ Assistant (opt-in, bring-your-own or local model, never required); local API/MCP
 
 ## Next smallest coherent slice (prioritized by user value)
 
-*(updated after v0.5)* — v0.6 starts with the two checks that need a person at the Mac (1, 2) and
+*(updated after v0.5.1)* — v0.6 starts with the state split behind tab-switch latency (14), then the two checks that need a person at the Mac (1, 2) and
 the out-of-process accessibility check (3), then keyboard paths (4) and the v0.5 follow-ups (11, 12).
 Localization (5, 6) comes after strings settle.

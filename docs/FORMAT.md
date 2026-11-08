@@ -16,6 +16,7 @@ The reference implementation is `Sources/DraftCore`. All JSON is UTF‑8; timest
   backups/                copies written before any migration (never read by the app)
   history/<docId>/<ms>.json automatic local backups of a document (≤ 1 per 10 min, 30 kept)
   index/index.json        derived link/tag/task index (safe to delete; rebuilt on launch)
+  assistant/<spaceId>.json the Assistant's chat history for one Space (optional; safe to delete)
 ```
 
 ## Rules for every implementation
@@ -64,7 +65,8 @@ Settings added in schema 1 (all optional, defaults in parentheses): `weekStart` 
 2 = Monday), `dayStartHour` (0), `showDailyNotes` (true), `dailyTemplateId`, `tagColors`
 (`{lowercased tag: "#hex"}`), `tagRules` (`{ignoreHex: true, ignoreNumeric: true, custom: []}`),
 `reminders` (false), `reminderHour` (9), `calendarEvents` (false), `dateStyle` (`chip`/`text`), `calendarFilter`
-(`all`/`tasks`/`notes`), `calendarShowCompleted` (false), `onlineImageSearch` (false), `linkPreviews` (false).
+(`all`/`tasks`/`notes`), `calendarShowCompleted` (false), `onlineImageSearch` (false), `linkPreviews` (false),
+`assistantModel` (a model id such as `lfm2.5-2.6b-qad-q4`; absent until chosen), `assistantPinned` (true).
 
 `userStyles` (top-level, optional; written only when non-empty): `[{id: "u_…", name, base: "<built-in id>",
 tokens: {…appearance tokens…}, pinned?, createdAt}]`. A document's `appearance.styleId` may name a user
@@ -147,6 +149,14 @@ Marks: `bold`, `italic`, `underline`, `strike`, `code`, `highlight {color}`, `te
 Markdown export writes a collection as a table of its active view, and each item page with its
 values as YAML frontmatter. A collection's CSV has a `Name` column plus one column per field
 (multi-values joined with `; `).
+
+### assistant/&lt;spaceId&gt;.json
+
+`{"schemaVersion": 1, "spaceId": "s_…", "messages": [{id, role: user|assistant, text, action?, scope?,
+sources?: [{n, docId, blockId?, title, text}], createdAt, failed?}]}`. `action` is one of `ask`,
+`summarize`, `explain`, `rewrite`, `shorten`, `expand`, `outline`; `scope` is `selection`, `document` or
+`space`. Sources record which blocks an answer cited. History never changes a document. Models are not
+part of the vault: they live in `~/Library/Application Support/Draft/Models`.
 
 ### index/index.json (derived)
 

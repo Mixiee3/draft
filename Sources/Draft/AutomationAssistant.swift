@@ -1,4 +1,5 @@
 import AppKit
+import SwiftUI
 import DraftCore
 import DraftAssistant
 
@@ -186,8 +187,73 @@ extension Automation {
     }
 
     static func captureWindow(_ win: NSWindow, _ name: String) async {
+        if let cg = CGWindowListCreateImage(.null, .optionIncludingWindow, CGWindowID(win.windowNumber), [.boundsIgnoreFraming, .bestResolution]),
+           let png = NSBitmapImageRep(cgImage: cg).representation(using: .png, properties: [:]) {
+            try? png.write(to: out.appendingPathComponent(name + ".png")); return
+        }
         guard let v = win.contentView, let rep = v.bitmapImageRepForCachingDisplay(in: v.bounds) else { return }
         v.cacheDisplay(in: v.bounds, to: rep)
         try? rep.representation(using: .png, properties: [:])?.write(to: out.appendingPathComponent(name + ".png"))
+    }
+}
+
+/// `motion-frames`: numbered frames (≈15 fps) of the Assistant opening, answering, the Format panel
+/// opening, and the same Assistant moment with Reduce Animations on, for short recordings.
+extension Automation {
+    static func frames(_ w: NSWindow, _ name: String, seconds: Double, crop: CGRect? = nil) async {
+        let dir = out.appendingPathComponent("frames-" + name, isDirectory: true)
+        try? FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
+        let n = Int(seconds * 15)
+        for i in 0..<n {
+            let t0 = Date()
+            if let cg = CGWindowListCreateImage(.null, .optionIncludingWindow, CGWindowID(w.windowNumber), [.boundsIgnoreFraming, .bestResolution]) {
+                let img = crop.flatMap { c -> CGImage? in
+                    let s = CGFloat(cg.width) / w.frame.width
+                    return cg.cropping(to: CGRect(x: c.minX * s, y: c.minY * s, width: c.width * s, height: c.height * s))
+                } ?? cg
+                try? NSBitmapImageRep(cgImage: img).representation(using: .png, properties: [:])?.write(to: dir.appendingPathComponent(String(format: "%04d.png", i)))
+            }
+            let spent = Date().timeIntervalSince(t0)
+            if spent < 1.0 / 15 { try? await Task.sleep(nanoseconds: UInt64((1.0 / 15 - spent) * 1e9)) }
+        }
+    }
+
+    static func motionFrames() async {
+        guard let w = NSApp.windows.first(where: { $0.isVisible }) else { return }
+        w.setFrame(NSRect(x: 60, y: 60, width: 1280, height: 800), display: true)
+        let id = newId("d_")
+        var doc = DocFile.empty(id: id, title: "Garden co-op planning")
+        doc.content = ensureBlockIds(Node("doc", content: MarkdownImport.blocks(benchNote.components(separatedBy: "\n").dropFirst(2).joined(separator: "\n"))))
+        try? m.vault.saveDoc(doc)
+        var meta = DocMeta(id: id, title: doc.title); meta.applyDerived(from: doc); meta.spaceId = m.library.space.id
+        m.library.docs[id] = meta
+        m.rebuildIndex()
+        m.openView(.doc(id)); await wait()
+        m.setSettings { $0.assistantPinned = true }
+        let assistantRect = CGRect(x: 1280 - 380, y: 0, width: 380, height: 800)
+        Task { await frames(w, "assistant-open", seconds: 1.2) }
+        try? await Task.sleep(nanoseconds: 150_000_000)
+        m.toggleAssistant()
+        await wait(1.3)
+        let a = m.assistant
+        a.scope = .space
+        a.draft = "When is the plant sale, and who orders the compost?"
+        a.send()
+        await wait(0.3)
+        await frames(w, "assistant-answering", seconds: 3, crop: assistantRect)
+        await untilIdle(a)
+        m.toggleAssistant(); await wait(0.6)
+        Task { await frames(w, "format-panel-open", seconds: 1) }
+        try? await Task.sleep(nanoseconds: 150_000_000)
+        withAnimation(Motion.panel(m.library.settings.reduceMotion)) { m.panel = .format }
+        await wait(1.2)
+        m.panel = nil
+        m.setSettings { $0.reduceMotion = true }
+        m.toggleAssistant(); await wait(0.6)
+        a.draft = "Who fixes the pump?"
+        a.send(); await wait(0.3)
+        await frames(w, "assistant-answering-reduced", seconds: 1.5, crop: assistantRect)
+        await untilIdle(a)
+        m.setSettings { $0.reduceMotion = false }
     }
 }

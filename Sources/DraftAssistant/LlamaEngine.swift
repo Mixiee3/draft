@@ -120,7 +120,7 @@ public final class LlamaEngine: TextGenerator {
         llama_sampler_chain_add(chain, llama_sampler_init_penalties(llama_vocab_n_tokens(vocab), 64, 1.1, 0, 0))
         llama_sampler_chain_add(chain, llama_sampler_init_top_k(50))
         llama_sampler_chain_add(chain, llama_sampler_init_temp(0.1))
-        llama_sampler_chain_add(chain, llama_sampler_init_dist(UInt32.random(in: 0...UInt32.max)))
+        llama_sampler_chain_add(chain, llama_sampler_init_dist(0x5EED))
 
         var pending: [UInt8] = []
         var genStart = Date()
