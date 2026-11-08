@@ -232,7 +232,7 @@ extension Automation {
             await capture(tag + "v03-calendar")
             m.openDaily(); await wait(0.5)
             await capture(tag + "v03-daily-note")
-            m.activateTab(m.library.tabs[0].id)
+            m.activateTab(m.tabs[0].id)
             m.librarySearchOpen = true; m.searchRegex = true; m.librarySearch = "(unclosed"
             await wait(0.3)
             await capture(tag + "v03-search-regex-error")

@@ -2,7 +2,7 @@ import SwiftUI
 import DraftCore
 
 struct SettingsView: View {
-    @EnvironmentObject var model: AppModel
+    @Environment(AppModel.self) var model
     @Environment(\.tokens) var t
     let section: String
     @State private var spaceName = ""
@@ -23,7 +23,7 @@ struct SettingsView: View {
                 }.padding(.bottom, 12)
                 ForEach(sections, id: \.0) { id, title, icon, planned in
                     RailRow(icon: icon, title: title + (planned.map { " · \($0)" } ?? ""), isSelected: section == id) {
-                        if let i = model.library.tabs.firstIndex(where: { $0.id == model.library.activeTabId }) { model.library.tabs[i].view = ViewRef(kind: "settings", section: id) }
+                        if let i = model.tabs.firstIndex(where: { $0.id == model.activeTabId }) { model.tabs[i].view = ViewRef(kind: "settings", section: id) }
                     }.opacity(planned == nil ? 1 : 0.6)
                 }
                 Spacer()
@@ -313,7 +313,7 @@ struct ThemeThumb: View {
 // MARK: - Overlays
 
 struct Overlays: View {
-    @EnvironmentObject var model: AppModel
+    @Environment(AppModel.self) var model
     @Environment(\.tokens) var t
     var body: some View {
         ZStack {
@@ -344,7 +344,7 @@ struct Overlays: View {
 }
 
 struct ConfirmDialog: View {
-    @EnvironmentObject var model: AppModel
+    @Environment(AppModel.self) var model
     @Environment(\.tokens) var t
     let req: ConfirmRequest
     var body: some View {
@@ -368,7 +368,7 @@ struct ConfirmDialog: View {
 }
 
 struct QuickOpen: View {
-    @EnvironmentObject var model: AppModel
+    @Environment(AppModel.self) var model
     @Environment(\.tokens) var t
     @State private var query = ""
     @State private var index = 0

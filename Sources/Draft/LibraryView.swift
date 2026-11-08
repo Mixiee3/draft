@@ -2,7 +2,7 @@ import SwiftUI
 import DraftCore
 
 struct LibraryView: View {
-    @EnvironmentObject var model: AppModel
+    @Environment(AppModel.self) var model
     @Environment(\.tokens) var t
     let view: ViewRef
     @FocusState private var searchFocused: Bool
@@ -116,7 +116,7 @@ struct LibraryView: View {
         if model.librarySearchOpen {
             HStack(spacing: 6) {
                 Image(systemName: "magnifyingglass").foregroundStyle(t.pillText.opacity(0.7))
-                TextField(model.searchRegex ? "Regular expression" : "Words, \"a phrase\", -exclude", text: $model.librarySearch)
+                TextField(model.searchRegex ? "Regular expression" : "Words, \"a phrase\", -exclude", text: Binding(get: { model.librarySearch }, set: { model.librarySearch = $0 }))
                     .textFieldStyle(.plain).foregroundStyle(t.pillText).focused($searchFocused).frame(width: 220)
                     .onExitCommand { model.librarySearch = ""; model.librarySearchOpen = false }
                     .onSubmit { if let first = model.searchHits.first { model.openSearchResult(first.meta.id) } }
@@ -184,7 +184,7 @@ struct DocPreview: View {
 }
 
 struct DocCardMenu: ViewModifier {
-    @EnvironmentObject var model: AppModel
+    @Environment(AppModel.self) var model
     let meta: DocMeta
     func body(content: Content) -> some View {
         content
@@ -248,7 +248,7 @@ func dateBucket(_ ms: Double) -> String {
 }
 
 struct GridLayout: View {
-    @EnvironmentObject var model: AppModel
+    @Environment(AppModel.self) var model
     @Environment(\.tokens) var t
     let docs: [DocMeta]
     var body: some View {
@@ -283,7 +283,7 @@ func groupByDate(_ docs: [DocMeta], key: SortKey) -> [(String, [DocMeta])] {
 }
 
 struct ListLayout: View {
-    @EnvironmentObject var model: AppModel
+    @Environment(AppModel.self) var model
     @Environment(\.tokens) var t
     let docs: [DocMeta]
     let width: CGFloat
@@ -326,7 +326,7 @@ struct ListLayout: View {
 }
 
 struct ListRow: View {
-    @EnvironmentObject var model: AppModel
+    @Environment(AppModel.self) var model
     @Environment(\.tokens) var t
     let meta: DocMeta
     var compact: Bool
@@ -361,7 +361,7 @@ struct ListRow: View {
 
 /// Recently Deleted: restore or delete permanently. Items are purged after 30 days.
 struct TrashList: View {
-    @EnvironmentObject var model: AppModel
+    @Environment(AppModel.self) var model
     @Environment(\.tokens) var t
     let docs: [DocMeta]
     var body: some View {
@@ -400,7 +400,7 @@ struct TrashList: View {
 
 /// One row per matching document: title, location, match count and a highlighted snippet.
 struct SearchResults: View {
-    @EnvironmentObject var model: AppModel
+    @Environment(AppModel.self) var model
     @Environment(\.tokens) var t
     let hits: [SearchHit]
     var body: some View {

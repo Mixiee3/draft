@@ -3,7 +3,7 @@ import EventKit
 import DraftCore
 
 struct PlannerHeader<Trailing: View>: View {
-    @EnvironmentObject var model: AppModel
+    @Environment(AppModel.self) var model
     @Environment(\.tokens) var t
     var title: String
     var symbol: String
@@ -23,7 +23,7 @@ struct PlannerHeader<Trailing: View>: View {
 
 /// One task from any document: the checkbox changes the source block (one undo step).
 struct TaskRow: View {
-    @EnvironmentObject var model: AppModel
+    @Environment(AppModel.self) var model
     @Environment(\.tokens) var t
     @Environment(\.undoManager) var undo
     let doc: String
@@ -63,7 +63,7 @@ struct TaskRow: View {
 }
 
 struct TasksView: View {
-    @EnvironmentObject var model: AppModel
+    @Environment(AppModel.self) var model
     @Environment(\.tokens) var t
     @State private var bucket: TaskBucket
     init(section: String?) { _bucket = State(initialValue: TaskBucket(rawValue: section ?? "") ?? .today) }
@@ -102,7 +102,7 @@ struct TasksView: View {
 }
 
 struct CalendarView: View {
-    @EnvironmentObject var model: AppModel
+    @Environment(AppModel.self) var model
     @Environment(\.tokens) var t
     @ObservedObject var events = CalendarEvents.shared
     let focus: String?
@@ -139,7 +139,7 @@ struct CalendarView: View {
 }
 
 struct DayCard: View {
-    @EnvironmentObject var model: AppModel
+    @Environment(AppModel.self) var model
     @Environment(\.tokens) var t
     @ObservedObject var events = CalendarEvents.shared
     let day: String
@@ -196,7 +196,7 @@ struct DayCard: View {
 }
 
 struct TagView: View {
-    @EnvironmentObject var model: AppModel
+    @Environment(AppModel.self) var model
     @Environment(\.tokens) var t
     let tag: String
 
@@ -242,7 +242,7 @@ struct TagView: View {
 }
 
 struct BacklinksPane: View {
-    @EnvironmentObject var model: AppModel
+    @Environment(AppModel.self) var model
     @Environment(\.tokens) var t
     let docId: String
     var body: some View {
@@ -275,7 +275,7 @@ struct BacklinksPane: View {
 
 /// Due date and optional time for a task; writes a date chip into the source block.
 struct DuePicker: View {
-    @EnvironmentObject var model: AppModel
+    @Environment(AppModel.self) var model
     @Environment(\.undoManager) var undo
     @Environment(\.dismiss) var dismiss
     let doc: String

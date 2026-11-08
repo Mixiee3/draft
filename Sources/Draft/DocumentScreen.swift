@@ -9,7 +9,7 @@ struct EditorHostView: NSViewRepresentable {
 }
 
 struct DocumentScreen: View {
-    @EnvironmentObject var model: AppModel
+    @Environment(AppModel.self) var model
     @Environment(\.tokens) var t
     let docId: String
 
@@ -36,7 +36,7 @@ struct DocumentScreen: View {
                         switch p {
                         case .format: FormatPanel(docId: docId)
                         case .style: StylePanel(docId: docId)
-                        case .info: InfoPanel(docId: docId, tab: $model.infoTab)
+                        case .info: InfoPanel(docId: docId, tab: Binding(get: { model.infoTab }, set: { model.infoTab = $0 }))
                         case .share: SharePanel(docId: docId)
                         }
                     }
@@ -114,7 +114,7 @@ struct PanelBackground: View {
 }
 
 struct Breadcrumb: View {
-    @EnvironmentObject var model: AppModel
+    @Environment(AppModel.self) var model
     @Environment(\.tokens) var t
     let docId: String
     var light: Bool
@@ -190,7 +190,7 @@ struct ChipButton: View {
 
 struct PanelHeader: View {
     @Environment(\.tokens) var t
-    @EnvironmentObject var model: AppModel
+    @Environment(AppModel.self) var model
     var title: String
     var body: some View {
         HStack {

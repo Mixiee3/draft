@@ -1,4 +1,5 @@
 import SwiftUI
+import Observation
 import DraftCore
 import DraftEditor
 import DraftAssistant
@@ -6,7 +7,8 @@ import DraftAssistant
 /// The Assistant: local model install, context gathering, streaming generation and per-Space
 /// history. Note text only ever goes to the in-process engine.
 @MainActor
-final class AssistantModel: ObservableObject {
+@Observable
+final class AssistantModel {
     enum Status: Equatable {
         case notInstalled, downloading(Double), installed, loading, ready
         case failed(String)
@@ -24,23 +26,23 @@ final class AssistantModel: ObservableObject {
         var canReplace: Bool
     }
 
-    @Published var isOpen = false
-    @Published var status: Status = .notInstalled
-    @Published var chat: AssistantChat
-    @Published var streaming: Streaming?
-    @Published var scope: AssistantScope = .document
-    @Published var draft = ""
-    @Published var notice: String?
-    @Published var preview: Preview?
+    var isOpen = false
+    var status: Status = .notInstalled
+    var chat: AssistantChat
+    var streaming: Streaming?
+    var scope: AssistantScope = .document
+    var draft = ""
+    var notice: String?
+    var preview: Preview?
 
-    unowned let app: AppModel
-    let store: ModelStore
-    var makeEngine: (URL, LocalModel) throws -> TextGenerator = { try LlamaEngine(path: $0, minimumMemory: $1.minimumMemory) }
-    private var engine: TextGenerator?
-    private var engineModel: String?
-    private var cancelFlag: CancelFlag?
+    @ObservationIgnored unowned let app: AppModel
+    @ObservationIgnored let store: ModelStore
+    @ObservationIgnored var makeEngine: (URL, LocalModel) throws -> TextGenerator = { try LlamaEngine(path: $0, minimumMemory: $1.minimumMemory) }
+    @ObservationIgnored private var engine: TextGenerator?
+    @ObservationIgnored private var engineModel: String?
+    @ObservationIgnored private var cancelFlag: CancelFlag?
     /// Where an editing request came from, so its result can be previewed against the same text.
-    private var target: (docId: String, range: NSRange, original: String)?
+    @ObservationIgnored private var target: (docId: String, range: NSRange, original: String)?
 
     init(app: AppModel, store: ModelStore = ModelStore()) {
         self.app = app
@@ -242,7 +244,7 @@ final class AssistantModel: ObservableObject {
         try? chat.save(app.vault)
     }
 
-    private var lastTarget: [String: (docId: String, range: NSRange, original: String)] = [:]
+    @ObservationIgnored private var lastTarget: [String: (docId: String, range: NSRange, original: String)] = [:]
 
     func stop() { cancelFlag?.cancel() }
 

@@ -6,7 +6,6 @@ extension AppModel {
     /// ⌘J and the toolbar button: pinned beside the content, or in its own floating window.
     func toggleAssistant() {
         assistant.toggle()
-        objectWillChange.send()
         if assistant.isOpen && !library.settings.assistantPinned { showAssistantWindow() } else { assistantWindow?.orderOut(nil) }
     }
 
@@ -27,9 +26,9 @@ extension AppModel {
             p.minSize = NSSize(width: 320, height: 420)
             p.isReleasedWhenClosed = false
             p.setFrameAutosaveName("DraftAssistant")
-            p.contentView = NSHostingView(rootView: AssistantWindowRoot().environmentObject(self))
+            p.contentView = NSHostingView(rootView: AssistantWindowRoot().environment(self))
             NotificationCenter.default.addObserver(forName: NSWindow.willCloseNotification, object: p, queue: .main) { [weak self] _ in
-                onMain { if self?.assistant.isOpen == true && self?.library.settings.assistantPinned == false { self?.assistant.toggle(); self?.objectWillChange.send() } }
+                onMain { if self?.assistant.isOpen == true && self?.library.settings.assistantPinned == false { self?.assistant.toggle() } }
             }
             if let main = NSApp.windows.first(where: { $0.isVisible && $0 !== p }) {
                 p.setFrameTopLeftPoint(NSPoint(x: main.frame.maxX - 400, y: main.frame.maxY - 60))
@@ -42,7 +41,7 @@ extension AppModel {
 
 /// The floating window's root: the same tokens as the main window.
 struct AssistantWindowRoot: View {
-    @EnvironmentObject var model: AppModel
+    @Environment(AppModel.self) var model
     @Environment(\.colorScheme) var scheme
     var body: some View {
         let s = model.library.settings
@@ -58,7 +57,7 @@ struct AssistantWindowRoot: View {
 
 /// The Assistant's toolbar button, at the trailing end of the tab strip (⌘J).
 struct AssistantToolbarButton: View {
-    @EnvironmentObject var model: AppModel
+    @Environment(AppModel.self) var model
     @Environment(\.tokens) var t
     @State private var hover = false
     var body: some View {

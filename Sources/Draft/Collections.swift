@@ -97,7 +97,7 @@ extension AppModel {
 }
 
 struct CollectionScreen: View {
-    @EnvironmentObject var model: AppModel
+    @Environment(AppModel.self) var model
     @Environment(\.tokens) var t
     @Environment(\.undoManager) var undo
     let docId: String
@@ -213,7 +213,7 @@ struct CollectionScreen: View {
 
 /// One editable value.
 struct ValueCell: View {
-    @EnvironmentObject var model: AppModel
+    @Environment(AppModel.self) var model
     @Environment(\.tokens) var t
     let field: CollectionField
     let item: CollectionItem
@@ -266,7 +266,7 @@ struct ValueCell: View {
 }
 
 struct CollectionTable: View {
-    @EnvironmentObject var model: AppModel
+    @Environment(AppModel.self) var model
     @Environment(\.tokens) var t
     @Environment(\.undoManager) var undo
     let docId: String, blockId: String
@@ -353,7 +353,7 @@ struct CollectionTable: View {
 
 /// The item page's title, edited in place.
 struct TitleField: View {
-    @EnvironmentObject var model: AppModel
+    @Environment(AppModel.self) var model
     @Environment(\.tokens) var t
     let docId: String
     @State private var text = ""
@@ -366,7 +366,7 @@ struct TitleField: View {
 }
 
 struct CollectionGallery: View {
-    @EnvironmentObject var model: AppModel
+    @Environment(AppModel.self) var model
     @Environment(\.tokens) var t
     @Environment(\.undoManager) var undo
     let docId: String, blockId: String
@@ -429,7 +429,7 @@ struct GalleryCard: View, Equatable {
 }
 
 struct CollectionBoard: View {
-    @EnvironmentObject var model: AppModel
+    @Environment(AppModel.self) var model
     @Environment(\.tokens) var t
     @Environment(\.undoManager) var undo
     let docId: String, blockId: String

@@ -3,7 +3,7 @@ import DraftCore
 import DraftEditor
 
 struct RootView: View {
-    @EnvironmentObject var model: AppModel
+    @Environment(AppModel.self) var model
     @Environment(\.colorScheme) var systemScheme
     @State private var railOverlay = false
 
@@ -118,7 +118,7 @@ struct WindowChrome: NSViewRepresentable {
 
 struct FatalView: View {
     let message: String
-    @EnvironmentObject var model: AppModel
+    @Environment(AppModel.self) var model
     var body: some View {
         VStack(spacing: 14) {
             Image(systemName: "exclamationmark.triangle").font(.system(size: DS.display))
@@ -131,7 +131,7 @@ struct FatalView: View {
 }
 
 struct MainContent: View {
-    @EnvironmentObject var model: AppModel
+    @Environment(AppModel.self) var model
     @Environment(\.tokens) var t
     var body: some View {
         let v = model.activeView
@@ -154,7 +154,7 @@ struct MainContent: View {
 // MARK: - Tab strip
 
 struct TabStrip: View {
-    @EnvironmentObject var model: AppModel
+    @Environment(AppModel.self) var model
     @Environment(\.tokens) var t
     var leadingInset: CGFloat
     var showRailButton: Bool
@@ -202,8 +202,8 @@ struct TabStrip: View {
             }
             ScrollView(.horizontal, showsIndicators: false) {
                 HStack(spacing: 2) {
-                    ForEach(model.library.tabs) { tab in
-                        TabItem(tab: tab, title: title(tab.view), icon: icon(tab.view), isActive: tab.id == model.library.activeTabId, isHome: tab.id == model.library.tabs.first?.id)
+                    ForEach(model.tabs) { tab in
+                        TabItem(tab: tab, title: title(tab.view), icon: icon(tab.view), isActive: tab.id == model.activeTabId, isHome: tab.id == model.tabs.first?.id)
                     }
                     IconButton(symbol: "plus", label: "New document (⌘N)") { model.createDoc() }
                 }.padding(.vertical, 6)
@@ -218,7 +218,7 @@ struct TabStrip: View {
 }
 
 struct TabItem: View {
-    @EnvironmentObject var model: AppModel
+    @Environment(AppModel.self) var model
     @Environment(\.tokens) var t
     let tab: DraftCore.Tab
     let title: String

@@ -279,11 +279,11 @@ extension Automation {
             try? await Task.sleep(nanoseconds: 900_000_000)
             c.textView.setSelectedRange(NSRange(location: 2, length: 0))
         }
-        let tabIds = m.library.tabs.map(\.id)
+        let tabIds = m.tabs.map(\.id)
         let other = m.createDoc(title: "Second tab") ?? doc
         _ = other
         await recordFrames("tab-switch", w, seconds: 2.0) {
-            for k in 0..<4 { try? await Task.sleep(nanoseconds: 400_000_000); m.activateTab(m.library.tabs[(k % 2) + max(0, m.library.tabs.count - 2)].id) }
+            for k in 0..<4 { try? await Task.sleep(nanoseconds: 400_000_000); m.activateTab(m.tabs[(k % 2) + max(0, m.tabs.count - 2)].id) }
         }
         _ = tabIds
         m.openView(.all); await wait(0.4)
@@ -485,7 +485,7 @@ extension Automation {
         if run("tabs") {
             for id in [mid, big] { m.openView(.doc(id), newTab: true); await wait(0.8) }
             m.openView(ViewRef(kind: "calendar"), newTab: true); await wait(0.5)
-            let ids = m.library.tabs.map(\.id)
+            let ids = m.tabs.map(\.id)
             await measure("tab-switching", w, meter, into: &rep) {
                 var lat: [Double] = []
                 for k in 0..<20 { let t = CACurrentMediaTime(); m.activateTab(ids[k % ids.count]); await meter.nextFrame(); await meter.nextFrame(); lat.append((meter.stamps.last! - t) * 1000); for _ in 0..<15 { await meter.nextFrame() } }
@@ -495,7 +495,9 @@ extension Automation {
             let a = m.library.space.id, b = m.library.spaces.first { $0.id != a }!.id
             await measure("space-switching", w, meter, into: &rep) {
                 var lat: [Double] = []
-                for k in 0..<8 { let t = CACurrentMediaTime(); m.switchSpace(k % 2 == 0 ? b : a); await meter.nextFrame(); await meter.nextFrame(); lat.append((meter.stamps.last! - t) * 1000); for _ in 0..<25 { await meter.nextFrame() } }
+                var sync: [Double] = []
+                for k in 0..<8 { let t = CACurrentMediaTime(); m.switchSpace(k % 2 == 0 ? b : a); sync.append((CACurrentMediaTime() - t) * 1000); await meter.nextFrame(); await meter.nextFrame(); lat.append((meter.stamps.last! - t) * 1000); for _ in 0..<25 { await meter.nextFrame() } }
+                try? sync.map { String(format: "%.1f", $0) }.joined(separator: " ").write(to: out.appendingPathComponent("space-sync.txt"), atomically: true, encoding: .utf8)
                 return lat
             }
             m.switchSpace(b); await wait(0.6)

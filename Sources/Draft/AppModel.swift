@@ -1,5 +1,6 @@
 import AppKit
 import SwiftUI
+import Observation
 import UniformTypeIdentifiers
 import DraftCore
 import DraftEditor
@@ -29,10 +30,11 @@ struct ConfirmRequest: Identifiable {
 
 /// App state and every user action. Persistence is debounced and flushed on quit.
 @MainActor
-final class AppModel: ObservableObject {
+@Observable
+final class AppModel {
     static let shared = AppModel()
 
-    @Published var library = Library.empty() {
+    var library = Library.empty() {
         didSet {
             libraryRevision &+= 1
             if library.userStyles != oldValue.userStyles { Styles.user = library.userStyles }
@@ -40,13 +42,13 @@ final class AppModel: ObservableObject {
     }
     /// Bumped on every library change; keys the memo below.
     private(set) var libraryRevision = 0
-    private var memo: [String: (key: [AnyHashable], value: Any)] = [:]
+    @ObservationIgnored private var memo: [String: (key: [AnyHashable], value: Any)] = [:]
     /// Per-document edit counter, so cached reads of a document (collections) know when to refresh.
     private(set) var docRevision: [String: Int] = [:]
-    private var knownCovers: [String: Cover?] = [:]
-    private var coverLoads = Set<String>()
-    private var croppedCovers: [Cover: NSImage] = [:]
-    @Published var coverTick = 0
+    @ObservationIgnored private var knownCovers: [String: Cover?] = [:]
+    @ObservationIgnored private var coverLoads = Set<String>()
+    @ObservationIgnored private var croppedCovers: [Cover: NSImage] = [:]
+    var coverTick = 0
 
     /// Derived data that views read many times per render (task lists, folder contents,
     /// collections) is computed once per change instead of once per view.
@@ -56,55 +58,59 @@ final class AppModel: ObservableObject {
         memo[name] = (key, v)
         return v
     }
-    @Published var docs: [String: DocFile] = [:]
-    @Published var ready = false
-    @Published var fatal: String?
-    @Published var readOnly: String?
-    @Published var panel: Panel?
-    @Published var docRailTab: DocRailTab = .outline
-    @Published var railShowsFolders = false
-    @Published var quickOpen = false
-    @Published var templatePicker = false
-    @Published var styleGallery = false
-    @Published var toasts: [Toast] = []
-    @Published var confirm: ConfirmRequest?
-    @Published var saveState = "saved" // saved | saving | error
-    @Published var librarySearch = ""
-    @Published var librarySearchOpen = false
-    @Published var renamingFolder: String?
-    @Published var editorTick = 0
-    @Published var findQuery = ""
-    @Published var findCount = 0
-    @Published var findFocusNonce = 0
-    @Published var infoTab = "info"
-    @Published var coverEditorDoc: String?
+    /// Open tabs and the active one live outside `library` so switching tabs doesn't count as a
+    /// library change for every view; they're written back into the library when it's saved.
+    var tabs: [DraftCore.Tab] = Library.empty().tabs
+    var activeTabId: String? = Library.empty().activeTabId
+    var docs: [String: DocFile] = [:]
+    var ready = false
+    var fatal: String?
+    var readOnly: String?
+    var panel: Panel?
+    var docRailTab: DocRailTab = .outline
+    var railShowsFolders = false
+    var quickOpen = false
+    var templatePicker = false
+    var styleGallery = false
+    var toasts: [Toast] = []
+    var confirm: ConfirmRequest?
+    var saveState = "saved" // saved | saving | error
+    var librarySearch = ""
+    var librarySearchOpen = false
+    var renamingFolder: String?
+    var editorTick = 0
+    var findQuery = ""
+    var findCount = 0
+    var findFocusNonce = 0
+    var infoTab = "info"
+    var coverEditorDoc: String?
     /// Bumped when the link/tag/task index changes (backlinks, tags, tasks, calendar).
-    @Published var indexTick = 0
-    @Published var collectionTick = 0
-    @Published var searchRegex = false
+    var indexTick = 0
+    var collectionTick = 0
+    var searchRegex = false
     var index = VaultIndex()
-    var blockDoc: [String: String] = [:]
-    var indexTimer: Timer?
-    var forward: [String: [HistEntry]] = [:]
-    var lastIndexSeconds = 0.0
-    var linkRefreshTimer: Timer?
-    var dayTimer: Timer?
-    var watchedDay = ""
-    var clock: () -> Date = Date.init // replaced only by automation checks
-    let reminders = ReminderScheduler()
-    let online = OnlineServices()
-    lazy var assistant = AssistantModel(app: self)
-    var assistantWindow: NSPanel?
+    @ObservationIgnored var blockDoc: [String: String] = [:]
+    @ObservationIgnored var indexTimer: Timer?
+    @ObservationIgnored var forward: [String: [HistEntry]] = [:]
+    @ObservationIgnored var lastIndexSeconds = 0.0
+    @ObservationIgnored var linkRefreshTimer: Timer?
+    @ObservationIgnored var dayTimer: Timer?
+    @ObservationIgnored var watchedDay = ""
+    @ObservationIgnored var clock: () -> Date = Date.init // replaced only by automation checks
+    @ObservationIgnored let reminders = ReminderScheduler()
+    @ObservationIgnored let online = OnlineServices()
+    @ObservationIgnored lazy var assistant = AssistantModel(app: self)
+    @ObservationIgnored var assistantWindow: NSPanel?
 
-    let vault = Vault(dir: Vault.defaultURL())
+    @ObservationIgnored let vault = Vault(dir: Vault.defaultURL())
     private(set) var editors: [String: DocumentEditorView] = [:]
-    private var hosts: [String: EditorHostAdapter] = [:]
-    var history: [String: [HistEntry]] = [:]
-    private var imageCache: [String: NSImage] = [:]
-    private var dirtyDocs = Set<String>()
-    private var libDirty = false
-    private var docTimer: Timer?
-    private var libTimer: Timer?
+    @ObservationIgnored private var hosts: [String: EditorHostAdapter] = [:]
+    @ObservationIgnored var history: [String: [HistEntry]] = [:]
+    @ObservationIgnored private var imageCache: [String: NSImage] = [:]
+    @ObservationIgnored private var dirtyDocs = Set<String>()
+    @ObservationIgnored private var libDirty = false
+    @ObservationIgnored private var docTimer: Timer?
+    @ObservationIgnored private var libTimer: Timer?
 
     // MARK: Boot
 
@@ -124,6 +130,8 @@ final class AppModel: ObservableObject {
             if lib.tabs.first?.view.kind != "all" { lib.tabs.insert(Tab(view: .all), at: 0) }
             if !lib.tabs.contains(where: { $0.id == lib.activeTabId }) { lib.activeTabId = lib.tabs[0].id }
             library = lib
+            tabs = lib.tabs
+            activeTabId = lib.activeTabId
             Styles.user = lib.userStyles
             let expired = lib.expiredTrash()
             if !expired.isEmpty { deleteForever(expired) }
@@ -153,7 +161,10 @@ final class AppModel: ObservableObject {
         libTimer?.invalidate()
         guard libDirty else { return }
         libDirty = false
-        let lib = library, v = vault
+        var lib = library
+        lib.tabs = tabs
+        lib.activeTabId = activeTabId
+        let v = vault
         v.enqueue({ try v.saveLibrary(lib) }, failed: { [weak self] e in onMain { self?.reportSaveError(e) } })
         refreshSaveState()
     }
@@ -209,7 +220,7 @@ final class AppModel: ObservableObject {
 
     // MARK: Navigation
 
-    var activeTab: DraftCore.Tab { library.tabs.first { $0.id == library.activeTabId } ?? library.tabs[0] }
+    var activeTab: DraftCore.Tab { tabs.first { $0.id == activeTabId } ?? tabs.first ?? Tab(view: .all) }
     var activeView: ViewRef { activeTab.view }
     var activeDocId: String? { activeView.kind == "doc" ? activeView.docId : nil }
 
@@ -241,20 +252,20 @@ final class AppModel: ObservableObject {
             replaceTabView(cur.id, view)
             return
         }
-        if view.kind == "settings", !newTab, let existing = library.tabs.first(where: { $0.view.kind == "settings" }) {
+        if view.kind == "settings", !newTab, let existing = tabs.first(where: { $0.view.kind == "settings" }) {
             replaceTabView(existing.id, view)
-            library.activeTabId = existing.id
-        } else if let existing = library.tabs.first(where: { $0.view == view }), !newTab {
-            library.activeTabId = existing.id
+            activeTabId = existing.id
+        } else if let existing = tabs.first(where: { $0.view == view }), !newTab {
+            activeTabId = existing.id
         } else if !newTab && view.kind != "doc" && cur.view.kind != "all" && cur.view.kind != "doc" {
             pushHistory(cur)
             replaceTabView(cur.id, view)
             return
         } else {
             let tab = Tab(view: view)
-            let idx = library.tabs.firstIndex { $0.id == cur.id } ?? 0
-            library.tabs.insert(tab, at: idx + 1)
-            library.activeTabId = tab.id
+            let idx = tabs.firstIndex { $0.id == cur.id } ?? 0
+            tabs.insert(tab, at: idx + 1)
+            activeTabId = tab.id
         }
         librarySearch = ""
         librarySearchOpen = false
@@ -262,7 +273,7 @@ final class AppModel: ObservableObject {
     }
 
     private func replaceTabView(_ tabId: String, _ view: ViewRef) {
-        if let i = library.tabs.firstIndex(where: { $0.id == tabId }) { library.tabs[i].view = view }
+        if let i = tabs.firstIndex(where: { $0.id == tabId }) { tabs[i].view = view }
         scheduleLibrarySave()
     }
 
@@ -287,7 +298,7 @@ final class AppModel: ObservableObject {
             forward[cur.id, default: []].append(entry(cur))
             go(to: prev, in: cur.id)
         } else {
-            activateTab(library.tabs[0].id)
+            activateTab(tabs[0].id)
         }
         panel = nil
     }
@@ -323,14 +334,14 @@ final class AppModel: ObservableObject {
 
     /// Remember scroll position and selection of every open document tab.
     func captureTabStates() {
-        for i in library.tabs.indices {
-            guard library.tabs[i].view.kind == "doc", let d = library.tabs[i].view.docId, let e = editors[d] else { continue }
+        for i in tabs.indices {
+            guard tabs[i].view.kind == "doc", let d = tabs[i].view.docId, let e = editors[d] else { continue }
             let y = Double(e.scrollView.contentView.bounds.origin.y.rounded())
             let sel = e.controller.textView.selectedRange()
-            if library.tabs[i].scrollY != y || library.tabs[i].selStart != sel.location || library.tabs[i].selLength != sel.length {
-                library.tabs[i].scrollY = y
-                library.tabs[i].selStart = sel.location
-                library.tabs[i].selLength = sel.length
+            if tabs[i].scrollY != y || tabs[i].selStart != sel.location || tabs[i].selLength != sel.length {
+                tabs[i].scrollY = y
+                tabs[i].selStart = sel.location
+                tabs[i].selLength = sel.length
                 libDirty = true
             }
         }
@@ -340,7 +351,7 @@ final class AppModel: ObservableObject {
 
     /// Put a document tab back where it was, once per launch.
     func restoreTabState(_ docId: String) {
-        guard let tab = library.tabs.first(where: { $0.view.kind == "doc" && $0.view.docId == docId }), !restoredTabs.contains(tab.id),
+        guard let tab = tabs.first(where: { $0.view.kind == "doc" && $0.view.docId == docId }), !restoredTabs.contains(tab.id),
               let e = editors[docId] else { return }
         restoredTabs.insert(tab.id)
         let tv = e.controller.textView
@@ -359,22 +370,22 @@ final class AppModel: ObservableObject {
     }
 
     func activateTab(_ id: String) {
-        guard id != library.activeTabId, let t = library.tabs.first(where: { $0.id == id }) else { return }
+        guard id != activeTabId, let t = tabs.first(where: { $0.id == id }) else { return }
         captureTabStates()
         if let d = t.view.docId, t.view.kind == "doc" { _ = ensureDoc(d) }
-        library.activeTabId = id
+        activeTabId = id
         if panel != nil { panel = nil }
         scheduleLibrarySave()
     }
 
     func closeTab(_ id: String) {
-        guard let idx = library.tabs.firstIndex(where: { $0.id == id }), idx > 0 else { return }
-        let closing = library.tabs[idx]
-        library.tabs.remove(at: idx)
+        guard let idx = tabs.firstIndex(where: { $0.id == id }), idx > 0 else { return }
+        let closing = tabs[idx]
+        tabs.remove(at: idx)
         history[id] = nil
         forward[id] = nil
-        if library.activeTabId == id { library.activeTabId = library.tabs[min(idx, library.tabs.count - 1)].id }
-        if closing.view.kind == "doc", let d = closing.view.docId, !library.tabs.contains(where: { $0.view.docId == d }) {
+        if activeTabId == id { activeTabId = tabs[min(idx, tabs.count - 1)].id }
+        if closing.view.kind == "doc", let d = closing.view.docId, !tabs.contains(where: { $0.view.docId == d }) {
             saveDirtyDocs()
             editors[d] = nil
             hosts[d] = nil
@@ -608,8 +619,8 @@ final class AppModel: ObservableObject {
             index.entries[id] = nil
             do { try vault.purgeDoc(id) } catch { reportSaveError(error) }
         }
-        library.tabs.removeAll { $0.view.kind == "doc" && ids.contains($0.view.docId ?? "") }
-        if !library.tabs.contains(where: { $0.id == library.activeTabId }) { library.activeTabId = library.tabs[0].id }
+        tabs.removeAll { $0.view.kind == "doc" && ids.contains($0.view.docId ?? "") }
+        if !tabs.contains(where: { $0.id == activeTabId }) { activeTabId = tabs[0].id }
         scheduleLibrarySave()
     }
 
@@ -671,8 +682,8 @@ final class AppModel: ObservableObject {
             docs[id] = nil
             editors[id] = nil
             hosts[id] = nil
-            library.tabs.removeAll { $0.view.kind == "doc" && $0.view.docId == id }
-            if !library.tabs.contains(where: { $0.id == library.activeTabId }) { library.activeTabId = library.tabs[0].id }
+            tabs.removeAll { $0.view.kind == "doc" && $0.view.docId == id }
+            if !tabs.contains(where: { $0.id == activeTabId }) { activeTabId = tabs[0].id }
             index.entries[id] = nil
             indexChanged()
             do { try vault.purgeDoc(id) } catch { reportSaveError(error) }
@@ -822,8 +833,8 @@ final class AppModel: ObservableObject {
             guard let self else { return }
             for k in self.library.docs.keys where self.library.docs[k]?.folderId == id { self.library.docs[k]?.folderId = nil }
             self.library.folders.removeAll { $0.id == id }
-            self.library.tabs.removeAll { $0.view.kind == "folder" && $0.view.folderId == id }
-            if !self.library.tabs.contains(where: { $0.id == self.library.activeTabId }) { self.library.activeTabId = self.library.tabs[0].id }
+            self.tabs.removeAll { $0.view.kind == "folder" && $0.view.folderId == id }
+            if !self.tabs.contains(where: { $0.id == self.activeTabId }) { self.activeTabId = self.tabs[0].id }
             self.scheduleLibrarySave()
             self.toast("Folder “\(f.name)” removed")
         }

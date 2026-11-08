@@ -6,13 +6,14 @@ import ThinkingOrbsKit
 
 /// The Assistant surface: the same view pinned beside the editor or in its own floating window.
 struct AssistantView: View {
-    @EnvironmentObject var model: AppModel
-    @ObservedObject var a: AssistantModel
+    @Environment(AppModel.self) var model
+    var a: AssistantModel
     @Environment(\.tokens) var t
     var floating = false
     @FocusState private var composerFocused: Bool
 
     var body: some View {
+        @Bindable var a = a
         VStack(spacing: 0) {
             header
             Divider().opacity(0.5)
@@ -85,7 +86,7 @@ struct AssistantView: View {
 
     var composer: some View {
         VStack(alignment: .leading, spacing: DS.s2) {
-            DraftSegmented("Context", selection: $a.scope, symbols: [(.selection, "Selection", "text.cursor"), (.document, "Document", "doc.text"), (.space, "Space", "square.stack")], stretch: true)
+            DraftSegmented("Context", selection: Binding(get: { a.scope }, set: { a.scope = $0 }), symbols: [(.selection, "Selection", "text.cursor"), (.document, "Document", "doc.text"), (.space, "Space", "square.stack")], stretch: true)
             LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: DS.s1 + 2), count: 3), spacing: DS.s1 + 2) {
                 ForEach([AssistantAction.summarize, .explain, .rewrite, .shorten, .expand, .outline], id: \.self) { act in
                     ChipButton(title: act == .outline ? "Outline" : act.title, font: .system(size: DS.footnote, weight: .medium), isEnabled: !a.isRunning && a.scope != .space, height: DS.controlSmall + 4) { a.send(act) }
@@ -93,7 +94,7 @@ struct AssistantView: View {
             }
             ActiveBeam(active: a.isRunning, radius: DS.rCard) {
                 HStack(alignment: .bottom, spacing: DS.s2) {
-                    TextField(a.scope == .space ? "Ask about the notes in this Space…" : "Ask about this text…", text: $a.draft, axis: .vertical)
+                    TextField(a.scope == .space ? "Ask about the notes in this Space…" : "Ask about this text…", text: Binding(get: { a.draft }, set: { a.draft = $0 }), axis: .vertical)
                         .textFieldStyle(.plain).font(.system(size: DS.body)).lineLimit(1...5)
                         .focused($composerFocused)
                         .onSubmit { a.send() }
@@ -140,7 +141,7 @@ struct SendButton: View {
 }
 
 struct EmptyAssistant: View {
-    @ObservedObject var a: AssistantModel
+    var a: AssistantModel
     @Environment(\.tokens) var t
     var body: some View {
         VStack(alignment: .leading, spacing: DS.s2) {
@@ -154,7 +155,7 @@ struct EmptyAssistant: View {
 }
 
 struct MessageRow: View {
-    @ObservedObject var a: AssistantModel
+    var a: AssistantModel
     let m: AssistantMessage
     @Environment(\.tokens) var t
 
@@ -212,7 +213,7 @@ struct MarkdownText: View {
 }
 
 struct SourceList: View {
-    @ObservedObject var a: AssistantModel
+    var a: AssistantModel
     let sources: [AssistantSource]
     @Environment(\.tokens) var t
     var body: some View {
@@ -243,7 +244,7 @@ struct SourceList: View {
 }
 
 struct StreamingRow: View {
-    @ObservedObject var a: AssistantModel
+    var a: AssistantModel
     let s: AssistantModel.Streaming
     let state: OrbState
     @Environment(\.tokens) var t
@@ -274,7 +275,7 @@ struct StreamingRow: View {
 }
 
 struct InstallCard: View {
-    @ObservedObject var a: AssistantModel
+    var a: AssistantModel
     @Environment(\.tokens) var t
     var body: some View {
         ScrollView {
@@ -346,7 +347,7 @@ struct ModelFacts: View {
 
 /// Shows exactly what would change before anything is written to the note.
 struct EditPreview: View {
-    @ObservedObject var a: AssistantModel
+    var a: AssistantModel
     let preview: AssistantModel.Preview
     @Environment(\.tokens) var t
     @Environment(\.dismiss) var dismiss
@@ -391,8 +392,8 @@ struct EditPreview: View {
 }
 
 struct AssistantSettings: View {
-    @EnvironmentObject var model: AppModel
-    @ObservedObject var a: AssistantModel
+    @Environment(AppModel.self) var model
+    var a: AssistantModel
     @Environment(\.tokens) var t
     var body: some View {
         VStack(alignment: .leading, spacing: 22) {

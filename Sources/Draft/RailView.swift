@@ -11,7 +11,7 @@ func relative(_ ms: Double) -> String {
 }
 
 struct RailView: View {
-    @EnvironmentObject var model: AppModel
+    @Environment(AppModel.self) var model
     @Environment(\.tokens) var t
     var narrow: Bool
 
@@ -23,7 +23,7 @@ struct RailView: View {
                 Spacer()
                 if docId != nil {
                     Menu {
-                        Picker("Show in sidebar", selection: $model.railShowsFolders) {
+                        Picker("Show in sidebar", selection: Binding(get: { model.railShowsFolders }, set: { model.railShowsFolders = $0 })) {
                             Text("Document").tag(false)
                             Text("Folders").tag(true)
                         }.pickerStyle(.inline)
@@ -105,7 +105,7 @@ struct SpaceAvatar: View {
 }
 
 struct LibraryRail: View {
-    @EnvironmentObject var model: AppModel
+    @Environment(AppModel.self) var model
     @Environment(\.tokens) var t
     @State private var renameText = ""
 
@@ -115,7 +115,7 @@ struct LibraryRail: View {
             ScrollView {
                 VStack(alignment: .leading, spacing: 1) {
                     SpaceSwitcher().padding(.horizontal, 4).padding(.bottom, 6)
-                    RailRow(icon: "square.grid.2x2", title: "All Docs", isSelected: v.kind == "all") { model.activateTab(model.library.tabs[0].id) }
+                    RailRow(icon: "square.grid.2x2", title: "All Docs", isSelected: v.kind == "all") { model.activateTab(model.tabs[0].id) }
                     RailRow(icon: "magnifyingglass", title: "Quick Open", trailing: AnyView(Text("⌘O").font(.system(size: DS.caption)).foregroundStyle(t.tertiary))) { model.quickOpen = true }
                     RailRow(icon: "person.2", title: "Shared with Me", isSelected: v.kind == "shared") { model.openView(ViewRef(kind: "shared")) }
                     let _ = model.indexTick
@@ -202,7 +202,7 @@ struct LibraryRail: View {
 
 /// Honest local-first card in place of an upgrade prompt.
 struct VaultCard: View {
-    @EnvironmentObject var model: AppModel
+    @Environment(AppModel.self) var model
     @Environment(\.tokens) var t
     var body: some View {
         VStack(alignment: .leading, spacing: 6) {
@@ -225,7 +225,7 @@ struct VaultCard: View {
 // MARK: - Document rail
 
 struct DocumentRail: View {
-    @EnvironmentObject var model: AppModel
+    @Environment(AppModel.self) var model
     @Environment(\.tokens) var t
     let docId: String
 
@@ -276,7 +276,7 @@ struct DocumentRail: View {
 }
 
 struct SaveBadge: View {
-    @EnvironmentObject var model: AppModel
+    @Environment(AppModel.self) var model
     @Environment(\.tokens) var t
     var body: some View {
         switch model.saveState {
@@ -300,7 +300,7 @@ struct EmptyHint: View {
 }
 
 struct OutlinePane: View {
-    @EnvironmentObject var model: AppModel
+    @Environment(AppModel.self) var model
     @Environment(\.tokens) var t
     let docId: String
     let content: Node
@@ -322,7 +322,7 @@ struct OutlinePane: View {
 }
 
 struct TasksPane: View {
-    @EnvironmentObject var model: AppModel
+    @Environment(AppModel.self) var model
     @Environment(\.tokens) var t
     let docId: String
     let content: Node
@@ -351,7 +351,7 @@ struct TasksPane: View {
 }
 
 struct AttachmentsPane: View {
-    @EnvironmentObject var model: AppModel
+    @Environment(AppModel.self) var model
     @Environment(\.tokens) var t
     let docId: String
     let content: Node
@@ -384,7 +384,7 @@ struct AttachmentsPane: View {
 }
 
 struct FindPane: View {
-    @EnvironmentObject var model: AppModel
+    @Environment(AppModel.self) var model
     @Environment(\.tokens) var t
     let docId: String
     @State private var replacement = ""
@@ -401,7 +401,7 @@ struct FindPane: View {
             }
             HStack(spacing: 6) {
                 Image(systemName: "magnifyingglass").foregroundStyle(t.secondary)
-                TextField("Text in page", text: $model.findQuery)
+                TextField("Text in page", text: Binding(get: { model.findQuery }, set: { model.findQuery = $0 }))
                     .textFieldStyle(.plain).focused($focused)
                     .onSubmit { c?.findStep(1) }
                     .accessibilityLabel("Find in page")
@@ -451,7 +451,7 @@ struct MiniPage: View {
 
 /// The Space name in the sidebar is a menu: switch Spaces, create one, or open its settings.
 struct SpaceSwitcher: View {
-    @EnvironmentObject var model: AppModel
+    @Environment(AppModel.self) var model
     @Environment(\.tokens) var t
     @State private var naming = false
     @State private var name = ""

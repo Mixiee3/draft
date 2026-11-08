@@ -126,7 +126,7 @@ extension AppModel {
 
 /// New → From Template: search, categories, built-in and saved templates.
 struct TemplatePicker: View {
-    @EnvironmentObject var model: AppModel
+    @Environment(AppModel.self) var model
     @Environment(\.tokens) var t
     @State private var query = ""
     @State private var category = "All"

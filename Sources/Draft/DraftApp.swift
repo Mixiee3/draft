@@ -6,12 +6,12 @@ import DraftEditor
 @main
 struct DraftApp: App {
     @NSApplicationDelegateAdaptor(AppDelegate.self) var appDelegate
-    @StateObject private var model = AppModel.shared
+    @State private var model = AppModel.shared
 
     var body: some Scene {
         WindowGroup("Draft", id: "main") {
             RootView()
-                .environmentObject(model)
+                .environment(model)
                 .frame(minWidth: 480, minHeight: 480)
         }
         .windowStyle(.hiddenTitleBar)
@@ -33,7 +33,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 }
 
 struct DraftCommands: Commands {
-    @ObservedObject var model: AppModel
+    var model: AppModel
 
     func run(_ id: String) {
         guard let c = model.activeController, let cmd = EditorCommands.command(id) else { return }

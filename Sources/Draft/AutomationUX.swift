@@ -30,7 +30,7 @@ extension Automation {
         m.openView(.doc(ids[0])); await drawn(w); r["docOpenFromLibraryMs"] = ms(t0)
 
         var tabs: [Double] = []
-        let tabIds = m.library.tabs.map(\.id)
+        let tabIds = m.tabs.map(\.id)
         if ProcessInfo.processInfo.environment["DRAFT_UX_TABLOOP"] != nil { for k in 0..<300 { m.activateTab(tabIds[k % tabIds.count]); await drawn(w) } }
         for k in 0..<12 { t0 = CFAbsoluteTimeGetCurrent(); m.activateTab(tabIds[k % tabIds.count]); await drawn(w); tabs.append(ms(t0)) }
         r["tabSwitchMs"] = stats(tabs)
