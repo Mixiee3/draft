@@ -77,3 +77,50 @@ extension Encoder {
         for (k, v) in extra { try c.encode(v, forKey: AnyKey(k)) }
     }
 }
+
+// Building the tree from JSONSerialization output is several times faster than JSONDecoder's
+// keyed containers for large documents (a 2,000-block note spent ~90% of its open time decoding).
+// It stays on NSDictionary/NSArray: bridging each level to Swift collections cost as much again.
+extension JSONValue {
+    public init(foundation v: Any) {
+        switch v {
+        case let n as NSNumber:
+            self = CFGetTypeID(n) == CFBooleanGetTypeID() ? .bool(n.boolValue) : .number(n.doubleValue)
+        case let s as NSString: self = .string(s as String)
+        case let a as NSArray: self = .array(a.map(JSONValue.init(foundation:)))
+        case let o as NSDictionary: self = .object(Self.object(o))
+        default: self = .null
+        }
+    }
+
+    static func object(_ o: NSDictionary) -> [String: JSONValue] {
+        var d = [String: JSONValue](minimumCapacity: o.count)
+        o.forEach { k, v in if let k = k as? String { d[k] = JSONValue(foundation: v) } }
+        return d
+    }
+}
+
+extension Node {
+    /// nil when the value is not a node (the caller then falls back to the Codable path).
+    public init?(foundation v: Any) {
+        guard let o = v as? NSDictionary, let type = o["type"] as? String else { return nil }
+        self.init(type)
+        if let a = o["attrs"], !(a is NSNull) { guard let d = a as? NSDictionary else { return nil }; attrs = JSONValue.object(d) }
+        if let c = o["content"], !(c is NSNull) {
+            guard let arr = c as? NSArray else { return nil }
+            var kids: [Node] = []; kids.reserveCapacity(arr.count)
+            for k in arr { guard let n = Node(foundation: k) else { return nil }; kids.append(n) }
+            content = kids
+        }
+        if let m = o["marks"], !(m is NSNull) {
+            guard let arr = m as? NSArray else { return nil }
+            var marks: [Mark] = []
+            for x in arr {
+                guard let d = x as? NSDictionary, let t = d["type"] as? String else { return nil }
+                marks.append(Mark(t, attrs: (d["attrs"] as? NSDictionary).map(JSONValue.object)))
+            }
+            self.marks = marks
+        }
+        if let t = o["text"], !(t is NSNull) { guard let s = t as? String else { return nil }; text = s }
+    }
+}

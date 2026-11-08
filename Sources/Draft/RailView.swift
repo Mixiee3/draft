@@ -311,7 +311,7 @@ struct OutlinePane: View {
         PaneTitle(title: "Table of Contents")
         if items.isEmpty { EmptyHint(text: "Headings and pages in this document will appear here.") }
         ScrollView {
-            VStack(alignment: .leading, spacing: 1) {
+            LazyVStack(alignment: .leading, spacing: 1) {
                 ForEach(items) { it in
                     RailRow(icon: it.kind == "page" ? "doc.text" : "number", title: it.text, indent: CGFloat(it.kind == "page" ? 8 : (it.level - 1) * 12)) {
                         if it.kind == "page", let d = it.docId { model.openView(.doc(d), inPlace: true) }
@@ -336,7 +336,7 @@ struct TasksPane: View {
             Text("\(tasks.filter(\.checked).count) of \(tasks.count) done").font(.system(size: DS.footnote)).foregroundStyle(t.secondary).padding(.horizontal, 16).padding(.bottom, 4)
         }
         ScrollView {
-            VStack(alignment: .leading, spacing: 2) {
+            LazyVStack(alignment: .leading, spacing: 2) {
                 ForEach(tasks) { task in
                     HStack(alignment: .top, spacing: 8) {
                         Button { model.editors[docId]?.controller.toggleTask(blockId: task.id) } label: {
@@ -362,7 +362,7 @@ struct AttachmentsPane: View {
         PaneTitle(title: "Attachments")
         if items.isEmpty { EmptyHint(text: "Images, links and files added to this document will appear here.") }
         ScrollView {
-            VStack(alignment: .leading, spacing: 6) {
+            LazyVStack(alignment: .leading, spacing: 6) {
                 ForEach(items) { a in
                     HStack(spacing: 10) {
                         if a.kind == "image", let img = model.image(forAsset: a.ref) {

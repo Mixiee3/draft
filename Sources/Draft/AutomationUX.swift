@@ -27,7 +27,10 @@ extension Automation {
         var t0 = CFAbsoluteTimeGetCurrent()
         m.openView(.all); await drawn(w); r["libraryOpenMs"] = ms(t0)
         t0 = CFAbsoluteTimeGetCurrent()
-        m.openView(.doc(ids[0])); await drawn(w); r["docOpenFromLibraryMs"] = ms(t0)
+        m.openView(.doc(ids[0])); r["docOpenModelMs"] = ms(t0); await drawn(w); r["docOpenFromLibraryMs"] = ms(t0)
+        if ProcessInfo.processInfo.environment["DRAFT_UX_OPENLOOP"] != nil {
+            for _ in 0..<60 { m.closeTab(m.activeTab.id); m.openView(.all); await drawn(w); m.dropEditor(ids[0]); m.docs[ids[0]] = nil; m.openView(.doc(ids[0])); await drawn(w) }
+        }
 
         var tabs: [Double] = []
         let tabIds = m.tabs.map(\.id)

@@ -431,6 +431,8 @@ final class AppModel {
         return view
     }
 
+    func dropEditor(_ id: String) { editors[id] = nil; hosts[id] = nil }
+
     /// Set by the root view from the effective light/dark appearance.
     var appDark = false { didSet { if appDark != oldValue { retheme() } } }
 

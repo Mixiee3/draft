@@ -15,7 +15,10 @@ enum TourTarget: Hashable { case sidebar, newNote, page, style, assistant }
 
 struct TourAnchorKey: PreferenceKey {
     static let defaultValue: [TourTarget: Anchor<CGRect>] = [:]
-    static func reduce(value: inout [TourTarget: Anchor<CGRect>], nextValue: () -> [TourTarget: Anchor<CGRect>]) { value.merge(nextValue()) { $1 } }
+    static func reduce(value: inout [TourTarget: Anchor<CGRect>], nextValue: () -> [TourTarget: Anchor<CGRect>]) {
+        let next = nextValue()
+        if !next.isEmpty { value.merge(next) { $1 } }
+    }
 }
 
 extension View {
@@ -179,6 +182,19 @@ struct DraftMark: View {
 }
 
 // MARK: - Tour
+
+/// Reads the anchors only while the tour runs: an always-on reader made SwiftUI reduce the
+/// preference across the whole window on every update (half of a tab switch).
+struct TourLayer: ViewModifier {
+    let step: Int?
+    func body(content: Content) -> some View {
+        if let step {
+            content.overlayPreferenceValue(TourAnchorKey.self) { TourOverlay(step: step, anchors: $0) }
+        } else {
+            content
+        }
+    }
+}
 
 struct TourOverlay: View {
     @Environment(AppModel.self) var model

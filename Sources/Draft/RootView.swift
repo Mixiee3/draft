@@ -86,9 +86,7 @@ struct RootView: View {
             }
             .onChange(of: model.activeTab.id) { _, _ in railOverlay = false }
             .onChange(of: isDark, initial: true) { _, d in model.appDark = d }
-            .overlayPreferenceValue(TourAnchorKey.self) { anchors in
-                if case .tour(let step) = model.onboarding { TourOverlay(step: step, anchors: anchors) }
-            }
+            .modifier(TourLayer(step: model.onboarding.flatMap { if case .tour(let i) = $0 { i } else { nil } }))
             .animation(Motion.emphasis(model.library.settings.reduceMotion), value: model.onboarding)
         }
         .environment(\.tokens, t)
