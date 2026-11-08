@@ -169,6 +169,18 @@ extension Automation {
         r["followUpStartSeconds"] = String(format: "%.2f", firsts[1])
         r["followUpSpeedup"] = String(format: "%.1f", firsts[1] > 0 ? firsts[0] / firsts[1] : 0)
 
+        // A note several times longer than the context, with the fact near the end.
+        let filler = (0..<260).map { "Week \($0 + 1): the volunteers watered the beds, weeded the paths and logged the rainfall in the shed notebook." }
+        let long = make("Season log", (filler + ["The harvest festival password is heliotrope."]).joined(separator: "\n\n"))
+        m.openView(.doc(long)); await wait(0.5)
+        a.scope = .document; a.draft = "What is the harvest festival password?"
+        let l0 = Date()
+        a.send(); await untilIdle(a, timeout: 400)
+        r["longDocSeconds"] = String(format: "%.0f", Date().timeIntervalSince(l0))
+        r["longDocNotice"] = a.notice ?? ""
+        r["longDocAnswer"] = a.chat.messages.last?.text ?? ""
+        r["longDocFoundEnd"] = (a.chat.messages.last?.text ?? "").lowercased().contains("heliotrope") ? "yes" : "no"
+
         for (theme, tag) in [("light", ""), ("dark", "dark-")] {
             m.setSettings { $0.theme = theme }
             for (wd, h, n) in [(1440.0, 900.0, ""), (760.0, 700.0, "narrow-")] {

@@ -175,7 +175,12 @@ final class AssistantModel {
         guard let req = request(action, question: question) else { return }
         let history = chat.turns
         let prepared = AssistantPrompt.prepare(req, history: req.scope == .space ? history : [], budgetTokens: 5200)
-        if prepared.includedFraction < 1 {
+        // A long document is read in parts and the notes from each are combined (map/reduce).
+        let parts = AssistantPrompt.readsInParts(req, budgetTokens: 5200) ? AssistantPrompt.parts(req.text, budgetTokens: 4000) : []
+        if !parts.isEmpty {
+            let words = req.text.split(whereSeparator: { $0.isWhitespace }).count
+            notice = "Read all of this document (\(words) words) in \(parts.count) parts and combined the notes from each."
+        } else if prepared.includedFraction < 1 {
             notice = "This document is longer than the model can read at once; it used the first \(Int(prepared.includedFraction * 100))%."
         }
         let label = action == .ask ? question : action.title + (question.isEmpty ? "" : ": " + question)
@@ -200,7 +205,26 @@ final class AssistantModel {
             let result: Result<GenerationStats, Error> = Result {
                 let e = try existing ?? make(path, m)
                 if existing == nil { onMainSync { self?.engineLoaded(e, id: m.id) } }
-                let s = try e.generate(prepared.turns, maxTokens: 1536, cancel: flag) { piece in
+                var turns = prepared.turns
+                if !parts.isEmpty {
+                    var notes: [String] = []
+                    for (i, part) in parts.enumerated() {
+                        let progress = Streaming(thinking: "Reading part \(i + 1) of \(parts.count)…", answer: "", inThought: true)
+                        Task { @MainActor in if self?.cancelFlag === flag { self?.streaming = progress } }
+                        var partSplitter = ThinkSplitter()
+                        let st = try e.generate(AssistantPrompt.partTurns(req, part: part, index: i, count: parts.count), maxTokens: 640, cancel: flag) { partSplitter.feed($0) }
+                        if st.cancelled { return st }
+                        partSplitter.finish()
+                        // The model reasons first; if the budget ran out mid-thought, its reasoning still holds the facts.
+                        let note = partSplitter.answer.isEmpty ? String(partSplitter.thinking.suffix(900)) : partSplitter.answer
+                        notes.append("Part \(i + 1): " + note.trimmingCharacters(in: .whitespacesAndNewlines))
+                    }
+                    var combined = req
+                    combined.text = notes.joined(separator: "\n\n")
+                    combined.docTitle = req.docTitle + " — notes from all \(parts.count) parts"
+                    turns = AssistantPrompt.prepare(combined, budgetTokens: 5200).turns
+                }
+                let s = try e.generate(turns, maxTokens: 1536, cancel: flag) { piece in
                     splitter.feed(piece)
                     if Date().timeIntervalSince(lastPublish) > 0.06 {
                         lastPublish = Date()

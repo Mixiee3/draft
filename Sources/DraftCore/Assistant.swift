@@ -96,6 +96,32 @@ public enum AssistantPrompt {
     """
 
     /// Builds the conversation for the model within `budgetTokens` of context (sources, history and question).
+    /// Reading a long document in parts: which actions combine notes from every part, and the parts.
+    public static func readsInParts(_ r: AssistantRequest, budgetTokens: Int) -> Bool {
+        r.scope == .document && [.ask, .summarize, .explain, .outline].contains(r.action) && Double(r.text.count) > Double(budgetTokens) * charsPerToken
+    }
+
+    /// Splits text at line ends into parts that each fit `budgetTokens`; nothing is dropped.
+    public static func parts(_ text: String, budgetTokens: Int) -> [String] {
+        let limit = max(200, Int(Double(budgetTokens) * charsPerToken))
+        var out: [String] = [], cur = ""
+        for line in text.components(separatedBy: "\n") {
+            var line = line
+            while line.count > limit { out.append(String(line.prefix(limit))); line = String(line.dropFirst(limit)) }
+            if cur.count + line.count + 1 > limit, !cur.isEmpty { out.append(cur); cur = "" }
+            cur += cur.isEmpty ? line : "\n" + line
+        }
+        if !cur.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty { out.append(cur) }
+        return out
+    }
+
+    /// The map step: keep only what one part says about the task.
+    public static func partTurns(_ r: AssistantRequest, part: String, index: Int, count: Int) -> [ChatTurn] {
+        let task = r.action == .ask ? r.question : r.action.title.lowercased()
+        return [ChatTurn("system", system + "\n\nPart \(index + 1) of \(count) of “\(r.docTitle.isEmpty ? "Untitled" : r.docTitle)”:\n<<<\n\(part)\n>>>"),
+                ChatTurn("user", "Write short notes on what this part says that matters for: \(task). Keep names, dates and numbers exact. If nothing matters, answer “nothing relevant”.")]
+    }
+
     public static func prepare(_ r: AssistantRequest, history: [ChatTurn] = [], budgetTokens: Int = 5000) -> PreparedPrompt {
         let budget = Int(Double(budgetTokens) * charsPerToken)
         var sources: [AssistantSource] = []

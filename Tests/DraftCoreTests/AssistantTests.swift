@@ -139,3 +139,16 @@ final class DiffReadabilityTests: XCTestCase {
         XCTAssertGreaterThan(WordDiff.changedFraction(parts), 0.4)
     }
 }
+
+final class LongDocumentTests: XCTestCase {
+    func testPartsCoverEverythingWithinBudget() {
+        let text = (0..<3000).map { "Line \($0) of the document." }.joined(separator: "\n")
+        let parts = AssistantPrompt.parts(text, budgetTokens: 1000)
+        XCTAssertGreaterThan(parts.count, 1)
+        XCTAssertTrue(parts.allSatisfy { $0.count <= 3500 })
+        XCTAssertEqual(parts.joined(separator: "\n"), text)
+        let req = AssistantRequest(action: .summarize, scope: .document, text: text, docId: "d", docTitle: "Long")
+        XCTAssertTrue(AssistantPrompt.readsInParts(req, budgetTokens: 1000))
+        XCTAssertFalse(AssistantPrompt.readsInParts(AssistantRequest(action: .rewrite, scope: .document, text: text, docId: "d", docTitle: "Long"), budgetTokens: 1000))
+    }
+}
