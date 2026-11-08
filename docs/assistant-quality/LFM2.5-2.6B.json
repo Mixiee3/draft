@@ -1,0 +1,245 @@
+{
+ "date": "2026-11-08",
+ "model": "LFM2.5 2.6B",
+ "passed": 27,
+ "questions": 30,
+ "rows": [
+  {
+   "answer": "The spring plant sale is on Saturday 18 April from 9 to 1 at the north gate [1].",
+   "cited": true,
+   "facts": true,
+   "pass": true,
+   "q": "When is the plant sale?",
+   "seconds": 0.8963890075683594
+  },
+  {
+   "answer": "Jonas orders the compost from Hollow Farm [1].",
+   "cited": true,
+   "facts": true,
+   "pass": true,
+   "q": "Who orders the compost and from where?",
+   "seconds": 1.0389949083328247
+  },
+  {
+   "answer": "The compost bags cost a total of 84 euros for twelve bags, according to the garden co-op planning notes [1].",
+   "cited": true,
+   "facts": true,
+   "pass": true,
+   "q": "How much do the compost bags cost?",
+   "seconds": 1.050055980682373
+  },
+  {
+   "answer": "The water key is kept in the blue box by the shed [1].",
+   "cited": true,
+   "facts": true,
+   "pass": true,
+   "q": "Where is the water key kept?",
+   "seconds": 1.6379989385604858
+  },
+  {
+   "answer": "The pump will be fixed by Ana on 2 April [1].",
+   "cited": true,
+   "facts": true,
+   "pass": true,
+   "q": "Who fixes the pump and when?",
+   "seconds": 1.6858259439468384
+  },
+  {
+   "answer": "Based on the notes, Bed 7 goes to the school club this year [1].",
+   "cited": true,
+   "facts": true,
+   "pass": true,
+   "q": "Which bed goes to the school club?",
+   "seconds": 0.9746919870376587
+  },
+  {
+   "answer": "The next co-op meeting is on Thursday 9 April at 19:00 in the library room [1].",
+   "cited": true,
+   "facts": true,
+   "pass": true,
+   "q": "When and where is the next co-op meeting?",
+   "seconds": 1.6240779161453247
+  },
+  {
+   "answer": "The bike trip is 212 km in total [1].",
+   "cited": true,
+   "facts": true,
+   "pass": true,
+   "q": "How long is the bike trip in total?",
+   "seconds": 0.8193869590759277
+  },
+  {
+   "answer": "The cable lock should be brought because the hostel in Gorz has no lockers [1].",
+   "cited": true,
+   "facts": true,
+   "pass": true,
+   "q": "Why should we bring the cable lock?",
+   "seconds": 0.9835929870605469
+  },
+  {
+   "answer": "Based on note [1], day two of the bike trip climbs 1,150 metres over the Vrsic pass.",
+   "cited": true,
+   "facts": true,
+   "pass": true,
+   "q": "How much climbing is there on day two?",
+   "seconds": 2.027945041656494
+  },
+  {
+   "answer": "According to the notes, lunch on day one is at the lake cafe in Bled [1].",
+   "cited": true,
+   "facts": true,
+   "pass": true,
+   "q": "Where do we eat lunch on day one?",
+   "seconds": 1.944301962852478
+  },
+  {
+   "answer": "According to note [1], Pia carries the first-aid kit.",
+   "cited": true,
+   "facts": true,
+   "pass": true,
+   "q": "Who carries the first-aid kit?",
+   "seconds": 1.1129059791564941
+  },
+  {
+   "answer": "Based on the notes, you cross the **Vrsic pass** on day two of your bike trip from Ljubljana to Gorz [1].",
+   "cited": true,
+   "facts": true,
+   "pass": true,
+   "q": "Which pass do we cross?",
+   "seconds": 1.0892280340194702
+  },
+  {
+   "answer": "The thesis supervisor is Dr. Helena Novak [1].",
+   "cited": true,
+   "facts": true,
+   "pass": true,
+   "q": "Who is the thesis supervisor?",
+   "seconds": 0.7653230428695679
+  },
+  {
+   "answer": "The Chapter 3 draft is due on 15 May [1].",
+   "cited": true,
+   "facts": true,
+   "pass": true,
+   "q": "When is the chapter 3 draft due?",
+   "seconds": 1.1421029567718506
+  },
+  {
+   "answer": "Based on the notes, the thesis should use the **2019 survey data** rather than the 2021 pilot. The 2021 pilot was not to be used because it had only 38 responses [1].",
+   "cited": true,
+   "facts": true,
+   "pass": true,
+   "q": "Which survey data should the thesis use?",
+   "seconds": 0.9382829666137695
+  },
+  {
+   "answer": "Based on the notes, you should not use the 2021 pilot because it had only 38 responses, whereas the 2019 survey data was specified as the required source for Chapter 3. The supervisor (Dr. Helena Novak) indicated that the 2019 survey data must be used instead of the 2021 pilot [1].",
+   "cited": true,
+   "facts": true,
+   "pass": true,
+   "q": "Why not use the 2021 pilot?",
+   "seconds": 0.6794099807739258
+  },
+  {
+   "answer": "The thesis word limit is 40,000 words [1].",
+   "cited": true,
+   "facts": true,
+   "pass": true,
+   "q": "What is the thesis word limit?",
+   "seconds": 0.9593169689178467
+  },
+  {
+   "answer": "Based on the thesis meeting notes, the method section should cite Field (2018) for the regression assumptions [1].",
+   "cited": true,
+   "facts": true,
+   "pass": true,
+   "q": "Which source should the method section cite for regression assumptions?",
+   "seconds": 0.7337620258331299
+  },
+  {
+   "answer": "Moving day is on 30 June [1].",
+   "cited": true,
+   "facts": true,
+   "pass": true,
+   "q": "When is moving day?",
+   "seconds": 2.2331619262695312
+  },
+  {
+   "answer": "The van is from RentGo, and the deposit is 150 euros.",
+   "cited": false,
+   "facts": true,
+   "pass": false,
+   "q": "Which company is the van from, and what is the deposit?",
+   "seconds": 0.8959789276123047
+  },
+  {
+   "answer": "The internet installation at the new flat is scheduled for 2 July between 10 and 12 [1].",
+   "cited": true,
+   "facts": true,
+   "pass": true,
+   "q": "When is the internet installed at the new flat?",
+   "seconds": 1.8082900047302246
+  },
+  {
+   "answer": "Based on the notes, the old keys must be returned by 1 July at noon [1].",
+   "cited": true,
+   "facts": true,
+   "pass": true,
+   "q": "By when must the old keys be returned?",
+   "seconds": 2.334535002708435
+  },
+  {
+   "answer": "The piano moving cost is 220 euros, as quoted by the specialist mover for the new flat [1].",
+   "cited": true,
+   "facts": true,
+   "pass": true,
+   "q": "How much does moving the piano cost?",
+   "seconds": 1.8507779836654663
+  },
+  {
+   "answer": "The new address is Trubarjeva 14, flat 3.",
+   "cited": false,
+   "facts": true,
+   "pass": false,
+   "q": "What is the new address?",
+   "seconds": 1.9559260606765747
+  },
+  {
+   "answer": "The lentils soak for 20 minutes according to the recipe in note [1].",
+   "cited": true,
+   "facts": true,
+   "pass": true,
+   "q": "How long do the lentils soak?",
+   "seconds": 0.8990809917449951
+  },
+  {
+   "answer": "The lentil soup recipe calls for 1.2 litres of stock [1].",
+   "cited": true,
+   "facts": true,
+   "pass": true,
+   "q": "How much stock goes into the lentil soup?",
+   "seconds": 1.9694329500198364
+  },
+  {
+   "answer": "The lentil soup simmers for 25 minutes according to the recipe notes.",
+   "cited": false,
+   "facts": true,
+   "pass": false,
+   "q": "How long does the soup simmer?",
+   "seconds": 0.7744109630584717
+  },
+  {
+   "answer": "I could not find a bank account number for the co-op in the provided notes. The notes contain information about keyboard shortcuts [1] and garden co-op planning including the spring plant sale, compost ordering, water key location, pump repair, bed assignments, and meeting details [2], but none of them mention a bank account number.\n\nI'm unable to answer this question with the available information. You may need to check other sources or provide additional notes that contain the bank account number.",
+   "pass": true,
+   "q": "What is the co-op's bank account number?",
+   "seconds": 0.9437029361724854
+  },
+  {
+   "answer": "I could not find any mention of a conference in Vienna in the provided notes. The only information available is about the thesis meeting with Dr. Helena Novak, including the chapter 3 draft deadline (15 May), data source instructions, method section requirements, next check-in date (22 May by video), and word limit (40,000 words). There is no reference to a conference in Vienna in these notes.\n\n[1]",
+   "pass": true,
+   "q": "What did the thesis supervisor say about the conference in Vienna?",
+   "seconds": 0.7126950025558472
+  }
+ ],
+ "score": 0.9
+}

@@ -1,0 +1,42 @@
+{
+  "version": 1,
+  "notes": [
+    {"title": "Garden co-op planning", "text": "The spring plant sale is on Saturday 18 April from 9 to 1 at the north gate. Jonas orders the compost from Hollow Farm before the end of March; twelve bags cost 84 euros. Mira keeps the water key in the blue box by the shed. The pump needs a new impeller, about 45 euros, and Ana will fix it on 2 April. Bed 7 goes to the school club this year. Next meeting: Thursday 9 April at 19:00 in the library room."},
+    {"title": "Bike trip packing", "text": "Route: Ljubljana to Gorz over three days, 212 km in total. Pack the patch kit, two spare tubes and the small pump. The hostel in Gorz has no lockers, so bring the cable lock. Day two climbs 1,150 metres over the Vrsic pass. Lunch on day one is at the lake cafe in Bled. Pia carries the first-aid kit; Tom carries the stove."},
+    {"title": "Thesis meeting notes", "text": "Supervisor: Dr. Helena Novak. Chapter 3 draft is due on 15 May. Use the 2019 survey data, not the 2021 pilot, because the pilot had only 38 responses. The method section must cite Field (2018) for the regression assumptions. Next check-in is on 22 May by video. The word limit for the thesis is 40,000 words."},
+    {"title": "Apartment move", "text": "Moving day is 30 June. The van is booked with RentGo from 8:00 to 16:00, deposit 150 euros. Internet installation at the new flat is on 2 July between 10 and 12. The old landlord wants the keys back by 1 July at noon. The piano needs a specialist mover, quoted at 220 euros. New address: Trubarjeva 14, flat 3."},
+    {"title": "Recipe: lentil soup", "text": "Serves four. Soak 300 g red lentils for 20 minutes. Fry one onion and two carrots in olive oil for 8 minutes, add two cloves of garlic and a teaspoon of cumin. Add the lentils and 1.2 litres of stock, simmer for 25 minutes. Finish with the juice of half a lemon. Keeps three days in the fridge."}
+  ],
+  "questions": [
+    {"q": "When is the plant sale?", "facts": ["18 April"], "source": 1},
+    {"q": "Who orders the compost and from where?", "facts": ["Jonas", "Hollow Farm"], "source": 1},
+    {"q": "How much do the compost bags cost?", "facts": ["84"], "source": 1},
+    {"q": "Where is the water key kept?", "facts": ["blue box"], "source": 1},
+    {"q": "Who fixes the pump and when?", "facts": ["Ana", "2 April"], "source": 1},
+    {"q": "Which bed goes to the school club?", "facts": ["7"], "source": 1},
+    {"q": "When and where is the next co-op meeting?", "facts": ["9 April", "library"], "source": 1},
+    {"q": "How long is the bike trip in total?", "facts": ["212"], "source": 2},
+    {"q": "Why should we bring the cable lock?", "facts": ["locker"], "source": 2},
+    {"q": "How much climbing is there on day two?", "facts": ["1,150"], "source": 2},
+    {"q": "Where do we eat lunch on day one?", "facts": ["Bled"], "source": 2},
+    {"q": "Who carries the first-aid kit?", "facts": ["Pia"], "source": 2},
+    {"q": "Which pass do we cross?", "facts": ["Vrsic"], "source": 2},
+    {"q": "Who is the thesis supervisor?", "facts": ["Novak"], "source": 3},
+    {"q": "When is the chapter 3 draft due?", "facts": ["15 May"], "source": 3},
+    {"q": "Which survey data should the thesis use?", "facts": ["2019"], "source": 3},
+    {"q": "Why not use the 2021 pilot?", "facts": ["38"], "source": 3},
+    {"q": "What is the thesis word limit?", "facts": ["40,000"], "source": 3},
+    {"q": "Which source should the method section cite for regression assumptions?", "facts": ["Field"], "source": 3},
+    {"q": "When is moving day?", "facts": ["30 June"], "source": 4},
+    {"q": "Which company is the van from, and what is the deposit?", "facts": ["RentGo", "150"], "source": 4},
+    {"q": "When is the internet installed at the new flat?", "facts": ["2 July"], "source": 4},
+    {"q": "By when must the old keys be returned?", "facts": ["1 July"], "source": 4},
+    {"q": "How much does moving the piano cost?", "facts": ["220"], "source": 4},
+    {"q": "What is the new address?", "facts": ["Trubarjeva 14"], "source": 4},
+    {"q": "How long do the lentils soak?", "facts": ["20 minutes"], "source": 5},
+    {"q": "How much stock goes into the lentil soup?", "facts": ["1.2"], "source": 5},
+    {"q": "How long does the soup simmer?", "facts": ["25 minutes"], "source": 5},
+    {"q": "What is the co-op's bank account number?", "notInNotes": true},
+    {"q": "What did the thesis supervisor say about the conference in Vienna?", "notInNotes": true}
+  ]
+}

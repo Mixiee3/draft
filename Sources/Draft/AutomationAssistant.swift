@@ -93,6 +93,54 @@ extension Automation {
         while a.isRunning && Date().timeIntervalSince(t0) < timeout { await wait(0.2) }
     }
 
+    /// `assistant-quality`: the fixed note benchmark (Tests/Fixtures/assistant-quality.json) run
+    /// through the real Space retrieval and Assistant, scored on expected facts and citations.
+    static func assistantQuality() async {
+        guard let path = ProcessInfo.processInfo.environment["DRAFT_QUALITY_FIXTURE"], let data = FileManager.default.contents(atPath: path),
+              let fx = try? JSONSerialization.jsonObject(with: data) as? [String: Any], let notes = fx["notes"] as? [[String: String]],
+              let questions = fx["questions"] as? [[String: Any]] else { return }
+        var titleToId: [String: String] = [:]
+        for n in notes {
+            let id = newId("d_")
+            var doc = DocFile.empty(id: id, title: n["title"]!)
+            doc.content = ensureBlockIds(Node("doc", content: MarkdownImport.blocks(n["text"]!)))
+            try? m.vault.saveDoc(doc)
+            var meta = DocMeta(id: id, title: n["title"]!); meta.applyDerived(from: doc); meta.spaceId = m.library.space.id
+            m.library.docs[id] = meta
+            titleToId[n["title"]!] = id
+        }
+        m.rebuildIndex()
+        let a = m.assistant
+        a.scope = .space
+        var rows: [[String: Any]] = [], passed = 0
+        func norm(_ s: String) -> String { s.lowercased().replacingOccurrences(of: ",", with: "").replacingOccurrences(of: "\u{2009}", with: "") }
+        for q in questions {
+            a.draft = q["q"] as! String
+            a.send(); await untilIdle(a, timeout: 300)
+            let msg = a.chat.messages.last
+            let text = msg?.text ?? ""
+            var ok: Bool
+            var row: [String: Any] = ["q": q["q"]!, "answer": text, "seconds": a.lastStats.map { $0.firstTokenSeconds } ?? -1]
+            if q["notInNotes"] as? Bool == true {
+                let t = text.lowercased()
+                ok = ["could not find", "couldn't find", "not in these notes", "not mentioned", "no information", "don't contain", "do not contain", "doesn't mention", "does not mention", "not found"].contains { t.contains($0) }
+            } else {
+                let facts = q["facts"] as! [String]
+                let hasFacts = facts.allSatisfy { norm(text).contains(norm($0)) }
+                let want = titleToId[notes[(q["source"] as! Int) - 1]["title"]!]
+                let cited = (msg?.sources ?? []).contains { $0.docId == want }
+                row["facts"] = hasFacts; row["cited"] = cited
+                ok = hasFacts && cited
+            }
+            row["pass"] = ok
+            if ok { passed += 1 }
+            rows.append(row)
+            a.clearHistory() // each question stands alone
+        }
+        let report: [String: Any] = ["model": a.model.name, "questions": questions.count, "passed": passed, "score": Double(passed) / Double(questions.count), "rows": rows]
+        if let d = try? JSONSerialization.data(withJSONObject: report, options: [.prettyPrinted, .sortedKeys]) { try? d.write(to: out.appendingPathComponent("assistant-quality.json")) }
+    }
+
     static func assistantWrite() async {
         guard let w = NSApp.windows.first(where: { $0.isVisible }) else { return }
         w.setFrame(NSRect(x: 60, y: 60, width: 1440, height: 900), display: true)

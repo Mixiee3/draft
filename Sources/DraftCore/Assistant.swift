@@ -90,7 +90,8 @@ public enum AssistantPrompt {
 
     static let system = """
     You are the writing assistant inside Draft, a notes app. You run on this Mac and only see the notes given to you below.
-    Use only those notes for facts. When notes are numbered like [1], cite the ones you used with their numbers in square brackets.
+    Use only those notes for facts. When notes are numbered like [1], put the number of the note you used in square brackets after each fact, like [2].
+    Answer in plain sentences. There are no tools or functions to call.
     If the notes do not contain the answer, say you could not find it in these notes instead of guessing.
     Write in the same language as the notes. Be concise.
     """
@@ -191,7 +192,14 @@ public enum Retrieval {
             .split { !$0.isLetter && !$0.isNumber }
             .map(String.init)
             .filter { $0.count > 1 && !stop.contains($0) }
-            .map { $0.count > 4 && $0.hasSuffix("s") ? String($0.dropLast()) : $0 }
+            .map(stem)
+    }
+
+    /// Plural and third-person "s": fixes → fix, boxes → box, notes → note; not pass or glass.
+    static func stem(_ w: String) -> String {
+        guard w.count > 3, w.hasSuffix("s"), !w.hasSuffix("ss") else { return w }
+        for end in ["xes", "ches", "shes", "sses", "zes"] where w.hasSuffix(end) { return String(w.dropLast(2)) }
+        return String(w.dropLast())
     }
 
     public static func rank(_ query: String, entries: [String: DocIndexEntry], titles: [String: String], limit: Int = 8, perDoc: Int = 3) -> [Hit] {

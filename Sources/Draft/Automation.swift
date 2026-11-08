@@ -39,6 +39,7 @@ enum Automation {
             case "online-live": await onlineLive()
             case "screens-v05": await screensV05()
             case "assistant-bench": await assistantBench()
+            case "assistant-quality": await assistantQuality()
             case "assistant-write": await assistantWrite()
             case "assistant-read": await assistantRead()
             case "motion-frames": await motionFrames()

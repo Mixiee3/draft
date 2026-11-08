@@ -275,13 +275,13 @@ public struct DocIndexEntry: Codable, Hashable, Sendable {
 /// `index/index.json`; deleting it is always safe — it is rebuilt from the document files, and
 /// building it never writes a document.
 public struct VaultIndex: Codable, Hashable, Sendable {
-    public static let version = 1
+    public static let version = 2 // 2: block text kept up to 1,000 characters (was 200) so the Assistant can find later facts
     public var version = VaultIndex.version
     public var rules = ""
     public var entries: [String: DocIndexEntry] = [:]
     public init() {}
 
-    static let blockTextLimit = 200
+    static let blockTextLimit = 1000
 
     /// Index one document. Tasks without their own date are due on their daily note's day.
     public static func entry(for doc: DocFile, daily: String?, rules: TagRules) -> DocIndexEntry {
