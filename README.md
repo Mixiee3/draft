@@ -102,7 +102,13 @@ It lists Spaces, folders and documents, searches, reads documents, blocks and st
 Draft's formatting (with a restrained "make it look better" recipe), and **proposes** changes:
 note edits (text, append, insert, delete, reorder, headings, lists, tasks, quotes, callouts, code,
 inline formatting, colours, highlights, links, block colours, focus and block decorations,
-separators, document style) and creating, renaming and moving notes.
+separators, document style), edits across several notes at once (all or nothing), and creating,
+renaming, moving and deleting notes (to Recently Deleted only) and creating folders.
+
+Each agent is listed in Settings › Agents with switches for reading, proposing and destructive
+changes (deleting content, replacing a whole note, moving or deleting notes); destructive changes
+are off for every agent until you allow them. Draft keeps a local activity list (tool, note, time;
+never note text).
 
 A proposal is only a file in `agent-requests/`. Draft shows it in a review sheet with before and
 after for each change; nothing happens until you click Apply. Draft then checks the note (or the

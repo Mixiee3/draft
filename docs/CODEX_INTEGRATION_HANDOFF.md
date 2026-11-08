@@ -5,7 +5,7 @@
 - Merged into `main`. Codex runs `~/Documents/Draft/scripts/draft-mcp.sh`; Claude Code has the same
   server registered for this project (`~/.claude.json`, project `/Users/danielpekarek/Documents/Draft`,
   server `draft`) and its CLI reports it connected.
-- DraftMCP 0.2.0 tools (14): `draft_list_spaces`, `draft_list_documents`, `draft_list_folders`,
+- DraftMCP tools (17 now; 14 at the time of this paragraph): `draft_list_spaces`, `draft_list_documents`, `draft_list_folders`,
   `draft_search`, `draft_read_document`, `draft_read_structure`, `draft_read_block`,
   `draft_document_revision`, `draft_formatting_guide`, `draft_propose_note_edits`,
   `draft_propose_create_document`, `draft_propose_rename_document`, `draft_propose_move_document`,
@@ -30,7 +30,13 @@
   move notes). The server refuses without permission and Draft rechecks when applying. Proposals
   record their client; the sheet shows it with the permission needed, affected notes, and
   Reject / Later / Apply. `agent-requests/activity.jsonl` logs tool, note id and time only.
-- Next (see ROADMAP v0.7 rows 9–17, in order): folder creation, deleting whole
+- Rows 9–11 done: `draft_propose_create_folder` (full path in the review, duplicates and bad names
+  refused), `draft_propose_delete_document` (to Recently Deleted with nested pages; Destructive
+  permission), `draft_propose_multi_note_edits` (2–20 notes, all-or-nothing, one Undo). 17 tools;
+  `scripts/mcp-test.sh` 69 checks.
+- Next (see ROADMAP v0.7 rows 12–17, in order): tables, collections, inserting images and files,
+  richer actions, review-sheet polish, and a Codex app-server mode only after supported sign-in.
+- Earlier plan line kept for reference: folder creation, deleting whole
   notes to Recently Deleted, multi-note proposals, tables, collections, inserting images and files,
   richer actions, review-sheet polish, and a Codex app-server mode only after supported sign-in.
 
