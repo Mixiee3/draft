@@ -339,8 +339,9 @@ struct Overlays: View {
                 if model.quickOpen { QuickOpen().transition(.overlayPop) }
                 if model.templatePicker { TemplatePicker().transition(.overlayPop) }
                 if let c = model.confirm { ConfirmDialog(req: c).transition(.overlayPop) }
+                if model.shortcutsSheet { ShortcutsSheet().transition(.overlayPop) }
             }
-            .animation(Motion.quick(model.library.settings.reduceMotion), value: [model.quickOpen, model.templatePicker, model.confirm != nil])
+            .animation(Motion.quick(model.library.settings.reduceMotion), value: [model.quickOpen, model.templatePicker, model.confirm != nil, model.shortcutsSheet])
             VStack {
                 Spacer()
                 VStack(spacing: 8) {

@@ -76,6 +76,9 @@ final class AppModel {
     var railShowsFolders = false
     var quickOpen = false
     var templatePicker = false
+    var shortcutsSheet = false
+    var focusMode = false { didSet { if focusMode != oldValue { focusModeChanged() } } }
+    @ObservationIgnored var focusMonitor: Any?
     var styleGallery = false
     var toasts: [Toast] = []
     var confirm: ConfirmRequest?
@@ -427,8 +430,23 @@ final class AppModel {
         view.onTitleChange = { [weak self] t in self?.setTitle(id, t) }
         view.onEditCover = { [weak self] in self?.coverEditorDoc = id }
         view.onRemoveCover = { [weak self] in self?.updateAppearance(id) { $0.cover = nil } }
+        view.controller.focusDimming = focusMode
         editors[id] = view
         return view
+    }
+
+    /// Focus mode hides the chrome and fades all but the current block; Escape leaves it.
+    func focusModeChanged() {
+        if focusMode { panel = nil }
+        for e in editors.values { e.controller.focusDimming = focusMode }
+        if focusMode, focusMonitor == nil {
+            focusMonitor = NSEvent.addLocalMonitorForEvents(matching: .keyDown) { [weak self] e in
+                guard let self, e.keyCode == 53, e.modifierFlags.intersection([.command, .option, .control, .shift]).isEmpty,
+                      self.activeController?.slash.isOpen != true, self.activeController?.mention.isOpen != true else { return e }
+                self.focusMode = false
+                return nil
+            }
+        } else if !focusMode, let m = focusMonitor { NSEvent.removeMonitor(m); focusMonitor = nil }
     }
 
     func dropEditor(_ id: String) { editors[id] = nil; hosts[id] = nil }

@@ -29,7 +29,7 @@ struct DocumentScreen: View {
                     LinearGradient(colors: [.clear, .black], startPoint: .top, endPoint: .bottom).frame(height: 14)
                     Color.black
                 })
-            GeometryReader { g in topBar(tokens: tokens, darkPage: darkPage, narrow: g.size.width < 760) }
+            if !model.focusMode { GeometryReader { g in topBar(tokens: tokens, darkPage: darkPage, narrow: g.size.width < 760) }.transition(.opacity) }
             if let p = model.panel { sidePanel(p) }
             if model.styleGallery {
                 StyleGallery(docId: docId)

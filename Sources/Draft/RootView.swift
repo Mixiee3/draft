@@ -28,7 +28,8 @@ struct RootView: View {
         let t = Tokens.make(dark: isDark, accent: model.library.settings.accent, tint: tint)
         GeometryReader { geo in
             let narrow = geo.size.width < 820
-            let showRail = !model.library.settings.railCollapsed && !narrow
+            let focus = model.focusMode && model.activeDocId != nil
+            let showRail = !model.library.settings.railCollapsed && !narrow && !focus
             ZStack(alignment: .topLeading) {
                 t.shell.ignoresSafeArea()
                 if let f = model.fatal {
@@ -46,6 +47,7 @@ struct RootView: View {
                                 if narrow { railOverlay.toggle() } else { model.setSettings { $0.railCollapsed = false } }
                             })
                             .frame(height: WindowChrome.height)
+                            .opacity(focus ? 0 : 1).allowsHitTesting(!focus)
                             .animation(nil, value: pinnedAssistant)
                             MainContent()
                                 .environment(\.railVisible, showRail)
@@ -53,7 +55,7 @@ struct RootView: View {
                                 .clipShape(RoundedRectangle(cornerRadius: Tokens.radiusPanel, style: .continuous))
                                 .padding(.leading, showRail ? 8 : 8).padding(.trailing, 8).padding(.bottom, 8)
                         }
-                        if pinnedAssistant && !narrow {
+                        if pinnedAssistant && !narrow && !focus {
                             AssistantView(a: model.assistant)
                                 .clipShape(RoundedRectangle(cornerRadius: Tokens.radiusPanel, style: .continuous))
                                 .frame(width: 360)

@@ -512,6 +512,7 @@ enum Automation {
         var meta = DocMeta(id: id); meta.applyDerived(from: doc)
         m.library.docs[id] = meta
         r["blocks"] = docStats(content).blocks
+        if ProcessInfo.processInfo.environment["DRAFT_PERF_FOCUS"] != nil { m.focusMode = true; r["focusMode"] = true }
         var t0 = CFAbsoluteTimeGetCurrent()
         m.openView(.doc(id))
         await settle()

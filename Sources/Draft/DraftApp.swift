@@ -102,6 +102,8 @@ struct DraftCommands: Commands {
             Button("Tasks") { model.openView(ViewRef(kind: "tasks")) }.keyboardShortcut("2", modifiers: [.command, .option, .shift])
         }
         CommandGroup(before: .sidebar) {
+            Button(model.focusMode ? "Leave Focus Mode" : "Focus Mode") { withAnimation(Motion.standard(model.library.settings.reduceMotion)) { model.focusMode.toggle() } }
+                .keyboardShortcut("f", modifiers: [.command, .shift]).disabled(model.activeDocId == nil && !model.focusMode)
             Button(model.library.settings.railCollapsed ? "Show Sidebar" : "Hide Sidebar") {
                 model.setSettings { $0.railCollapsed.toggle() }
             }.keyboardShortcut("s", modifiers: [.command, .control])
@@ -112,6 +114,8 @@ struct DraftCommands: Commands {
             Divider()
         }
         CommandGroup(replacing: .help) {
+            Button("Keyboard Shortcuts") { model.shortcutsSheet = true }.keyboardShortcut("/")
+            Divider()
             Button("Show Welcome…") { model.showWelcome() }
             Button("Take the Tour") { model.startTour() }
         }

@@ -176,6 +176,8 @@ extension Automation {
         await type("Morning pages", into: c); c.textView.insertNewline(nil)
         c.pastePlainForAutomation("Three pages, first thing. **Bold idea** and a _soft one_.\n- [ ] water the plants\n- buy bread\n## Later\nA quote follows.\n> Keep it simple.")
         await shot(p + "07-editor-content", w)
+        m.focusMode = true; c.textView.setSelectedRange(NSRange(location: 20, length: 0)); await shot(p + "07b-focus-mode", w, settle: 0.6); m.focusMode = false
+        m.shortcutsSheet = true; await shot(p + "07c-shortcuts", w, settle: 0.5); m.shortcutsSheet = false
         let ns = c.textView.string as NSString
         c.textView.setSelectedRange(ns.range(of: "Bold idea"))
         await shot(p + "08-selection-toolbar", w, settle: 0.7)
