@@ -28,4 +28,14 @@ final class AgentProposalTests: XCTestCase {
         XCTAssertThrowsError(try AgentProposal(documentId: "d", documentTitle: "", instruction: "Polish", expectedRevision: "x",
             edits: [AgentEdit(action: "block_color", blockId: "b", value: "red")]))
     }
+
+    func testDocumentStyleMustBeStandaloneAndSeparatorsHaveKnownValues() throws {
+        let revision = String(repeating: "a", count: 64)
+        let style = AgentEdit(action: "document_style", blockId: "d_test", value: "tidepool")
+        XCTAssertNoThrow(try AgentProposal(documentId: "d_test", documentTitle: "Test", instruction: "Use a calmer style", expectedRevision: revision, edits: [style]))
+        XCTAssertThrowsError(try AgentProposal(documentId: "d_test", documentTitle: "Test", instruction: "Style and edit", expectedRevision: revision,
+            edits: [style, AgentEdit(action: "heading", blockId: "b_test", value: "title")]))
+        XCTAssertNoThrow(try AgentEdit(action: "insert_separator", blockId: "b_test", value: "wave").validate())
+        XCTAssertThrowsError(try AgentEdit(action: "insert_separator", blockId: "b_test", value: "sparkle").validate())
+    }
 }

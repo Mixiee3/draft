@@ -48,6 +48,18 @@ extension Automation {
             result["heading"] = after?.content.content?.first?.type ?? ""
             editor.controller.undo.undo()
             result["undo"] = docPlainText(editor.controller.document()) == result["before"] ? "yes" : "no"
+            m.markDocDirty(id); m.flushAll()
+            if let restored = m.docs[id] {
+                let style = try AgentProposal(documentId: id, documentTitle: restored.title,
+                    instruction: "Use a calm blue document style", expectedRevision: AgentProposalStore.revision(restored),
+                    edits: [AgentEdit(action: "document_style", blockId: id, value: "tidepool")])
+                try AgentProposalStore.save(style, vaultURL: m.vault.dir)
+                m.showNextAgentProposal(); m.acceptAgentProposal()
+                result["styleStatus"] = try AgentProposalStore.load(style.id, vaultURL: m.vault.dir).status
+                result["styleApplied"] = m.docs[id]?.appearance.styleId == "tidepool" ? "yes" : "no"
+                editor.controller.undo.undo()
+                result["styleUndo"] = m.docs[id]?.appearance.styleId == "paper" ? "yes" : "no"
+            }
         } catch { result["error"] = error.localizedDescription }
     }
 }

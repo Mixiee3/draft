@@ -77,4 +77,22 @@ final class AgentEditTests: XCTestCase {
         controller.undo.undo()
         XCTAssertEqual(controller.document(), before)
     }
+
+    func testDecorativeSeparatorCanBeInsertedRestyledAndUndone() throws {
+        let before = controller.document()
+        let anchor = try XCTUnwrap(before.content?.first?.id)
+        try controller.applyAgentEdits([AgentEdit(action: "insert_separator", blockId: anchor, value: "tape")])
+        let inserted = controller.document()
+        let divider = try XCTUnwrap(inserted.content?.first(where: { $0.type == "horizontalRule" }))
+        XCTAssertEqual(divider.attrs?["variant"]?.string, "tape")
+        let dividerId = try XCTUnwrap(divider.id)
+        boundary()
+        try controller.applyAgentEdits([AgentEdit(action: "separator_style", blockId: dividerId, value: "wave")])
+        XCTAssertEqual(controller.document().content?.first(where: { $0.id == dividerId })?.attrs?["variant"]?.string, "wave")
+        boundary()
+        controller.undo.undo()
+        XCTAssertEqual(controller.document(), inserted)
+        controller.undo.undo()
+        XCTAssertEqual(controller.document(), before)
+    }
 }

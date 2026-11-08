@@ -28,11 +28,19 @@ public struct AgentEdit: Codable, Sendable, Hashable {
             guard let text, !text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty, text.utf8.count <= 100_000 else {
                 throw AgentEditError.invalid("replace_document needs Markdown under 100 KB.")
             }
+        case "document_style":
+            guard let value, value.range(of: "^[A-Za-z0-9_-]{1,64}$", options: .regularExpression) != nil else {
+                throw AgentEditError.invalid("document_style needs a style ID.")
+            }
         case "replace_text":
             guard let text, let expectedText, !text.contains("\n"), text.utf16.count <= 20_000, expectedText.utf16.count <= 20_000 else {
                 throw AgentEditError.invalid("replace_text needs one line of Markdown and the exact current block text.")
             }
         case "heading": guard ["body", "title", "subtitle", "heading", "strong", "caption"].contains(value ?? "") else { throw AgentEditError.invalid("Unknown heading style.") }
+        case "insert_separator", "separator_style":
+            guard ["default", "line", "strong", "dotted", "dots", "wave", "tape", "page_break"].contains(value ?? "") else {
+                throw AgentEditError.invalid("Unknown separator style.")
+            }
         case "block_kind": guard ["body", "quote", "callout", "code"].contains(value ?? "") else { throw AgentEditError.invalid("Unknown block kind.") }
         case "decoration": guard ["none", "focus", "block"].contains(value ?? "") else { throw AgentEditError.invalid("Unknown decoration.") }
         case "list": guard ["bullet", "numbered", "task", "none"].contains(value ?? "") else { throw AgentEditError.invalid("Unknown list style.") }
@@ -67,8 +75,12 @@ public struct AgentProposal: Codable, Sendable, Identifiable {
         guard !instruction.isEmpty, instruction.count <= 2_000 else { throw AgentEditError.invalid("Provide a short description of the proposed change.") }
         guard documentId.range(of: "^[A-Za-z0-9_-]{1,64}$", options: .regularExpression) != nil,
               expectedRevision.range(of: "^[0-9a-f]{64}$", options: .regularExpression) != nil else { throw AgentEditError.invalid("Invalid document ID or revision.") }
-        if edits.contains(where: { $0.action == "replace_document" }), edits.count != 1 { throw AgentEditError.invalid("A whole-note replacement must be its own proposal.") }
-        if edits.first?.action == "replace_document", edits.first?.blockId != documentId { throw AgentEditError.invalid("Whole-note replacement must target the document ID.") }
+        if edits.contains(where: { ["replace_document", "document_style"].contains($0.action) }), edits.count != 1 {
+            throw AgentEditError.invalid("Whole-note replacement and document style must each be their own proposal.")
+        }
+        if let first = edits.first, ["replace_document", "document_style"].contains(first.action), first.blockId != documentId {
+            throw AgentEditError.invalid("Whole-note replacement and document style must target the document ID.")
+        }
         for edit in edits { try edit.validate() }
         id = newId("request_"); self.documentId = documentId; self.documentTitle = documentTitle
         self.instruction = instruction; self.expectedRevision = expectedRevision; self.edits = edits

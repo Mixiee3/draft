@@ -35,7 +35,8 @@ let toolList: [[String: Any]] = [
     tool("draft_read_structure", "Read a document's revision, stable block IDs, types, formatting attributes and Markdown. Use this before proposing targeted edits.", ["document_id": textField], required: ["document_id"]),
     tool("draft_read_block", "Read one block from a Draft document as Markdown.", ["document_id": textField, "block_id": textField], required: ["document_id", "block_id"]),
     tool("draft_document_revision", "Get the current revision token for a document before proposing edits.", ["document_id": textField], required: ["document_id"]),
-    proposalTool("draft_propose_note_edits", "Propose reviewed edits using Draft formatting. Does not change the document until the user accepts in Draft. Actions: replace_document (whole note Markdown, block_id=the document ID, text=Markdown); replace_text (one block, inline Markdown, with expected_text); heading (body/title/subtitle/heading/strong/caption); block_kind (body/quote/callout/code); list (bullet/numbered/task/none); font (document/system/serif/mono/rounded); align (left/center/right/justify); decoration (none/focus/block); block_color (#RRGGBB); bold/italic/underline/strike/code (exact phrase in text); highlight/text_color (exact phrase in text and #RRGGBB value). Use targeted block edits to preserve links and attachments. Get revision first.", [
+    tool("draft_formatting_guide", "Read Draft's visual formatting options and guidance for making a note clear and attractive.", [:]),
+    proposalTool("draft_propose_note_edits", "Propose reviewed edits using Draft formatting. Does not change the document until the user accepts in Draft. Actions: replace_document (whole note Markdown, block_id=the document ID, text=Markdown); document_style (standalone, block_id=the document ID, value=style ID); replace_text (one block, inline Markdown, with expected_text); heading (body/title/subtitle/heading/strong/caption); insert_separator (after block_id, value=default/line/strong/dotted/dots/wave/tape/page_break); separator_style (existing separator block, same values); block_kind (body/quote/callout/code); list (bullet/numbered/task/none); font (document/system/serif/mono/rounded); align (left/center/right/justify); decoration (none/focus/block); block_color (#RRGGBB); bold/italic/underline/strike/code (exact phrase in text); highlight/text_color (exact phrase in text and #RRGGBB value). Read draft_formatting_guide first. Use targeted block edits to preserve links and attachments. Get revision first.", [
         "document_id": textField, "expected_revision": textField, "instruction": textField,
         "edits": ["type": "array", "minItems": 1, "maxItems": 100, "items": ["type": "object", "properties": ["action": textField, "block_id": textField, "value": textField, "text": textField, "expected_text": textField], "required": ["action", "block_id"], "additionalProperties": false]]
     ], required: ["document_id", "expected_revision", "instruction", "edits"]),
@@ -73,6 +74,21 @@ func call(_ name: String, _ args: [String: Any]) throws -> String {
     case "draft_document_revision":
         guard let id = args["document_id"] as? String else { throw DraftToolError.unavailable("document_id is required") }
         return try AgentProposalStore.revision(draft.document(id))
+    case "draft_formatting_guide":
+        return try resultText([
+            "built_in_styles": Styles.builtIn.map { ["id": $0.id, "name": $0.name, "separator": $0.tokens.separator] },
+            "saved_styles": draft.library.userStyles.map { ["id": $0.id, "name": $0.name, "separator": $0.tokens.separator] },
+            "separator_styles": ["default", "line", "strong", "dotted", "dots", "wave", "tape", "page_break"],
+            "text_emphasis": ["bold", "italic", "underline", "strike", "code", "highlight", "text_color"],
+            "block_treatments": ["quote", "callout", "focus", "block", "block_color", "font", "align"],
+            "principles": [
+                "Start with structure: one clear title, short sections, and lists only where they help scanning.",
+                "Use one decorative separator at a meaningful transition. Wave is gentle; tape is playful; dots are quiet. Avoid repeating them between every section.",
+                "Highlight only the few words a reader should notice first. Keep long paragraphs unhighlighted.",
+                "Choose one accent color and keep text contrast readable. Use callouts for genuinely important notes, not every paragraph.",
+                "Preserve the author's meaning, links, block IDs, tasks, and attachments. Review the complete proposal before requesting approval."
+            ]
+        ])
     case "draft_propose_note_edits":
         guard let id = args["document_id"] as? String, let revision = args["expected_revision"] as? String,
               let instruction = args["instruction"] as? String, let raw = args["edits"] as? [[String: Any]] else {
@@ -82,7 +98,7 @@ func call(_ name: String, _ args: [String: Any]) throws -> String {
         guard try AgentProposalStore.revision(document) == revision else { throw AgentEditError.invalid("The document changed. Read it again before proposing edits.") }
         let edits: [AgentEdit] = try raw.map { item in
             guard let action = item["action"] as? String, let block = item["block_id"] as? String else { throw AgentEditError.invalid("Each edit needs action and block_id.") }
-            guard (action == "replace_document" && block == id) || document.content.block(block) != nil else { throw DraftToolError.missingBlock }
+            guard (["replace_document", "document_style"].contains(action) && block == id) || document.content.block(block) != nil else { throw DraftToolError.missingBlock }
             return AgentEdit(action: action, blockId: block, value: item["value"] as? String, text: item["text"] as? String, expectedText: item["expected_text"] as? String)
         }
         let proposal = try AgentProposal(documentId: id, documentTitle: document.title, instruction: instruction, expectedRevision: revision, edits: edits)

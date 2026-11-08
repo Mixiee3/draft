@@ -13,7 +13,13 @@ extension EditorController {
         var planned: [String: String] = [:]
         for edit in edits {
             try edit.validate()
-            guard let pr = paragraph(withId: edit.blockId), !block(at: pr).kind.isAttachment else { throw AgentEditError.invalid("Block \(edit.blockId) is missing or cannot be formatted as text.") }
+            guard let pr = paragraph(withId: edit.blockId) else { throw AgentEditError.invalid("Block \(edit.blockId) is missing.") }
+            let kind = block(at: pr).kind
+            if edit.action == "separator_style" {
+                guard kind == .divider else { throw AgentEditError.invalid("Only a separator can change separator style.") }
+            } else if edit.action != "insert_separator" && kind.isAttachment {
+                throw AgentEditError.invalid("Block \(edit.blockId) cannot be formatted as text.")
+            }
             let current = planned[edit.blockId] ?? ns.substring(with: contentRange(pr))
             if edit.action == "replace_text" {
                 guard current == edit.expectedText else { throw AgentEditError.invalid("Text in block \(edit.blockId) changed. Read the note again.") }
@@ -30,6 +36,16 @@ extension EditorController {
                 guard let pr = paragraph(withId: edit.blockId) else { continue }
                 textView.setSelectedRange(NSRange(location: pr.location, length: 0))
                 switch edit.action {
+                case "insert_separator":
+                    let style = edit.value ?? "default"
+                    let node = style == "page_break" ? Node("pageBreak") : Node("horizontalRule", attrs: style == "default" ? nil : ["variant": .string(style)])
+                    insertAttachmentBlock(kind: .divider, node: node)
+                case "separator_style":
+                    let style = edit.value ?? "default"
+                    updateAttachment(at: pr.location) { node in
+                        node.type = style == "page_break" ? "pageBreak" : "horizontalRule"
+                        node[attr: "variant"] = style == "default" || style == "page_break" ? nil : .string(style)
+                    }
                 case "replace_text":
                     let b = block(at: pr)
                     let out = NSMutableAttributedString()

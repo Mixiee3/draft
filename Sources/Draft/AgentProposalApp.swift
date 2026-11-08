@@ -39,7 +39,15 @@ extension AppModel {
             }
             if let spaceId = meta.spaceId, spaceId != library.space.id { switchSpace(spaceId) }
             let editor = editor(for: doc.id)
-            try editor.controller.applyAgentEdits(proposal.edits)
+            if proposal.edits[0].action == "document_style" {
+                guard proposal.edits.count == 1, let styleId = proposal.edits[0].value,
+                      Styles.all.contains(where: { $0.id == styleId }) else {
+                    throw AgentEditError.invalid("This style is no longer available.")
+                }
+                updateAppearance(doc.id) { $0.styleId = styleId; $0.overrides = StyleOverrides() }
+            } else {
+                try editor.controller.applyAgentEdits(proposal.edits)
+            }
             openView(.doc(doc.id))
             markDocDirty(doc.id)
             flushAll()
@@ -79,7 +87,7 @@ struct AgentProposalReview: View {
                         VStack(alignment: .leading, spacing: 5) {
                             Text("\(i + 1). \(edit.action.replacingOccurrences(of: "_", with: " ").capitalized)")
                                 .font(.subheadline.bold())
-                            Text(edit.action == "replace_document" ? "Entire note" : "Block \(edit.blockId)")
+                            Text(["replace_document", "document_style"].contains(edit.action) ? "Entire note" : "Block \(edit.blockId)")
                                 .font(.caption).foregroundStyle(tokens.secondary)
                             if edit.action == "replace_document", let before = currentMarkdown {
                                 Text("CURRENT NOTE").font(.caption.bold()).foregroundStyle(tokens.secondary)
