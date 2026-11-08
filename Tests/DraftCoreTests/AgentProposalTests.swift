@@ -129,3 +129,22 @@ final class AgentFolderTests: XCTestCase {
                                            edits: [AgentEdit(action: "create_folder", blockId: "new", value: y2026.id, expectedText: "Q1")]))
     }
 }
+
+final class AgentMultiNoteTests: XCTestCase {
+    let rev = String(repeating: "d", count: 64)
+    func part(_ id: String, _ action: String = "bold") -> AgentNoteChange {
+        AgentNoteChange(documentId: id, documentTitle: id, expectedRevision: rev, edits: [AgentEdit(action: action, blockId: action == "delete_document" ? id : "b1", text: "x")])
+    }
+
+    func testMultiNoteRules() throws {
+        let p = try AgentProposal(instruction: "Tidy", parts: [part("d1"), part("d2", "delete_block")])
+        XCTAssertEqual(p.documentId, "multi")
+        XCTAssertEqual(p.allEdits.count, 2)
+        XCTAssertEqual(p.requiredAccess, .destructive, "any destructive part makes the whole proposal destructive")
+        XCTAssertThrowsError(try AgentProposal(instruction: "One", parts: [part("d1")]), "needs two notes")
+        XCTAssertThrowsError(try AgentProposal(instruction: "Dup", parts: [part("d1"), part("d1")]))
+        XCTAssertThrowsError(try AgentProposal(instruction: "Lib", parts: [part("d1"), part("d2", "delete_document")]))
+        let decoded = try JSONDecoder().decode(AgentProposal.self, from: JSONEncoder().encode(p))
+        XCTAssertEqual(decoded.parts?.count, 2)
+    }
+}

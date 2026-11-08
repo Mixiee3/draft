@@ -121,7 +121,7 @@ extension EditorController {
                 }
             }
         }
-        undo.setActionName("Apply Codex Note Edits")
+        undo.setActionName("Apply Agent Edits")
         undo.endUndoGrouping()
         host?.editorDidChange()
     }

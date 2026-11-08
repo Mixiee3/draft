@@ -1,5 +1,6 @@
 import SwiftUI
 import DraftCore
+import DraftEditor
 
 extension AppModel {
     func startAgentProposalWatch() {
@@ -46,11 +47,13 @@ extension AppModel {
             guard library.settings.agentPermission(proposal.client).allows(proposal.requiredAccess) else {
                 throw AgentEditError.invalid("\(proposal.client ?? "This agent") isn't allowed to make \(proposal.requiredAccess == .destructive ? "destructive" : "") changes. Change it in Settings › Agents.")
             }
-            for edit in proposal.edits { try edit.validate() }
+            for edit in proposal.allEdits { try edit.validate() }
             flushAll()
             guard saveState != "error" else { throw AgentEditError.invalid("Draft could not save the current note. Fix the save error before applying this proposal.") }
             let message: String
-            if proposal.changesLibrary {
+            if proposal.parts != nil {
+                message = try applyMultiNoteProposal(&proposal)
+            } else if proposal.changesLibrary {
                 message = try applyLibraryProposal(&proposal)
             } else {
                 guard let meta = library.docs[proposal.documentId], meta.deletedAt == nil, meta.template == nil,
@@ -77,7 +80,7 @@ extension AppModel {
             proposal.status = "accepted"
             proposal.result = message
             try AgentProposalStore.save(proposal, vaultURL: vault.dir)
-            if proposal.changesLibrary { toast("Applied: \(proposal.instruction)", action: "Undo") { [weak self] in self?.undoAgentChange() } }
+            if proposal.changesLibrary || proposal.parts != nil { toast("Applied: \(proposal.instruction)", action: "Undo") { [weak self] in self?.undoAgentChange() } }
             else { toast("Changes applied to “\(proposal.documentTitle.isEmpty ? "Untitled" : proposal.documentTitle)”") }
         } catch {
             if proposal.status == "pending" { proposal.status = "failed" }
@@ -202,6 +205,46 @@ extension AppModel {
         }
     }
 
+    /// All notes or none: every revision is checked first, then parts are applied in order; if one
+    /// fails, the ones already applied are undone before the error is reported. One Undo reverts all.
+    private func applyMultiNoteProposal(_ proposal: inout AgentProposal) throws -> String {
+        let parts = proposal.parts ?? []
+        for part in parts {
+            guard let meta = library.docs[part.documentId], meta.deletedAt == nil, meta.template == nil, let doc = ensureDoc(part.documentId) else {
+                throw AgentEditError.invalid("“\(part.documentTitle)” is not available for editing.")
+            }
+            guard (meta.spaceId ?? library.space.id) == library.space.id || parts.count == 1 else {
+                throw AgentEditError.invalid("All notes in one proposal must be in the open Space.")
+            }
+            guard try AgentProposalStore.revision(doc) == part.expectedRevision else {
+                proposal.status = "stale"
+                throw AgentEditError.invalid("“\(part.documentTitle)” changed after it was read, so none of the notes were changed. Read them again and propose afresh.")
+            }
+        }
+        var applied: [(String, EditorController)] = []
+        func revert() {
+            for (id, c) in applied.reversed() { if c.undo.groupingLevel > 0 { c.undo.endUndoGrouping() }; c.undo.undo(); markDocDirty(id) }
+        }
+        do {
+            for part in parts {
+                let c = editor(for: part.documentId).controller
+                try c.applyAgentEdits(part.edits)
+                applied.append((part.documentId, c))
+                markDocDirty(part.documentId)
+            }
+        } catch {
+            revert()
+            flushAll()
+            throw AgentEditError.invalid("\(error.localizedDescription) None of the notes were changed.")
+        }
+        let done = applied
+        registerAgentUndo("Edit \(parts.count) Notes") { m in
+            for (id, c) in done.reversed() { if c.undo.groupingLevel > 0 { c.undo.endUndoGrouping() }; c.undo.undo(); m.markDocDirty(id) }
+            m.flushAll()
+        }
+        return "Applied to \(parts.count) notes. Edit › Undo Agent Change reverts all of them."
+    }
+
     private func registerAgentUndo(_ name: String, _ undo: @escaping (AppModel) -> Void) {
         agentUndo.beginUndoGrouping()
         agentUndo.registerUndo(withTarget: self) { m in onMain { undo(m); m.refreshIndex() } }
@@ -222,7 +265,7 @@ struct AgentProposalReview: View {
     @Environment(\.tokens) var t
     let proposal: AgentProposal
 
-    var structure: DraftTools.DocumentStructure? { proposal.documentId == "new" ? nil : try? DraftTools(vaultURL: model.vault.dir).structure(proposal.documentId) }
+    var structure: DraftTools.DocumentStructure? { ["new", "multi"].contains(proposal.documentId) ? nil : try? DraftTools(vaultURL: model.vault.dir).structure(proposal.documentId) }
 
     var body: some View {
         let blocks = Dictionary((structure?.blocks ?? []).map { ($0.id, $0.text) }, uniquingKeysWith: { a, _ in a })
@@ -236,7 +279,16 @@ struct AgentProposalReview: View {
             permissionBox
             ScrollView {
                 VStack(alignment: .leading, spacing: DS.s2) {
-                    ForEach(Array(proposal.edits.enumerated()), id: \.offset) { i, edit in card(i, edit, blocks) }
+                    if let parts = proposal.parts {
+                        ForEach(Array(parts.enumerated()), id: \.offset) { _, part in
+                            let pb = Dictionary(((try? DraftTools(vaultURL: model.vault.dir).structure(part.documentId))?.blocks ?? []).map { ($0.id, $0.text) }, uniquingKeysWith: { a, _ in a })
+                            Text(part.documentTitle.isEmpty ? "Untitled" : part.documentTitle).font(.system(size: DS.footnote, weight: .semibold)).foregroundStyle(t.secondary)
+                                .textCase(.uppercase).tracking(0.5).padding(.top, DS.s1).accessibilityAddTraits(.isHeader)
+                            ForEach(Array(part.edits.enumerated()), id: \.offset) { i, edit in card(i, edit, pb) }
+                        }
+                    } else {
+                        ForEach(Array(proposal.edits.enumerated()), id: \.offset) { i, edit in card(i, edit, blocks) }
+                    }
                 }
             }
             .frame(maxHeight: 420)
@@ -262,20 +314,21 @@ struct AgentProposalReview: View {
     var destructive: Bool { proposal.requiredAccess == .destructive }
     var allowed: Bool { model.library.settings.agentPermission(proposal.client).allows(proposal.requiredAccess) }
     var applyTitle: String {
-        let deletes = proposal.edits.filter { $0.action == "delete_block" }.count
+        let deletes = proposal.allEdits.filter { $0.action == "delete_block" }.count
         if deletes > 0 { return "Apply and Delete \(deletes) Block\(deletes == 1 ? "" : "s")" }
         if proposal.edits.first?.action == "delete_document" { return "Move to Recently Deleted" }
+        if let parts = proposal.parts { return "Apply to \(parts.count) Notes" }
         return proposal.edits.count == 1 ? "Apply Change" : "Apply \(proposal.edits.count) Changes"
     }
 
     /// Who asked, which notes it touches, and what permission it needs.
     var permissionBox: some View {
         let id = proposal.documentId
-        let pages = id == "new" ? [] : [id] + model.descendants(id)
+        let pages = id == "new" || id == "multi" ? [] : [id] + model.descendants(id)
         let action = proposal.edits.first?.action ?? ""
         let movesPages = ["move_document", "delete_document"].contains(action) && pages.count > 1
-        let affected = id == "new" ? [action == "create_folder" ? "New folder “\(proposal.documentTitle)”" : "New note “\(proposal.documentTitle)”"]
-            : (movesPages ? pages : [id]).map { model.library.docs[$0]?.title ?? "" }.map { $0.isEmpty ? "Untitled" : $0 }
+        let affected = proposal.parts.map { $0.map { $0.documentTitle.isEmpty ? "Untitled" : $0.documentTitle } } ?? (id == "new" ? [action == "create_folder" ? "New folder “\(proposal.documentTitle)”" : "New note “\(proposal.documentTitle)”"]
+            : (movesPages ? pages : [id]).map { model.library.docs[$0]?.title ?? "" }.map { $0.isEmpty ? "Untitled" : $0 })
         let need = destructive ? "Destructive changes" : "Propose changes"
         return VStack(alignment: .leading, spacing: DS.s1 + 2) {
             HStack(spacing: DS.s2) {

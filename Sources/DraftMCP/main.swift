@@ -49,6 +49,13 @@ let toolList: [[String: Any]] = [
     proposalTool("draft_propose_move_document", "Propose moving a note (with its nested pages) to a folder (folder_id, or \"unsorted\") and/or another Space (space_id). Applied only after review; one Undo moves it back.", [
         "document_id": textField, "expected_revision": textField, "folder_id": textField, "space_id": textField, "instruction": textField
     ], required: ["document_id", "expected_revision", "instruction"]),
+    proposalTool("draft_propose_multi_note_edits", "Propose edits to 2–20 notes in the open Space as one change: the user reviews them together, Draft applies all of them or none (if any note changed since it was read, nothing is applied), and one Undo reverts every note. Each note uses the same edit actions as draft_propose_note_edits with its own expected_revision. Creating, renaming, moving or deleting notes stays a separate proposal.", [
+        "instruction": textField,
+        "notes": ["type": "array", "minItems": 2, "maxItems": 20, "items": ["type": "object", "properties": [
+            "document_id": textField, "expected_revision": textField,
+            "edits": ["type": "array", "minItems": 1, "maxItems": 100, "items": ["type": "object", "properties": ["action": textField, "block_id": textField, "value": textField, "text": textField, "expected_text": textField, "target": textField, "position": ["type": "string", "enum": ["before", "after"]]], "required": ["action", "block_id"], "additionalProperties": false]]
+        ], "required": ["document_id", "expected_revision", "edits"], "additionalProperties": false]]
+    ], required: ["instruction", "notes"]),
     proposalTool("draft_propose_create_folder", "Propose a new folder (one level; nest by giving parent_folder_id). Draft shows its Space and full path for review and creates it only when the user applies it. Names must be unique among siblings (ignoring case) and can't contain “/”. One Undo removes it while it's still empty.", [
         "name": textField, "parent_folder_id": textField, "space_id": textField, "instruction": textField
     ], required: ["name", "instruction"]),
@@ -80,6 +87,19 @@ func queue(_ proposal: AgentProposal, _ draft: DraftTools) throws -> String {
     }
     try AgentProposalStore.save(proposal, vaultURL: selectedVault)
     return try resultText(["request_id": proposal.id, "status": proposal.status, "message": "Review this proposal in Draft. Nothing was changed yet."])
+}
+
+/// Note edits from MCP arguments, checked against the note as it was read.
+func parseEdits(_ raw: [[String: Any]], _ document: DocFile) throws -> [AgentEdit] {
+    let id = document.id
+    return try raw.map { item in
+        guard let action = item["action"] as? String, let block = item["block_id"] as? String else { throw AgentEditError.invalid("Each edit needs action and block_id.") }
+        guard !AgentEdit.documentActions.contains(action) else { throw AgentEditError.invalid("Use the create, rename or move tools for \(action).") }
+        guard (["replace_document", "document_style", "append"].contains(action) && block == id) || document.content.block(block) != nil else { throw DraftToolError.missingBlock }
+        if let target = item["target"] as? String, document.content.block(target) == nil { throw DraftToolError.missingBlock }
+        return AgentEdit(action: action, blockId: block, value: item["value"] as? String, text: item["text"] as? String, expectedText: item["expected_text"] as? String,
+                         target: item["target"] as? String, position: item["position"] as? String)
+    }
 }
 
 func call(_ name: String, _ args: [String: Any]) throws -> String {
@@ -136,14 +156,7 @@ func call(_ name: String, _ args: [String: Any]) throws -> String {
         }
         let document = try draft.document(id)
         guard try AgentProposalStore.revision(document) == revision else { throw AgentEditError.invalid("The document changed. Read it again before proposing edits.") }
-        let edits: [AgentEdit] = try raw.map { item in
-            guard let action = item["action"] as? String, let block = item["block_id"] as? String else { throw AgentEditError.invalid("Each edit needs action and block_id.") }
-            guard !AgentEdit.documentActions.contains(action) else { throw AgentEditError.invalid("Use the create, rename or move tools for \(action).") }
-            guard (["replace_document", "document_style", "append"].contains(action) && block == id) || document.content.block(block) != nil else { throw DraftToolError.missingBlock }
-            if let target = item["target"] as? String, document.content.block(target) == nil { throw DraftToolError.missingBlock }
-            return AgentEdit(action: action, blockId: block, value: item["value"] as? String, text: item["text"] as? String, expectedText: item["expected_text"] as? String,
-                             target: item["target"] as? String, position: item["position"] as? String)
-        }
+        let edits = try parseEdits(raw, document)
         return try queue(AgentProposal(documentId: id, documentTitle: document.title, instruction: instruction, expectedRevision: revision, edits: edits), draft)
     case "draft_list_folders":
         let space = args["space_id"] as? String ?? draft.library.space.id
@@ -154,6 +167,17 @@ func call(_ name: String, _ args: [String: Any]) throws -> String {
         guard let title = args["title"] as? String, let instruction = args["instruction"] as? String else { throw DraftToolError.unavailable("title and instruction are required") }
         let edit = AgentEdit(action: "create_document", blockId: "new", value: args["folder_id"] as? String, text: args["markdown"] as? String, expectedText: title, target: args["space_id"] as? String)
         return try queue(AgentProposal(documentId: "new", documentTitle: title, instruction: instruction, expectedRevision: AgentProposalStore.libraryRevision(draft.library), edits: [edit]), draft)
+    case "draft_propose_multi_note_edits":
+        guard let instruction = args["instruction"] as? String, let notes = args["notes"] as? [[String: Any]] else { throw DraftToolError.unavailable("instruction and notes are required") }
+        let parts: [AgentNoteChange] = try notes.map { n in
+            guard let id = n["document_id"] as? String, let revision = n["expected_revision"] as? String, let raw = n["edits"] as? [[String: Any]] else {
+                throw DraftToolError.unavailable("Each note needs document_id, expected_revision and edits.")
+            }
+            let document = try draft.document(id)
+            guard try AgentProposalStore.revision(document) == revision else { throw AgentEditError.invalid("“\(document.title)” changed. Read it again before proposing.") }
+            return AgentNoteChange(documentId: id, documentTitle: document.title, expectedRevision: revision, edits: try parseEdits(raw, document))
+        }
+        return try queue(AgentProposal(instruction: instruction, parts: parts), draft)
     case "draft_propose_create_folder":
         guard let name = args["name"] as? String, let instruction = args["instruction"] as? String else { throw DraftToolError.unavailable("name and instruction are required") }
         let space = args["space_id"] as? String ?? draft.library.space.id

@@ -124,6 +124,9 @@ public struct AgentProposal: Codable, Sendable, Identifiable {
     public var result: String?
     /// The MCP client that sent it (its `clientInfo.name`), for permissions and the review sheet.
     public var client: String?
+    /// A multi-note proposal (documentId "multi"): each note's own revision and edits, applied
+    /// all-or-nothing.
+    public var parts: [AgentNoteChange]?
 
     public init(documentId: String, documentTitle: String, instruction: String, expectedRevision: String, edits: [AgentEdit]) throws {
         guard !edits.isEmpty, edits.count <= 100 else { throw AgentEditError.invalid("Provide 1–100 edits.") }
@@ -196,7 +199,7 @@ public struct AgentPermission: Codable, Hashable, Sendable {
 
 extension AgentProposal {
     public static let destructiveActions: Set<String> = ["delete_block", "replace_document", "move_document", "delete_document"]
-    public var requiredAccess: AgentAccess { edits.contains { Self.destructiveActions.contains($0.action) } ? .destructive : .propose }
+    public var requiredAccess: AgentAccess { allEdits.contains { Self.destructiveActions.contains($0.action) } ? .destructive : .propose }
 }
 
 /// A local list of what agents read and proposed — tool, document id and time, never note text.
@@ -229,6 +232,38 @@ public enum AgentActivity {
     }
 
     public static func clear(_ vault: URL) { try? FileManager.default.removeItem(at: url(vault)) }
+}
+
+public struct AgentNoteChange: Codable, Sendable, Hashable {
+    public var documentId: String
+    public var documentTitle: String
+    public var expectedRevision: String
+    public var edits: [AgentEdit]
+    public init(documentId: String, documentTitle: String, expectedRevision: String, edits: [AgentEdit]) {
+        self.documentId = documentId; self.documentTitle = documentTitle; self.expectedRevision = expectedRevision; self.edits = edits
+    }
+}
+
+extension AgentProposal {
+    /// Several notes in one review and one Undo. Note edits only (no create/rename/move/delete):
+    /// each part keeps the single-note rules.
+    public init(instruction: String, parts: [AgentNoteChange]) throws {
+        guard (2...20).contains(parts.count) else { throw AgentEditError.invalid("A multi-note proposal covers 2–20 notes.") }
+        guard Set(parts.map(\.documentId)).count == parts.count else { throw AgentEditError.invalid("Each note may appear once; put all its edits in one part.") }
+        guard parts.reduce(0, { $0 + $1.edits.count }) <= 300 else { throw AgentEditError.invalid("A multi-note proposal has at most 300 edits.") }
+        for part in parts {
+            if part.edits.contains(where: { AgentEdit.documentActions.contains($0.action) }) {
+                throw AgentEditError.invalid("Creating, renaming, moving or deleting notes must be its own proposal.")
+            }
+            _ = try AgentProposal(documentId: part.documentId, documentTitle: part.documentTitle, instruction: instruction, expectedRevision: part.expectedRevision, edits: part.edits)
+        }
+        id = newId("request_"); documentId = "multi"; documentTitle = "\(parts.count) notes"
+        self.instruction = instruction; expectedRevision = ""; edits = []; self.parts = parts
+        createdAt = nowMs(); status = "pending"
+    }
+
+    /// Every edit, across parts.
+    public var allEdits: [AgentEdit] { edits + (parts ?? []).flatMap(\.edits) }
 }
 
 public enum AgentProposalStore {

@@ -210,9 +210,18 @@ extension Automation {
         }
         m.refreshIndex(); await wait(1.2)
         record("after")
+        func recordParts(_ prefix: String) {
+            for part in p.parts ?? [] {
+                let d = try? m.vault.loadDoc(part.documentId)
+                var marks: [String] = []
+                if let c = d?.content { walk(c) { n in for mk in n.marks ?? [] { marks.append(mk.type) } } }
+                r["\(prefix):\(part.documentId)"] = (d.map { docPlainText($0.content) } ?? "") + " |marks:" + marks.sorted().joined(separator: ",")
+            }
+        }
+        recordParts("after")
         r["backups"] = "\(m.snapshots(docId).count)"
         if ProcessInfo.processInfo.environment["DRAFT_AGENT_UNDO"] != nil, saved?.status == "accepted" {
-            if p.changesLibrary { m.undoAgentChange() }
+            if p.changesLibrary || p.parts != nil { m.undoAgentChange() }
             else if let um = m.editors[docId]?.controller.undo {
                 if um.groupingLevel > 0 { um.endUndoGrouping() }
                 um.undo()
@@ -220,6 +229,7 @@ extension Automation {
             }
             m.flushAll(); m.refreshIndex(); await wait(1.2)
             record("undone")
+            recordParts("undone")
             if let fid = r["folderId"] { r["folderAfterUndo"] = m.library.folders.contains { $0.id == fid } ? "kept" : "removed" }
         }
     }
