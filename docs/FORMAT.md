@@ -17,7 +17,7 @@ The reference implementation is `Sources/DraftCore`. All JSON is UTF‑8; timest
   history/<docId>/<ms>.json automatic local backups of a document (≤ 1 per 10 min, 30 kept)
   index/index.json        derived link/tag/task index (safe to delete; rebuilt on launch)
   assistant/<spaceId>.json local Assistant history; <spaceId>-openai.json optional cloud history
-  agent-requests/<requestId>.json local Codex proposals and acceptance status; never document content
+  agent-requests/<requestId>.json local MCP proposals (Codex, Claude Code) and their outcome
 ```
 
 ## Rules for every implementation
@@ -173,12 +173,27 @@ part of the vault: they live in `~/Library/Application Support/Draft/Models`.
 
 ### agent-requests/&lt;requestId&gt;.json
 
-An external Codex MCP client may queue a proposed note edit here. A proposal includes its target
-document ID, the SHA-256 revision of the complete document JSON, a short instruction, a bounded
-list of typed edits, and `status` (`pending`, `accepted`, `rejected`, or `stale`). Queuing a proposal
-does not change `docs/` or `library.json`. The running Mac app shows the proposal for review, checks
-the revision again, and applies accepted edits through its editor with one Undo step. Stale proposals
-cannot overwrite newer text. This directory is local coordination data, not a source of truth for notes.
+An MCP client (Codex, Claude Code) may queue a proposed change here; it never writes `docs/` or
+`library.json`. A proposal is
+
+`{"id": "request_…", "documentId": "d_…" | "new", "documentTitle", "instruction", "expectedRevision",
+"edits": [{"action", "blockId", "value?", "text?", "expectedText?", "target?", "position?"}], "createdAt",
+"status": "pending" | "accepted" | "rejected" | "stale" | "failed", "result?"}`.
+
+`expectedRevision` is the SHA-256 of the document's JSON (sorted keys) for note proposals, and of the
+sorted list of Space and folder ids (`s:<id>`, `f:<id>:<spaceId>`) for `create_document`. Library
+actions are standalone: `create_document` (`documentId` and `blockId` `"new"`, `expectedText` = title,
+`text` = Markdown, `value` = folder id or `unsorted`, `target` = Space id), `rename_document`
+(`expectedText` = new title) and `move_document` (`value` = folder id or `unsorted`, `target` = Space
+id). Note actions are listed in `draft_propose_note_edits`; `target` names the other block for
+`move_block` and `position` is `before`/`after` for `insert_blocks` and `move_block`.
+
+The running app shows each proposal for review. Applying rechecks the revision (a mismatch sets
+`stale`), applies note edits through the editor as one Undo step and library actions with one Undo
+step of their own, saves (with the usual backup) and updates the index. `failed` means the edit was
+refused (for example a phrase that no longer occurs once, or deleting an image, file, table or page
+card) and nothing changed. Older readers ignore `target` and `position`. This directory is local
+coordination data, not a source of truth for notes.
 
 ### index/index.json (derived)
 

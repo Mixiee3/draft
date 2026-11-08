@@ -95,18 +95,25 @@ every request Draft shows exactly which note text and earlier turns will be sent
 sent until you confirm. This is not ChatGPT sign-in and not a Codex agent inside Draft; local
 remains the default.
 
-## Codex and other MCP clients
+## Codex, Claude Code and other MCP clients
 
-`scripts/draft-mcp.sh` runs `DraftMCP`, a local stdio MCP server. It can list Spaces and documents,
-search, read documents, blocks and structure, describe Draft's formatting, and **propose** edits
-(`draft_propose_note_edits`). A proposal is written to `agent-requests/` in the vault and never
-touches a document: Draft shows a review sheet, and only Accept applies it through the editor, after
-checking the note hasn't changed since it was read, with a backup, an index update and one Undo step.
-Reject and stale proposals are reported back (`draft_request_status`). Whole-note replacement is
-refused for notes with images, files or nested pages; targeted edits keep them.
+`scripts/draft-mcp.sh` runs `DraftMCP`, a local stdio MCP server over your vault (or `--vault <folder>`).
+It lists Spaces, folders and documents, searches, reads documents, blocks and structure, describes
+Draft's formatting (with a restrained "make it look better" recipe), and **proposes** changes:
+note edits (text, append, insert, delete, reorder, headings, lists, tasks, quotes, callouts, code,
+inline formatting, colours, highlights, links, block colours, focus and block decorations,
+separators, document style) and creating, renaming and moving notes.
 
-Your notes live in `~/Library/Application Support/Draft/Vault` (Settings → Data & Storage →
-Show in Finder). Set `DRAFT_DATA_DIR=/some/folder` to use a different vault.
+A proposal is only a file in `agent-requests/`. Draft shows it in a review sheet with before and
+after for each change; nothing happens until you click Apply. Draft then checks the note (or the
+folders) haven't changed since the agent read them, saves with a backup, updates the index, and the
+whole proposal is one Undo. Reject leaves everything as it was. Draft never deletes images, files,
+tables or nested pages from a proposal, and whole-note replacement is refused for notes that have them.
+
+Setup: Codex — add `[mcp_servers.draft] command = "<repo>/scripts/draft-mcp.sh"` to
+`~/.codex/config.toml`. Claude Code — `claude mcp add draft -- <repo>/scripts/draft-mcp.sh` (or the
+`mcpServers` entry in `~/.claude.json`). Keep Draft open to review proposals; they wait if it's closed.
+`scripts/mcp-test.sh` checks the whole loop in a throwaway vault.
 
 ## Architecture (v0.1)
 

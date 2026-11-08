@@ -18,6 +18,7 @@ migration that backs up first; unknown fields and block types are preserved.
 Legend: ✅ done · 🟡 partial · ⬜ not started
 
 ### Change log of this plan
+- **2026‑11‑08** — v0.7 started: reviewed MCP operations (create, rename, move, block changes, links, tasks) for Codex and Claude Code.
 - **2026‑11‑08** — v0.6 work: polish pass, performance rows 13–15, Assistant rows 16, 17, 19, Focus/Present/Shortcuts/sidebar/per-Space settings; localization and table reordering moved to v0.8; VoiceOver, permissions and IME checks need a person.
 
 - **2026‑11‑08** — v0.5.1 shipped (UI polish, design system, Local Assistant); v0.6 extended with tab-switch latency, Assistant follow-ups and voice.
@@ -299,6 +300,27 @@ editing; floating Assistant fits the screen (it was 1,262 pt tall because the ho
 window); readable edit preview (before/after or tinted inline diff); Share tabs no longer truncate;
 live Info counts; tab overflow fade; empty states; dark Paper; first-use welcome and tour.
 Screens: `docs/screenshots/v06/`.
+
+## v0.7 — "Agents that ask first" (macOS) 🟡 in progress
+
+Codex and Claude Code work on notes through Draft's MCP server; every change is a proposal the user
+reviews and applies in Draft.
+
+| # | Feature | Status | Acceptance check (result) |
+|---|---|---|---|
+| 1 | Claude Code and Codex connected to the stable checkout | ✅ | Codex `~/.codex/config.toml` and Claude Code `~/.claude.json` (project scope) run `~/Documents/Draft/scripts/draft-mcp.sh`; Claude Code CLI reports “Connected”. Tools appear in a new Claude Code session (not in the session that added them) |
+| 2 | Read tools | ✅ | Spaces, folders, documents, search, document, structure, block, revision, formatting guide (`scripts/mcp-test.sh`) |
+| 3 | Create notes | ✅ | Reviewed; fresh block ids; folder and Space; index updated; Undo moves it to Recently Deleted; reject, stale (folders changed) and relaunch checked |
+| 4 | Rename and move notes (folder or Space, with nested pages) | ✅ | Reviewed, one Undo each |
+| 5 | Append, insert, delete, reorder blocks | ✅ | One proposal = one Undo; other blocks keep ids and marks (`AgentBlockOpsTests`, end-to-end) |
+| 6 | Block types, headings, lists, tasks, quotes, callouts, code | ✅ | Existing actions plus `task_checked` |
+| 7 | Inline formatting, colours, highlights, links | ✅ | bold/italic/underline/strike/code, text colour, highlight, link (http/https/mailto/draft only), unlink |
+| 8 | Block colours, focus and block decorations, separators (line, strong, dotted, three-dot, wave, tape), document styles | ✅ | Existing actions, verified in the end-to-end block proposal |
+| 9 | Tags and tasks | ✅ | Tags are `#words` in text (indexed after apply); task state via `task_checked` |
+| 10 | Images, files, captions, nested pages and attachments preserved | ✅ | Can't be deleted by a proposal; kept through every other edit; whole-note replacement refused when present |
+| 11 | Review UI in Draft's design | 🟡 | Plain-language card per change with before/after, inline Markdown, light and dark, Return/Escape, VoiceOver-combined cards; checked in dark mode at normal width only; VoiceOver not walked through by a person |
+| 12 | Create folders, delete notes, multi-note proposals, tables/collections, inserting images or files | ⬜ planned | Same reviewed design |
+| 13 | Genuine Codex app-server mode | ⬜ planned | Only after a supported sign-in flow exists |
 
 ## v0.8 — "Trust" (macOS)
 
