@@ -276,6 +276,16 @@ public enum WordDiff {
         return out
     }
 
+    /// Share of words that differ; past about 40% an inline diff is harder to read than before/after.
+    public static func changedFraction(_ parts: [Part]) -> Double {
+        var same = 0, changed = 0
+        for p in parts {
+            let n = p.text.split(whereSeparator: { $0.isWhitespace }).count
+            if p.op == .same { same += n } else { changed += n }
+        }
+        return same + changed == 0 ? 0 : Double(changed) / Double(same + changed)
+    }
+
     public static func diff(_ a: String, _ b: String) -> [Part] {
         let x = tokens(a), y = tokens(b)
         guard x.count * y.count <= 4_000_000 else { return [Part(op: .removed, text: a), Part(op: .added, text: b)].filter { !$0.text.isEmpty } }

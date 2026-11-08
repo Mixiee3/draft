@@ -123,7 +123,7 @@ struct CollectionScreen: View {
             .background(t.canvas)
             .onAppear { name = data.name }
         } else {
-            EmptyLibrary(message: "This collection is no longer in its document.").background(t.canvas)
+            EmptyLibrary(symbol: "square.grid.3x2", title: "Collection not found", message: "This collection is no longer in its document.").background(t.canvas)
         }
     }
 
@@ -141,23 +141,23 @@ struct CollectionScreen: View {
                 Spacer(minLength: 8)
                 Text("\(data.rows(view, title: model.pageTitle).count) of \(data.items.count)").font(.system(size: DS.footnote)).foregroundStyle(t.secondary)
                 Button { model.addCollectionItem(docId, blockId, undo: undo) } label: { Label("New Item", systemImage: "plus") }
-                    .buttonStyle(.borderedProminent).controlSize(.regular).keyboardShortcut("n", modifiers: [.command, .option, .shift])
-                Menu {
+                    .buttonStyle(.draftPrimary).keyboardShortcut("n", modifiers: [.command, .option, .shift])
+                DraftIconMenu(symbol: "ellipsis", label: "More", onPill: false) {
                     Button("Export CSV…") { exportCSV(data) }
                     Button("Import CSV…") { importCSV() }
                     Divider()
                     Button("Open Document") { model.openView(.doc(docId)) }
-                } label: { Image(systemName: "ellipsis") }.menuStyle(.borderlessButton).menuIndicator(.hidden).frame(width: 28).accessibilityLabel("More")
+                }
             }
             HStack(spacing: 8) {
                 DraftSegmented("View", selection: Binding(get: { view.id }, set: { v in update("Switch View") { $0.activeView = v } }),
                                symbols: data.views.map { v in (v.id, v.name, v.type == "kanban" ? "rectangle.split.3x1" : v.type == "gallery" ? "square.grid.2x2" : "tablecells") })
-                Menu {
+                DraftIconMenu(symbol: "plus.rectangle.on.rectangle", label: "Add or delete views", onPill: false) {
                     ForEach([("table", "Table"), ("gallery", "Gallery"), ("kanban", "Board")], id: \.0) { k, label in
                         Button(label) { update("Add View") { var v = CollectionView(name: label, type: k); if k == "kanban" { v.groupBy = $0.fields.first { $0.type == "select" }?.id }; $0.views.append(v); $0.activeView = v.id } }
                     }
                     if data.views.count > 1 { Divider(); Button("Delete “\(view.name)”", role: .destructive) { update("Delete View") { d in d.views.removeAll { $0.id == view.id }; d.activeView = d.views.first?.id } } }
-                } label: { Image(systemName: "plus.rectangle.on.rectangle") }.menuStyle(.borderlessButton).menuIndicator(.hidden).frame(width: 28).accessibilityLabel("Add or delete views")
+                }
                 Spacer()
                 sortMenu(data, view)
                 Button { filtersOpen.toggle() } label: { Label(view.filters.isEmpty ? "Filter" : "Filter (\(view.filters.count))", systemImage: "line.3.horizontal.decrease.circle") }
@@ -230,7 +230,7 @@ struct ValueCell: View {
             Menu {
                 ForEach(field.options ?? [], id: \.self) { o in Button(o) { set(.string(o)) } }
                 if v != nil { Divider(); Button("Clear") { set(nil) } }
-            } label: { chip(v?.string) }.menuStyle(.borderlessButton).menuIndicator(.hidden).accessibilityLabel("\(field.name): \(v?.string ?? "empty")")
+            } label: { chip(v?.string) }.menuStyle(.button).buttonStyle(.plain).menuIndicator(.hidden).accessibilityLabel("\(field.name): \(v?.string ?? "empty")")
         case "multiSelect", "relation":
             let list = v?.items?.compactMap(\.string) ?? []
             Menu {
@@ -238,7 +238,7 @@ struct ValueCell: View {
                 ForEach(choices, id: \.0) { id, label in
                     Button((list.contains(id) ? "✓ " : "") + label) { let n = list.contains(id) ? list.filter { $0 != id } : list + [id]; set(n.isEmpty ? nil : .array(n.map { .string($0) })) }
                 }
-            } label: { chip(data.display(item, field.id, title: model.pageTitle).nilIfEmpty) }.menuStyle(.borderlessButton).menuIndicator(.hidden).accessibilityLabel("\(field.name): \(data.display(item, field.id, title: model.pageTitle))")
+            } label: { chip(data.display(item, field.id, title: model.pageTitle).nilIfEmpty) }.menuStyle(.button).buttonStyle(.plain).menuIndicator(.hidden).accessibilityLabel("\(field.name): \(data.display(item, field.id, title: model.pageTitle))")
         case "date":
             if let s = v?.string, let d = Day.date(s) {
                 DatePicker("", selection: Binding(get: { d }, set: { set(.string(Day.key($0))) }), displayedComponents: .date).labelsHidden().datePickerStyle(.field).accessibilityLabel(field.name)
@@ -342,7 +342,7 @@ struct CollectionTable: View {
                     if view.calc[f.id] != nil { Divider(); Button("None") { model.updateCollection(docId, blockId, "Calculate", undo: undo) { d in if let i = d.views.firstIndex(where: { $0.id == view.id }) { d.views[i].calc[f.id] = nil } } } }
                 } label: {
                     Text(view.calc[f.id].map { "\($0.capitalized) \(data.calculate($0, field: f.id, rows: rows, title: model.pageTitle))" } ?? "Calculate").lineLimit(1)
-                }.menuStyle(.borderlessButton).menuIndicator(.hidden).frame(width: Self.width - 10, alignment: .leading).padding(.leading, 10)
+                }.menuStyle(.button).buttonStyle(.plain).menuIndicator(.hidden).frame(width: Self.width - 10, alignment: .leading).padding(.leading, 10)
                 .accessibilityLabel("Calculation for \(f.name)")
             }
         }

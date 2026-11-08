@@ -79,7 +79,7 @@ struct TasksView: View {
             }).padding(.horizontal, 18).padding(.bottom, 10).frame(maxWidth: .infinity, alignment: .leading)
             .accessibilityLabel("Task list")
             if rows.isEmpty {
-                EmptyLibrary(message: emptyText)
+                EmptyLibrary(symbol: "checklist", title: "No tasks", message: emptyText)
             } else {
                 ScrollView {
                     LazyVStack(spacing: 6) { ForEach(rows, id: \.task.block) { TaskRow(doc: $0.doc, task: $0.task) } }
@@ -216,7 +216,7 @@ struct TagView: View {
                 }
             }
             if hits.isEmpty {
-                EmptyLibrary(message: "No blocks use #\(tag) any more.")
+                EmptyLibrary(symbol: "number", title: "No tagged blocks", message: "No blocks use #\(tag) any more.")
             } else {
                 ScrollView {
                     LazyVStack(alignment: .leading, spacing: 14) {

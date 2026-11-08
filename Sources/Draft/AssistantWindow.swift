@@ -16,10 +16,13 @@ extension AppModel {
 
     func showAssistantWindow() {
         if assistantWindow == nil {
-            let p = NSPanel(contentRect: NSRect(x: 0, y: 0, width: 380, height: 640), styleMask: [.titled, .closable, .resizable, .fullSizeContentView, .utilityWindow],
+            let p = NSPanel(contentRect: NSRect(x: 0, y: 0, width: 400, height: 640), styleMask: [.titled, .closable, .resizable, .fullSizeContentView, .utilityWindow],
                             backing: .buffered, defer: false)
             p.title = "Assistant"
             p.titlebarAppearsTransparent = true
+            p.titleVisibility = .hidden // the view's own header names it and has the close button
+            for b in [NSWindow.ButtonType.closeButton, .miniaturizeButton, .zoomButton] { p.standardWindowButton(b)?.isHidden = true }
+            p.isMovableByWindowBackground = true
             p.isFloatingPanel = true
             p.hidesOnDeactivate = false
             p.becomesKeyOnlyIfNeeded = false
@@ -35,6 +38,7 @@ extension AppModel {
             }
             assistantWindow = p
         }
+        if let p = assistantWindow, let v = (p.screen ?? NSScreen.main)?.visibleFrame { p.setFrame(fitWindowFrame(p.frame, in: v), display: false) }
         assistantWindow?.makeKeyAndOrderFront(nil)
     }
 }
@@ -47,7 +51,7 @@ struct AssistantWindowRoot: View {
         let s = model.library.settings
         let dark = s.theme == "dark" || (s.theme == "system" && scheme == .dark)
         AssistantView(a: model.assistant, floating: true)
-            .padding(.top, 28)
+            .padding(.top, 6)
             .background(Tokens.make(dark: dark, accent: s.accent, tint: nil).canvas)
             .environment(\.tokens, Tokens.make(dark: dark, accent: s.accent, tint: nil))
             .preferredColorScheme(s.theme == "system" ? nil : (dark ? .dark : .light))
@@ -59,15 +63,16 @@ struct AssistantWindowRoot: View {
 struct AssistantToolbarButton: View {
     @Environment(AppModel.self) var model
     @Environment(\.tokens) var t
+    var compact = false
     @State private var hover = false
     var body: some View {
         let on = model.assistant.isOpen
         Button { model.toggleAssistant() } label: {
             HStack(spacing: 6) {
                 Image(systemName: "sparkle").font(.system(size: DS.footnote, weight: .semibold)).foregroundStyle(on ? Color.white : t.accent)
-                Text("Assistant").font(.system(size: DS.footnote, weight: .semibold)).foregroundStyle(on ? Color.white : t.text)
+                if !compact { Text("Assistant").font(.system(size: DS.footnote, weight: .semibold)).foregroundStyle(on ? Color.white : t.text) }
             }
-            .padding(.horizontal, DS.s3).frame(height: DS.control)
+            .padding(.horizontal, compact ? 0 : DS.s3).frame(minWidth: DS.control).frame(height: DS.control)
             .background(Capsule().fill(on ? t.accent : (hover ? t.selected : t.hover)))
             .contentShape(Capsule())
         }

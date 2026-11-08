@@ -1,176 +1,231 @@
 import SwiftUI
 import DraftCore
 
-struct SettingsView: View {
+/// Settings sections, shared by the sidebar (normal width) and the page itself (narrow).
+enum SettingsSections {
+    static let all: [(id: String, title: String, icon: String)] = [
+        ("appearance", "Appearance", "paintpalette"), ("editor", "Editor", "text.cursor"), ("space", "Space", "square.on.circle"),
+        ("daily", "Daily Notes & Tasks", "calendar"), ("tags", "Tags", "number"), ("templates", "Templates", "doc.on.doc"),
+        ("assistant", "Assistant", "sparkle"), ("advanced", "Advanced", "slider.horizontal.3"), ("data", "Data & Storage", "internaldrive"),
+        ("stats", "Stats", "chart.bar"), ("about", "About Draft", "info.circle"),
+    ]
+    static func title(_ id: String) -> String { all.first { $0.id == id }?.title ?? "Settings" }
+}
+
+struct RailVisibleKey: EnvironmentKey { static let defaultValue = true }
+extension EnvironmentValues { var railVisible: Bool { get { self[RailVisibleKey.self] } set { self[RailVisibleKey.self] = newValue } } }
+
+/// Settings in the sidebar, in place of the library list, while Settings is open.
+struct SettingsRail: View {
     @Environment(AppModel.self) var model
     @Environment(\.tokens) var t
     let section: String
-    @State private var spaceName = ""
+    var body: some View {
+        ScrollView {
+            VStack(alignment: .leading, spacing: 1) {
+                HStack(spacing: DS.s2) {
+                    IconButton(symbol: "chevron.left", label: "Close Settings", size: 26) { model.closeTab(model.activeTab.id) }
+                    Text("Settings").font(.system(size: DS.headline, weight: .semibold)).foregroundStyle(t.text).accessibilityAddTraits(.isHeader)
+                }.padding(.horizontal, 6).padding(.bottom, DS.s2)
+                ForEach(SettingsSections.all, id: \.id) { s in
+                    RailRow(icon: s.icon, title: s.title, isSelected: section == s.id) { model.showSettings(s.id) }
+                }
+            }.padding(.horizontal, 8)
+        }
+    }
+}
 
-    let sections: [(String, String, String, String?)] = [
-        ("appearance", "Appearance", "paintpalette", nil), ("editor", "Editor", "text.cursor", nil), ("space", "Space", "square.on.circle", nil),
-        ("daily", "Daily Notes & Tasks", "calendar", nil), ("tags", "Tags", "number", nil), ("advanced", "Advanced", "slider.horizontal.3", nil),
-        ("stats", "Stats", "chart.bar", nil), ("data", "Data & Storage", "internaldrive", nil), ("about", "About Draft", "info.circle", nil),
-        ("templates", "Templates", "doc.on.doc", nil), ("assistant", "Assistant", "sparkle", nil), ("published", "Published Content", "globe", "v1.x"), ("language", "Language & Spelling", "globe.europe.africa", "v0.6"),
-    ]
+struct SettingsView: View {
+    @Environment(AppModel.self) var model
+    @Environment(\.tokens) var t
+    @Environment(\.railVisible) var railVisible
+    let section: String
+    @State private var spaceName = ""
+    @State private var ignoreText = ""
+    @State private var pendingReminders: [String]? = nil
+    @State private var storage: Int64?
 
     var body: some View {
         HStack(spacing: 0) {
-            VStack(alignment: .leading, spacing: 2) {
-                HStack {
-                    PillGroup { PillButton(symbol: "xmark", label: "Close settings") { model.closeTab(model.activeTab.id) } }
-                    Text("Settings").font(.system(size: DS.title3, weight: .semibold)).foregroundStyle(t.text)
-                }.padding(.bottom, 12)
-                ForEach(sections, id: \.0) { id, title, icon, planned in
-                    RailRow(icon: icon, title: title + (planned.map { " · \($0)" } ?? ""), isSelected: section == id) {
-                        if let i = model.tabs.firstIndex(where: { $0.id == model.activeTabId }) { model.tabs[i].view = ViewRef(kind: "settings", section: id) }
-                    }.opacity(planned == nil ? 1 : 0.6)
-                }
-                Spacer()
-            }.frame(width: 230).padding(16)
-            Divider().opacity(0.4)
+            if !railVisible {
+                ScrollView {
+                    VStack(alignment: .leading, spacing: 1) {
+                        ForEach(SettingsSections.all, id: \.id) { s in RailRow(icon: s.icon, title: s.title, isSelected: section == s.id) { model.showSettings(s.id) } }
+                    }.padding(12)
+                }.frame(width: 210)
+                Divider().opacity(0.4)
+            }
             ScrollView {
-                VStack(alignment: .leading, spacing: 22) { content }
-                    .frame(maxWidth: 620, alignment: .leading).padding(28).frame(maxWidth: .infinity)
-            }
-        }.background(t.canvas)
-    }
-
-    @ViewBuilder var content: some View {
-        switch section {
-        case "appearance": appearance
-        case "editor":
-            group("Completed tasks in documents") {
-                DraftSegmented("Completed tasks", selection: Binding(get: { model.library.settings.completedTasks }, set: { v in model.setSettings { $0.completedTasks = v } }), options: [("strike", "Strikethrough"), ("dim", "Dimmed"), ("none", "Unchanged")])
-            }
-            group("Default style for new documents") {
-                Picker("", selection: Binding(get: { model.library.settings.defaultStyleId }, set: { v in model.setSettings { $0.defaultStyleId = v } })) {
-                    ForEach(Styles.all) { Text($0.name).tag($0.id) }
-                }.labelsHidden()
-            }
-            group("Keyboard") {
-                Text("⌘N new document · ⌘O quick open · ⌘W close tab · ⌘F find in page · ⌃⌘S sidebar · ⌥F10 focus the formatting bar · ⌘⇧B reapply last color. The Format and Insert menus list every editor shortcut.")
-                    .font(.system(size: DS.body)).foregroundStyle(t.secondary)
-            }
-        case "space":
-            group("Space name") {
-                HStack {
-                    SpaceAvatar(name: model.library.space.name, size: 44)
-                    TextField("Space name", text: $spaceName, onCommit: { model.renameSpace(spaceName) }).textFieldStyle(.roundedBorder)
-                    Button("Save") { model.renameSpace(spaceName) }
-                }.onAppear { spaceName = model.library.space.name }
-            }
-            group("All Spaces") {
-                ForEach(model.library.spaces, id: \.id) { s in
-                    HStack {
-                        SpaceAvatar(name: s.id == model.library.space.id ? model.library.space.name : s.name, size: 24)
-                        Text(s.id == model.library.space.id ? model.library.space.name : s.name)
-                        if s.id == model.library.space.id { Text("current").font(.system(size: DS.caption)).foregroundStyle(t.tertiary) }
-                        Spacer()
-                        if s.id != model.library.space.id {
-                            Button("Switch") { model.switchSpace(s.id) }
-                            Button("Delete") { model.deleteSpace(s.id) }.disabled(!model.spaceIsEmpty(s.id))
-                                .help(model.spaceIsEmpty(s.id) ? "Delete this empty Space" : "Move or delete its documents first")
-                        }
-                    }.font(.system(size: DS.body))
+                VStack(alignment: .leading, spacing: DS.s5) {
+                    HStack(spacing: DS.s3) {
+                        if !railVisible { PillGroup { PillButton(symbol: "xmark", label: "Close settings") { model.closeTab(model.activeTab.id) } } }
+                        Text(SettingsSections.title(section)).font(.system(size: DS.title2, weight: .bold)).foregroundStyle(t.text).accessibilityAddTraits(.isHeader)
+                    }
+                    content
                 }
-                Button("New Space…") { model.createSpace("New Space") }
-                Text("Each Space has its own folders, documents, tags, tasks and tabs. Templates and styles are shared.").font(.system(size: DS.footnote)).foregroundStyle(t.tertiary)
-            }
-        case "daily": daily
-        case "templates": templates
-        case "assistant": AssistantSettings(a: model.assistant)
-        case "tags": tags
-        case "advanced": advanced
-        case "stats": stats
-        case "data":
-            group("Where your notes live") {
-                Text(model.vault.dir.path).font(.system(size: DS.footnote, design: .monospaced)).textSelection(.enabled).foregroundStyle(t.text)
-                Text("library.json is the index, docs/ holds one JSON file per document, assets/ holds images, backups/ holds copies made before any format migration. The format is documented in docs/FORMAT.md.")
-                    .font(.system(size: DS.footnote)).foregroundStyle(t.secondary).fixedSize(horizontal: false, vertical: true)
-                HStack { Button("Show in Finder") { model.revealVault() }; Button("Export All as Markdown…") { model.exportAll() } }
-            }
-            if let r = model.readOnly { group("Read-only mode") { Text(r).foregroundStyle(.orange) } }
-        case "about":
-            group("Draft 0.5.1") {
-                Text("A free, open-source, local-first notes app. No account and no telemetry; nothing goes online unless you turn on image search, link previews or the Assistant's model download. Your documents are portable JSON with Markdown export.").font(.system(size: DS.body)).foregroundStyle(t.secondary)
-                Button("Third-Party Notices") {
-                    if let u = Bundle.main.url(forResource: "THIRD_PARTY_NOTICES", withExtension: "md") { NSWorkspace.shared.open(u) }
-                }
-            }
-        default:
-            let p = sections.first { $0.0 == section }
-            group(p?.1 ?? "") {
-                Text("Not available yet — planned for \(p?.3 ?? "a later version"). See docs/ROADMAP.md for what it will do.").foregroundStyle(t.secondary)
+                .frame(maxWidth: 640, alignment: .leading).padding(.horizontal, DS.s5).padding(.vertical, DS.s5).frame(maxWidth: .infinity)
             }
         }
+        .background(t.canvas)
     }
 
     func bind<V>(_ k: WritableKeyPath<DraftCore.Settings, V>) -> Binding<V> {
         Binding(get: { model.library.settings[keyPath: k] }, set: { v in model.setSettings { $0[keyPath: k] = v } })
     }
 
-    @State private var ignoreText = ""
-    @State private var pendingReminders: [String]? = nil
+    @ViewBuilder var content: some View {
+        switch section {
+        case "appearance": appearance
+        case "editor": editor
+        case "space": space
+        case "daily": daily
+        case "templates": templates
+        case "assistant": AssistantSettings(a: model.assistant)
+        case "tags": tags
+        case "advanced": advanced
+        case "stats": stats
+        case "data": data
+        case "about": about
+        default: EmptyState(symbol: "questionmark.circle", title: "Nothing here", message: "This section doesn't exist.")
+        }
+    }
 
-    var daily: some View {
-        VStack(alignment: .leading, spacing: 22) {
-            group("Daily notes") {
-                Toggle("Show daily notes in All Docs and folders", isOn: bind(\.showDailyNotes))
-                Text("Daily notes are always in Calendar and in Quick Open. ⇧⌘D opens today's note; there is never more than one note per day.")
-                    .font(.system(size: DS.footnote)).foregroundStyle(t.secondary).fixedSize(horizontal: false, vertical: true)
-                Picker("Template for new daily notes", selection: bind(\.dailyTemplateId)) {
-                    Text("None (empty note)").tag(String?.none)
-                    ForEach(model.library.liveDocs.filter { $0.dailyDate == nil }.sorted { $0.title < $1.title }) { Text(model.docTitle($0.id)).tag(Optional($0.id)) }
+    // MARK: Sections
+
+    var appearance: some View {
+        VStack(alignment: .leading, spacing: DS.s5) {
+            SettingsSection(title: "Theme") {
+                HStack(spacing: DS.s4) {
+                    ForEach([("system", "System"), ("light", "Light"), ("dark", "Dark")], id: \.0) { k, label in
+                        let on = model.library.settings.theme == k
+                        Button { model.setSettings { $0.theme = k } } label: {
+                            VStack(spacing: DS.s2) {
+                                ThemeThumb(kind: k).frame(width: 120, height: 76)
+                                    .overlay(RoundedRectangle(cornerRadius: DS.rCard, style: .continuous).strokeBorder(on ? t.accent : t.line, lineWidth: on ? 2 : 0.5))
+                                Text(label).font(.system(size: DS.footnote, weight: on ? .semibold : .medium)).foregroundStyle(on ? t.accent : t.text)
+                            }
+                        }
+                        .buttonStyle(.plain).accessibilityLabel("\(label) theme").accessibilityAddTraits(on ? [.isSelected] : [])
+                    }
+                }.padding(DS.s3 + 2)
+            }
+            SettingsSection(title: "Accent color") {
+                HStack(spacing: DS.s3) {
+                    ForEach([("#5b6cf0", "Indigo"), ("#2f9bd8", "Blue"), ("#e0558f", "Pink"), ("#2fae8c", "Green"), ("#9b6cf0", "Purple"), ("#e0a42e", "Amber"), ("#8a8d94", "Graphite")], id: \.0) { hex, name in
+                        let on = model.library.settings.accent == hex
+                        Button { model.setSettings { $0.accent = hex } } label: {
+                            Circle().fill(Color(hex: hex)).frame(width: 24, height: 24)
+                                .overlay(Circle().strokeBorder(t.text.opacity(0.85), lineWidth: on ? 2 : 0).padding(-4))
+                                .frame(width: 32, height: 32).contentShape(Circle())
+                        }.buttonStyle(.plain).help(name).accessibilityLabel("\(name) accent").accessibilityAddTraits(on ? [.isSelected] : [])
+                    }
+                }.padding(.horizontal, DS.s3).padding(.vertical, DS.s2)
+            }
+            SettingsSection(title: "Window and motion") {
+                SettingsSwitchRow(title: "Tint the app with the document's style", detail: "The sidebar and tab strip take the open document's colors.", isOn: bind(\.useDocStyleForApp))
+                SettingsSwitchRow(title: "Paper follows dark mode", detail: "Documents in the Paper style turn dark with the app. Exports keep the light page.", isOn: bind(\.paperFollowsAppearance))
+                SettingsSwitchRow(title: "Reduce animations", detail: "Panels and screens fade instead of moving. macOS Reduce Motion does the same.", isOn: bind(\.reduceMotion))
+            }
+            SettingsSection(title: "Getting started") {
+                SettingsRow(title: "Welcome and tour", detail: "See the short introduction to Draft again.") {
+                    Button("Replay Tour") { model.startTour() }.buttonStyle(.draft)
                 }
             }
-            group("Reminders") {
-                Toggle("Remind me when tasks are due", isOn: bind(\.reminders))
-                Picker("Time for tasks with only a date", selection: bind(\.reminderHour)) {
-                    ForEach(5..<23) { h in Text(String(format: "%02d:00", h)).tag(h) }
-                }.disabled(!model.library.settings.reminders)
-                Text(model.reminders.available ? "Local notifications on this Mac only. Turning reminders off removes every pending one."
-                     : "Reminders need the Draft app bundle (scripts/build-app.sh); they are unavailable when running with swift run.")
-                    .font(.system(size: DS.footnote)).foregroundStyle(t.secondary).fixedSize(horizontal: false, vertical: true)
-                if let p = pendingReminders { Text("\(p.count) reminder\(p.count == 1 ? "" : "s") scheduled").font(.system(size: DS.footnote)).foregroundStyle(t.tertiary) }
+        }
+    }
+
+    var editor: some View {
+        VStack(alignment: .leading, spacing: DS.s5) {
+            SettingsSection(title: "Writing") {
+                SettingsMenuRow(title: "Completed tasks", detail: "How checked items look in documents.", selection: bind(\.completedTasks), options: [("strike", "Strikethrough"), ("dim", "Dimmed"), ("none", "Unchanged")])
+                SettingsMenuRow(title: "Style for new documents", selection: bind(\.defaultStyleId), options: Styles.all.map { ($0.id, $0.name) })
+                SettingsMenuRow(title: "Dates in documents", detail: "Only the look changes; the dates stay the same.", selection: bind(\.dateStyle), options: [("chip", "Chips"), ("text", "Plain text")])
+            }
+            SettingsSection(title: "Keyboard shortcuts", footer: "The Format and Insert menus list every editor shortcut.") {
+                ShortcutList(items: [
+                    ("⌘N", "New document"), ("⌥⌘T", "New from template"), ("⌘O", "Quick Open"), ("⌘J", "Assistant"), ("⌘F", "Find in page"),
+                    ("⇧⌘D", "Today's daily note"), ("⌃⌘S", "Show or hide the sidebar"), ("⌘W", "Close tab"), ("⌥F10", "Focus the formatting bar"),
+                    ("⇧⌘B", "Reapply last color"), ("/", "Insert a block (on an empty line)"),
+                ])
+            }
+        }
+    }
+
+    var space: some View {
+        VStack(alignment: .leading, spacing: DS.s5) {
+            SettingsSection(title: "This Space") {
+                HStack(spacing: DS.s3) {
+                    SpaceAvatar(name: model.library.space.name, size: 40)
+                    DraftTextField(placeholder: "Space name", text: $spaceName) { model.renameSpace(spaceName) }
+                    Button("Rename") { model.renameSpace(spaceName) }.buttonStyle(.draft).disabled(spaceName == model.library.space.name || spaceName.isEmpty)
+                }
+                .padding(DS.s3 + 2)
+                .onAppear { spaceName = model.library.space.name }
+            }
+            SettingsSection(title: "All Spaces", footer: "Each Space has its own folders, documents, tags, tasks and tabs. Templates and styles are shared.") {
+                ForEach(model.library.spaces, id: \.id) { s in
+                    let current = s.id == model.library.space.id
+                    let name = current ? model.library.space.name : s.name
+                    SettingsRow(title: name, detail: current ? "Current Space" : nil) {
+                        if !current {
+                            Button("Switch") { model.switchSpace(s.id) }.buttonStyle(DraftButtonStyle(compact: true))
+                            Button("Delete") { model.deleteSpace(s.id) }.buttonStyle(DraftButtonStyle(role: .destructive, compact: true)).disabled(!model.spaceIsEmpty(s.id))
+                                .help(model.spaceIsEmpty(s.id) ? "Delete this empty Space" : "Move or delete its documents first")
+                        }
+                    }
+                }
+                SettingsRow(title: "New Space") { Button("Create…") { model.createSpace("New Space") }.buttonStyle(DraftButtonStyle(compact: true)) }
+            }
+        }
+    }
+
+    var daily: some View {
+        VStack(alignment: .leading, spacing: DS.s5) {
+            SettingsSection(title: "Daily notes", footer: "Daily notes are always in Calendar and Quick Open. ⇧⌘D opens today's note; there is never more than one note per day.") {
+                SettingsSwitchRow(title: "Show daily notes in All Docs and folders", isOn: bind(\.showDailyNotes))
+                SettingsMenuRow(title: "Template for new daily notes", selection: bind(\.dailyTemplateId),
+                                options: [(String?.none, "None (empty note)")] + model.library.liveDocs.filter { $0.dailyDate == nil }.sorted { $0.title < $1.title }.prefix(60).map { (Optional($0.id), model.docTitle($0.id)) })
+            }
+            SettingsSection(title: "Reminders", footer: model.reminders.available ? "Local notifications on this Mac only. Turning reminders off removes every pending one." : "Reminders need the Draft app bundle (scripts/build-app.sh).") {
+                SettingsSwitchRow(title: "Remind me when tasks are due", detail: pendingReminders.map { "\($0.count) reminder\($0.count == 1 ? "" : "s") scheduled" }, isOn: bind(\.reminders))
+                SettingsMenuRow(title: "Time for tasks with only a date", selection: bind(\.reminderHour), options: (5..<23).map { ($0, String(format: "%02d:00", $0)) }, disabled: !model.library.settings.reminders)
             }
             .onAppear { model.reminders.pending { pendingReminders = $0 } }
-            group("Calendar events") {
-                Toggle("Show events from Calendar next to daily notes", isOn: Binding(get: { model.library.settings.calendarEvents }, set: { on in
+            SettingsSection(title: "Calendar", footer: "Optional. Draft asks macOS for access only when you turn this on, reads events on this Mac, and never changes them.") {
+                SettingsSwitchRow(title: "Show events from Calendar next to daily notes", isOn: Binding(get: { model.library.settings.calendarEvents }, set: { on in
                     guard on else { model.setSettings { $0.calendarEvents = false }; return }
                     CalendarEvents.shared.request { ok, msg in
                         model.setSettings { $0.calendarEvents = ok }
                         if let msg { model.toast(msg) }
                     }
                 }))
-                Text("Optional. Draft asks macOS for access only when you turn this on, reads events on this Mac, and never changes them.")
-                    .font(.system(size: DS.footnote)).foregroundStyle(t.secondary).fixedSize(horizontal: false, vertical: true)
+                SettingsMenuRow(title: "Week starts on", selection: bind(\.weekStart), options: [(0, "System setting"), (1, "Sunday"), (2, "Monday")])
+                SettingsMenuRow(title: "A new day starts at", detail: "Before this hour, Today still means the previous day.", selection: bind(\.dayStartHour), options: (0..<7).map { ($0, String(format: "%02d:00", $0)) })
             }
         }
     }
 
     var tags: some View {
-        VStack(alignment: .leading, spacing: 22) {
-            group("Words that are not tags") {
-                Toggle("Ignore color codes such as #fff and #a1b2c3", isOn: bind(\.tagRules.ignoreHex))
-                Toggle("Ignore numbers such as #1 and #2026", isOn: bind(\.tagRules.ignoreNumeric))
-                HStack {
-                    TextField("Also ignore (comma separated, e.g. todo, wip)", text: $ignoreText).textFieldStyle(.roundedBorder)
-                        .onSubmit(saveIgnore).accessibilityLabel("Custom words to ignore")
-                    Button("Save", action: saveIgnore)
-                }.onAppear { ignoreText = model.library.settings.tagRules.custom.joined(separator: ", ") }
+        VStack(alignment: .leading, spacing: DS.s5) {
+            SettingsSection(title: "Words that are not tags") {
+                SettingsSwitchRow(title: "Ignore color codes", detail: "Such as #fff and #a1b2c3", isOn: bind(\.tagRules.ignoreHex))
+                SettingsSwitchRow(title: "Ignore numbers", detail: "Such as #1 and #2026", isOn: bind(\.tagRules.ignoreNumeric))
+                HStack(spacing: DS.s2) {
+                    DraftTextField(placeholder: "Also ignore (comma separated, e.g. todo, wip)", text: $ignoreText, onSubmit: saveIgnore).accessibilityLabel("Custom words to ignore")
+                    Button("Save", action: saveIgnore).buttonStyle(.draft)
+                }
+                .padding(DS.s3)
+                .onAppear { ignoreText = model.library.settings.tagRules.custom.joined(separator: ", ") }
             }
-            group("Tags in this space") {
-                let tags = model.index.tagCounts(live: model.liveIds)
-                if tags.isEmpty { Text("No tags yet. Type # and a word in any document.").foregroundStyle(t.secondary) }
+            let tags = model.index.tagCounts(live: model.liveIds)
+            SettingsSection(title: "Tags in this Space") {
+                if tags.isEmpty { Text("No tags yet. Type # and a word in any document.").font(.system(size: DS.body)).foregroundStyle(t.secondary).padding(DS.s3 + 2) }
                 ForEach(tags, id: \.tag) { tag in
-                    HStack {
-                        Circle().fill(Color(hex: model.tagColor(tag.tag))).frame(width: 10, height: 10)
-                        Button("#" + tag.tag) { model.openView(ViewRef(kind: "tag", section: tag.tag)) }.buttonStyle(.link)
-                        Text("\(tag.count)").foregroundStyle(t.tertiary)
-                        Spacer()
-                        if model.library.settings.tagColors[tag.tag.lowercased()] != nil { Button("Default color") { model.setTagColor(tag.tag, nil) }.buttonStyle(.link) }
-                    }.font(.system(size: DS.body))
+                    SettingsRow(title: "#" + tag.tag, detail: "\(tag.count) block\(tag.count == 1 ? "" : "s")") {
+                        Circle().fill(Color(hex: model.tagColor(tag.tag))).frame(width: 10, height: 10).accessibilityHidden(true)
+                        if model.library.settings.tagColors[tag.tag.lowercased()] != nil { Button("Default Color") { model.setTagColor(tag.tag, nil) }.buttonStyle(DraftButtonStyle(role: .quiet, compact: true)) }
+                        Button("Show") { model.openView(ViewRef(kind: "tag", section: tag.tag)) }.buttonStyle(DraftButtonStyle(compact: true))
+                    }
                 }
             }
         }
@@ -182,114 +237,77 @@ struct SettingsView: View {
     }
 
     var templates: some View {
-        VStack(alignment: .leading, spacing: 22) {
-            group("Your templates") {
-                if model.library.templates.isEmpty { Text("None yet. Open a document, then Info → Actions → Save as Template.").foregroundStyle(t.secondary) }
+        VStack(alignment: .leading, spacing: DS.s5) {
+            SettingsSection(title: "Your templates", footer: "Open a document, then Info → Actions → Save as Template.") {
+                if model.library.templates.isEmpty { Text("None yet.").font(.system(size: DS.body)).foregroundStyle(t.secondary).padding(DS.s3 + 2) }
                 ForEach(model.library.templates.sorted { $0.title < $1.title }) { m in
-                    HStack {
-                        Text(model.docTitle(m.id)); Text(m.template ?? "").foregroundStyle(t.tertiary)
-                        Spacer()
-                        Button("Edit") { model.openView(.doc(m.id)) }
-                        Button("Delete") { model.deleteTemplate(m.id) }
-                    }.font(.system(size: DS.body))
+                    SettingsRow(title: model.docTitle(m.id), detail: m.template) {
+                        Button("Edit") { model.openView(.doc(m.id)) }.buttonStyle(DraftButtonStyle(compact: true))
+                        Button("Delete") { model.deleteTemplate(m.id) }.buttonStyle(DraftButtonStyle(role: .destructive, compact: true))
+                    }
                 }
             }
-            group("Built in") {
-                ForEach(BuiltInTemplates.all) { b in HStack { Text(b.title); Text(b.category).foregroundStyle(t.tertiary); Spacer() }.font(.system(size: DS.body)) }
-                Button("New from Template…") { model.templatePicker = true }
+            SettingsSection(title: "Built in") {
+                ForEach(BuiltInTemplates.all) { b in SettingsRow(title: b.title, detail: b.category) { EmptyView() } }
+                SettingsRow(title: "Start from a template") { Button("New from Template…") { model.templatePicker = true }.buttonStyle(DraftButtonStyle(compact: true)) }
             }
         }
     }
 
     var advanced: some View {
-        VStack(alignment: .leading, spacing: 22) {
-            group("Week starts on") {
-                DraftSegmented("Week starts on", selection: bind(\.weekStart), options: [(0, "System setting"), (1, "Sunday"), (2, "Monday")])
-                Text("Used by Calendar and by dates such as @next monday.").font(.system(size: DS.footnote)).foregroundStyle(t.secondary)
+        VStack(alignment: .leading, spacing: DS.s5) {
+            SettingsSection(title: "Online (off by default)", footer: "Draft works fully offline. These send your search words or the pasted address to that website, only when you use them.") {
+                SettingsSwitchRow(title: "Search openly licensed images", detail: "Openverse, from the backdrop picker", isOn: bind(\.onlineImageSearch))
+                SettingsSwitchRow(title: "Previews for pasted web links", isOn: bind(\.linkPreviews))
             }
-            group("Dates in documents") {
-                DraftSegmented("Dates", selection: bind(\.dateStyle), options: [("chip", "Chips"), ("text", "Plain text")])
-                Text("Only the look changes; the dates themselves stay the same. Type @ and a day, e.g. @tomorrow 3pm.")
-                    .font(.system(size: DS.footnote)).foregroundStyle(t.secondary)
-            }
-            group("A new day starts at") {
-                Picker("", selection: bind(\.dayStartHour)) { ForEach(0..<7) { h in Text(String(format: "%02d:00", h)).tag(h) } }.labelsHidden().frame(width: 120)
-                Text("Before this hour, Today and ⇧⌘D still mean the previous day — handy if you write after midnight.")
-                    .font(.system(size: DS.footnote)).foregroundStyle(t.secondary).fixedSize(horizontal: false, vertical: true)
-            }
-            group("Online (off by default)") {
-                Toggle("Search openly licensed images online (Openverse) from the backdrop picker", isOn: bind(\.onlineImageSearch))
-                Toggle("Show previews for pasted web links", isOn: bind(\.linkPreviews))
-                Text("Draft works fully offline. These send your search words or the pasted address to that website, only when you use them. Nothing else ever leaves this Mac.")
-                    .font(.system(size: DS.footnote)).foregroundStyle(t.secondary).fixedSize(horizontal: false, vertical: true)
-            }
-            group("Index") {
-                Text("Links, tags and tasks are kept in index/index.json, built from your documents. It can always be rebuilt and never changes a document.")
-                    .font(.system(size: DS.footnote)).foregroundStyle(t.secondary).fixedSize(horizontal: false, vertical: true)
-                Button("Rebuild Index") { model.rebuildIndex() }
+            SettingsSection(title: "Index", footer: "Links, tags and tasks are kept in index/index.json, built from your documents. Rebuilding never changes a document.") {
+                SettingsRow(title: "Rebuild the index") { Button("Rebuild") { model.rebuildIndex() }.buttonStyle(DraftButtonStyle(compact: true)) }
             }
         }
     }
 
-    var appearance: some View {
-        VStack(alignment: .leading, spacing: 22) {
-            group("Theme") {
-                HStack(spacing: 14) {
-                    ForEach([("system", "System"), ("light", "Light"), ("dark", "Dark")], id: \.0) { k, label in
-                        Button { model.setSettings { $0.theme = k } } label: {
-                            VStack(spacing: 8) {
-                                ThemeThumb(kind: k).frame(width: 130, height: 82)
-                                    .overlay(RoundedRectangle(cornerRadius: DS.rCard).strokeBorder(model.library.settings.theme == k ? t.accent : t.line, lineWidth: model.library.settings.theme == k ? 2.5 : 1))
-                                Text(label).font(.system(size: DS.body, weight: .medium)).foregroundStyle(model.library.settings.theme == k ? t.accent : t.text)
-                            }
-                        }.buttonStyle(.plain).accessibilityLabel("\(label) theme")
-                    }
+    var data: some View {
+        VStack(alignment: .leading, spacing: DS.s5) {
+            SettingsSection(title: "Where your notes live", footer: "library.json is the index, docs/ holds one JSON file per document, assets/ holds images, backups/ holds copies made before any format change. The format is documented in docs/FORMAT.md.") {
+                SettingsRow(title: model.vault.dir.lastPathComponent, detail: model.vault.dir.path) {
+                    Button("Show in Finder") { model.revealVault() }.buttonStyle(DraftButtonStyle(compact: true))
+                }
+                SettingsRow(title: "Export everything", detail: "Markdown files with a lossless draft-export.json") {
+                    Button("Export…") { model.exportAll() }.buttonStyle(DraftButtonStyle(compact: true))
                 }
             }
-            group("Interface accent color") {
-                HStack(spacing: 12) {
-                    ForEach(["#5b6cf0", "#2f9bd8", "#e0558f", "#2fae8c", "#9b6cf0", "#e0a42e", "#8a8d94"], id: \.self) { hex in
-                        Button { model.setSettings { $0.accent = hex } } label: {
-                            Circle().fill(Color(hex: hex)).frame(width: 28, height: 28)
-                                .overlay(Circle().strokeBorder(t.text, lineWidth: model.library.settings.accent == hex ? 2 : 0).padding(-4))
-                        }.buttonStyle(.plain).accessibilityLabel("Accent \(hex)")
-                    }
-                }
-            }
-            group("Additional options") {
-                Toggle("Use document style for the app", isOn: Binding(get: { model.library.settings.useDocStyleForApp }, set: { v in model.setSettings { $0.useDocStyleForApp = v } }))
-                Toggle("Reduce animations", isOn: Binding(get: { model.library.settings.reduceMotion }, set: { v in model.setSettings { $0.reduceMotion = v } }))
-            }
-        }.toggleStyle(.switch)
+            if let r = model.readOnly { SettingsSection(title: "Read-only mode") { Text(r).font(.system(size: DS.body)).foregroundStyle(.orange).padding(DS.s3 + 2) } }
+        }
     }
 
     var stats: some View {
         let metas = model.library.liveDocs
         let words = metas.reduce(0) { $0 + $1.words }
-        let size = (try? FileManager.default.subpathsOfDirectory(atPath: model.vault.dir.path).reduce(0) { acc, p in
-            acc + ((try? FileManager.default.attributesOfItem(atPath: model.vault.dir.appendingPathComponent(p).path)[.size] as? Int) ?? 0)
-        }) ?? 0
-        return group("Stats") {
-            statRow("Storage on disk", ByteCountFormatter.string(fromByteCount: Int64(size), countStyle: .file))
-            statRow("Documents", "\(metas.filter { $0.parentDocId == nil }.count)")
-            statRow("Nested pages", "\(metas.filter { $0.parentDocId != nil }.count)")
-            statRow("Blocks", "\(metas.reduce(0) { $0 + $1.blocks })")
-            statRow("Words", "\(words)")
-            statRow("Reading time", "\(max(1, words / 230)) min")
+        return SettingsSection(title: nil) {
+            SettingsRow(title: "Storage on disk") { Text(storage.map { ByteCountFormatter.string(fromByteCount: $0, countStyle: .file) } ?? "Measuring…").foregroundStyle(t.secondary).monospacedDigit() }
+            SettingsRow(title: "Documents") { Text("\(metas.filter { $0.parentDocId == nil }.count)").foregroundStyle(t.secondary).monospacedDigit() }
+            SettingsRow(title: "Nested pages") { Text("\(metas.filter { $0.parentDocId != nil }.count)").foregroundStyle(t.secondary).monospacedDigit() }
+            SettingsRow(title: "Blocks") { Text("\(metas.reduce(0) { $0 + $1.blocks })").foregroundStyle(t.secondary).monospacedDigit() }
+            SettingsRow(title: "Words") { Text("\(words)").foregroundStyle(t.secondary).monospacedDigit() }
+            SettingsRow(title: "Reading time") { Text("\(max(1, words / 230)) min").foregroundStyle(t.secondary).monospacedDigit() }
+        }
+        .task {
+            // Walking the vault is file-system work; never in a render.
+            let dir = model.vault.dir
+            storage = await Task.detached(priority: .utility) {
+                (FileManager.default.enumerator(at: dir, includingPropertiesForKeys: [.fileSizeKey])?.allObjects as? [URL] ?? [])
+                    .reduce(Int64(0)) { $0 + Int64((try? $1.resourceValues(forKeys: [.fileSizeKey]).fileSize) ?? 0) }
+            }.value
         }
     }
 
-    func statRow(_ k: String, _ v: String) -> some View {
-        HStack { Text(k).foregroundStyle(t.secondary); Spacer(); Text(v).foregroundStyle(t.text).monospacedDigit() }.font(.system(size: DS.body)).padding(.vertical, 3)
-    }
-
-    func group<C: View>(_ title: String, @ViewBuilder _ c: () -> C) -> some View {
-        VStack(alignment: .leading, spacing: 10) {
-            Text(title).font(.system(size: DS.body, weight: .semibold)).foregroundStyle(t.text)
-            VStack(alignment: .leading, spacing: 10) { c() }
-                .padding(14).frame(maxWidth: .infinity, alignment: .leading)
-                .background(RoundedRectangle(cornerRadius: DS.rCard, style: .continuous).fill(t.card.opacity(t.dark ? 0.5 : 1)))
-                .overlay(RoundedRectangle(cornerRadius: DS.rCard, style: .continuous).strokeBorder(t.line, lineWidth: 0.5))
+    var about: some View {
+        SettingsSection(title: nil, footer: "A free, open-source, local-first notes app. No account and no telemetry; nothing goes online unless you turn on image search, link previews or the Assistant's model download.") {
+            SettingsRow(title: "Draft 0.6", detail: "Your documents are portable JSON with Markdown export.") { EmptyView() }
+            SettingsRow(title: "Welcome and tour") { Button("Replay Tour") { model.startTour() }.buttonStyle(DraftButtonStyle(compact: true)) }
+            SettingsRow(title: "Third-party notices", detail: "llama.cpp, Libraries.dev, Paper Shaders, Liquid AI models") {
+                Button("Open") { if let u = Bundle.main.url(forResource: "THIRD_PARTY_NOTICES", withExtension: "md") { NSWorkspace.shared.open(u) } }.buttonStyle(DraftButtonStyle(compact: true))
+            }
         }
     }
 }
@@ -317,9 +335,12 @@ struct Overlays: View {
     @Environment(\.tokens) var t
     var body: some View {
         ZStack {
-            if model.quickOpen { QuickOpen() }
-            if model.templatePicker { TemplatePicker() }
-            if let c = model.confirm { ConfirmDialog(req: c) }
+            ZStack {
+                if model.quickOpen { QuickOpen().transition(.overlayPop) }
+                if model.templatePicker { TemplatePicker().transition(.overlayPop) }
+                if let c = model.confirm { ConfirmDialog(req: c).transition(.overlayPop) }
+            }
+            .animation(Motion.quick(model.library.settings.reduceMotion), value: [model.quickOpen, model.templatePicker, model.confirm != nil])
             VStack {
                 Spacer()
                 VStack(spacing: 8) {
@@ -361,7 +382,7 @@ struct ConfirmDialog: View {
                 }
             }
             .padding(20).frame(width: 400)
-            .background(PanelBackground())
+            .surface(.floating)
         }
         .accessibilityAddTraits(.isModal)
     }
@@ -432,7 +453,7 @@ struct QuickOpen: View {
                 }.frame(maxHeight: 360)
             }
             .frame(width: 560)
-            .background(PanelBackground())
+            .surface(.overlay)
             .padding(.top, 90)
         }
         .onAppear { focused = true }

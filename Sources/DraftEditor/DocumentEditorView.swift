@@ -61,6 +61,19 @@ public final class DocumentEditorView: NSView, NSTextViewDelegate {
     /// Room kept free on the right for an open panel; the page moves aside rather than under it.
     public var trailingInset: CGFloat = 0 { didSet { if oldValue != trailingInset { needsLayout = true } } }
 
+    /// Slides the page aside for a side panel instead of jumping; the text reflows once, at the end width.
+    public func setTrailingInset(_ inset: CGFloat, animated: Bool) {
+        guard inset != trailingInset else { return }
+        guard animated, window != nil else { trailingInset = inset; return }
+        NSAnimationContext.runAnimationGroup { ctx in
+            ctx.duration = 0.26
+            ctx.timingFunction = CAMediaTimingFunction(controlPoints: 0.2, 0.9, 0.25, 1)
+            ctx.allowsImplicitAnimation = true
+            trailingInset = inset
+            relayout()
+        }
+    }
+
     public var pageColor = NSColor(hex: "#fffdf8") { didSet { paperBackground.layer?.backgroundColor = pageColor.cgColor } }
     public var coverImage: NSImage? { didSet { coverView.image = coverImage; coverView.isHidden = coverImage == nil; needsLayout = true; relayout() } }
     public var narrow: Bool { bounds.width < 640 }

@@ -180,7 +180,7 @@ struct TemplatePicker: View {
                 }.frame(maxHeight: 340)
                 Text("Save any document as a template from its Info panel (Actions → Save as Template).").font(.system(size: DS.caption)).foregroundStyle(t.tertiary)
             }
-            .padding(16).frame(width: 520).background(PanelBackground()).padding(.top, 90)
+            .padding(16).frame(width: 520).surface(.overlay).padding(.top, 90)
         }
         .onAppear { focused = true }
         .onChange(of: query) { _, _ in index = 0 }

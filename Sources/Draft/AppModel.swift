@@ -63,6 +63,11 @@ final class AppModel {
     var tabs: [DraftCore.Tab] = Library.empty().tabs
     var activeTabId: String? = Library.empty().activeTabId
     var docs: [String: DocFile] = [:]
+    /// Notes just created keep the library sidebar until you navigate away, so creating a note
+    /// doesn't flip the sidebar to an empty outline.
+    var freshDocs = Set<String>()
+    var onboarding: Onboarding?
+    @ObservationIgnored var tourNote: String?
     var ready = false
     var fatal: String?
     var readOnly: String?
@@ -139,6 +144,7 @@ final class AppModel {
             startDayWatch()
             if activeView.kind == "doc", let id = activeView.docId { _ = ensureDoc(id) }
             ready = true
+            showWelcomeIfNeeded()
         } catch let e as NewerSchemaError {
             readOnly = e.localizedDescription
             fatal = e.localizedDescription
@@ -164,8 +170,8 @@ final class AppModel {
         var lib = library
         lib.tabs = tabs
         lib.activeTabId = activeTabId
-        let v = vault
-        v.enqueue({ try v.saveLibrary(lib) }, failed: { [weak self] e in onMain { self?.reportSaveError(e) } })
+        let v = vault, snapshot = lib
+        v.enqueue({ try v.saveLibrary(snapshot) }, failed: { [weak self] e in onMain { self?.reportSaveError(e) } })
         refreshSaveState()
     }
 
@@ -187,10 +193,10 @@ final class AppModel {
         guard var d = docs[id] else { return }
         if let ed = editors[id] { d.content = ed.controller.document(); d.updatedAt = nowMs() }
         docs[id] = d
-        let v = vault
+        let v = vault, saved = d
         v.enqueue({
-            try v.saveDoc(d)
-            try? v.snapshotIfDue(d) // automatic local backups; never block a save on them
+            try v.saveDoc(saved)
+            _ = try? v.snapshotIfDue(saved) // automatic local backups; never block a save on them
         }, failed: { [weak self] e in onMain { self?.reportSaveError(e) } })
         if var m = library.docs[id] {
             m.applyDerived(from: d)
@@ -235,6 +241,7 @@ final class AppModel {
 
     func openView(_ view: ViewRef, inPlace: Bool = false, newTab: Bool = false) {
         captureTabStates()
+        if !freshDocs.isEmpty { freshDocs.removeAll() }
         if view.kind == "doc", let id = view.docId {
             guard let meta = library.docs[id] else { return }
             if meta.deletedAt != nil {
@@ -356,6 +363,8 @@ final class AppModel {
         restoredTabs.insert(tab.id)
         let tv = e.controller.textView
         let len = (tv.string as NSString).length
+        // A note without a title starts in the title (new notes always do); otherwise the body.
+        if tab.selStart == nil, (docs[docId]?.title ?? "").isEmpty { e.focusTitle(); return }
         if let start = tab.selStart {
             let loc = min(start, len)
             tv.setSelectedRange(NSRange(location: loc, length: min(tab.selLength ?? 0, len - loc)))
@@ -369,9 +378,15 @@ final class AppModel {
         }
     }
 
+    func showSettings(_ section: String) {
+        if let i = tabs.firstIndex(where: { $0.id == activeTabId }), tabs[i].view.kind == "settings" { tabs[i].view = ViewRef(kind: "settings", section: section); scheduleLibrarySave() }
+        else { openView(ViewRef(kind: "settings", section: section)) }
+    }
+
     func activateTab(_ id: String) {
         guard id != activeTabId, let t = tabs.first(where: { $0.id == id }) else { return }
         captureTabStates()
+        if !freshDocs.isEmpty { freshDocs.removeAll() }
         if let d = t.view.docId, t.view.kind == "doc" { _ = ensureDoc(d) }
         activeTabId = id
         if panel != nil { panel = nil }
@@ -445,9 +460,9 @@ final class AppModel {
         let missing = ids.filter { docs[$0] == nil && knownCovers[$0] == nil && coverLoads.insert($0).inserted }
         guard !missing.isEmpty else { return }
         let v = vault
-        DispatchQueue.global(qos: .userInitiated).async {
+        DispatchQueue.global(qos: .userInitiated).async { [weak self] in
             let found = missing.map { ($0, v.peekAppearance($0)?.cover) }
-            DispatchQueue.main.async { [weak self] in
+            DispatchQueue.main.async {
                 guard let self else { return }
                 for (id, c) in found { self.knownCovers[id] = .some(c) }
                 if found.contains(where: { $0.1 != nil }) { self.coverTick &+= 1 }
@@ -499,7 +514,7 @@ final class AppModel {
         scheduleLibrarySave()
         if open {
             openView(.doc(id))
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.05) { self.editors[id]?.focusTitle() }
+            freshDocs = [id] // the caret goes to the title in restoreTabState
         }
         return id
     }
@@ -753,7 +768,16 @@ final class AppModel {
 
     // MARK: Backups
 
-    func snapshots(_ id: String) -> [Snapshot] { vault.snapshots(id) }
+    /// Listing backups reads the disk; panels ask on every render.
+    func snapshots(_ id: String) -> [Snapshot] {
+        memoized("snapshots.\(id)", [id, saveState, docRevision[id] ?? 0]) { vault.snapshots(id) }
+    }
+
+    /// Word and block counts of the open editor, not the last save.
+    func liveStats(_ id: String) -> (words: Int, blocks: Int)? {
+        guard let c = editors[id]?.controller else { return nil }
+        return memoized("stats.\(id)", [id, docRevision[id] ?? 0]) { let s = docStats(c.document()); return (s.words, s.blocks) }
+    }
 
     func restoreSnapshot(_ id: String, _ s: Snapshot) {
         saveDirtyDocs()

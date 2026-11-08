@@ -30,7 +30,7 @@ struct RailView: View {
                     } label: {
                         Image(systemName: model.railShowsFolders ? "folder" : "list.bullet.indent")
                     }
-                    .menuStyle(.borderlessButton).menuIndicator(.visible).fixedSize()
+                    .menuStyle(.button).buttonStyle(.plain).menuIndicator(.visible).fixedSize()
                     .foregroundStyle(t.secondary).tint(t.secondary)
                     .help("Choose what the sidebar shows")
                 }
@@ -38,7 +38,9 @@ struct RailView: View {
             }
             .frame(height: WindowChrome.height - 16)
             .padding(.horizontal, 8)
-            if let id = docId, !model.railShowsFolders {
+            if model.activeView.kind == "settings" {
+                SettingsRail(section: model.activeView.section ?? "appearance")
+            } else if let id = docId, !model.railShowsFolders, !model.freshDocs.contains(id) {
                 DocumentRail(docId: id).id(id)
             } else {
                 LibraryRail()

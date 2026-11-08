@@ -125,3 +125,15 @@ final class ThinkSplitterTests: XCTestCase {
         XCTAssertEqual(s.thinking, "still going")
     }
 }
+
+final class DiffReadabilityTests: XCTestCase {
+    func testSmallEditStaysInline() {
+        let parts = WordDiff.diff("The quick brown fox jumps over the lazy dog today.", "The quick brown fox leaps over the lazy dog today.")
+        XCTAssertLessThan(WordDiff.changedFraction(parts), 0.4)
+    }
+
+    func testRewriteIsShownBeforeAndAfter() {
+        let parts = WordDiff.diff("Meeting notes from Tuesday about the budget.", "A short summary: costs rise, hiring pauses until spring.")
+        XCTAssertGreaterThan(WordDiff.changedFraction(parts), 0.4)
+    }
+}

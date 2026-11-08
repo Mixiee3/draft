@@ -40,11 +40,10 @@ struct AssistantView: View {
                 Text("Runs on this Mac · \(a.model.name)").font(.system(size: DS.caption)).foregroundStyle(t.secondary).lineLimit(1)
             }
             Spacer(minLength: 0)
-            Menu {
+            DraftIconMenu(symbol: "ellipsis", label: "More", size: 26, onPill: false) {
                 Button("Clear History for This Space", role: .destructive) { a.clearHistory() }.disabled(a.chat.messages.isEmpty)
                 Button("Assistant Settings…") { model.openView(ViewRef(kind: "settings", section: "assistant")) }
-            } label: { Image(systemName: "ellipsis").frame(width: 24, height: 24) }
-                .menuStyle(.borderlessButton).menuIndicator(.hidden).fixedSize().help("More").accessibilityLabel("More")
+            }
             IconButton(symbol: floating ? "sidebar.right" : "macwindow.on.rectangle", label: floating ? "Pin to the Window" : "Float in Its Own Window", size: 26) {
                 model.setAssistantPinned(floating)
             }
@@ -350,44 +349,78 @@ struct EditPreview: View {
     var a: AssistantModel
     let preview: AssistantModel.Preview
     @Environment(\.tokens) var t
-    @Environment(\.dismiss) var dismiss
+
     var body: some View {
+        let parts = preview.canReplace ? WordDiff.diff(preview.original, preview.markdown) : []
+        let stacked = !preview.canReplace || WordDiff.changedFraction(parts) > 0.4
         VStack(alignment: .leading, spacing: DS.s3) {
-            Text(preview.canReplace ? "Review the change" : "Review the text to insert").font(.system(size: DS.headline, weight: .semibold))
+            Text(preview.canReplace ? "Review the change" : "Review the text to insert")
+                .font(.system(size: DS.headline, weight: .semibold)).foregroundStyle(t.text).accessibilityAddTraits(.isHeader)
             ScrollView {
-                diffText.font(.system(size: DS.body)).frame(maxWidth: .infinity, alignment: .leading).textSelection(.enabled).padding(DS.s3)
+                VStack(alignment: .leading, spacing: DS.s3) {
+                    if stacked {
+                        if preview.canReplace { block("Before", Text(preview.original), tint: nil) }
+                        block(preview.canReplace ? "After" : "New text", Text(preview.markdown), tint: t.accent)
+                    } else {
+                        block("Changes", inline(parts), tint: nil)
+                    }
+                }
             }
-            .frame(minHeight: 160, maxHeight: 360)
-            .background(RoundedRectangle(cornerRadius: DS.rControl, style: .continuous).fill(t.hover))
-            if preview.canReplace {
+            .frame(minHeight: 160, maxHeight: 380)
+            if preview.canReplace, !stacked {
                 HStack(spacing: DS.s3) {
-                    Label("Removed", systemImage: "minus").foregroundStyle(.red)
-                    Label("Added", systemImage: "plus").foregroundStyle(.green)
-                }.font(.system(size: DS.caption))
-            } else {
-                Text("The original text changed or isn't selected, so the result can only be inserted after the selection or cursor.").font(.system(size: DS.footnote)).foregroundStyle(t.secondary)
+                    legend("Removed", Self.removed)
+                    legend("Added", Self.added)
+                }
+            } else if !preview.canReplace {
+                Text("The original text changed or isn't selected, so the result can only be inserted after the selection or cursor.")
+                    .font(.system(size: DS.footnote)).foregroundStyle(t.secondary).fixedSize(horizontal: false, vertical: true)
             }
-            HStack {
-                Button("Cancel") { a.preview = nil }.keyboardShortcut(.cancelAction)
+            HStack(spacing: DS.s2) {
+                Button("Cancel") { a.preview = nil }.buttonStyle(.draft).keyboardShortcut(.cancelAction)
                 Spacer()
-                Button("Insert Below") { a.apply(preview, replace: false) }
-                if preview.canReplace { Button("Replace") { a.apply(preview, replace: true) }.keyboardShortcut(.defaultAction) }
+                Button("Insert Below") { a.apply(preview, replace: false) }.buttonStyle(preview.canReplace ? .draft : .draftPrimary)
+                if preview.canReplace { Button("Replace") { a.apply(preview, replace: true) }.buttonStyle(.draftPrimary).keyboardShortcut(.defaultAction) }
             }
             Text("You can undo the change with ⌘Z.").font(.system(size: DS.caption)).foregroundStyle(t.tertiary)
         }
         .padding(DS.s5)
-        .frame(width: 520)
+        .frame(width: 540)
+        .background(t.canvas)
     }
 
-    var diffText: Text {
-        guard preview.canReplace else { return Text(preview.markdown) }
-        return WordDiff.diff(preview.original, preview.markdown).reduce(Text("")) { acc, p in
-            switch p.op {
-            case .same: return acc + Text(p.text)
-            case .removed: return acc + Text(p.text).strikethrough().foregroundColor(.red)
-            case .added: return acc + Text(p.text).foregroundColor(.green).underline()
-            }
+    static let removed = Color(hex: "#d4544c"), added = Color(hex: "#2f9a5a")
+
+    func block(_ title: String, _ text: Text, tint: Color?) -> some View {
+        VStack(alignment: .leading, spacing: DS.s1 + 2) {
+            Text(title.uppercased()).font(.system(size: DS.micro + 1, weight: .semibold)).tracking(0.6).foregroundStyle(tint ?? t.secondary)
+            text.font(.system(size: DS.body)).lineSpacing(3).foregroundStyle(t.text)
+                .frame(maxWidth: .infinity, alignment: .leading).textSelection(.enabled)
         }
+        .padding(DS.s3)
+        .background(RoundedRectangle(cornerRadius: DS.rControl, style: .continuous).fill(tint.map { $0.opacity(0.07) } ?? t.hover))
+        .overlay(alignment: .leading) { if let tint { Rectangle().fill(tint).frame(width: 3).clipShape(Capsule()).padding(.vertical, 6) } }
+        .accessibilityElement(children: .combine)
+    }
+
+    /// Changed words sit on a soft tint (struck through when removed) so they read in light and dark.
+    func inline(_ parts: [WordDiff.Part]) -> Text {
+        parts.reduce(Text("")) { acc, p in
+            var s = AttributedString(p.text)
+            switch p.op {
+            case .same: break
+            case .removed:
+                s.backgroundColor = Self.removed.opacity(0.16); s.foregroundColor = Self.removed; s.strikethroughStyle = .single
+            case .added:
+                s.backgroundColor = Self.added.opacity(0.16); s.foregroundColor = Self.added
+            }
+            return acc + Text(s)
+        }
+    }
+
+    func legend(_ title: String, _ c: Color) -> some View {
+        HStack(spacing: 5) { RoundedRectangle(cornerRadius: 3).fill(c.opacity(0.25)).frame(width: 14, height: 10); Text(title) }
+            .font(.system(size: DS.caption)).foregroundStyle(t.secondary)
     }
 }
 

@@ -111,6 +111,10 @@ struct DraftCommands: Commands {
             Button("List") { model.setSettings { $0.libraryView = .list } }.keyboardShortcut("3", modifiers: [.command, .control])
             Divider()
         }
+        CommandGroup(replacing: .help) {
+            Button("Show Welcome…") { model.showWelcome() }
+            Button("Take the Tour") { model.startTour() }
+        }
         CommandGroup(replacing: .appSettings) {
             Button("Settings…") { model.openView(ViewRef(kind: "settings", section: "appearance")) }.keyboardShortcut(",")
         }

@@ -104,7 +104,7 @@ struct StyleGallery: View {
             }
             .padding(18)
             .frame(maxWidth: 760, maxHeight: 640)
-            .background(PanelBackground())
+            .surface(.floating)
             .padding(30)
         }
         .onExitCommand { model.styleGallery = false }

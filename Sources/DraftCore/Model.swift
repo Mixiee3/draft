@@ -145,6 +145,10 @@ public struct Settings: Codable, Hashable, Sendable {
     public var assistantModel: String?
     /// The Assistant as a panel pinned to the right of the window (true) or a floating window.
     public var assistantPinned: Bool = true
+    /// Documents in the Paper style turn dark with the app (display only; exports keep the page).
+    public var paperFollowsAppearance: Bool = true
+    /// The welcome screen and tour version the user has seen (0 = never).
+    public var onboardingSeen: Int = 0
 
     public init() {}
 
@@ -176,6 +180,8 @@ public struct Settings: Codable, Hashable, Sendable {
         linkPreviews = try c.decodeIfPresent(Bool.self, forKey: .linkPreviews) ?? def.linkPreviews
         assistantModel = try c.decodeIfPresent(String.self, forKey: .assistantModel)
         assistantPinned = try c.decodeIfPresent(Bool.self, forKey: .assistantPinned) ?? def.assistantPinned
+        paperFollowsAppearance = try c.decodeIfPresent(Bool.self, forKey: .paperFollowsAppearance) ?? def.paperFollowsAppearance
+        onboardingSeen = try c.decodeIfPresent(Int.self, forKey: .onboardingSeen) ?? def.onboardingSeen
     }
 }
 

@@ -81,7 +81,7 @@ struct CoverCropSheet: View {
             }
             .padding(20)
             .frame(width: 680)
-            .background(PanelBackground())
+            .surface(.floating)
         }
         .onAppear {
             ratio = cover.ratio ?? "3:1"
