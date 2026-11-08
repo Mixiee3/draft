@@ -178,6 +178,9 @@ extension Automation {
         await shot(p + "07-editor-content", w)
         m.focusMode = true; c.textView.setSelectedRange(NSRange(location: 20, length: 0)); await shot(p + "07b-focus-mode", w, settle: 0.6); m.focusMode = false
         m.shortcutsSheet = true; await shot(p + "07c-shortcuts", w, settle: 0.5); m.shortcutsSheet = false
+        m.present(id); await wait(0.8)
+        if let pw = m.presentWindow { await captureWindow(pw, p + "07d-present"); pw.close() }
+        w.makeKeyAndOrderFront(nil)
         let ns = c.textView.string as NSString
         c.textView.setSelectedRange(ns.range(of: "Bold idea"))
         await shot(p + "08-selection-toolbar", w, settle: 0.7)

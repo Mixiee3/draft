@@ -406,7 +406,7 @@ struct InfoPanel: View {
                             prop("folder", "Location", model.folderName(m.folderId))
                         }
                         PanelSection(title: "Actions") {
-                            action("play.rectangle", "Present — planned", enabled: false) {}
+                            action("play.rectangle", "Present") { model.present(docId) }
                             Menu {
                                 Button("Unsorted") { model.move(docId, to: nil) }
                                 ForEach(model.library.spaceFolders) { f in Button(f.name) { model.move(docId, to: f.id) } }

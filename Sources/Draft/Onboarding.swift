@@ -209,7 +209,7 @@ struct TourOverlay: View {
             let spot = anchors[info.target].map { a -> CGRect in
                 let r = proxy[a]
                 // The editor fills the window; point at the writing area at the top of the page instead.
-                if info.target == .page { return CGRect(x: r.midX - min(380, r.width / 2 - 24), y: r.minY + 60, width: min(760, r.width - 48), height: 260) }
+                if info.target == .page { return CGRect(x: r.midX - min(380, r.width / 2 - 24), y: r.minY + 150, width: min(760, r.width - 48), height: 160) }
                 return r.insetBy(dx: -8, dy: -8)
             }
             ZStack(alignment: .topLeading) {

@@ -79,6 +79,7 @@ final class AppModel {
     var shortcutsSheet = false
     var focusMode = false { didSet { if focusMode != oldValue { focusModeChanged() } } }
     @ObservationIgnored var focusMonitor: Any?
+    @ObservationIgnored var presentWindow: NSWindow?
     var styleGallery = false
     var toasts: [Toast] = []
     var confirm: ConfirmRequest?
