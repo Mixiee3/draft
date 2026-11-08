@@ -335,6 +335,7 @@ struct Overlays: View {
                         .accessibilityAddTraits(.updatesFrequently)
                     }
                 }.padding(.bottom, 24)
+                .animation(Motion.quick(model.library.settings.reduceMotion), value: model.toasts.map(\.id))
             }
             .frame(maxWidth: .infinity) // centered at the bottom of the window
             .allowsHitTesting(!model.toasts.isEmpty)

@@ -2,12 +2,12 @@ import SwiftUI
 import DraftCore
 import DraftEditor
 
+private let relativeFormatter: RelativeDateTimeFormatter = { let f = RelativeDateTimeFormatter(); f.unitsStyle = .full; return f }()
+
 func relative(_ ms: Double) -> String {
     let d = Date(timeIntervalSince1970: ms / 1000)
     if abs(d.timeIntervalSinceNow) < 60 { return "just now" }
-    let f = RelativeDateTimeFormatter()
-    f.unitsStyle = .full
-    return f.localizedString(for: d, relativeTo: Date())
+    return relativeFormatter.localizedString(for: d, relativeTo: Date())
 }
 
 struct RailView: View {
@@ -192,7 +192,7 @@ struct LibraryRail: View {
                 Button("Remove Folder…", role: .destructive) { model.requestDeleteFolder(f.id) }
             }
             if expanded {
-                ForEach(model.library.liveDocs.filter { $0.folderId == f.id && $0.parentDocId == nil }.sorted { $0.title < $1.title }) { m in
+                ForEach(model.docsByFolder[f.id] ?? []) { m in
                     RailRow(icon: "doc.text", title: m.title, isSelected: model.activeDocId == m.id, indent: 18) { model.openView(.doc(m.id)) }
                 }
             }

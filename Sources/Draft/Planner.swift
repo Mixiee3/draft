@@ -149,7 +149,7 @@ struct DayCard: View {
 
     var body: some View {
         let today = model.todayKey
-        let note = model.library.liveDocs.first { $0.dailyDate == day }
+        let note = model.dailyNotes[day]
         let tasks = model.tasks(on: day).filter { showCompleted || !$0.task.checked }
         let evs = model.settings.calendarEvents ? events.events(on: day) : []
         VStack(alignment: .leading, spacing: 8) {

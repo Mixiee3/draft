@@ -32,7 +32,30 @@ struct ConfirmRequest: Identifiable {
 final class AppModel: ObservableObject {
     static let shared = AppModel()
 
-    @Published var library = Library.empty() { didSet { if library.userStyles != oldValue.userStyles { Styles.user = library.userStyles } } }
+    @Published var library = Library.empty() {
+        didSet {
+            libraryRevision &+= 1
+            if library.userStyles != oldValue.userStyles { Styles.user = library.userStyles }
+        }
+    }
+    /// Bumped on every library change; keys the memo below.
+    private(set) var libraryRevision = 0
+    private var memo: [String: (key: [AnyHashable], value: Any)] = [:]
+    /// Per-document edit counter, so cached reads of a document (collections) know when to refresh.
+    private(set) var docRevision: [String: Int] = [:]
+    private var knownCovers: [String: Cover?] = [:]
+    private var coverLoads = Set<String>()
+    private var croppedCovers: [Cover: NSImage] = [:]
+    @Published var coverTick = 0
+
+    /// Derived data that views read many times per render (task lists, folder contents,
+    /// collections) is computed once per change instead of once per view.
+    func memoized<T>(_ name: String, _ key: [AnyHashable], _ make: () -> T) -> T {
+        if let m = memo[name], m.key == key, let v = m.value as? T { return v }
+        let v = make()
+        memo[name] = (key, v)
+        return v
+    }
     @Published var docs: [String: DocFile] = [:]
     @Published var ready = false
     @Published var fatal: String?
@@ -130,7 +153,9 @@ final class AppModel: ObservableObject {
         libTimer?.invalidate()
         guard libDirty else { return }
         libDirty = false
-        do { try vault.saveLibrary(library); refreshSaveState() } catch { reportSaveError(error) }
+        let lib = library, v = vault
+        v.enqueue({ try v.saveLibrary(lib) }, failed: { [weak self] e in onMain { self?.reportSaveError(e) } })
+        refreshSaveState()
     }
 
     func markDocDirty(_ id: String) {
@@ -151,17 +176,17 @@ final class AppModel: ObservableObject {
         guard var d = docs[id] else { return }
         if let ed = editors[id] { d.content = ed.controller.document(); d.updatedAt = nowMs() }
         docs[id] = d
-        do {
-            try vault.saveDoc(d)
-            try? vault.snapshotIfDue(d) // automatic local backups; never block a save on them
-            if var m = library.docs[id] {
-                m.applyDerived(from: d)
-                m.updatedAt = d.updatedAt
-                library.docs[id] = m
-                scheduleLibrarySave()
-                reindex(d)
-            }
-        } catch { reportSaveError(error) }
+        let v = vault
+        v.enqueue({
+            try v.saveDoc(d)
+            try? v.snapshotIfDue(d) // automatic local backups; never block a save on them
+        }, failed: { [weak self] e in onMain { self?.reportSaveError(e) } })
+        if var m = library.docs[id] {
+            m.applyDerived(from: d)
+            m.updatedAt = d.updatedAt
+            if m != library.docs[id] { library.docs[id] = m; scheduleLibrarySave() }
+            reindex(d)
+        }
     }
 
     private func refreshSaveState() {
@@ -179,6 +204,7 @@ final class AppModel: ObservableObject {
         saveDirtyDocs()
         saveLibraryNow()
         saveIndexNow()
+        vault.drain()
     }
 
     // MARK: Navigation
@@ -391,12 +417,45 @@ final class AppModel: ObservableObject {
     var activeController: EditorController? { activeEditor?.controller }
 
     func editorChanged(_ id: String) {
+        docRevision[id, default: 0] &+= 1
         markDocDirty(id)
     }
 
+    /// A document's cover without loading the document: open documents answer directly; others
+    /// are read on a background thread, and views refresh once via `coverTick`.
+    func cover(of docId: String) -> Cover? {
+        if let d = docs[docId] { return d.appearance.cover }
+        return knownCovers[docId] ?? nil
+    }
+
+    /// Reads the covers of many documents in one background pass (a gallery calls it once when it
+    /// appears), then refreshes views once.
+    func prefetchCovers(_ ids: [String]) {
+        let missing = ids.filter { docs[$0] == nil && knownCovers[$0] == nil && coverLoads.insert($0).inserted }
+        guard !missing.isEmpty else { return }
+        let v = vault
+        DispatchQueue.global(qos: .userInitiated).async {
+            let found = missing.map { ($0, v.peekAppearance($0)?.cover) }
+            DispatchQueue.main.async { [weak self] in
+                guard let self else { return }
+                for (id, c) in found { self.knownCovers[id] = .some(c) }
+                if found.contains(where: { $0.1 != nil }) { self.coverTick &+= 1 }
+            }
+        }
+    }
+
     /// The cover as shown: the stored crop (or the default band) cut from the original image.
+    /// Cached: galleries and page cards ask for it on every render.
     func coverImage(_ cover: Cover?) -> NSImage? {
-        guard let cover, let img = image(forAsset: cover.assetId),
+        guard let cover else { return nil }
+        if let i = croppedCovers[cover] { return i }
+        let i = cropCover(cover)
+        croppedCovers[cover] = i
+        return i
+    }
+
+    private func cropCover(_ cover: Cover) -> NSImage? {
+        guard let img = image(forAsset: cover.assetId),
               let cg = img.cgImage(forProposedRect: nil, context: nil, hints: nil) else { return nil }
         let a = Double(cg.width) / Double(max(1, cg.height))
         let c = CoverCrop.effective(cover, imageAspect: a)
@@ -805,10 +864,11 @@ final class AppModel: ObservableObject {
 
     func toast(_ message: String, action: String? = nil, run: (() -> Void)? = nil) {
         let t = Toast(message: message, actionLabel: action, action: run)
-        withAnimation(Motion.quick(library.settings.reduceMotion)) { toasts = [t] } // one message at a time: a new one replaces the old
-        DispatchQueue.main.asyncAfter(deadline: .now() + (action == nil ? 3.2 : 7)) {
-            withAnimation { self.toasts.removeAll { $0.id == t.id } }
-        }
+        // No withAnimation here: callers (a Space switch) change the whole window in the same turn,
+        // and an animation transaction made SwiftUI render all of it synchronously. The toast
+        // overlay animates itself.
+        toasts = [t] // one message at a time: a new one replaces the old
+        DispatchQueue.main.asyncAfter(deadline: .now() + (action == nil ? 3.2 : 7)) { self.toasts.removeAll { $0.id == t.id } }
     }
 
     // MARK: Assets
@@ -909,6 +969,10 @@ final class AppModel: ObservableObject {
     // MARK: Library queries
 
     func docsFor(_ view: ViewRef) -> [DocMeta] {
+        memoized("docsFor-\(view.kind)-\(view.folderId ?? "")", [libraryRevision, librarySearch]) { computeDocsFor(view) }
+    }
+
+    private func computeDocsFor(_ view: ViewRef) -> [DocMeta] {
         var list = library.liveDocs.filter { $0.parentDocId == nil && (library.settings.showDailyNotes || $0.dailyDate == nil) }
         switch view.kind {
         case "unsorted": list = list.filter { $0.folderId == nil }

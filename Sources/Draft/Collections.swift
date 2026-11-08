@@ -6,10 +6,16 @@ import DraftEditor
 /// Collections: data lives in the `collection` block; every item is a nested page.
 extension AppModel {
     func collectionNode(_ docId: String, _ blockId: String) -> Node? {
-        (editors[docId]?.controller.document() ?? ensureDoc(docId)?.content)?.block(blockId)
+        if let c = editors[docId]?.controller { return c.attachmentNode(blockId: blockId) ?? c.document().block(blockId) }
+        return ensureDoc(docId)?.content.block(blockId)
     }
 
-    func collectionData(_ docId: String, _ blockId: String) -> CollectionData? { collectionNode(docId, blockId).flatMap { CollectionData(node: $0) } }
+    /// Decoded once per edit of the hosting document: views ask for it many times per render.
+    func collectionData(_ docId: String, _ blockId: String) -> CollectionData? {
+        memoized("collection-\(docId)-\(blockId)", [docRevision[docId] ?? 0, collectionTick, editors[docId] == nil]) {
+            collectionNode(docId, blockId).flatMap { CollectionData(node: $0) }
+        }
+    }
 
     func pageTitle(_ id: String) -> String { docTitle(id) }
 
@@ -367,32 +373,58 @@ struct CollectionGallery: View {
     let data: CollectionData
     let view: CollectionView
     var body: some View {
+        let _ = model.coverTick
         let rows = data.rows(view, title: model.pageTitle)
         let fields = (view.visible ?? data.fields.map(\.id)).compactMap { data.field($0) }.prefix(3)
         ScrollView {
             LazyVGrid(columns: [GridItem(.adaptive(minimum: 210), spacing: 14)], spacing: 14) {
                 ForEach(rows) { it in
-                    Button { model.openView(.doc(it.docId)) } label: {
-                        VStack(alignment: .leading, spacing: 8) {
-                            ZStack {
-                                if let img = model.ensureDoc(it.docId).flatMap({ model.coverImage($0.appearance.cover) }) { Image(nsImage: img).resizable().aspectRatio(contentMode: .fill) }
-                                else { Color(hex: Tags.defaultColor(model.pageTitle(it.docId))).opacity(0.25); Text(String(model.pageTitle(it.docId).prefix(1)).uppercased()).font(.system(size: DS.display, weight: .bold)).foregroundStyle(t.secondary) }
-                            }.frame(height: 110).clipped().clipShape(RoundedRectangle(cornerRadius: DS.rControl, style: .continuous))
-                            Text(model.pageTitle(it.docId)).font(.system(size: DS.headline, weight: .semibold)).foregroundStyle(t.text).lineLimit(2)
-                            ForEach(Array(fields)) { f in
-                                let s = data.display(it, f.id, title: model.pageTitle)
-                                if !s.isEmpty { Text("\(f.name): \(s)").font(.system(size: DS.footnote)).foregroundStyle(t.secondary).lineLimit(1) }
-                            }
-                        }
-                        .padding(12).frame(maxWidth: .infinity, alignment: .leading)
-                        .background(RoundedRectangle(cornerRadius: DS.rCard, style: .continuous).fill(t.card))
-                    }
-                    .buttonStyle(.plain)
+                    let title = model.pageTitle(it.docId)
+                    GalleryCard(title: title, cover: model.cover(of: it.docId).flatMap { model.coverImage($0) },
+                                lines: fields.compactMap { f in let s = data.display(it, f.id, title: model.pageTitle); return s.isEmpty ? nil : "\(f.name): \(s)" },
+                                tokens: t) { model.openView(.doc(it.docId)) }
+                    .equatable()
                     .contextMenu { Button("Delete Item", role: .destructive) { model.deleteCollectionItems(docId, blockId, [it.id], undo: undo) } }
-                    .accessibilityLabel("Open \(model.pageTitle(it.docId))")
                 }
             }.padding(18)
         }
+        .onAppear { model.prefetchCovers(data.items.map(\.docId)) }
+    }
+}
+
+/// A gallery card built from plain values, so scrolling creates cheap views and unchanged cards
+/// skip re-rendering.
+struct GalleryCard: View, Equatable {
+    let title: String
+    let cover: NSImage?
+    let lines: [String]
+    let tokens: Tokens
+    let open: () -> Void
+
+    static func == (a: GalleryCard, b: GalleryCard) -> Bool { a.title == b.title && a.cover === b.cover && a.lines == b.lines && a.tokens.dark == b.tokens.dark }
+
+    var body: some View {
+        let t = tokens
+        Button(action: open) {
+            VStack(alignment: .leading, spacing: 8) {
+                ZStack {
+                    if let cover { Image(nsImage: cover).resizable().aspectRatio(contentMode: .fill) }
+                    else {
+                        Color(hex: Tags.defaultColor(title)).opacity(0.25)
+                        Text(String(title.prefix(1)).uppercased()).font(.system(size: DS.display, weight: .bold)).foregroundStyle(t.secondary)
+                    }
+                }
+                .frame(height: 110).clipped().clipShape(RoundedRectangle(cornerRadius: DS.rControl, style: .continuous))
+                Text(title).font(.system(size: DS.headline, weight: .semibold)).foregroundStyle(t.text).lineLimit(2)
+                ForEach(lines, id: \.self) { Text($0).font(.system(size: DS.footnote)).foregroundStyle(t.secondary).lineLimit(1) }
+                Spacer(minLength: 0)
+            }
+            .padding(12).frame(maxWidth: .infinity, minHeight: 210, maxHeight: 210, alignment: .topLeading)
+            .background(RoundedRectangle(cornerRadius: DS.rCard, style: .continuous).fill(t.card))
+            .contentShape(RoundedRectangle(cornerRadius: DS.rCard, style: .continuous))
+        }
+        .buttonStyle(.plain)
+        .accessibilityLabel("Open \(title)")
     }
 }
 

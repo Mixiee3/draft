@@ -263,6 +263,12 @@ final class CollectionCell: BlockCell {
 public extension String { var nilIfEmpty: String? { isEmpty ? nil : self } }
 
 extension EditorController {
+    /// An attachment block's node, read from the attachment instead of converting the document.
+    public func attachmentNode(blockId: String) -> Node? {
+        guard let pr = paragraph(withId: blockId), pr.length > 0 else { return nil }
+        return (storage.attribute(.attachment, at: pr.location, effectiveRange: nil) as? BlockAttachment)?.node
+    }
+
     /// Replace a block's attachment node without an undo step in this document (the app records
     /// the change in the view that made it, e.g. the collection screen).
     public func replaceAttachmentQuietly(blockId: String, with node: Node) -> Bool {

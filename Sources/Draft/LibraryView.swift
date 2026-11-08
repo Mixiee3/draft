@@ -244,9 +244,7 @@ func dateBucket(_ ms: Double) -> String {
     if cal.isDateInToday(d) { return "Today" }
     if cal.isDateInYesterday(d) { return "Yesterday" }
     if let w = cal.dateInterval(of: .weekOfYear, for: Date()), w.contains(d) { return "This Week" }
-    let f = DateFormatter()
-    f.dateFormat = cal.isDate(d, equalTo: Date(), toGranularity: .year) ? "LLLL" : "yyyy"
-    return f.string(from: d)
+    return (cal.isDate(d, equalTo: Date(), toGranularity: .year) ? monthFormatter : yearFormatter).string(from: d)
 }
 
 struct GridLayout: View {
@@ -268,6 +266,9 @@ struct GridLayout: View {
         }.padding(.horizontal, 18).padding(.bottom, 24)
     }
 }
+
+private let monthFormatter: DateFormatter = { let f = DateFormatter(); f.dateFormat = "LLLL"; return f }()
+private let yearFormatter: DateFormatter = { let f = DateFormatter(); f.dateFormat = "yyyy"; return f }()
 
 func groupByDate(_ docs: [DocMeta], key: SortKey) -> [(String, [DocMeta])] {
     var order: [String] = []

@@ -67,6 +67,7 @@ public extension Vault {
     }
 
     func snapshots(_ id: String) -> [Snapshot] {
+        drain()
         guard let d = try? historyDir(id), let names = try? FileManager.default.contentsOfDirectory(atPath: d.path) else { return [] }
         return names.compactMap { n in Double(n.replacingOccurrences(of: ".json", with: "")).map { Snapshot(url: d.appendingPathComponent(n), savedAt: $0) } }
             .sorted { $0.savedAt > $1.savedAt }

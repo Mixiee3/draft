@@ -8,7 +8,15 @@ import DraftEditor
 /// Links, tags, daily notes, tasks across documents and reminders.
 extension AppModel {
     var settings: DraftCore.Settings { library.settings }
-    var liveIds: Set<String> { Set(library.liveDocs.map(\.id)) }
+    var liveIds: Set<String> { memoized("liveIds", [libraryRevision]) { Set(library.liveDocs.map(\.id)) } }
+
+    /// Live top-level documents of each folder, sorted by title (the sidebar reads this per folder).
+    var docsByFolder: [String: [DocMeta]] {
+        memoized("docsByFolder", [libraryRevision]) {
+            Dictionary(grouping: library.liveDocs.filter { $0.parentDocId == nil && $0.folderId != nil }, by: { $0.folderId! })
+                .mapValues { $0.sorted { $0.title.localizedCaseInsensitiveCompare($1.title) == .orderedAscending } }
+        }
+    }
     var todayKey: String { Day.today(now: clock(), startHour: settings.dayStartHour) }
 
     func docTitle(_ id: String) -> String {
@@ -62,7 +70,8 @@ extension AppModel {
 
     func saveIndexNow() {
         indexTimer?.invalidate()
-        try? vault.saveIndex(index) // derived data: a failed write only means a rebuild next launch
+        let idx = index, v = vault
+        v.enqueue({ try v.saveIndex(idx) }, failed: { _ in }) // derived data: a failed write only means a rebuild next launch
     }
 
     // MARK: Links
@@ -214,12 +223,25 @@ extension AppModel {
 
     func tasks(_ bucket: TaskBucket) -> [(doc: String, task: IndexedTask)] {
         let today = todayKey
-        return index.tasks(live: liveIds).filter { $0.task.bucket(today: today) == bucket }
-            .sorted { ($0.task.due ?? "~", docTitle($0.doc), $0.task.text) < ($1.task.due ?? "~", docTitle($1.doc), $1.task.text) }
+        return memoized("tasks-\(bucket.rawValue)", [libraryRevision, indexTick, today]) {
+            index.tasks(live: liveIds).filter { $0.task.bucket(today: today) == bucket }
+                .sorted { ($0.task.due ?? "~", docTitle($0.doc), $0.task.text) < ($1.task.due ?? "~", docTitle($1.doc), $1.task.text) }
+        }
     }
 
     func tasks(on day: String) -> [(doc: String, task: IndexedTask)] {
-        index.tasks(live: liveIds).filter { $0.task.dueDay == day }.sorted { $0.task.text < $1.task.text }
+        let byDay = memoized("tasksByDay", [libraryRevision, indexTick]) {
+            Dictionary(grouping: index.tasks(live: liveIds).filter { $0.task.dueDay != nil }, by: { $0.task.dueDay! })
+                .mapValues { $0.sorted { $0.task.text < $1.task.text } }
+        }
+        return byDay[day] ?? []
+    }
+
+    /// The daily note of each day in this Space.
+    var dailyNotes: [String: DocMeta] {
+        memoized("dailyNotes", [libraryRevision]) {
+            Dictionary(library.liveDocs.compactMap { m in m.dailyDate.map { ($0, m) } }, uniquingKeysWith: { a, _ in a })
+        }
     }
 
     func openBlock(_ docId: String, _ blockId: String) {

@@ -42,6 +42,9 @@ enum Automation {
             case "assistant-write": await assistantWrite()
             case "assistant-read": await assistantRead()
             case "motion-frames": await motionFrames()
+            case "audit-shots": await auditShots()
+            case "audit-motion": await auditMotion()
+            case "audit-frames": await auditFrames()
             case "ux-perf": await uxPerf()
             case "idle": await idle()
             default: break

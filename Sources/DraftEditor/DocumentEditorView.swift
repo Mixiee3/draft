@@ -215,6 +215,9 @@ public final class DocumentEditorView: NSView, NSTextViewDelegate {
         relayout()
     }
 
+    /// Scrolling runs layout; re-assigning unchanged frames there dirtied the window's regions every frame.
+    private func place(_ v: NSView, _ r: NSRect) { if v.frame != r { v.frame = r } }
+
     private var inLayout = false
     func relayout() {
         guard !inLayout else { return }
@@ -236,17 +239,17 @@ public final class DocumentEditorView: NSView, NSTextViewDelegate {
         var y = top
         if let img = coverImage, img.size.width > 0 {
             let h = min(460, max(90, (paperW * img.size.height / img.size.width).rounded()))
-            coverView.frame = NSRect(x: paperX, y: top, width: paperW, height: h)
-            coverControls.frame = NSRect(x: paperX + paperW - 92, y: top + 12, width: 80, height: 32)
+            place(coverView, NSRect(x: paperX, y: top, width: paperW, height: h))
+            place(coverControls, NSRect(x: paperX + paperW - 92, y: top + 12, width: 80, height: 32))
             y += h + 36
         } else { y += 52 }
         let innerW = paperW - pad * 2
-        titleView.frame.size.width = innerW
+        if titleView.frame.width != innerW { titleView.frame.size.width = innerW }
         titleView.layoutManager?.ensureLayout(for: titleView.textContainer!)
         let titleH = max((titleView.layoutManager?.usedRect(for: titleView.textContainer!).height ?? 40), (titleView.font?.pointSize ?? 34) * 1.25)
-        titleView.frame = NSRect(x: paperX + pad, y: y, width: innerW, height: titleH)
+        place(titleView, NSRect(x: paperX + pad, y: y, width: innerW, height: titleH))
         y += titleH + 16
-        ruleView.frame = NSRect(x: paperX + pad, y: y, width: innerW, height: 1)
+        place(ruleView, NSRect(x: paperX + pad, y: y, width: innerW, height: 1))
         y += 22
         let tv = controller.textView
         if abs(tv.frame.width - innerW) > 0.5 || tv.frame.minX != paperX + pad || tv.frame.minY != y {
@@ -256,8 +259,10 @@ public final class DocumentEditorView: NSView, NSTextViewDelegate {
         if tv.frame.height < 160 { tv.setFrameSize(NSSize(width: innerW, height: 160)) }
         let paperBottom = tv.frame.maxY + 90
         paper.paperRect = NSRect(x: paperX, y: top, width: paperW, height: paperBottom - top)
-        paperBackground.frame = paper.paperRect
-        paperBackground.layer?.shadowPath = CGPath(roundedRect: paperBackground.bounds, cornerWidth: 22, cornerHeight: 22, transform: nil)
+        if paperBackground.frame != paper.paperRect {
+            paperBackground.frame = paper.paperRect
+            paperBackground.layer?.shadowPath = CGPath(roundedRect: paperBackground.bounds, cornerWidth: 22, cornerHeight: 22, transform: nil)
+        }
         let docH = max(paperBottom + 60, scrollView.contentSize.height)
         if paper.frame.size != NSSize(width: width, height: docH) { paper.frame = NSRect(x: 0, y: 0, width: width, height: docH) }
         if controller.imageBar.isVisible { controller.imageBar.update() }
