@@ -1,5 +1,7 @@
 import Foundation
+import AppKit
 import DraftCore
+import DraftEditor
 
 extension Automation {
     static func agentExternalAccept() async {
@@ -61,5 +63,68 @@ extension Automation {
                 result["styleUndo"] = m.docs[id]?.appearance.styleId == "paper" ? "yes" : "no"
             }
         } catch { result["error"] = error.localizedDescription }
+    }
+
+    /// Reject, stale revision, and what a targeted edit must leave alone: links, tags, tasks, nested pages.
+    static func agentIntegrity() async {
+        var r: [String: String] = [:]
+        defer { if let d = try? JSONSerialization.data(withJSONObject: r, options: [.prettyPrinted, .sortedKeys]) { try? d.write(to: out.appendingPathComponent("agent-integrity-result.json")) } }
+        guard let id = m.createDoc(title: "Plot notes") else { return }
+        let ed = m.editor(for: id)
+        ed.controller.load(ensureBlockIds(Node("doc", content: MarkdownImport.blocks("Spring plan #garden\n- [ ] water the beds\nSee [the guide](https://example.com/guide)\nOld wording here"))))
+        m.markDocDirty(id); m.flushAll()
+        if let child = m.createDoc(parentDocId: id, open: false, title: "Seed list") {
+            let tv = ed.controller.textView
+            tv.setSelectedRange(NSRange(location: (tv.string as NSString).length, length: 0))
+            ed.controller.insertAttachmentBlock(kind: .page, node: Node("pageCard", attrs: ["docId": .string(child), "title": "Seed list", "presentation": "card"]))
+        }
+        m.openView(.doc(id)); await wait(0.4)
+        m.markDocDirty(id); m.flushAll(); m.rebuildIndex(); await wait(0.6)
+        func blocks() -> [Node] { m.docs[id]?.content.content ?? [] }
+        guard let last = blocks().first(where: { nodeText($0) == "Old wording here" })?.id, let doc = m.docs[id] else { r["setup"] = "failed"; return }
+        r["cardBefore"] = blocks().contains { $0.type == "pageCard" } ? "yes" : "no"
+        do {
+            // Reject leaves the note untouched and records the answer for Codex.
+            let rev = try AgentProposalStore.revision(doc)
+            let rejectMe = try AgentProposal(documentId: id, documentTitle: doc.title, instruction: "Reword", expectedRevision: rev,
+                                             edits: [AgentEdit(action: "replace_text", blockId: last, text: "Rejected wording", expectedText: "Old wording here")])
+            try AgentProposalStore.save(rejectMe, vaultURL: m.vault.dir)
+            m.showNextAgentProposal(); m.rejectAgentProposal()
+            r["rejectStatus"] = try AgentProposalStore.load(rejectMe.id, vaultURL: m.vault.dir).status
+            r["rejectUnchanged"] = (try m.vault.loadDoc(id)).map { docPlainText($0.content).contains("Old wording here") } == true ? "yes" : "no"
+
+            // A proposal made against an older revision is refused after the note changed.
+            let stale = try AgentProposal(documentId: id, documentTitle: doc.title, instruction: "Reword", expectedRevision: rev,
+                                          edits: [AgentEdit(action: "replace_text", blockId: last, text: "Stale wording", expectedText: "Old wording here")])
+            ed.controller.textView.setSelectedRange(NSRange(location: 0, length: 0)); ed.controller.textView.insertText("Note: ", replacementRange: NSRange(location: 0, length: 0))
+            m.markDocDirty(id); m.flushAll()
+            try AgentProposalStore.save(stale, vaultURL: m.vault.dir)
+            m.showNextAgentProposal(); m.acceptAgentProposal()
+            r["staleStatus"] = try AgentProposalStore.load(stale.id, vaultURL: m.vault.dir).status
+            r["staleUnchanged"] = (try m.vault.loadDoc(id)).map { !docPlainText($0.content).contains("Stale wording") } == true ? "yes" : "no"
+
+            // A fresh targeted edit changes one block and keeps everything else.
+            guard let now = m.docs[id] else { return }
+            let ok = try AgentProposal(documentId: id, documentTitle: now.title, instruction: "Reword", expectedRevision: AgentProposalStore.revision(now),
+                                       edits: [AgentEdit(action: "replace_text", blockId: last, text: "New **wording** here", expectedText: "Old wording here")])
+            try AgentProposalStore.save(ok, vaultURL: m.vault.dir)
+            m.showNextAgentProposal(); m.acceptAgentProposal()
+            r["acceptStatus"] = try AgentProposalStore.load(ok.id, vaultURL: m.vault.dir).status
+            let saved = try m.vault.loadDoc(id)
+            let text = saved.map { docPlainText($0.content) } ?? ""
+            r["changed"] = text.contains("New wording here") ? "yes" : "no"
+            r["tagKept"] = text.contains("#garden") ? "yes" : "no"
+            r["taskKept"] = saved.map { tasksOf($0.content).count } == 1 ? "yes" : "no"
+            var link = false
+            if let c = saved?.content { walk(c) { n in if n.marks?.contains(where: { $0.type == "link" }) == true { link = true } } }
+            r["linkKept"] = link ? "yes" : "no"
+            r["cardKept"] = saved?.content.content?.contains { $0.type == "pageCard" } == true ? "yes" : "no"
+            r["childKept"] = m.library.liveDocs.contains { $0.parentDocId == id && $0.title == "Seed list" } ? "yes" : "no"
+            r["backups"] = "\(m.snapshots(id).count)"
+            await wait(1.2)
+            r["indexHasEdit"] = (m.index.entries[id]?.blocks ?? []).contains { $0.text.contains("New wording here") } ? "yes" : "no"
+            ed.controller.undo.undo(); m.markDocDirty(id); m.flushAll()
+            r["undoRestores"] = (try m.vault.loadDoc(id)).map { docPlainText($0.content).contains("Old wording here") } == true ? "yes" : "no"
+        } catch { r["error"] = error.localizedDescription }
     }
 }
