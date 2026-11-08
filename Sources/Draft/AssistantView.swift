@@ -1,4 +1,5 @@
 import SwiftUI
+import VoiceGlowKit
 import AppKit
 import DraftCore
 import DraftAssistant
@@ -91,6 +92,7 @@ struct AssistantView: View {
                     ChipButton(title: act == .outline ? "Outline" : act.title, font: .system(size: DS.footnote, weight: .medium), isEnabled: !a.isRunning && a.scope != .space, height: DS.controlSmall + 4) { a.send(act) }
                 }
             }
+            VoiceGlow(levelProvider: { a.voice.level }, active: a.voice.listening || a.voice.speaking, cornerRadius: DS.rCard) {
             ActiveBeam(active: a.isRunning, radius: DS.rCard) {
                 HStack(alignment: .bottom, spacing: DS.s2) {
                     TextField(a.scope == .space ? "Ask about the notes in this Space…" : "Ask about this text…", text: Binding(get: { a.draft }, set: { a.draft = $0 }), axis: .vertical)
@@ -99,12 +101,19 @@ struct AssistantView: View {
                         .onSubmit { a.send() }
                         .padding(.vertical, 7)
                         .accessibilityLabel("Message to the Assistant")
+                    IconButton(symbol: a.voice.listening ? "mic.fill" : "mic", label: a.voice.listening ? "Stop dictation" : "Dictate (on this Mac)", size: 32) {
+                        a.voice.toggleListening { a.draft = $0 }
+                    }
+                    .foregroundStyle(a.voice.listening ? t.accent : t.secondary)
+                    .disabled(a.isRunning)
                     SendButton(running: a.isRunning, enabled: a.isRunning || !a.draft.trimmingCharacters(in: .whitespaces).isEmpty) { a.isRunning ? a.stop() : a.send() }
                 }
                 .padding(.leading, DS.s3).padding(.trailing, DS.s1 + 2).padding(.vertical, DS.s1 + 1)
                 .background(RoundedRectangle(cornerRadius: DS.rCard, style: .continuous).fill(t.card))
                 .overlay(RoundedRectangle(cornerRadius: DS.rCard, style: .continuous).strokeBorder(composerFocused ? t.accent.opacity(0.55) : t.line, lineWidth: 1))
             }
+            }
+            if let p = a.voice.problem { Text(p).font(.system(size: DS.caption)).foregroundStyle(t.secondary).fixedSize(horizontal: false, vertical: true) }
             Text("Answers come only from the notes you choose and can be wrong. Nothing leaves this Mac.")
                 .font(.system(size: DS.caption)).foregroundStyle(t.tertiary).fixedSize(horizontal: false, vertical: true)
         }
@@ -180,6 +189,7 @@ struct MessageRow: View {
                         if a.canEdit(m) {
                             ChipButton(title: "Insert or Replace…", symbol: "text.insert", font: .system(size: DS.footnote, weight: .medium), height: DS.controlSmall + 2) { a.previewEdit(m) }.fixedSize()
                         }
+                        ChipButton(title: a.voice.speaking ? "Stop" : "Read Aloud", symbol: a.voice.speaking ? "stop.circle" : "speaker.wave.2", font: .system(size: DS.footnote, weight: .medium), height: DS.controlSmall + 2) { a.voice.speak(m.text) }.fixedSize()
                         ChipButton(title: "Copy", symbol: "doc.on.doc", font: .system(size: DS.footnote, weight: .medium), height: DS.controlSmall + 2) {
                             NSPasteboard.general.clearContents(); NSPasteboard.general.setString(m.text, forType: .string)
                         }.fixedSize()

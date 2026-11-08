@@ -1,3 +1,4 @@
+import Speech
 import AppKit
 import SwiftUI
 import DraftCore
@@ -168,6 +169,13 @@ extension Automation {
         r["firstQuestionStartSeconds"] = String(format: "%.2f", firsts[0])
         r["followUpStartSeconds"] = String(format: "%.2f", firsts[1])
         r["followUpSpeedup"] = String(format: "%.1f", firsts[1] > 0 ? firsts[0] / firsts[1] : 0)
+
+        // Voice: speech output works offline; whether this Mac can dictate on-device is reported.
+        a.voice.speak("Draft can read answers aloud.")
+        let v0 = Date(); var spoke = false
+        while Date().timeIntervalSince(v0) < 8 { if a.voice.speaking { spoke = true }; if spoke && !a.voice.speaking { break }; await wait(0.1) }
+        r["speechOutput"] = spoke && !a.voice.speaking ? "yes" : "no"
+        r["onDeviceDictationAvailable"] = SFSpeechRecognizer()?.supportsOnDeviceRecognition == true ? "yes" : "no"
 
         // A note several times longer than the context, with the fact near the end.
         let filler = (0..<260).map { "Week \($0 + 1): the volunteers watered the beds, weeded the paths and logged the rainfall in the shed notebook." }

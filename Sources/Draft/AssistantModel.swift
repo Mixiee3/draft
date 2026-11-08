@@ -245,6 +245,8 @@ final class AssistantModel {
         status = .ready
     }
 
+    @ObservationIgnored lazy var voice = VoiceIO()
+
     /// Timing of the last finished answer (the follow-up speed check reads it).
     @ObservationIgnored var lastStats: GenerationStats?
 
