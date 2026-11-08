@@ -13,8 +13,23 @@ extension EditorController {
         var planned: [String: String] = [:]
         for edit in edits {
             try edit.validate()
+            if edit.action == "append" { continue }
             guard let pr = paragraph(withId: edit.blockId) else { throw AgentEditError.invalid("Block \(edit.blockId) is missing.") }
             let kind = block(at: pr).kind
+            switch edit.action {
+            case "insert_blocks": continue
+            case "delete_block":
+                // Images, files, nested pages and tables are kept: their assets and child pages hang off them.
+                guard !kind.isAttachment || kind == .divider else { throw AgentEditError.invalid("Block \(edit.blockId) holds an image, file, page or table; Draft won't delete it from a proposal.") }
+                continue
+            case "move_block":
+                guard let t = edit.target, paragraph(withId: t) != nil else { throw AgentEditError.invalid("Target block \(edit.target ?? "") is missing.") }
+                continue
+            case "task_checked":
+                guard kind == .task else { throw AgentEditError.invalid("Block \(edit.blockId) is not a task.") }
+                continue
+            default: break
+            }
             if edit.action == "separator_style" {
                 guard kind == .divider else { throw AgentEditError.invalid("Only a separator can change separator style.") }
             } else if edit.action != "insert_separator" && kind.isAttachment {
@@ -24,7 +39,7 @@ extension EditorController {
             if edit.action == "replace_text" {
                 guard current == edit.expectedText else { throw AgentEditError.invalid("Text in block \(edit.blockId) changed. Read the note again.") }
                 planned[edit.blockId] = (MarkdownImport.inline(edit.text ?? "")).map { $0.text ?? "" }.joined()
-            } else if ["bold", "italic", "underline", "strike", "code", "highlight", "text_color"].contains(edit.action) {
+            } else if ["bold", "italic", "underline", "strike", "code", "highlight", "text_color", "link", "unlink"].contains(edit.action) {
                 let phrase = edit.text ?? ""
                 let count = current.components(separatedBy: phrase).count - 1
                 guard count == 1 else { throw AgentEditError.invalid("The phrase “\(phrase)” must occur exactly once in block \(edit.blockId).") }
@@ -33,6 +48,7 @@ extension EditorController {
         undo.beginUndoGrouping()
         undoGroup {
             for edit in edits {
+                if ["append", "insert_blocks", "delete_block", "move_block"].contains(edit.action) { applyStructural(edit); continue }
                 guard let pr = paragraph(withId: edit.blockId) else { continue }
                 textView.setSelectedRange(NSRange(location: pr.location, length: 0))
                 switch edit.action {
@@ -76,6 +92,12 @@ extension EditorController {
                     let kind: BlockKind = edit.value == "bullet" ? .bullet : edit.value == "numbered" ? .ordered : .task
                     if edit.value == "none" { setBlockKind(.paragraph) }
                     else if block(at: pr).kind != kind { toggleList(kind) }
+                case "task_checked":
+                    if block(at: pr).checked != (edit.value == "true") { toggleTask(at: pr) }
+                case "link", "unlink":
+                    let cr = contentRange(pr)
+                    let local = (ns.substring(with: cr) as NSString).range(of: edit.text ?? "")
+                    setLink(edit.action == "link" ? edit.value : nil, range: NSRange(location: cr.location + local.location, length: local.length))
                 case "font": setBlockFont(edit.value == "document" ? nil : edit.value)
                 case "align": setAlign(edit.value)
                 case "block_color": setBlockColor(edit.value)
@@ -102,6 +124,36 @@ extension EditorController {
         undo.setActionName("Apply Codex Note Edits")
         undo.endUndoGrouping()
         host?.editorDidChange()
+    }
+
+    /// Block-level changes through the flat block list, so ids, marks and attachments of every
+    /// other block travel unchanged. New blocks get fresh ids.
+    private func applyStructural(_ edit: AgentEdit) {
+        var flat = flatBlocks()
+        func index(_ id: String) -> Int? { flat.firstIndex { $0.info.id == id } }
+        switch edit.action {
+        case "append", "insert_blocks":
+            let new = Converter.flatten(ensureBlockIds(Node("doc", content: MarkdownImport.blocks(edit.text ?? ""))))
+            var at = flat.count
+            if edit.action == "append" {
+                // A note ends with an empty paragraph to type into; add above it.
+                if let last = flat.last, !last.info.kind.isAttachment, last.inline.isEmpty, flat.count > 1 { at = flat.count - 1 }
+            } else if let i = index(edit.blockId) { at = edit.position == "before" ? i : i + 1 }
+            flat.insert(contentsOf: new, at: at)
+            rebuild(flat, select: new.first.map { [$0.info.id] } ?? [], blockMode: false)
+        case "delete_block":
+            guard let i = index(edit.blockId) else { return }
+            flat.remove(at: i)
+            if flat.isEmpty { flat = Converter.flatten(ensureBlockIds(Node("doc", content: [Node("paragraph")]))) }
+            rebuild(flat, select: [], blockMode: false)
+        case "move_block":
+            guard let i = index(edit.blockId) else { return }
+            let moved = flat.remove(at: i)
+            guard let j = edit.target.flatMap(index) else { return }
+            flat.insert(moved, at: edit.position == "before" ? j : j + 1)
+            rebuild(flat, select: [moved.info.id], blockMode: false)
+        default: break
+        }
     }
 
     private func replaceDocumentFromAgent(_ markdown: String) throws {

@@ -68,6 +68,8 @@ struct DraftCommands: Commands {
             // ⌘G / ⇧⌘G belong to Group / Ungroup; in the Find pane Return and ⇧Return step through matches.
             Button("Find Next") { model.activeController?.findStep(1) }.disabled(model.activeDocId == nil)
             Button("Find Previous") { model.activeController?.findStep(-1) }.disabled(model.activeDocId == nil)
+            Divider()
+            Button(model.agentUndoName.map { "Undo Agent Change: \($0)" } ?? "Undo Agent Change") { model.undoAgentChange() }.disabled(model.agentUndoName == nil)
         }
         CommandMenu("Format") {
             ForEach(EditorCommands.all.filter { $0.plannedFor == nil && $0.group != "Insert" }) { cmd in
