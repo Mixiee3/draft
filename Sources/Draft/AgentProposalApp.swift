@@ -12,7 +12,21 @@ extension AppModel {
 
     func showNextAgentProposal() {
         guard agentProposal == nil, confirm == nil else { return }
-        agentProposal = AgentProposalStore.pending(vaultURL: vault.dir).first
+        let pending = AgentProposalStore.pending(vaultURL: vault.dir)
+        pendingAgentCount = pending.count
+        agentProposal = pending.first { !deferredProposals.contains($0.id) }
+    }
+
+    /// Later: close the sheet and keep the proposal pending until the user asks to review it.
+    func deferAgentProposal() {
+        guard let p = agentProposal else { return }
+        deferredProposals.insert(p.id)
+        agentProposal = nil
+    }
+
+    func reviewPendingAgentProposals() {
+        deferredProposals.removeAll()
+        showNextAgentProposal()
     }
 
     func rejectAgentProposal() {
@@ -29,6 +43,9 @@ extension AppModel {
         guard var proposal = agentProposal else { return }
         do {
             guard readOnly == nil else { throw AgentEditError.invalid("Draft is read-only right now.") }
+            guard library.settings.agentPermission(proposal.client).allows(proposal.requiredAccess) else {
+                throw AgentEditError.invalid("\(proposal.client ?? "This agent") isn't allowed to make \(proposal.requiredAccess == .destructive ? "destructive" : "") changes. Change it in Settings › Agents.")
+            }
             for edit in proposal.edits { try edit.validate() }
             flushAll()
             guard saveState != "error" else { throw AgentEditError.invalid("Draft could not save the current note. Fix the save error before applying this proposal.") }
@@ -178,6 +195,7 @@ struct AgentProposalReview: View {
                     .font(.system(size: DS.headline, weight: .semibold)).foregroundStyle(t.text)
                 Text(proposal.instruction).font(.system(size: DS.body)).foregroundStyle(t.secondary).fixedSize(horizontal: false, vertical: true)
             }
+            permissionBox
             ScrollView {
                 VStack(alignment: .leading, spacing: DS.s2) {
                     ForEach(Array(proposal.edits.enumerated()), id: \.offset) { i, edit in card(i, edit, blocks) }
@@ -186,18 +204,57 @@ struct AgentProposalReview: View {
             .frame(maxHeight: 420)
             Text("Nothing changes until you apply. Draft checks the note hasn't changed, keeps a backup, and one Undo reverses the whole proposal.")
                 .font(.system(size: DS.footnote)).foregroundStyle(t.tertiary).fixedSize(horizontal: false, vertical: true)
-            HStack {
+            HStack(spacing: DS.s2) {
                 Button("Reject") { model.rejectAgentProposal() }.buttonStyle(.draft).keyboardShortcut(.cancelAction)
                     .accessibilityHint("Leaves the note unchanged and tells the agent")
+                Button("Later") { model.deferAgentProposal() }.buttonStyle(DraftButtonStyle(role: .quiet))
+                    .accessibilityHint("Closes this without deciding; review it from Edit › Review Agent Proposals")
                 Spacer()
-                Button(proposal.edits.count == 1 ? "Apply Change" : "Apply \(proposal.edits.count) Changes") { model.acceptAgentProposal() }
-                    .buttonStyle(.draftPrimary).keyboardShortcut(.defaultAction)
+                Button(applyTitle) { model.acceptAgentProposal() }
+                    .buttonStyle(DraftButtonStyle(role: allowed ? (destructive ? .destructive : .primary) : .secondary)).keyboardShortcut(.defaultAction)
+                    .disabled(!allowed)
             }
         }
         .padding(DS.s5)
         .frame(minWidth: 420, idealWidth: 600, maxWidth: 600)
         .background(t.canvas)
         .interactiveDismissDisabled()
+    }
+
+    var destructive: Bool { proposal.requiredAccess == .destructive }
+    var allowed: Bool { model.library.settings.agentPermission(proposal.client).allows(proposal.requiredAccess) }
+    var applyTitle: String {
+        let deletes = proposal.edits.filter { $0.action == "delete_block" }.count
+        if deletes > 0 { return "Apply and Delete \(deletes) Block\(deletes == 1 ? "" : "s")" }
+        return proposal.edits.count == 1 ? "Apply Change" : "Apply \(proposal.edits.count) Changes"
+    }
+
+    /// Who asked, which notes it touches, and what permission it needs.
+    var permissionBox: some View {
+        let id = proposal.documentId
+        let pages = id == "new" ? [] : [id] + model.descendants(id)
+        let movesPages = proposal.edits.first?.action == "move_document" && pages.count > 1
+        let affected = id == "new" ? ["New note “\(proposal.documentTitle)”"]
+            : (movesPages ? pages : [id]).map { model.library.docs[$0]?.title ?? "" }.map { $0.isEmpty ? "Untitled" : $0 }
+        let need = destructive ? "Destructive changes" : "Propose changes"
+        return VStack(alignment: .leading, spacing: DS.s1 + 2) {
+            HStack(spacing: DS.s2) {
+                Image(systemName: destructive ? "exclamationmark.triangle.fill" : "person.badge.key").foregroundStyle(destructive ? Color(hex: "#d24b4b") : t.accent).accessibilityHidden(true)
+                Text("From \(proposal.client ?? "an agent") · needs “\(need)”").font(.system(size: DS.footnote, weight: .semibold)).foregroundStyle(t.text)
+            }
+            Text("Affects \(affected.count == 1 ? "1 note" : "\(affected.count) notes"): \(affected.prefix(8).joined(separator: ", "))\(affected.count > 8 ? " and \(affected.count - 8) more" : "")")
+                .font(.system(size: DS.footnote)).foregroundStyle(t.secondary).fixedSize(horizontal: false, vertical: true)
+            if !allowed {
+                Text("\(proposal.client ?? "This agent") doesn't have this permission, so it can't be applied. Allow it in Settings › Agents, or reject it.")
+                    .font(.system(size: DS.footnote)).foregroundStyle(Color(hex: "#d24b4b")).fixedSize(horizontal: false, vertical: true)
+            } else if destructive {
+                Text("This removes or moves content. Draft keeps a backup and one Undo reverses it.").font(.system(size: DS.footnote)).foregroundStyle(t.secondary)
+            }
+        }
+        .padding(DS.s3)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(RoundedRectangle(cornerRadius: DS.rControl, style: .continuous).strokeBorder(destructive ? Color(hex: "#d24b4b").opacity(0.5) : t.line, lineWidth: 1))
+        .accessibilityElement(children: .combine)
     }
 
     func quoted(_ s: String?) -> String { "“\(String((s ?? "").prefix(80)))\((s ?? "").count > 80 ? "…" : "")”" }

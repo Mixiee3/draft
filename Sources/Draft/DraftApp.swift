@@ -70,6 +70,7 @@ struct DraftCommands: Commands {
             Button("Find Previous") { model.activeController?.findStep(-1) }.disabled(model.activeDocId == nil)
             Divider()
             Button(model.agentUndoName.map { "Undo Agent Change: \($0)" } ?? "Undo Agent Change") { model.undoAgentChange() }.disabled(model.agentUndoName == nil)
+            Button(model.pendingAgentCount > 0 ? "Review Agent Proposals (\(model.pendingAgentCount))" : "Review Agent Proposals") { model.reviewPendingAgentProposals() }.disabled(model.pendingAgentCount == 0)
         }
         CommandMenu("Format") {
             ForEach(EditorCommands.all.filter { $0.plannedFor == nil && $0.group != "Insert" }) { cmd in

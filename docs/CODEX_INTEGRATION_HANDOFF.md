@@ -20,9 +20,17 @@
   `docs/screenshots/v07/`; Return applies (one Undo reverses it) and Escape rejects, as real key
   events. Format-only cards now show the block under a neutral label and inline formats preview
   the result. Tab focus with Keyboard Navigation and VoiceOver still need a person.
-- Checks: `scripts/mcp-test.sh` (43 checks over real stdio in a throwaway vault),
+- Checks: `scripts/mcp-test.sh` (50 checks over real stdio in a throwaway vault),
   `scripts/agent-test.sh`, unit tests (`AgentBlockOpsTests`, `AgentLibraryProposalTests`).
-- Next (see ROADMAP v0.7 rows 8–17, in order): MCP permissions, folder creation, deleting whole
+- Manual review-sheet check by the user: focus ring, VoiceOver, Return, Escape and one-step Undo
+  pass; Tab navigation not tested yet.
+- Permissions (v0.7 row 8, done): Settings › Agents has per-client Read / Propose / Destructive
+  switches keyed by the MCP `clientInfo.name`; new clients read and propose, destructive is off until
+  allowed (Codex and Claude Code included — allow it there to delete blocks, replace whole notes or
+  move notes). The server refuses without permission and Draft rechecks when applying. Proposals
+  record their client; the sheet shows it with the permission needed, affected notes, and
+  Reject / Later / Apply. `agent-requests/activity.jsonl` logs tool, note id and time only.
+- Next (see ROADMAP v0.7 rows 9–17, in order): folder creation, deleting whole
   notes to Recently Deleted, multi-note proposals, tables, collections, inserting images and files,
   richer actions, review-sheet polish, and a Codex app-server mode only after supported sign-in.
 

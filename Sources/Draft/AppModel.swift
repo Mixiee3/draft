@@ -55,6 +55,8 @@ final class AppModel {
     /// Undo for accepted create/rename/move proposals (note edits use the note's own undo).
     @ObservationIgnored let agentUndo: UndoManager = { let u = UndoManager(); u.groupsByEvent = false; return u }()
     var agentUndoName: String?
+    var pendingAgentCount = 0
+    @ObservationIgnored var deferredProposals = Set<String>()
 
     /// Derived data that views read many times per render (task lists, folder contents,
     /// collections) is computed once per change instead of once per view.

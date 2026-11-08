@@ -6,7 +6,7 @@ enum SettingsSections {
     static let all: [(id: String, title: String, icon: String)] = [
         ("appearance", "Appearance", "paintpalette"), ("editor", "Editor", "text.cursor"), ("space", "Space", "square.on.circle"),
         ("daily", "Daily Notes & Tasks", "calendar"), ("tags", "Tags", "number"), ("templates", "Templates", "doc.on.doc"),
-        ("assistant", "Assistant", "sparkle"), ("advanced", "Advanced", "slider.horizontal.3"), ("data", "Data & Storage", "internaldrive"),
+        ("assistant", "Assistant", "sparkle"), ("agents", "Agents (MCP)", "person.badge.key"), ("advanced", "Advanced", "slider.horizontal.3"), ("data", "Data & Storage", "internaldrive"),
         ("stats", "Stats", "chart.bar"), ("about", "About Draft", "info.circle"),
     ]
     static func title(_ id: String) -> String { all.first { $0.id == id }?.title ?? "Settings" }
@@ -81,6 +81,7 @@ struct SettingsView: View {
         case "daily": daily
         case "templates": templates
         case "assistant": AssistantSettings(a: model.assistant)
+        case "agents": AgentSettings()
         case "tags": tags
         case "advanced": advanced
         case "stats": stats

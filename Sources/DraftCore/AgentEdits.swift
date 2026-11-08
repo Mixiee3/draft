@@ -117,6 +117,8 @@ public struct AgentProposal: Codable, Sendable, Identifiable {
     public var createdAt: Double
     public var status: String
     public var result: String?
+    /// The MCP client that sent it (its `clientInfo.name`), for permissions and the review sheet.
+    public var client: String?
 
     public init(documentId: String, documentTitle: String, instruction: String, expectedRevision: String, edits: [AgentEdit]) throws {
         guard !edits.isEmpty, edits.count <= 100 else { throw AgentEditError.invalid("Provide 1–100 edits.") }
@@ -142,6 +144,57 @@ public struct AgentProposal: Codable, Sendable, Identifiable {
 extension AgentProposal {
     /// Applied by the app to the library rather than through a note's editor.
     public var changesLibrary: Bool { edits.count == 1 && AgentEdit.documentActions.contains(edits[0].action) }
+}
+
+/// What a client may do. Destructive covers removing content or moving notes (with their nested
+/// pages) — the changes a user would most regret applying by accident.
+public enum AgentAccess: String, Sendable { case read, propose, destructive }
+
+public struct AgentPermission: Codable, Hashable, Sendable {
+    public var read = true
+    public var propose = true
+    public var destructive = false
+    public init(read: Bool = true, propose: Bool = true, destructive: Bool = false) { self.read = read; self.propose = propose; self.destructive = destructive }
+    public func allows(_ a: AgentAccess) -> Bool {
+        switch a { case .read: return read; case .propose: return propose; case .destructive: return propose && destructive }
+    }
+}
+
+extension AgentProposal {
+    public static let destructiveActions: Set<String> = ["delete_block", "replace_document", "move_document"]
+    public var requiredAccess: AgentAccess { edits.contains { Self.destructiveActions.contains($0.action) } ? .destructive : .propose }
+}
+
+/// A local list of what agents read and proposed — tool, document id and time, never note text.
+public enum AgentActivity {
+    public struct Entry: Codable, Hashable, Sendable {
+        public var time: Double; public var client: String; public var tool: String; public var document: String?
+        public init(time: Double, client: String, tool: String, document: String?) { self.time = time; self.client = client; self.tool = tool; self.document = document }
+    }
+    static let keep = 1_000
+
+    public static func url(_ vault: URL) -> URL { AgentProposalStore.directory(vault).appendingPathComponent("activity.jsonl") }
+
+    public static func record(_ e: Entry, vault: URL) {
+        let u = url(vault)
+        try? FileManager.default.createDirectory(at: u.deletingLastPathComponent(), withIntermediateDirectories: true)
+        guard var line = try? JSONEncoder().encode(e) else { return }
+        line.append(10)
+        if let h = try? FileHandle(forWritingTo: u) { h.seekToEndOfFile(); h.write(line); try? h.close() } else { try? line.write(to: u) }
+        // Trim now and then rather than on every call.
+        if let size = try? FileManager.default.attributesOfItem(atPath: u.path)[.size] as? Int, size > 400_000 {
+            let kept = entries(vault).suffix(keep)
+            let data = kept.compactMap { try? JSONEncoder().encode($0) }.reduce(into: Data()) { $0.append($1); $0.append(10) }
+            try? data.write(to: u, options: .atomic)
+        }
+    }
+
+    public static func entries(_ vault: URL) -> [Entry] {
+        guard let data = try? Data(contentsOf: url(vault)) else { return [] }
+        return data.split(separator: 10).compactMap { try? JSONDecoder().decode(Entry.self, from: Data($0)) }
+    }
+
+    public static func clear(_ vault: URL) { try? FileManager.default.removeItem(at: url(vault)) }
 }
 
 public enum AgentProposalStore {
