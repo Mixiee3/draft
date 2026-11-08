@@ -6,6 +6,7 @@ let package = Package(
     platforms: [.macOS(.v14)],
     products: [
         .executable(name: "Draft", targets: ["Draft"]),
+        .executable(name: "DraftMCP", targets: ["DraftMCP"]),
         .library(name: "DraftCore", targets: ["DraftCore"]),
     ],
     dependencies: [
@@ -16,6 +17,7 @@ let package = Package(
         // Portable document format, vault, migrations, export. Foundation only — the
         // future Windows app re-implements or ports exactly this layer.
         .target(name: "DraftCore"),
+        .executableTarget(name: "DraftMCP", dependencies: ["DraftCore"]),
         // AppKit/TextKit 1 block editor.
         .target(name: "DraftEditor", dependencies: ["DraftCore"]),
         // llama.cpp b11722 (MIT), the on-device inference runtime for the Assistant.

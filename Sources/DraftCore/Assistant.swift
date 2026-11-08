@@ -1,5 +1,10 @@
 import Foundation
 
+public enum AssistantProvider: String, Codable, CaseIterable, Sendable {
+    case local, openai
+    public var title: String { self == .local ? "On This Mac" : "OpenAI API" }
+}
+
 public struct ChatTurn: Hashable, Sendable {
     public var role: String
     public var text: String
@@ -230,29 +235,41 @@ public struct AssistantMessage: Codable, Hashable, Identifiable, Sendable {
     }
 }
 
-/// A Space's Assistant conversation, stored in `assistant/<spaceId>.json` inside the vault.
+/// A Space's Assistant conversation, stored separately per provider inside the vault.
 public struct AssistantChat: Codable, Hashable, Sendable {
     public var schemaVersion = 1
     public var spaceId: String
+    public var provider: AssistantProvider = .local
     public var messages: [AssistantMessage] = []
-    public init(spaceId: String) { self.spaceId = spaceId }
+    public init(spaceId: String, provider: AssistantProvider = .local) { self.spaceId = spaceId; self.provider = provider }
 
-    static func url(_ vault: Vault, _ spaceId: String) -> URL {
-        vault.dir.appendingPathComponent("assistant/\(spaceId.filter { $0.isLetter || $0.isNumber || $0 == "_" || $0 == "-" }).json")
+    enum CodingKeys: String, CodingKey { case schemaVersion, spaceId, provider, messages }
+
+    public init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        schemaVersion = try c.decodeIfPresent(Int.self, forKey: .schemaVersion) ?? 1
+        spaceId = try c.decode(String.self, forKey: .spaceId)
+        provider = try c.decodeIfPresent(AssistantProvider.self, forKey: .provider) ?? .local
+        messages = try c.decodeIfPresent([AssistantMessage].self, forKey: .messages) ?? []
     }
 
-    public static func load(_ vault: Vault, spaceId: String) -> AssistantChat {
-        guard let d = try? Data(contentsOf: url(vault, spaceId)), let c = try? JSONDecoder().decode(AssistantChat.self, from: d), c.spaceId == spaceId else { return AssistantChat(spaceId: spaceId) }
+    static func url(_ vault: Vault, _ spaceId: String, provider: AssistantProvider = .local) -> URL {
+        let name = spaceId.filter { $0.isLetter || $0.isNumber || $0 == "_" || $0 == "-" }
+        return vault.dir.appendingPathComponent("assistant/\(name)\(provider == .local ? "" : "-openai").json")
+    }
+
+    public static func load(_ vault: Vault, spaceId: String, provider: AssistantProvider = .local) -> AssistantChat {
+        guard let d = try? Data(contentsOf: url(vault, spaceId, provider: provider)), let c = try? JSONDecoder().decode(AssistantChat.self, from: d), c.spaceId == spaceId, c.provider == provider else { return AssistantChat(spaceId: spaceId, provider: provider) }
         return c
     }
 
     public func save(_ vault: Vault) throws {
         guard !vault.isReadOnly else { return }
         let e = JSONEncoder(); e.outputFormatting = [.prettyPrinted, .sortedKeys]
-        try Vault.writeAtomic(try e.encode(self), to: Self.url(vault, spaceId))
+        try Vault.writeAtomic(try e.encode(self), to: Self.url(vault, spaceId, provider: provider))
     }
 
-    public static func delete(_ vault: Vault, spaceId: String) { try? FileManager.default.removeItem(at: url(vault, spaceId)) }
+    public static func delete(_ vault: Vault, spaceId: String, provider: AssistantProvider = .local) { try? FileManager.default.removeItem(at: url(vault, spaceId, provider: provider)) }
 
     /// The last turns, oldest first, as the model sees them.
     public var turns: [ChatTurn] { messages.filter { $0.failed != true }.suffix(6).map { ChatTurn($0.role, $0.text) } }

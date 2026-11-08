@@ -85,6 +85,28 @@ final class AssistantTests: XCTestCase {
         XCTAssertTrue(AssistantChat.load(v, spaceId: "s_one").messages.isEmpty)
     }
 
+    func testCloudHistoryStaysSeparateFromLocalHistory() throws {
+        let dir = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+        defer { try? FileManager.default.removeItem(at: dir) }
+        let vault = Vault(dir: dir)
+        var local = AssistantChat(spaceId: "s_one")
+        local.messages = [AssistantMessage(role: "user", text: "offline")]
+        var cloud = AssistantChat(spaceId: "s_one", provider: .openai)
+        cloud.messages = [AssistantMessage(role: "user", text: "online")]
+        try local.save(vault)
+        try cloud.save(vault)
+        XCTAssertEqual(AssistantChat.load(vault, spaceId: "s_one").messages.first?.text, "offline")
+        XCTAssertEqual(AssistantChat.load(vault, spaceId: "s_one", provider: .openai).messages.first?.text, "online")
+        AssistantChat.delete(vault, spaceId: "s_one", provider: .openai)
+        XCTAssertEqual(AssistantChat.load(vault, spaceId: "s_one").messages.first?.text, "offline")
+    }
+
+    func testSettingsFromOldVaultDefaultToLocal() throws {
+        let settings = try JSONDecoder().decode(Settings.self, from: Data("{}".utf8))
+        XCTAssertEqual(settings.assistantProvider, .local)
+        XCTAssertFalse(settings.openAIModel.isEmpty)
+    }
+
     func testHistoryKeepsRecentTurnsAndSkipsFailures() {
         var c = AssistantChat(spaceId: "s")
         for i in 0..<10 { c.messages.append(AssistantMessage(role: i % 2 == 0 ? "user" : "assistant", text: "m\(i)")) }

@@ -93,7 +93,7 @@ struct SettingsView: View {
             if let r = model.readOnly { group("Read-only mode") { Text(r).foregroundStyle(.orange) } }
         case "about":
             group("Draft 0.5.1") {
-                Text("A free, open-source, local-first notes app. No account and no telemetry; nothing goes online unless you turn on image search, link previews or the Assistant's model download. Your documents are portable JSON with Markdown export.").font(.system(size: DS.body)).foregroundStyle(t.secondary)
+                Text("A free, open-source, local-first notes app. No account is needed for local features, and Draft has no telemetry. Network requests occur only for features you turn on: image search, link previews, the local model download, or the optional OpenAI Assistant after you review its context. Your documents are portable JSON with Markdown export.").font(.system(size: DS.body)).foregroundStyle(t.secondary)
                 Button("Third-Party Notices") {
                     if let u = Bundle.main.url(forResource: "THIRD_PARTY_NOTICES", withExtension: "md") { NSWorkspace.shared.open(u) }
                 }

@@ -143,6 +143,9 @@ public struct Settings: Codable, Hashable, Sendable {
     public var linkPreviews: Bool = false
     /// The local model the Assistant uses (an id from the model catalog); nil until one is chosen.
     public var assistantModel: String?
+    /// Cloud inference is optional; existing vaults continue to use the local model.
+    public var assistantProvider: AssistantProvider = .local
+    public var openAIModel: String = "gpt-6.1-sol"
     /// The Assistant as a panel pinned to the right of the window (true) or a floating window.
     public var assistantPinned: Bool = true
 
@@ -175,6 +178,8 @@ public struct Settings: Codable, Hashable, Sendable {
         onlineImageSearch = try c.decodeIfPresent(Bool.self, forKey: .onlineImageSearch) ?? def.onlineImageSearch
         linkPreviews = try c.decodeIfPresent(Bool.self, forKey: .linkPreviews) ?? def.linkPreviews
         assistantModel = try c.decodeIfPresent(String.self, forKey: .assistantModel)
+        assistantProvider = (try? c.decodeIfPresent(AssistantProvider.self, forKey: .assistantProvider)) ?? .local
+        openAIModel = (try? c.decodeIfPresent(String.self, forKey: .openAIModel)) ?? "gpt-6.1-sol"
         assistantPinned = try c.decodeIfPresent(Bool.self, forKey: .assistantPinned) ?? def.assistantPinned
     }
 }
