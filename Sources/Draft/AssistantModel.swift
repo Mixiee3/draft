@@ -221,6 +221,9 @@ final class AssistantModel {
         status = .ready
     }
 
+    /// Timing of the last finished answer (the follow-up speed check reads it).
+    @ObservationIgnored var lastStats: GenerationStats?
+
     private func finished(_ result: Result<GenerationStats, Error>, _ s: ThinkSplitter, prepared: PreparedPrompt, action: AssistantAction, scope: AssistantScope,
                           target: (docId: String, range: NSRange, original: String)?, flag: CancelFlag) {
         guard cancelFlag === flag else { return }
@@ -228,6 +231,7 @@ final class AssistantModel {
         cancelFlag = nil
         switch result {
         case .success(let stats):
+            lastStats = stats
             var answer = s.answer.trimmingCharacters(in: .whitespacesAndNewlines)
             if answer.isEmpty && !s.thinking.isEmpty { answer = stats.cancelled ? "" : "The model ran out of room before answering. Try a shorter request or a smaller context." }
             if stats.cancelled { answer += answer.isEmpty ? "Stopped." : "\n\n(Stopped.)" }

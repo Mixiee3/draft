@@ -52,8 +52,10 @@ final class AssistantTests: XCTestCase {
         let p = AssistantPrompt.prepare(AssistantRequest(action: .summarize, scope: .document, text: text, docId: "d1", docTitle: "Long"), budgetTokens: 1000)
         XCTAssertLessThan(p.includedFraction, 1)
         XCTAssertGreaterThan(p.includedFraction, 0)
-        XCTAssertTrue(p.turns.last!.text.contains("only the first part fits"))
-        XCTAssertFalse(p.turns.last!.text.contains("Line 1999"))
+        // The document sits in the system turn, where follow-up questions reuse it.
+        XCTAssertTrue(p.turns.first!.text.contains("only the first part fits"))
+        XCTAssertFalse(p.turns.first!.text.contains("Line 1999"))
+        XCTAssertFalse(p.turns.last!.text.contains("Line 0 of"))
         XCTAssertEqual(p.sources.first?.docId, "d1")
     }
 

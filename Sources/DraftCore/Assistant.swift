@@ -144,7 +144,11 @@ public enum AssistantPrompt {
             used += c
             kept.insert(ChatTurn(t.role, String(t.text.prefix(1200))), at: 0)
         }
-        let turns = [ChatTurn("system", system)] + kept + [ChatTurn("user", body + "\n\n" + task)]
+        // A document or selection rides in the system turn, so a second question about it starts
+        // where the engine's saved state ends; Space retrieval changes per question.
+        let turns = r.scope == .space
+            ? [ChatTurn("system", system)] + kept + [ChatTurn("user", body + "\n\n" + task)]
+            : [ChatTurn("system", system + "\n\n" + body)] + kept + [ChatTurn("user", task)]
         return PreparedPrompt(turns: turns, sources: sources, includedFraction: fraction)
     }
 }

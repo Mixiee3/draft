@@ -20,7 +20,8 @@ assert w["sourcesFromGarden"] == "yes" and w["jumpOpened"] == "yes", w
 assert w["answerMentionsDate"] == "yes", ("grounded answer", w["spaceAnswer"])
 assert w["previewCanReplace"] == "yes" and w["replaced"] == "yes" and w["oneUndoRestores"] == "yes", w
 assert w["cancelRecorded"] == "yes" and float(w["cancelSeconds"]) < 3, w
+assert float(w["followUpSpeedup"]) >= 2, ("follow-up should start at least twice as fast", w["firstQuestionStartSeconds"], w["followUpStartSeconds"])
 assert r["messages"] == w["messages"] and r["sourcesKept"] == "yes" and r["otherSpaceEmpty"] == "yes", r
-print("ASSISTANT TEST PASSED (offline; cancel %s s)" % w["cancelSeconds"])
+print("ASSISTANT TEST PASSED (offline; cancel %s s; follow-up starts %s s vs %s s, %sx)" % (w["cancelSeconds"], w["followUpStartSeconds"], w["firstQuestionStartSeconds"], w["followUpSpeedup"]))
 PY
 echo "screens: $WORK"

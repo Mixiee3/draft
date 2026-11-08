@@ -156,6 +156,19 @@ extension Automation {
         r["cancelSeconds"] = String(format: "%.2f", Date().timeIntervalSince(c0))
         r["cancelRecorded"] = a.chat.messages.count == count + 2 && a.chat.messages.last?.failed == true ? "yes" : "no"
 
+        // Follow-ups: a Space question resets the saved state, then two questions about the same note.
+        a.scope = .space; a.draft = "Who has the water key?"; a.send(); await untilIdle(a)
+        a.scope = .document
+        var firsts: [Double] = []
+        for q in ["When is the plant sale?", "Who orders the compost?"] {
+            a.draft = q; a.send(); await untilIdle(a)
+            firsts.append(a.lastStats?.firstTokenSeconds ?? -1)
+            r["followUpReused\(firsts.count)"] = "\(a.lastStats?.reusedTokens ?? -1)/\(a.lastStats?.promptTokens ?? -1)"
+        }
+        r["firstQuestionStartSeconds"] = String(format: "%.2f", firsts[0])
+        r["followUpStartSeconds"] = String(format: "%.2f", firsts[1])
+        r["followUpSpeedup"] = String(format: "%.1f", firsts[1] > 0 ? firsts[0] / firsts[1] : 0)
+
         for (theme, tag) in [("light", ""), ("dark", "dark-")] {
             m.setSettings { $0.theme = theme }
             for (wd, h, n) in [(1440.0, 900.0, ""), (760.0, 700.0, "narrow-")] {
