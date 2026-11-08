@@ -100,3 +100,28 @@ final class AssistantTests: XCTestCase {
         XCTAssertEqual(d.filter { $0.op != .removed }.map(\.text).joined(), "The slow brown fox jumps")
     }
 }
+
+final class ThinkSplitterTests: XCTestCase {
+    func run(_ pieces: [String]) -> ThinkSplitter { var s = ThinkSplitter(); pieces.forEach { s.feed($0) }; s.finish(); return s }
+
+    func testSplitsThinkingFromAnswerAcrossPieces() {
+        let s = run(["<thi", "nk>Let me look", " at the notes.</th", "ink>\n\nThe sale is on ", "18 April [3]."])
+        XCTAssertEqual(s.thinking, "Let me look at the notes.")
+        XCTAssertEqual(s.answer, "The sale is on 18 April [3].")
+        XCTAssertFalse(s.inThought)
+    }
+
+    func testAnswerWithoutThinking() {
+        let s = run(["Plain ", "answer with a < sign"])
+        XCTAssertEqual(s.thinking, "")
+        XCTAssertEqual(s.answer, "Plain answer with a < sign")
+    }
+
+    func testUnfinishedThoughtStaysThinking() {
+        var s = ThinkSplitter()
+        s.feed("<think>still going")
+        XCTAssertTrue(s.inThought)
+        XCTAssertEqual(s.answer, "")
+        XCTAssertEqual(s.thinking, "still going")
+    }
+}

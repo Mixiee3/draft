@@ -141,6 +141,10 @@ public struct Settings: Codable, Hashable, Sendable {
     /// Network features; both off unless the user turns them on.
     public var onlineImageSearch: Bool = false
     public var linkPreviews: Bool = false
+    /// The local model the Assistant uses (an id from the model catalog); nil until one is chosen.
+    public var assistantModel: String?
+    /// The Assistant as a panel pinned to the right of the window (true) or a floating window.
+    public var assistantPinned: Bool = true
 
     public init() {}
 
@@ -170,6 +174,8 @@ public struct Settings: Codable, Hashable, Sendable {
         calendarShowCompleted = try c.decodeIfPresent(Bool.self, forKey: .calendarShowCompleted) ?? def.calendarShowCompleted
         onlineImageSearch = try c.decodeIfPresent(Bool.self, forKey: .onlineImageSearch) ?? def.onlineImageSearch
         linkPreviews = try c.decodeIfPresent(Bool.self, forKey: .linkPreviews) ?? def.linkPreviews
+        assistantModel = try c.decodeIfPresent(String.self, forKey: .assistantModel)
+        assistantPinned = try c.decodeIfPresent(Bool.self, forKey: .assistantPinned) ?? def.assistantPinned
     }
 }
 

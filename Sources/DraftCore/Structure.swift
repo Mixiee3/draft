@@ -403,7 +403,7 @@ public extension Node {
         return found ? r : nil
     }
 
-    func block(_ id: String) -> Node? {
+    public func block(_ id: String) -> Node? {
         var hit: Node?
         walk(self) { if hit == nil, $0.id == id { hit = $0 } }
         return hit

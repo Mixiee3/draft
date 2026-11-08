@@ -23,10 +23,10 @@ public struct LocalModel: Identifiable, Hashable, Sendable {
     }
 
     public static let lfm2_6 = LocalModel(
-        id: "lfm2.5-2.6b-q4km", name: "LFM2.5 2.6B", file: "LFM2.5-2.6B-Q4_K_M.gguf",
-        url: URL(string: "https://huggingface.co/LiquidAI/LFM2.5-2.6B-GGUF/resolve/e7caca5d835a3901a8e0d63e94009429bafafdfc/LFM2.5-2.6B-Q4_K_M.gguf")!,
-        sha256: "02a8b7e17487d326e46d68ce0ba24211e1b80a14c4cd0597fa73c1cd697f52ed", bytes: 1_674_455_040,
-        parameters: "2.6B, 4-bit (Q4_K_M)", license: "LFM Open License v1.0",
+        id: "lfm2.5-2.6b-qad-q4", name: "LFM2.5 2.6B", file: "LFM2.5-2.6B-QAD-Q4_0.gguf",
+        url: URL(string: "https://huggingface.co/LiquidAI/LFM2.5-2.6B-GGUF/resolve/e7caca5d835a3901a8e0d63e94009429bafafdfc/LFM2.5-2.6B-QAD-Q4_0.gguf")!,
+        sha256: "a247afd6414918eac8e520a9e6137dc271235461ecbe1180462221d5b8d40b03", bytes: 1_593_894_944,
+        parameters: "2.6B reasoning model, 4-bit (QAD Q4_0)", license: "LFM Open License v1.0",
         licenseURL: URL(string: "https://huggingface.co/LiquidAI/LFM2.5-2.6B-GGUF/blob/e7caca5d835a3901a8e0d63e94009429bafafdfc/LICENSE")!,
         source: URL(string: "https://huggingface.co/LiquidAI/LFM2.5-2.6B-GGUF")!, minimumMemory: 8 << 30)
 
@@ -34,7 +34,7 @@ public struct LocalModel: Identifiable, Hashable, Sendable {
         id: "lfm2.5-1.2b-q4km", name: "LFM2.5 1.2B Instruct", file: "LFM2.5-1.2B-Instruct-Q4_K_M.gguf",
         url: URL(string: "https://huggingface.co/LiquidAI/LFM2.5-1.2B-Instruct-GGUF/resolve/8ed288026e23958ad9dfa92d53ed773a8eee7125/LFM2.5-1.2B-Instruct-Q4_K_M.gguf")!,
         sha256: "b1b3de114215d9507409a662a501a631095a479a419584e8a2ded6304b19b4f5", bytes: 730_895_168,
-        parameters: "1.2B, 4-bit (Q4_K_M)", license: "LFM Open License v1.0",
+        parameters: "1.2B, 4-bit (Q4_K_M); faster, less careful", license: "LFM Open License v1.0",
         licenseURL: URL(string: "https://huggingface.co/LiquidAI/LFM2.5-1.2B-Instruct-GGUF/blob/8ed288026e23958ad9dfa92d53ed773a8eee7125/LICENSE")!,
         source: URL(string: "https://huggingface.co/LiquidAI/LFM2.5-1.2B-Instruct-GGUF")!, minimumMemory: 4 << 30)
 
@@ -67,7 +67,8 @@ public final class ModelStore: NSObject, URLSessionDownloadDelegate, @unchecked 
     private var model: LocalModel?
 
     public init(directory: URL? = nil, configuration: URLSessionConfiguration = .ephemeral) {
-        self.directory = directory ?? FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask)[0]
+        let env = ProcessInfo.processInfo.environment["DRAFT_MODELS_DIR"].flatMap { $0.isEmpty ? nil : URL(fileURLWithPath: $0, isDirectory: true) }
+        self.directory = directory ?? env ?? FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask)[0]
             .appendingPathComponent("Draft/Models", isDirectory: true)
         super.init()
         configuration.httpAdditionalHeaders = ["User-Agent": "Draft"]
@@ -147,6 +148,14 @@ public enum SystemMemory {
         guard r == KERN_SUCCESS else { return physical / 2 }
         let page = UInt64(vm_kernel_page_size)
         return UInt64(stats.free_count + stats.inactive_count + stats.purgeable_count + stats.speculative_count) * page
+    }
+
+    /// Resident memory, including the memory-mapped model weights.
+    public static var resident: UInt64 {
+        var info = mach_task_basic_info()
+        var count = mach_msg_type_number_t(MemoryLayout<mach_task_basic_info>.size / MemoryLayout<natural_t>.size)
+        let r = withUnsafeMutablePointer(to: &info) { $0.withMemoryRebound(to: integer_t.self, capacity: Int(count)) { task_info(mach_task_self_, task_flavor_t(MACH_TASK_BASIC_INFO), $0, &count) } }
+        return r == KERN_SUCCESS ? info.resident_size : 0
     }
 
     /// This process's memory footprint, the figure Activity Monitor shows.

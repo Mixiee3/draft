@@ -124,7 +124,10 @@ public enum AssistantPrompt {
             }
             let label = r.scope == .selection ? "Selected text" : "Document"
             if let d = r.docId { sources = [AssistantSource(n: 1, docId: d, blockId: nil, title: r.docTitle, text: String(text.prefix(280)))] }
-            body = "[1] \(label) “\(r.docTitle.isEmpty ? "Untitled" : r.docTitle)”\(fraction < 1 ? " (only the first part fits)" : ""):\n\(text)"
+            let name = "“\(r.docTitle.isEmpty ? "Untitled" : r.docTitle)”\(fraction < 1 ? " (only the first part fits)" : "")"
+            body = r.action.producesText
+                ? "\(label) from \(name), between the markers:\n<<<\n\(text)\n>>>"
+                : "[1] \(label) \(name):\n\(text)"
         }
 
         var task: String
@@ -291,5 +294,47 @@ public enum WordDiff {
             else { add(.removed, x[i]); i += 1 }
         }
         return parts
+    }
+}
+
+/// Separates a reasoning model's `<think>…</think>` from its answer while text streams in, even
+/// when a tag arrives split across pieces.
+public struct ThinkSplitter: Sendable {
+    public private(set) var thinking = ""
+    public private(set) var answer = ""
+    public private(set) var inThought = false
+    private var buffer = ""
+    private var started = false
+    public init() {}
+
+    public mutating func feed(_ piece: String) {
+        buffer += piece
+        while !buffer.isEmpty {
+            if !started {
+                let trimmed = buffer.drop { $0.isWhitespace }
+                if "<think>".hasPrefix(trimmed) && trimmed.count < 7 { return }
+                started = true
+                if trimmed.hasPrefix("<think>") { inThought = true; buffer = String(trimmed.dropFirst(7)); continue }
+            }
+            let tag = inThought ? "</think>" : "<think>"
+            if let r = buffer.range(of: tag) {
+                append(String(buffer[..<r.lowerBound]))
+                buffer = String(buffer[r.upperBound...])
+                inThought.toggle()
+                continue
+            }
+            var keep = 0
+            for k in stride(from: min(tag.count - 1, buffer.count), to: 0, by: -1) where tag.hasPrefix(buffer.suffix(k)) { keep = k; break }
+            append(String(buffer.dropLast(keep)))
+            buffer = String(buffer.suffix(keep))
+            return
+        }
+    }
+
+    /// Call when generation ends: a held partial tag is plain text after all.
+    public mutating func finish() { append(buffer); buffer = "" }
+
+    private mutating func append(_ s: String) {
+        if inThought { thinking += s } else { answer += answer.isEmpty ? String(s.drop { $0.isWhitespace }) : s }
     }
 }

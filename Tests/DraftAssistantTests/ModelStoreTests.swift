@@ -62,3 +62,61 @@ final class ModelStoreTests: XCTestCase {
         XCTAssertEqual(String(validatingUTF8Prefix: &b), "é")
     }
 }
+
+/// Records every request instead of sending it.
+final class RecordingProtocol: URLProtocol {
+    nonisolated(unsafe) static var requests: [URLRequest] = []
+    override class func canInit(with request: URLRequest) -> Bool { true }
+    override class func canonicalRequest(for request: URLRequest) -> URLRequest { request }
+    override func startLoading() {
+        Self.requests.append(request)
+        client?.urlProtocol(self, didFailWithError: URLError(.notConnectedToInternet))
+    }
+    override func stopLoading() {}
+}
+
+final class PrivacyTests: XCTestCase {
+    /// The model download is the Assistant's only network request: a bodiless GET of the pinned
+    /// file, with no note text, query or identifying headers.
+    func testDownloadRequestCarriesNothingButThePinnedURL() {
+        RecordingProtocol.requests = []
+        let cfg = URLSessionConfiguration.ephemeral
+        cfg.protocolClasses = [RecordingProtocol.self]
+        let dir = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+        let store = ModelStore(directory: dir, configuration: cfg)
+        let done = expectation(description: "download")
+        store.download(.lfm2_6, progress: { _ in }) { _ in done.fulfill() }
+        wait(for: [done], timeout: 10)
+        XCTAssertEqual(RecordingProtocol.requests.count, 1)
+        let r = RecordingProtocol.requests[0]
+        XCTAssertEqual(r.url, LocalModel.lfm2_6.url)
+        XCTAssertEqual(r.httpMethod, "GET")
+        XCTAssertNil(r.httpBody)
+        XCTAssertNil(r.url?.query)
+        XCTAssertEqual(Set((r.allHTTPHeaderFields ?? [:]).keys).subtracting(["User-Agent", "Accept", "Accept-Encoding", "Accept-Language"]), [])
+        XCTAssertFalse(store.isInstalled(.lfm2_6), "a failed download installs nothing")
+    }
+
+    /// Generation goes through an in-process engine; a stand-in proves the Assistant's prompt path
+    /// needs nothing but the generator it is given.
+    func testGenerationIsInProcess() throws {
+        final class Echo: TextGenerator {
+            var contextTokens = 4096
+            func countTokens(_ text: String) -> Int { text.count / 4 }
+            func generate(_ turns: [ChatTurn], maxTokens: Int, cancel: CancelFlag, onPiece: (String) -> Void) throws -> GenerationStats {
+                for w in ["<think>check</think>", "Answer ", "[1]"] { if cancel.isCancelled { var s = GenerationStats(); s.cancelled = true; return s }; onPiece(w) }
+                return GenerationStats()
+            }
+        }
+        RecordingProtocol.requests = []
+        let p = AssistantPrompt.prepare(AssistantRequest(action: .ask, scope: .space, question: "q", retrieved: [AssistantSource(n: 1, docId: "d", blockId: "b", title: "T", text: "x")]))
+        var split = ThinkSplitter()
+        _ = try Echo().generate(p.turns, maxTokens: 10, cancel: CancelFlag()) { split.feed($0) }
+        split.finish()
+        XCTAssertEqual(split.answer, "Answer [1]")
+        XCTAssertEqual(Citations.cited(in: split.answer, sourceCount: p.sources.count), [1])
+        let flag = CancelFlag(); flag.cancel()
+        XCTAssertTrue(try Echo().generate(p.turns, maxTokens: 10, cancel: flag) { _ in }.cancelled)
+        XCTAssertTrue(RecordingProtocol.requests.isEmpty)
+    }
+}

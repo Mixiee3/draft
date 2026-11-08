@@ -15,6 +15,8 @@ struct RootView: View {
         }
     }
 
+    var pinnedAssistant: Bool { model.assistant.isOpen && model.library.settings.assistantPinned }
+
     var tint: String? {
         guard model.library.settings.useDocStyleForApp, let id = model.activeDocId, let d = model.docs[id] else { return nil }
         let t = Styles.resolve(d.appearance).shellTint
@@ -47,6 +49,24 @@ struct RootView: View {
                                 .clipShape(RoundedRectangle(cornerRadius: Tokens.radiusPanel, style: .continuous))
                                 .padding(.leading, showRail ? 8 : 8).padding(.trailing, 8).padding(.bottom, 8)
                         }
+                        if pinnedAssistant && !narrow {
+                            AssistantView(a: model.assistant)
+                                .clipShape(RoundedRectangle(cornerRadius: Tokens.radiusPanel, style: .continuous))
+                                .frame(width: 360)
+                                .padding(.top, WindowChrome.height).padding(.trailing, 8).padding(.bottom, 8)
+                                .transition(.move(edge: .trailing).combined(with: .opacity))
+                        }
+                    }
+                    if pinnedAssistant && narrow {
+                        HStack {
+                            Spacer()
+                            AssistantView(a: model.assistant)
+                                .clipShape(RoundedRectangle(cornerRadius: Tokens.radiusPanel, style: .continuous))
+                                .floatingSurface(t)
+                                .frame(width: min(360, geo.size.width - 32))
+                                .padding(.top, WindowChrome.height).padding(.trailing, 12).padding(.bottom, 12)
+                        }
+                        .transition(.move(edge: .trailing).combined(with: .opacity))
                     }
                     if narrow && railOverlay {
                         Color.black.opacity(0.2).ignoresSafeArea().onTapGesture { railOverlay = false }
@@ -64,7 +84,8 @@ struct RootView: View {
         .environment(\.tokens, t)
         .preferredColorScheme(model.library.settings.theme == "system" ? nil : (isDark ? .dark : .light))
         .tint(t.accent)
-        .animation(model.library.settings.reduceMotion ? nil : .easeOut(duration: 0.18), value: model.library.settings.railCollapsed)
+        .animation(Motion.standard(model.library.settings.reduceMotion), value: model.library.settings.railCollapsed)
+        .animation(Motion.panel(model.library.settings.reduceMotion), value: pinnedAssistant)
         .onAppear { if !model.ready && model.fatal == nil { model.boot() } }
         .onOpenURL { model.openLink($0) }
         .background(WindowChrome())
@@ -100,7 +121,7 @@ struct FatalView: View {
     @EnvironmentObject var model: AppModel
     var body: some View {
         VStack(spacing: 14) {
-            Image(systemName: "exclamationmark.triangle").font(.system(size: 32))
+            Image(systemName: "exclamationmark.triangle").font(.system(size: DS.display))
             Text("Draft can't open your notes safely").font(.title2.bold())
             Text(message).multilineTextAlignment(.center).frame(maxWidth: 520).foregroundStyle(.secondary)
             Text("Nothing was changed on disk.").font(.callout).foregroundStyle(.secondary)
@@ -188,6 +209,7 @@ struct TabStrip: View {
                 }.padding(.vertical, 6)
             }
             Spacer(minLength: 0)
+            AssistantToolbarButton()
         }
         .padding(.leading, leadingInset)
         .padding(.trailing, 10)
@@ -209,15 +231,15 @@ struct TabItem: View {
         HStack(spacing: 6) {
             if !isHome {
                 Button { model.closeTab(tab.id) } label: {
-                    Image(systemName: "xmark").font(.system(size: 9, weight: .bold)).frame(width: 14, height: 14)
+                    Image(systemName: "xmark").font(.system(size: DS.micro, weight: .bold)).frame(width: 14, height: 14)
                 }
                 .buttonStyle(.plain)
                 .opacity(hover || isActive ? 1 : 0)
                 .accessibilityLabel("Close tab \(title)")
             }
-            Image(systemName: icon).font(.system(size: 12)).opacity(isActive ? 1 : 0.75)
+            Image(systemName: icon).font(.system(size: DS.footnote)).opacity(isActive ? 1 : 0.75)
             if !isHome || isActive {
-                Text(title).lineLimit(1).font(.system(size: 13, weight: isActive ? .medium : .regular))
+                Text(title).lineLimit(1).font(.system(size: DS.body, weight: isActive ? .medium : .regular))
                     .frame(maxWidth: 170, alignment: .leading)
             }
         }
@@ -225,7 +247,7 @@ struct TabItem: View {
         .padding(.horizontal, isHome && !isActive ? 10 : 12)
         .frame(height: 32)
         .background(
-            RoundedRectangle(cornerRadius: 11, style: .continuous)
+            RoundedRectangle(cornerRadius: DS.rControl, style: .continuous)
                 .fill(isActive ? (t.dark ? Color.black.opacity(0.55) : Color.white.opacity(0.92)) : (hover ? t.hover : .clear))
                 .shadow(color: .black.opacity(isActive && !t.dark ? 0.06 : 0), radius: 3, y: 1)
         )
@@ -251,9 +273,9 @@ struct IconButton: View {
     var body: some View {
         Button(action: action) {
             Image(systemName: symbol)
-                .font(.system(size: 13, weight: .medium))
+                .font(.system(size: DS.body, weight: .medium))
                 .frame(width: size, height: size)
-                .background(RoundedRectangle(cornerRadius: 8, style: .continuous).fill(isActive ? t.selected : (hover ? t.hover : .clear)))
+                .background(RoundedRectangle(cornerRadius: DS.rControl, style: .continuous).fill(isActive ? t.selected : (hover ? t.hover : .clear)))
                 .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
@@ -291,8 +313,8 @@ struct PillButton: View {
     var body: some View {
         Button(action: action) {
             HStack(spacing: 5) {
-                Image(systemName: symbol).font(.system(size: 13, weight: .medium))
-                if let text { Text(text).font(.system(size: 13, weight: .medium)) }
+                Image(systemName: symbol).font(.system(size: DS.body, weight: .medium))
+                if let text { Text(text).font(.system(size: DS.body, weight: .medium)) }
             }
             .padding(.horizontal, text == nil ? 0 : 10)
             .frame(minWidth: 32, minHeight: 30)

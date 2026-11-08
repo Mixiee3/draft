@@ -70,6 +70,8 @@ final class AppModel: ObservableObject {
     var clock: () -> Date = Date.init // replaced only by automation checks
     let reminders = ReminderScheduler()
     let online = OnlineServices()
+    lazy var assistant = AssistantModel(app: self)
+    var assistantWindow: NSPanel?
 
     let vault = Vault(dir: Vault.defaultURL())
     private(set) var editors: [String: DocumentEditorView] = [:]
@@ -803,7 +805,7 @@ final class AppModel: ObservableObject {
 
     func toast(_ message: String, action: String? = nil, run: (() -> Void)? = nil) {
         let t = Toast(message: message, actionLabel: action, action: run)
-        withAnimation(.easeOut(duration: 0.15)) { toasts = [t] } // one message at a time: a new one replaces the old
+        withAnimation(Motion.quick(library.settings.reduceMotion)) { toasts = [t] } // one message at a time: a new one replaces the old
         DispatchQueue.main.asyncAfter(deadline: .now() + (action == nil ? 3.2 : 7)) {
             withAnimation { self.toasts.removeAll { $0.id == t.id } }
         }

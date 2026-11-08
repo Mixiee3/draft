@@ -39,6 +39,8 @@ enum Automation {
             case "online-live": await onlineLive()
             case "screens-v05": await screensV05()
             case "assistant-bench": await assistantBench()
+            case "assistant-write": await assistantWrite()
+            case "assistant-read": await assistantRead()
             case "ux-perf": await uxPerf()
             case "idle": await idle()
             default: break
