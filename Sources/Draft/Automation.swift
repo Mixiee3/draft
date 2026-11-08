@@ -50,6 +50,8 @@ enum Automation {
             case "idle": await idle()
             case "agent-edit": await agentEdit()
             case "agent-integrity": await agentIntegrity()
+            case "agent-review": await agentReview()
+            case "agent-seed": await agentSeed()
             case "agent-external-accept": await agentExternalAccept()
             default: break
             }

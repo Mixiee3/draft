@@ -129,4 +129,81 @@ extension Automation {
             r["undoRestores"] = (try m.vault.loadDoc(id)).map { docPlainText($0.content).contains("Old wording here") } == true ? "yes" : "no"
         } catch { r["error"] = error.localizedDescription }
     }
+
+    /// `agent-review`: the user's side of an MCP proposal. Shows the first pending proposal, captures
+    /// the sheet, then applies or rejects it (DRAFT_AGENT_DECISION) and, with DRAFT_AGENT_UNDO, undoes it
+    /// once. Writes what a person would see: status, note text, index text, titles, folders.
+    static func agentReview() async {
+        var r: [String: String] = [:]
+        defer { if let d = try? JSONSerialization.data(withJSONObject: r, options: [.prettyPrinted, .sortedKeys]) { try? d.write(to: out.appendingPathComponent("agent-review.json")) } }
+        await wait(0.6)
+        m.agentProposalTimer?.invalidate() // one proposal per run; the next stays queued
+        m.showNextAgentProposal()
+        guard let p = m.agentProposal else { r["error"] = "no pending proposal"; return }
+        await wait(0.8)
+        if let name = ProcessInfo.processInfo.environment["DRAFT_AGENT_SHOT"], let w = NSApp.windows.first(where: { $0.isVisible }), let sheet = w.attachedSheet {
+            await captureWindow(sheet, name)
+        }
+        r["requestId"] = p.id
+        let decision = ProcessInfo.processInfo.environment["DRAFT_AGENT_DECISION"] ?? "accept"
+        if decision == "reject" { m.rejectAgentProposal() } else { m.acceptAgentProposal() }
+        await wait(0.5)
+        let saved = (try? AgentProposalStore.load(p.id, vaultURL: m.vault.dir))
+        r["status"] = saved?.status ?? "missing"
+        r["result"] = saved?.result ?? ""
+        let docId = p.documentId == "new" ? (saved?.result?.components(separatedBy: " ").first { $0.hasPrefix("d_") }?.trimmingCharacters(in: .punctuationCharacters) ?? "") : p.documentId
+        r["documentId"] = docId
+        func record(_ prefix: String) {
+            let doc = try? m.vault.loadDoc(docId)
+            r[prefix + "Text"] = doc.map { docPlainText($0.content) } ?? ""
+            r[prefix + "Title"] = m.library.docs[docId]?.title ?? ""
+            r[prefix + "Folder"] = m.library.docs[docId]?.folderId ?? "unsorted"
+            r[prefix + "Space"] = m.library.docs[docId]?.spaceId ?? ""
+            r[prefix + "Deleted"] = m.library.docs[docId]?.deletedAt == nil ? "no" : "yes"
+            r[prefix + "Index"] = (m.index.entries[docId]?.blocks ?? []).map(\.text).joined(separator: " | ")
+            r[prefix + "Types"] = doc?.content.content?.map(\.type).joined(separator: ",") ?? ""
+            var marks: [String] = []
+            if let c = doc?.content { walk(c) { n in for mk in n.marks ?? [] { marks.append(mk.type + (mk.attrs?["href"]?.string.map { ":" + $0 } ?? "")) } } }
+            r[prefix + "Marks"] = marks.sorted().joined(separator: ",")
+            r[prefix + "Tasks"] = doc.map { tasksOf($0.content).map { "\($0.checked)" }.joined(separator: ",") } ?? ""
+            r[prefix + "Style"] = doc?.appearance.styleId ?? ""
+        }
+        m.refreshIndex(); await wait(1.2)
+        record("after")
+        r["backups"] = "\(m.snapshots(docId).count)"
+        if ProcessInfo.processInfo.environment["DRAFT_AGENT_UNDO"] != nil, saved?.status == "accepted" {
+            if p.changesLibrary { m.undoAgentChange() }
+            else if let um = m.editors[docId]?.controller.undo {
+                if um.groupingLevel > 0 { um.endUndoGrouping() }
+                um.undo()
+                m.markDocDirty(docId)
+            }
+            m.flushAll(); m.refreshIndex(); await wait(1.2)
+            record("undone")
+        }
+    }
+
+    /// `agent-seed`: a throwaway vault for the MCP end-to-end check — a note with a tag, a task, a
+    /// web link, an image with a caption, a file, a nested page and a test phrase; a folder; a second Space.
+    static func agentSeed() async {
+        m.agentProposalTimer?.invalidate(); m.agentProposal = nil // queued proposals wait for agent-review
+        await wait(0.3)
+        let folder = m.createFolder(); m.renameFolder(folder, "Archive"); m.renamingFolder = nil
+        guard let id = m.createDoc(title: "MCP test note") else { return }
+        var content = Node("doc", content: MarkdownImport.blocks("Planning zebra-quartz #garden\n- [ ] water the beds\nSee [the guide](https://example.com/guide)\nPlain closing line"))
+        content.content!.append(Node("image", attrs: ["assetId": "missing-asset", "alt": "Bed plan", "caption": "Bed plan"]))
+        content.content!.append(Node("file", attrs: ["assetId": "missing-file", "name": "plan.pdf", "size": 1200]))
+        if let child = m.createDoc(parentDocId: id, open: false, title: "Seed list") {
+            content.content!.append(Node("pageCard", attrs: ["docId": .string(child), "title": "Seed list", "presentation": "card"]))
+        }
+        content.content!.append(Node("paragraph"))
+        m.docs[id]?.content = ensureBlockIds(content)
+        m.editors[id]?.controller.load(m.docs[id]!.content)
+        if let d = m.docs[id] { m.library.docs[id]?.applyDerived(from: d) }
+        m.markDocDirty(id)
+        let home = m.library.space.id
+        m.createSpace("Work"); m.switchSpace(home)
+        m.flushAll(); m.rebuildIndex(); await wait(1.0); m.flushAll()
+        try? "\(id) \(folder)".write(to: out.appendingPathComponent("agent-seed.txt"), atomically: true, encoding: .utf8)
+    }
 }

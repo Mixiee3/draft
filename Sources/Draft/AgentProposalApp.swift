@@ -231,7 +231,7 @@ struct AgentProposalReview: View {
         return VStack(alignment: .leading, spacing: DS.s1 + 2) {
             Text("\(i + 1). \(title)").font(.system(size: DS.body, weight: .semibold)).foregroundStyle(t.text).fixedSize(horizontal: false, vertical: true)
             if let before, !before.isEmpty { diffLine("Before", before, Color(hex: "#d4544c"), strike: after != nil || e.action == "delete_block") }
-            if let after, !after.isEmpty { diffLine("After", after, Color(hex: "#2f9a5a"), strike: false) }
+            if let after, !after.isEmpty { diffLine(before == nil ? "Adds" : "After", after, Color(hex: "#2f9a5a"), strike: false) }
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .padding(DS.s3)
@@ -242,7 +242,7 @@ struct AgentProposalReview: View {
     func diffLine(_ label: String, _ text: String, _ color: Color, strike: Bool) -> some View {
         HStack(alignment: .top, spacing: DS.s2) {
             Text(label.uppercased()).font(.system(size: DS.micro + 1, weight: .semibold)).tracking(0.5).foregroundStyle(color).frame(width: 46, alignment: .leading)
-            Text(text).font(.system(size: DS.footnote + 1)).foregroundStyle(t.text.opacity(strike ? 0.65 : 1)).strikethrough(strike, color: color.opacity(0.6))
+            Text((try? AttributedString(markdown: text, options: .init(interpretedSyntax: .inlineOnlyPreservingWhitespace))) ?? AttributedString(text)).font(.system(size: DS.footnote + 1)).foregroundStyle(t.text.opacity(strike ? 0.65 : 1)).strikethrough(strike, color: color.opacity(0.6))
                 .lineLimit(12).textSelection(.enabled).fixedSize(horizontal: false, vertical: true)
         }
     }
