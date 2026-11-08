@@ -49,6 +49,9 @@ final class AppModel {
     @ObservationIgnored private var coverLoads = Set<String>()
     @ObservationIgnored private var croppedCovers: [Cover: NSImage] = [:]
     var coverTick = 0
+    /// A Codex edit proposal waiting for review (read from agent-requests/).
+    var agentProposal: AgentProposal?
+    @ObservationIgnored var agentProposalTimer: Timer?
 
     /// Derived data that views read many times per render (task lists, folder contents,
     /// collections) is computed once per change instead of once per view.
@@ -146,6 +149,7 @@ final class AppModel {
             if !expired.isEmpty { deleteForever(expired) }
             loadIndex()
             startDayWatch()
+            startAgentProposalWatch()
             if activeView.kind == "doc", let id = activeView.docId { _ = ensureDoc(id) }
             ready = true
             showWelcomeIfNeeded()
