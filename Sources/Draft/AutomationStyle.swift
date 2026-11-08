@@ -152,7 +152,7 @@ extension Automation {
 extension Automation {
     /// A popover's content shown in its own real window and captured (popovers are separate windows).
     static func renderComponent<V: View>(_ v: V, _ name: String, dark: Bool) async {
-        let host = NSHostingView(rootView: v.environmentObject(m).environment(\.tokens, Tokens.make(dark: dark, accent: m.settings.accent, tint: nil))
+        let host = NSHostingView(rootView: v.environment(m).environment(\.tokens, Tokens.make(dark: dark, accent: m.settings.accent, tint: nil))
             .padding(4).background(dark ? Color(hex: "#2a2a2b") : Color.white).environment(\.colorScheme, dark ? .dark : .light))
         let size = host.fittingSize
         let win = NSWindow(contentRect: NSRect(x: 200, y: 200, width: max(200, size.width), height: max(200, size.height)), styleMask: [.titled], backing: .buffered, defer: false)

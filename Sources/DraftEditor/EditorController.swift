@@ -321,7 +321,25 @@ public final class EditorController: NSObject, NSTextStorageDelegate, NSTextView
         slash.selectionChanged()
         mention.selectionChanged()
         if tableEditor.tableId != nil, textView.window?.firstResponder === textView { tableEditor.end() }
+        if focusDimming { applyFocusDimming() }
         host?.editorStateDidChange()
+    }
+
+    /// Focus mode: every block but the caret's is faded. Temporary attributes don't touch the text
+    /// or its layout, so typing stays as fast as without it.
+    public var focusDimming = false { didSet { if focusDimming != oldValue { applyFocusDimming() } } }
+    private var undimmed: NSRange?
+
+    func applyFocusDimming() {
+        guard let lm = textView.layoutManager else { return }
+        let all = NSRange(location: 0, length: (textView.string as NSString).length)
+        guard focusDimming, all.length > 0 else { lm.removeTemporaryAttribute(.foregroundColor, forCharacterRange: all); undimmed = nil; return }
+        let cur = paragraphRange(at: min(textView.selectedRange().location, all.length - 1))
+        guard cur != undimmed else { return }
+        // Ranges shift as you type, so re-fade everything rather than trust the last range.
+        lm.addTemporaryAttribute(.foregroundColor, value: theme.text.withAlphaComponent(0.28), forCharacterRange: all)
+        lm.removeTemporaryAttribute(.foregroundColor, forCharacterRange: cur)
+        undimmed = cur
     }
 
     public func textView(_ textView: NSTextView, shouldChangeTextIn range: NSRange, replacementString s: String?) -> Bool {

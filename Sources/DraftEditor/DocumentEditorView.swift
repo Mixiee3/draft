@@ -27,12 +27,14 @@ final class TitleTextView: NSTextView {
 /// document backdrop (drawn behind by the app) shows around the paper.
 final class PaperView: NSView {
     weak var owner: DocumentEditorView?
-    var paperRect: NSRect = .zero
+    var paperRect: NSRect = .zero { didSet { if paperRect != oldValue { window?.invalidateCursorRects(for: self) } } }
     override var isFlipped: Bool { true }
+    // I-beam on the page (a click there edits); the backdrop around it keeps the arrow.
+    override func resetCursorRects() { addCursorRect(paperRect, cursor: .iBeam) }
     override func mouseDown(with event: NSEvent) {
-        // Clicking empty paper below the text puts the caret at the end.
+        // Clicking empty paper below the text puts the caret at the end; the backdrop ends editing.
         let p = convert(event.locationInWindow, from: nil)
-        guard let o = owner, paperRect.contains(p) else { return super.mouseDown(with: event) }
+        guard let o = owner, paperRect.contains(p) else { window?.makeFirstResponder(nil); return }
         let tv = o.controller.textView
         window?.makeFirstResponder(tv)
         if p.y > tv.frame.maxY - 4 { tv.setSelectedRange(NSRange(location: (tv.string as NSString).length, length: 0)) }
@@ -60,6 +62,19 @@ public final class DocumentEditorView: NSView, NSTextViewDelegate {
     public var topInset: CGFloat = 0 { didSet { needsLayout = true } }
     /// Room kept free on the right for an open panel; the page moves aside rather than under it.
     public var trailingInset: CGFloat = 0 { didSet { if oldValue != trailingInset { needsLayout = true } } }
+
+    /// Slides the page aside for a side panel instead of jumping; the text reflows once, at the end width.
+    public func setTrailingInset(_ inset: CGFloat, animated: Bool) {
+        guard inset != trailingInset else { return }
+        guard animated, window != nil else { trailingInset = inset; return }
+        NSAnimationContext.runAnimationGroup { ctx in
+            ctx.duration = 0.26
+            ctx.timingFunction = CAMediaTimingFunction(controlPoints: 0.2, 0.9, 0.25, 1)
+            ctx.allowsImplicitAnimation = true
+            trailingInset = inset
+            relayout()
+        }
+    }
 
     public var pageColor = NSColor(hex: "#fffdf8") { didSet { paperBackground.layer?.backgroundColor = pageColor.cgColor } }
     public var coverImage: NSImage? { didSet { coverView.image = coverImage; coverView.isHidden = coverImage == nil; needsLayout = true; relayout() } }
@@ -215,6 +230,9 @@ public final class DocumentEditorView: NSView, NSTextViewDelegate {
         relayout()
     }
 
+    /// Scrolling runs layout; re-assigning unchanged frames there dirtied the window's regions every frame.
+    private func place(_ v: NSView, _ r: NSRect) { if v.frame != r { v.frame = r } }
+
     private var inLayout = false
     func relayout() {
         guard !inLayout else { return }
@@ -236,17 +254,17 @@ public final class DocumentEditorView: NSView, NSTextViewDelegate {
         var y = top
         if let img = coverImage, img.size.width > 0 {
             let h = min(460, max(90, (paperW * img.size.height / img.size.width).rounded()))
-            coverView.frame = NSRect(x: paperX, y: top, width: paperW, height: h)
-            coverControls.frame = NSRect(x: paperX + paperW - 92, y: top + 12, width: 80, height: 32)
+            place(coverView, NSRect(x: paperX, y: top, width: paperW, height: h))
+            place(coverControls, NSRect(x: paperX + paperW - 92, y: top + 12, width: 80, height: 32))
             y += h + 36
         } else { y += 52 }
         let innerW = paperW - pad * 2
-        titleView.frame.size.width = innerW
+        if titleView.frame.width != innerW { titleView.frame.size.width = innerW }
         titleView.layoutManager?.ensureLayout(for: titleView.textContainer!)
         let titleH = max((titleView.layoutManager?.usedRect(for: titleView.textContainer!).height ?? 40), (titleView.font?.pointSize ?? 34) * 1.25)
-        titleView.frame = NSRect(x: paperX + pad, y: y, width: innerW, height: titleH)
+        place(titleView, NSRect(x: paperX + pad, y: y, width: innerW, height: titleH))
         y += titleH + 16
-        ruleView.frame = NSRect(x: paperX + pad, y: y, width: innerW, height: 1)
+        place(ruleView, NSRect(x: paperX + pad, y: y, width: innerW, height: 1))
         y += 22
         let tv = controller.textView
         if abs(tv.frame.width - innerW) > 0.5 || tv.frame.minX != paperX + pad || tv.frame.minY != y {
@@ -254,11 +272,15 @@ public final class DocumentEditorView: NSView, NSTextViewDelegate {
         }
         // The text view sizes itself; forcing a full layout here cost ~90 ms per height change in a 10k-block document.
         if tv.frame.height < 160 { tv.setFrameSize(NSSize(width: innerW, height: 160)) }
-        let paperBottom = tv.frame.maxY + 90
+        // A short note still gets a whole page, down to just above the window edge.
+        let fill = scrollView.contentSize.height - 24
+        let paperBottom = max(tv.frame.maxY + 90, fill)
         paper.paperRect = NSRect(x: paperX, y: top, width: paperW, height: paperBottom - top)
-        paperBackground.frame = paper.paperRect
-        paperBackground.layer?.shadowPath = CGPath(roundedRect: paperBackground.bounds, cornerWidth: 22, cornerHeight: 22, transform: nil)
-        let docH = max(paperBottom + 60, scrollView.contentSize.height)
+        if paperBackground.frame != paper.paperRect {
+            paperBackground.frame = paper.paperRect
+            paperBackground.layer?.shadowPath = CGPath(roundedRect: paperBackground.bounds, cornerWidth: 22, cornerHeight: 22, transform: nil)
+        }
+        let docH = paperBottom == fill ? scrollView.contentSize.height : max(paperBottom + 60, scrollView.contentSize.height)
         if paper.frame.size != NSSize(width: width, height: docH) { paper.frame = NSRect(x: 0, y: 0, width: width, height: docH) }
         if controller.imageBar.isVisible { controller.imageBar.update() }
         if controller.toolbar.isVisible { controller.toolbar.position() }

@@ -4,7 +4,7 @@ import DraftCore
 /// Crop and reposition a cover. The original image is untouched; only the crop rectangle and
 /// ratio are stored, so the same cover can render differently later (cards, export).
 struct CoverCropSheet: View {
-    @EnvironmentObject var model: AppModel
+    @Environment(AppModel.self) var model
     @Environment(\.tokens) var t
     let docId: String
     let cover: Cover
@@ -81,7 +81,7 @@ struct CoverCropSheet: View {
             }
             .padding(20)
             .frame(width: 680)
-            .background(PanelBackground())
+            .surface(.floating)
         }
         .onAppear {
             ratio = cover.ratio ?? "3:1"

@@ -9,7 +9,40 @@ public struct Space: Codable, Hashable, Sendable {
     /// Tabs of this Space while another Space is active.
     public var tabs: [Tab]?
     public var activeTabId: String?
+    /// This Space's own theme, daily-note and tag settings while another Space is active.
+    public var settings: SpaceSettings?
     public init(id: String, name: String) { self.id = id; self.name = name }
+}
+
+/// The settings each Space keeps for itself; everything else in `Settings` is app-wide.
+public struct SpaceSettings: Codable, Hashable, Sendable {
+    public var theme: String?
+    public var accent: String?
+    public var showDailyNotes: Bool?
+    public var dailyTemplateId: String?
+    public var dayStartHour: Int?
+    public var tagRules: TagRules?
+    public var tagColors: [String: String]?
+    public init() {}
+}
+
+extension Settings {
+    public var spaceScoped: SpaceSettings {
+        var s = SpaceSettings()
+        s.theme = theme; s.accent = accent; s.showDailyNotes = showDailyNotes; s.dailyTemplateId = dailyTemplateId
+        s.dayStartHour = dayStartHour; s.tagRules = tagRules; s.tagColors = tagColors
+        return s
+    }
+
+    public mutating func apply(_ s: SpaceSettings) {
+        if let v = s.theme { theme = v }
+        if let v = s.accent { accent = v }
+        if let v = s.showDailyNotes { showDailyNotes = v }
+        dailyTemplateId = s.dailyTemplateId
+        if let v = s.dayStartHour { dayStartHour = v }
+        if let v = s.tagRules { tagRules = v }
+        if let v = s.tagColors { tagColors = v }
+    }
 }
 
 public struct Folder: Codable, Hashable, Identifiable, Sendable {
@@ -145,6 +178,14 @@ public struct Settings: Codable, Hashable, Sendable {
     public var assistantModel: String?
     /// The Assistant as a panel pinned to the right of the window (true) or a floating window.
     public var assistantPinned: Bool = true
+    /// Documents in the Paper style turn dark with the app (display only; exports keep the page).
+    public var paperFollowsAppearance: Bool = true
+    /// The welcome screen and tour version the user has seen (0 = never).
+    public var onboardingSeen: Int = 0
+    /// Sidebar sections the user hid, and the order of the movable ones.
+    public var sidebarHidden: [String] = []
+    public var sidebarOrder: [String] = Settings.sidebarSections
+    public static let sidebarSections = ["starred", "folders", "tags"]
 
     public init() {}
 
@@ -176,6 +217,13 @@ public struct Settings: Codable, Hashable, Sendable {
         linkPreviews = try c.decodeIfPresent(Bool.self, forKey: .linkPreviews) ?? def.linkPreviews
         assistantModel = try c.decodeIfPresent(String.self, forKey: .assistantModel)
         assistantPinned = try c.decodeIfPresent(Bool.self, forKey: .assistantPinned) ?? def.assistantPinned
+        paperFollowsAppearance = try c.decodeIfPresent(Bool.self, forKey: .paperFollowsAppearance) ?? def.paperFollowsAppearance
+        onboardingSeen = try c.decodeIfPresent(Int.self, forKey: .onboardingSeen) ?? def.onboardingSeen
+        sidebarHidden = try c.decodeIfPresent([String].self, forKey: .sidebarHidden) ?? def.sidebarHidden
+        let order = try c.decodeIfPresent([String].self, forKey: .sidebarOrder) ?? def.sidebarOrder
+        // Keep every known section exactly once, whatever an older or edited file says.
+        sidebarOrder = order.filter(Settings.sidebarSections.contains).reduce(into: []) { if !$0.contains($1) { $0.append($1) } }
+            + Settings.sidebarSections.filter { !order.contains($0) }
     }
 }
 

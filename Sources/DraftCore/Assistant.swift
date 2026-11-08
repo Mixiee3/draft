@@ -90,12 +90,39 @@ public enum AssistantPrompt {
 
     static let system = """
     You are the writing assistant inside Draft, a notes app. You run on this Mac and only see the notes given to you below.
-    Use only those notes for facts. When notes are numbered like [1], cite the ones you used with their numbers in square brackets.
+    Use only those notes for facts. When notes are numbered like [1], put the number of the note you used in square brackets after each fact, like [2].
+    Answer in plain sentences. There are no tools or functions to call.
     If the notes do not contain the answer, say you could not find it in these notes instead of guessing.
     Write in the same language as the notes. Be concise.
     """
 
     /// Builds the conversation for the model within `budgetTokens` of context (sources, history and question).
+    /// Reading a long document in parts: which actions combine notes from every part, and the parts.
+    public static func readsInParts(_ r: AssistantRequest, budgetTokens: Int) -> Bool {
+        r.scope == .document && [.ask, .summarize, .explain, .outline].contains(r.action) && Double(r.text.count) > Double(budgetTokens) * charsPerToken
+    }
+
+    /// Splits text at line ends into parts that each fit `budgetTokens`; nothing is dropped.
+    public static func parts(_ text: String, budgetTokens: Int) -> [String] {
+        let limit = max(200, Int(Double(budgetTokens) * charsPerToken))
+        var out: [String] = [], cur = ""
+        for line in text.components(separatedBy: "\n") {
+            var line = line
+            while line.count > limit { out.append(String(line.prefix(limit))); line = String(line.dropFirst(limit)) }
+            if cur.count + line.count + 1 > limit, !cur.isEmpty { out.append(cur); cur = "" }
+            cur += cur.isEmpty ? line : "\n" + line
+        }
+        if !cur.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty { out.append(cur) }
+        return out
+    }
+
+    /// The map step: keep only what one part says about the task.
+    public static func partTurns(_ r: AssistantRequest, part: String, index: Int, count: Int) -> [ChatTurn] {
+        let task = r.action == .ask ? r.question : r.action.title.lowercased()
+        return [ChatTurn("system", system + "\n\nPart \(index + 1) of \(count) of “\(r.docTitle.isEmpty ? "Untitled" : r.docTitle)”:\n<<<\n\(part)\n>>>"),
+                ChatTurn("user", "Write short notes on what this part says that matters for: \(task). Keep names, dates and numbers exact. If nothing matters, answer “nothing relevant”.")]
+    }
+
     public static func prepare(_ r: AssistantRequest, history: [ChatTurn] = [], budgetTokens: Int = 5000) -> PreparedPrompt {
         let budget = Int(Double(budgetTokens) * charsPerToken)
         var sources: [AssistantSource] = []
@@ -144,7 +171,11 @@ public enum AssistantPrompt {
             used += c
             kept.insert(ChatTurn(t.role, String(t.text.prefix(1200))), at: 0)
         }
-        let turns = [ChatTurn("system", system)] + kept + [ChatTurn("user", body + "\n\n" + task)]
+        // A document or selection rides in the system turn, so a second question about it starts
+        // where the engine's saved state ends; Space retrieval changes per question.
+        let turns = r.scope == .space
+            ? [ChatTurn("system", system)] + kept + [ChatTurn("user", body + "\n\n" + task)]
+            : [ChatTurn("system", system + "\n\n" + body)] + kept + [ChatTurn("user", task)]
         return PreparedPrompt(turns: turns, sources: sources, includedFraction: fraction)
     }
 }
@@ -161,7 +192,14 @@ public enum Retrieval {
             .split { !$0.isLetter && !$0.isNumber }
             .map(String.init)
             .filter { $0.count > 1 && !stop.contains($0) }
-            .map { $0.count > 4 && $0.hasSuffix("s") ? String($0.dropLast()) : $0 }
+            .map(stem)
+    }
+
+    /// Plural and third-person "s": fixes → fix, boxes → box, notes → note; not pass or glass.
+    static func stem(_ w: String) -> String {
+        guard w.count > 3, w.hasSuffix("s"), !w.hasSuffix("ss") else { return w }
+        for end in ["xes", "ches", "shes", "sses", "zes"] where w.hasSuffix(end) { return String(w.dropLast(2)) }
+        return String(w.dropLast())
     }
 
     public static func rank(_ query: String, entries: [String: DocIndexEntry], titles: [String: String], limit: Int = 8, perDoc: Int = 3) -> [Hit] {
@@ -274,6 +312,16 @@ public enum WordDiff {
         }
         if !cur.isEmpty { out.append(cur) }
         return out
+    }
+
+    /// Share of words that differ; past about 40% an inline diff is harder to read than before/after.
+    public static func changedFraction(_ parts: [Part]) -> Double {
+        var same = 0, changed = 0
+        for p in parts {
+            let n = p.text.split(whereSeparator: { $0.isWhitespace }).count
+            if p.op == .same { same += n } else { changed += n }
+        }
+        return same + changed == 0 ? 0 : Double(changed) / Double(same + changed)
     }
 
     public static func diff(_ a: String, _ b: String) -> [Part] {

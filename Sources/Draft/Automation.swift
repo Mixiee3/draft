@@ -39,9 +39,13 @@ enum Automation {
             case "online-live": await onlineLive()
             case "screens-v05": await screensV05()
             case "assistant-bench": await assistantBench()
+            case "assistant-quality": await assistantQuality()
             case "assistant-write": await assistantWrite()
             case "assistant-read": await assistantRead()
             case "motion-frames": await motionFrames()
+            case "audit-shots": await auditShots()
+            case "audit-motion": await auditMotion()
+            case "audit-frames": await auditFrames()
             case "ux-perf": await uxPerf()
             case "idle": await idle()
             default: break
@@ -121,7 +125,7 @@ enum Automation {
             let boldOK = (page?.content.content ?? []).contains { n in (n.content ?? []).contains { $0.text == "bold" && $0.marks == [Mark("bold")] } }
             result["bold"] = boldOK ? "yes" : "no"
             result["text"] = docPlainText(doc.content)
-            result["tabOpen"] = m.library.tabs.contains { $0.view.docId == id } ? "yes" : "no"
+            result["tabOpen"] = m.tabs.contains { $0.view.docId == id } ? "yes" : "no"
             result["backups"] = "\(m.snapshots(id).count)"
             result["trashed"] = m.library.trashedDocs.map(\.title).joined(separator: ",")
             result["listed"] = m.docsFor(.all).map(\.title).sorted().joined(separator: ",")
@@ -131,7 +135,7 @@ enum Automation {
                 ed.controller.pastePlainForAutomation(String(repeating: "Filler paragraph.\n", count: 60) + "The zeppelin keyword lives far down.")
             }
             m.flushAll()
-            m.activateTab(m.library.tabs[0].id)
+            m.activateTab(m.tabs[0].id)
             m.librarySearch = "ZEPPELIN"
             result["searchHits"] = m.searchHits.map(\.meta.title).joined(separator: ",")
             m.openSearchResult(id)
@@ -148,7 +152,7 @@ enum Automation {
             }
             if let taskId = (m.ensureDoc(id)?.content.content ?? []).first(where: { $0.type == "pageCard" })?.id,
                let url = AppModel.blockLink(doc: id, block: taskId) {
-                m.activateTab(m.library.tabs[0].id)
+                m.activateTab(m.tabs[0].id)
                 m.openLink(url)
                 await wait(0.5)
                 result["linkOpened"] = m.activeDocId == id ? "yes" : "no"
@@ -245,7 +249,7 @@ enum Automation {
         if let kid = m.library.docs.values.first(where: { $0.title == "Keyboard shortcuts" }) { m.openView(.doc(kid.id), inPlace: true); await capture("nested-page") }
         // Dark app theme
         m.setSettings { $0.theme = "dark" }
-        m.activateTab(m.library.tabs[0].id)
+        m.activateTab(m.tabs[0].id)
         m.setSettings { $0.libraryView = .gallery }
         await capture("library-gallery-dark")
         m.openView(ViewRef(kind: "settings", section: "appearance"))
@@ -283,7 +287,7 @@ enum Automation {
             m.panel = nil; m.infoTab = "info"
         }
         // Search results
-        m.activateTab(m.library.tabs[0].id)
+        m.activateTab(m.tabs[0].id)
         m.librarySearchOpen = true; m.librarySearch = "markdown"
         await capture("search-results")
         m.librarySearch = ""; m.librarySearchOpen = false
@@ -293,7 +297,7 @@ enum Automation {
             m.openView(ViewRef(kind: "trash"))
             await capture("recently-deleted")
             m.restore(morning.id)
-            m.activateTab(m.library.tabs[0].id)
+            m.activateTab(m.tabs[0].id)
         }
         // Narrow window: scrolled text and the slash menu at the bottom edge.
         m.openView(.doc(welcome.id))
@@ -509,6 +513,7 @@ enum Automation {
         var meta = DocMeta(id: id); meta.applyDerived(from: doc)
         m.library.docs[id] = meta
         r["blocks"] = docStats(content).blocks
+        if ProcessInfo.processInfo.environment["DRAFT_PERF_FOCUS"] != nil { m.focusMode = true; r["focusMode"] = true }
         var t0 = CFAbsoluteTimeGetCurrent()
         m.openView(.doc(id))
         await settle()
@@ -542,7 +547,7 @@ enum Automation {
             t0 = CFAbsoluteTimeGetCurrent(); c.toggleOpen(at: tp); await settle(); r["toggleMs"] = ms(t0)
         }
         t0 = CFAbsoluteTimeGetCurrent(); m.flushAll(); r["saveMs"] = ms(t0)
-        m.activateTab(m.library.tabs[0].id)
+        m.activateTab(m.tabs[0].id)
         m.librarySearch = "Paragraph 7771:"
         t0 = CFAbsoluteTimeGetCurrent(); let hits = m.searchHits; r["searchMs"] = ms(t0); r["searchHits"] = hits.count
         // Index rebuilt from disk (index/ deleted), the whole vault including the 10k-block document.

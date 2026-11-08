@@ -36,6 +36,8 @@ cat > "$APP/Contents/Info.plist" <<PLIST
   <key>CFBundleExecutable</key><string>Draft</string>
   <key>CFBundlePackageType</key><string>APPL</string>
   <key>CFBundleShortVersionString</key><string>0.5.1</string>
+  <key>NSMicrophoneUsageDescription</key><string>Draft listens only while you hold the Assistant's microphone button, to turn your speech into text on this Mac.</string>
+  <key>NSSpeechRecognitionUsageDescription</key><string>Draft uses Apple's on-device speech recognition for Assistant dictation. Your voice is not sent to a server.</string>
   <key>NSCalendarsFullAccessUsageDescription</key><string>Draft shows your calendar events next to daily notes when you turn this on in Settings. Events are read on this Mac only and never changed.</string>
   <key>CFBundleVersion</key><string>1</string>
   <key>CFBundleIconFile</key><string>AppIcon</string>

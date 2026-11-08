@@ -69,7 +69,7 @@ extension Automation {
         m.switchSpace(side); await wait(0.3)
         r["sideTags"] = m.index.tagCounts(live: m.liveIds).map(\.tag).sorted().joined(separator: ",")
         r["sideDocs"] = m.library.liveDocs.map(\.title).sorted().joined(separator: ",")
-        r["sideTabHasDoc"] = m.library.tabs.contains { $0.view.docId == sdoc } ? "yes" : "no"
+        r["sideTabHasDoc"] = m.tabs.contains { $0.view.docId == sdoc } ? "yes" : "no"
         m.switchSpace(home)
         r["home"] = home; r["side"] = side; r["sdoc"] = sdoc
         m.flushAll()
@@ -84,7 +84,7 @@ extension Automation {
         r["activeSpace"] = m.library.space.id == w["home"] ? "home" : "other"
         r["templates"] = "\(m.library.templates.count)"
         m.switchSpace(w["side"] ?? ""); await wait(0.3)
-        r["sideTabRestored"] = m.library.tabs.contains { $0.view.docId == w["sdoc"] } ? "yes" : "no"
+        r["sideTabRestored"] = m.tabs.contains { $0.view.docId == w["sdoc"] } ? "yes" : "no"
         r["sideText"] = m.ensureDoc(w["sdoc"] ?? "").map { docPlainText($0.content) } ?? ""
         save(r, "workflow-read.json")
     }

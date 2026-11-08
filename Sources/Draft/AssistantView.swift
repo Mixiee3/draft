@@ -1,4 +1,5 @@
 import SwiftUI
+import VoiceGlowKit
 import AppKit
 import DraftCore
 import DraftAssistant
@@ -6,13 +7,14 @@ import ThinkingOrbsKit
 
 /// The Assistant surface: the same view pinned beside the editor or in its own floating window.
 struct AssistantView: View {
-    @EnvironmentObject var model: AppModel
-    @ObservedObject var a: AssistantModel
+    @Environment(AppModel.self) var model
+    var a: AssistantModel
     @Environment(\.tokens) var t
     var floating = false
     @FocusState private var composerFocused: Bool
 
     var body: some View {
+        @Bindable var a = a
         VStack(spacing: 0) {
             header
             Divider().opacity(0.5)
@@ -39,11 +41,10 @@ struct AssistantView: View {
                 Text("Runs on this Mac · \(a.model.name)").font(.system(size: DS.caption)).foregroundStyle(t.secondary).lineLimit(1)
             }
             Spacer(minLength: 0)
-            Menu {
+            DraftIconMenu(symbol: "ellipsis", label: "More", size: 26, onPill: false) {
                 Button("Clear History for This Space", role: .destructive) { a.clearHistory() }.disabled(a.chat.messages.isEmpty)
                 Button("Assistant Settings…") { model.openView(ViewRef(kind: "settings", section: "assistant")) }
-            } label: { Image(systemName: "ellipsis").frame(width: 24, height: 24) }
-                .menuStyle(.borderlessButton).menuIndicator(.hidden).fixedSize().help("More").accessibilityLabel("More")
+            }
             IconButton(symbol: floating ? "sidebar.right" : "macwindow.on.rectangle", label: floating ? "Pin to the Window" : "Float in Its Own Window", size: 26) {
                 model.setAssistantPinned(floating)
             }
@@ -85,26 +86,34 @@ struct AssistantView: View {
 
     var composer: some View {
         VStack(alignment: .leading, spacing: DS.s2) {
-            DraftSegmented("Context", selection: $a.scope, symbols: [(.selection, "Selection", "text.cursor"), (.document, "Document", "doc.text"), (.space, "Space", "square.stack")], stretch: true)
+            DraftSegmented("Context", selection: Binding(get: { a.scope }, set: { a.scope = $0 }), symbols: [(.selection, "Selection", "text.cursor"), (.document, "Document", "doc.text"), (.space, "Space", "square.stack")], stretch: true)
             LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: DS.s1 + 2), count: 3), spacing: DS.s1 + 2) {
                 ForEach([AssistantAction.summarize, .explain, .rewrite, .shorten, .expand, .outline], id: \.self) { act in
                     ChipButton(title: act == .outline ? "Outline" : act.title, font: .system(size: DS.footnote, weight: .medium), isEnabled: !a.isRunning && a.scope != .space, height: DS.controlSmall + 4) { a.send(act) }
                 }
             }
+            VoiceGlow(levelProvider: { a.voice.level }, active: a.voice.listening || a.voice.speaking, cornerRadius: DS.rCard) {
             ActiveBeam(active: a.isRunning, radius: DS.rCard) {
                 HStack(alignment: .bottom, spacing: DS.s2) {
-                    TextField(a.scope == .space ? "Ask about the notes in this Space…" : "Ask about this text…", text: $a.draft, axis: .vertical)
+                    TextField(a.scope == .space ? "Ask about the notes in this Space…" : "Ask about this text…", text: Binding(get: { a.draft }, set: { a.draft = $0 }), axis: .vertical)
                         .textFieldStyle(.plain).font(.system(size: DS.body)).lineLimit(1...5)
                         .focused($composerFocused)
                         .onSubmit { a.send() }
                         .padding(.vertical, 7)
                         .accessibilityLabel("Message to the Assistant")
+                    IconButton(symbol: a.voice.listening ? "mic.fill" : "mic", label: a.voice.listening ? "Stop dictation" : "Dictate (on this Mac)", size: 32) {
+                        a.voice.toggleListening { a.draft = $0 }
+                    }
+                    .foregroundStyle(a.voice.listening ? t.accent : t.secondary)
+                    .disabled(a.isRunning)
                     SendButton(running: a.isRunning, enabled: a.isRunning || !a.draft.trimmingCharacters(in: .whitespaces).isEmpty) { a.isRunning ? a.stop() : a.send() }
                 }
                 .padding(.leading, DS.s3).padding(.trailing, DS.s1 + 2).padding(.vertical, DS.s1 + 1)
                 .background(RoundedRectangle(cornerRadius: DS.rCard, style: .continuous).fill(t.card))
                 .overlay(RoundedRectangle(cornerRadius: DS.rCard, style: .continuous).strokeBorder(composerFocused ? t.accent.opacity(0.55) : t.line, lineWidth: 1))
             }
+            }
+            if let p = a.voice.problem { Text(p).font(.system(size: DS.caption)).foregroundStyle(t.secondary).fixedSize(horizontal: false, vertical: true) }
             Text("Answers come only from the notes you choose and can be wrong. Nothing leaves this Mac.")
                 .font(.system(size: DS.caption)).foregroundStyle(t.tertiary).fixedSize(horizontal: false, vertical: true)
         }
@@ -140,7 +149,7 @@ struct SendButton: View {
 }
 
 struct EmptyAssistant: View {
-    @ObservedObject var a: AssistantModel
+    var a: AssistantModel
     @Environment(\.tokens) var t
     var body: some View {
         VStack(alignment: .leading, spacing: DS.s2) {
@@ -154,7 +163,7 @@ struct EmptyAssistant: View {
 }
 
 struct MessageRow: View {
-    @ObservedObject var a: AssistantModel
+    var a: AssistantModel
     let m: AssistantMessage
     @Environment(\.tokens) var t
 
@@ -180,6 +189,7 @@ struct MessageRow: View {
                         if a.canEdit(m) {
                             ChipButton(title: "Insert or Replace…", symbol: "text.insert", font: .system(size: DS.footnote, weight: .medium), height: DS.controlSmall + 2) { a.previewEdit(m) }.fixedSize()
                         }
+                        ChipButton(title: a.voice.speaking ? "Stop" : "Read Aloud", symbol: a.voice.speaking ? "stop.circle" : "speaker.wave.2", font: .system(size: DS.footnote, weight: .medium), height: DS.controlSmall + 2) { a.voice.speak(m.text) }.fixedSize()
                         ChipButton(title: "Copy", symbol: "doc.on.doc", font: .system(size: DS.footnote, weight: .medium), height: DS.controlSmall + 2) {
                             NSPasteboard.general.clearContents(); NSPasteboard.general.setString(m.text, forType: .string)
                         }.fixedSize()
@@ -212,7 +222,7 @@ struct MarkdownText: View {
 }
 
 struct SourceList: View {
-    @ObservedObject var a: AssistantModel
+    var a: AssistantModel
     let sources: [AssistantSource]
     @Environment(\.tokens) var t
     var body: some View {
@@ -243,7 +253,7 @@ struct SourceList: View {
 }
 
 struct StreamingRow: View {
-    @ObservedObject var a: AssistantModel
+    var a: AssistantModel
     let s: AssistantModel.Streaming
     let state: OrbState
     @Environment(\.tokens) var t
@@ -274,7 +284,7 @@ struct StreamingRow: View {
 }
 
 struct InstallCard: View {
-    @ObservedObject var a: AssistantModel
+    var a: AssistantModel
     @Environment(\.tokens) var t
     var body: some View {
         ScrollView {
@@ -346,53 +356,87 @@ struct ModelFacts: View {
 
 /// Shows exactly what would change before anything is written to the note.
 struct EditPreview: View {
-    @ObservedObject var a: AssistantModel
+    var a: AssistantModel
     let preview: AssistantModel.Preview
     @Environment(\.tokens) var t
-    @Environment(\.dismiss) var dismiss
+
     var body: some View {
+        let parts = preview.canReplace ? WordDiff.diff(preview.original, preview.markdown) : []
+        let stacked = !preview.canReplace || WordDiff.changedFraction(parts) > 0.4
         VStack(alignment: .leading, spacing: DS.s3) {
-            Text(preview.canReplace ? "Review the change" : "Review the text to insert").font(.system(size: DS.headline, weight: .semibold))
+            Text(preview.canReplace ? "Review the change" : "Review the text to insert")
+                .font(.system(size: DS.headline, weight: .semibold)).foregroundStyle(t.text).accessibilityAddTraits(.isHeader)
             ScrollView {
-                diffText.font(.system(size: DS.body)).frame(maxWidth: .infinity, alignment: .leading).textSelection(.enabled).padding(DS.s3)
+                VStack(alignment: .leading, spacing: DS.s3) {
+                    if stacked {
+                        if preview.canReplace { block("Before", Text(preview.original), tint: nil) }
+                        block(preview.canReplace ? "After" : "New text", Text(preview.markdown), tint: t.accent)
+                    } else {
+                        block("Changes", inline(parts), tint: nil)
+                    }
+                }
             }
-            .frame(minHeight: 160, maxHeight: 360)
-            .background(RoundedRectangle(cornerRadius: DS.rControl, style: .continuous).fill(t.hover))
-            if preview.canReplace {
+            .frame(minHeight: 160, maxHeight: 380)
+            if preview.canReplace, !stacked {
                 HStack(spacing: DS.s3) {
-                    Label("Removed", systemImage: "minus").foregroundStyle(.red)
-                    Label("Added", systemImage: "plus").foregroundStyle(.green)
-                }.font(.system(size: DS.caption))
-            } else {
-                Text("The original text changed or isn't selected, so the result can only be inserted after the selection or cursor.").font(.system(size: DS.footnote)).foregroundStyle(t.secondary)
+                    legend("Removed", Self.removed)
+                    legend("Added", Self.added)
+                }
+            } else if !preview.canReplace {
+                Text("The original text changed or isn't selected, so the result can only be inserted after the selection or cursor.")
+                    .font(.system(size: DS.footnote)).foregroundStyle(t.secondary).fixedSize(horizontal: false, vertical: true)
             }
-            HStack {
-                Button("Cancel") { a.preview = nil }.keyboardShortcut(.cancelAction)
+            HStack(spacing: DS.s2) {
+                Button("Cancel") { a.preview = nil }.buttonStyle(.draft).keyboardShortcut(.cancelAction)
                 Spacer()
-                Button("Insert Below") { a.apply(preview, replace: false) }
-                if preview.canReplace { Button("Replace") { a.apply(preview, replace: true) }.keyboardShortcut(.defaultAction) }
+                Button("Insert Below") { a.apply(preview, replace: false) }.buttonStyle(preview.canReplace ? .draft : .draftPrimary)
+                if preview.canReplace { Button("Replace") { a.apply(preview, replace: true) }.buttonStyle(.draftPrimary).keyboardShortcut(.defaultAction) }
             }
             Text("You can undo the change with ⌘Z.").font(.system(size: DS.caption)).foregroundStyle(t.tertiary)
         }
         .padding(DS.s5)
-        .frame(width: 520)
+        .frame(width: 540)
+        .background(t.canvas)
     }
 
-    var diffText: Text {
-        guard preview.canReplace else { return Text(preview.markdown) }
-        return WordDiff.diff(preview.original, preview.markdown).reduce(Text("")) { acc, p in
-            switch p.op {
-            case .same: return acc + Text(p.text)
-            case .removed: return acc + Text(p.text).strikethrough().foregroundColor(.red)
-            case .added: return acc + Text(p.text).foregroundColor(.green).underline()
-            }
+    static let removed = Color(hex: "#d4544c"), added = Color(hex: "#2f9a5a")
+
+    func block(_ title: String, _ text: Text, tint: Color?) -> some View {
+        VStack(alignment: .leading, spacing: DS.s1 + 2) {
+            Text(title.uppercased()).font(.system(size: DS.micro + 1, weight: .semibold)).tracking(0.6).foregroundStyle(tint ?? t.secondary)
+            text.font(.system(size: DS.body)).lineSpacing(3).foregroundStyle(t.text)
+                .frame(maxWidth: .infinity, alignment: .leading).textSelection(.enabled)
         }
+        .padding(DS.s3)
+        .background(RoundedRectangle(cornerRadius: DS.rControl, style: .continuous).fill(tint.map { $0.opacity(0.07) } ?? t.hover))
+        .overlay(alignment: .leading) { if let tint { Rectangle().fill(tint).frame(width: 3).clipShape(Capsule()).padding(.vertical, 6) } }
+        .accessibilityElement(children: .combine)
+    }
+
+    /// Changed words sit on a soft tint (struck through when removed) so they read in light and dark.
+    func inline(_ parts: [WordDiff.Part]) -> Text {
+        parts.reduce(Text("")) { acc, p in
+            var s = AttributedString(p.text)
+            switch p.op {
+            case .same: break
+            case .removed:
+                s.backgroundColor = Self.removed.opacity(0.16); s.foregroundColor = Self.removed; s.strikethroughStyle = .single
+            case .added:
+                s.backgroundColor = Self.added.opacity(0.16); s.foregroundColor = Self.added
+            }
+            return acc + Text(s)
+        }
+    }
+
+    func legend(_ title: String, _ c: Color) -> some View {
+        HStack(spacing: 5) { RoundedRectangle(cornerRadius: 3).fill(c.opacity(0.25)).frame(width: 14, height: 10); Text(title) }
+            .font(.system(size: DS.caption)).foregroundStyle(t.secondary)
     }
 }
 
 struct AssistantSettings: View {
-    @EnvironmentObject var model: AppModel
-    @ObservedObject var a: AssistantModel
+    @Environment(AppModel.self) var model
+    var a: AssistantModel
     @Environment(\.tokens) var t
     var body: some View {
         VStack(alignment: .leading, spacing: 22) {

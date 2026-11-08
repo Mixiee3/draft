@@ -9,7 +9,7 @@ let package = Package(
         .library(name: "DraftCore", targets: ["DraftCore"]),
     ],
     dependencies: [
-        // MIT. Pinned to a tested revision; only ThinkingOrbsKit and BorderBeamKit are used.
+        // MIT. Pinned to a tested revision; only ThinkingOrbsKit, BorderBeamKit and VoiceGlowKit are used.
         .package(url: "https://github.com/Jakubantalik/Libraries.dev", revision: "9a42e88847dab0ac145733f15cf90535e9cb59ab"),
     ],
     targets: [
@@ -31,6 +31,7 @@ let package = Package(
             "DraftCore", "DraftEditor", "DraftAssistant",
             .product(name: "ThinkingOrbsKit", package: "Libraries.dev"),
             .product(name: "BorderBeamKit", package: "Libraries.dev"),
+            .product(name: "VoiceGlowKit", package: "Libraries.dev"),
         ], resources: [.process("Effects/LiquidMetal.metal")]),
         .testTarget(name: "DraftCoreTests", dependencies: ["DraftCore"]),
         .testTarget(name: "DraftEditorTests", dependencies: ["DraftEditor", "DraftCore"]),

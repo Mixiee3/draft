@@ -3,7 +3,7 @@ import DraftCore
 import DraftEditor
 
 struct RootView: View {
-    @EnvironmentObject var model: AppModel
+    @Environment(AppModel.self) var model
     @Environment(\.colorScheme) var systemScheme
     @State private var railOverlay = false
 
@@ -19,7 +19,7 @@ struct RootView: View {
 
     var tint: String? {
         guard model.library.settings.useDocStyleForApp, let id = model.activeDocId, let d = model.docs[id] else { return nil }
-        let t = Styles.resolve(d.appearance).shellTint
+        let t = model.displayTokens(d.appearance).shellTint
         // In dark app mode, only dark document tints are applied to avoid a glaring shell.
         return isDark && !ColorMath.isDark(t) ? nil : t
     }
@@ -28,7 +28,8 @@ struct RootView: View {
         let t = Tokens.make(dark: isDark, accent: model.library.settings.accent, tint: tint)
         GeometryReader { geo in
             let narrow = geo.size.width < 820
-            let showRail = !model.library.settings.railCollapsed && !narrow
+            let focus = model.focusMode && model.activeDocId != nil
+            let showRail = !model.library.settings.railCollapsed && !narrow && !focus
             ZStack(alignment: .topLeading) {
                 t.shell.ignoresSafeArea()
                 if let f = model.fatal {
@@ -37,24 +38,29 @@ struct RootView: View {
                     HStack(spacing: 0) {
                         if showRail {
                             RailView(narrow: false).frame(width: min(272, max(236, geo.size.width * 0.19)))
+                                .tourAnchor(.sidebar)
                                 .padding(.leading, 8).padding(.vertical, 8)
                                 .transition(.move(edge: .leading))
                         }
                         VStack(spacing: 0) {
-                            TabStrip(leadingInset: showRail ? 8 : 92, showRailButton: !showRail, onRail: {
+                            TabStrip(leadingInset: showRail ? 8 : 92, showRailButton: !showRail, compact: geo.size.width < 900, onRail: {
                                 if narrow { railOverlay.toggle() } else { model.setSettings { $0.railCollapsed = false } }
                             })
                             .frame(height: WindowChrome.height)
+                            .opacity(focus ? 0 : 1).allowsHitTesting(!focus)
+                            .animation(nil, value: pinnedAssistant)
                             MainContent()
+                                .environment(\.railVisible, showRail)
+                                .animation(nil, value: pinnedAssistant) // one re-wrap when the Assistant opens, not one per frame
                                 .clipShape(RoundedRectangle(cornerRadius: Tokens.radiusPanel, style: .continuous))
                                 .padding(.leading, showRail ? 8 : 8).padding(.trailing, 8).padding(.bottom, 8)
                         }
-                        if pinnedAssistant && !narrow {
+                        if pinnedAssistant && !narrow && !focus {
                             AssistantView(a: model.assistant)
                                 .clipShape(RoundedRectangle(cornerRadius: Tokens.radiusPanel, style: .continuous))
                                 .frame(width: 360)
                                 .padding(.top, WindowChrome.height).padding(.trailing, 8).padding(.bottom, 8)
-                                .transition(.move(edge: .trailing).combined(with: .opacity))
+                                .panelTransition(reduce: model.library.settings.reduceMotion)
                         }
                     }
                     if pinnedAssistant && narrow {
@@ -62,11 +68,11 @@ struct RootView: View {
                             Spacer()
                             AssistantView(a: model.assistant)
                                 .clipShape(RoundedRectangle(cornerRadius: Tokens.radiusPanel, style: .continuous))
-                                .floatingSurface(t)
+                                .surface(.floating)
                                 .frame(width: min(360, geo.size.width - 32))
                                 .padding(.top, WindowChrome.height).padding(.trailing, 12).padding(.bottom, 12)
                         }
-                        .transition(.move(edge: .trailing).combined(with: .opacity))
+                        .panelTransition(reduce: model.library.settings.reduceMotion)
                     }
                     if narrow && railOverlay {
                         Color.black.opacity(0.2).ignoresSafeArea().onTapGesture { railOverlay = false }
@@ -75,11 +81,15 @@ struct RootView: View {
                             .transition(.move(edge: .leading))
                     }
                     Overlays()
+                    if model.onboarding == .welcome { WelcomeView().transition(.opacity) }
                 } else {
                     ProgressView().frame(maxWidth: .infinity, maxHeight: .infinity)
                 }
             }
             .onChange(of: model.activeTab.id) { _, _ in railOverlay = false }
+            .onChange(of: isDark, initial: true) { _, d in model.appDark = d }
+            .modifier(TourLayer(step: model.onboarding.flatMap { if case .tour(let i) = $0 { i } else { nil } }))
+            .animation(Motion.emphasis(model.library.settings.reduceMotion), value: model.onboarding)
         }
         .environment(\.tokens, t)
         .preferredColorScheme(model.library.settings.theme == "system" ? nil : (isDark ? .dark : .light))
@@ -118,7 +128,7 @@ struct WindowChrome: NSViewRepresentable {
 
 struct FatalView: View {
     let message: String
-    @EnvironmentObject var model: AppModel
+    @Environment(AppModel.self) var model
     var body: some View {
         VStack(spacing: 14) {
             Image(systemName: "exclamationmark.triangle").font(.system(size: DS.display))
@@ -131,11 +141,11 @@ struct FatalView: View {
 }
 
 struct MainContent: View {
-    @EnvironmentObject var model: AppModel
+    @Environment(AppModel.self) var model
     @Environment(\.tokens) var t
     var body: some View {
         let v = model.activeView
-        Group {
+        ZStack {
             switch v.kind {
             case "doc":
                 if let id = v.docId { DocumentScreen(docId: id).id(id) }
@@ -147,6 +157,9 @@ struct MainContent: View {
             default: LibraryView(view: v)
             }
         }
+        .transition(.screenArrival)
+        .id(v.kind == "doc" ? (v.docId ?? "") : v.kind + (v.section ?? "") + (v.folderId ?? ""))
+        .animation(Motion.navigate(model.library.settings.reduceMotion), value: v)
         .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
 }
@@ -154,10 +167,11 @@ struct MainContent: View {
 // MARK: - Tab strip
 
 struct TabStrip: View {
-    @EnvironmentObject var model: AppModel
+    @Environment(AppModel.self) var model
     @Environment(\.tokens) var t
     var leadingInset: CGFloat
     var showRailButton: Bool
+    var compact = false
     var onRail: () -> Void
 
     func title(_ v: ViewRef) -> String {
@@ -202,14 +216,16 @@ struct TabStrip: View {
             }
             ScrollView(.horizontal, showsIndicators: false) {
                 HStack(spacing: 2) {
-                    ForEach(model.library.tabs) { tab in
-                        TabItem(tab: tab, title: title(tab.view), icon: icon(tab.view), isActive: tab.id == model.library.activeTabId, isHome: tab.id == model.library.tabs.first?.id)
+                    ForEach(model.tabs) { tab in
+                        TabItem(tab: tab, title: title(tab.view), icon: icon(tab.view), isActive: tab.id == model.activeTabId, isHome: tab.id == model.tabs.first?.id)
                     }
                     IconButton(symbol: "plus", label: "New document (⌘N)") { model.createDoc() }
-                }.padding(.vertical, 6)
+                }.padding(.vertical, 6).padding(.trailing, 18)
             }
+            // Tabs that run past the edge fade out instead of being cut mid-word.
+            .mask(HStack(spacing: 0) { Color.black; LinearGradient(colors: [.black, .clear], startPoint: .leading, endPoint: .trailing).frame(width: 18) })
             Spacer(minLength: 0)
-            AssistantToolbarButton()
+            AssistantToolbarButton(compact: compact).tourAnchor(.assistant)
         }
         .padding(.leading, leadingInset)
         .padding(.trailing, 10)
@@ -218,7 +234,7 @@ struct TabStrip: View {
 }
 
 struct TabItem: View {
-    @EnvironmentObject var model: AppModel
+    @Environment(AppModel.self) var model
     @Environment(\.tokens) var t
     let tab: DraftCore.Tab
     let title: String

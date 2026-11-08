@@ -2,16 +2,16 @@ import SwiftUI
 import DraftCore
 import DraftEditor
 
+private let relativeFormatter: RelativeDateTimeFormatter = { let f = RelativeDateTimeFormatter(); f.unitsStyle = .full; return f }()
+
 func relative(_ ms: Double) -> String {
     let d = Date(timeIntervalSince1970: ms / 1000)
     if abs(d.timeIntervalSinceNow) < 60 { return "just now" }
-    let f = RelativeDateTimeFormatter()
-    f.unitsStyle = .full
-    return f.localizedString(for: d, relativeTo: Date())
+    return relativeFormatter.localizedString(for: d, relativeTo: Date())
 }
 
 struct RailView: View {
-    @EnvironmentObject var model: AppModel
+    @Environment(AppModel.self) var model
     @Environment(\.tokens) var t
     var narrow: Bool
 
@@ -23,14 +23,14 @@ struct RailView: View {
                 Spacer()
                 if docId != nil {
                     Menu {
-                        Picker("Show in sidebar", selection: $model.railShowsFolders) {
+                        Picker("Show in sidebar", selection: Binding(get: { model.railShowsFolders }, set: { model.railShowsFolders = $0 })) {
                             Text("Document").tag(false)
                             Text("Folders").tag(true)
                         }.pickerStyle(.inline)
                     } label: {
                         Image(systemName: model.railShowsFolders ? "folder" : "list.bullet.indent")
                     }
-                    .menuStyle(.borderlessButton).menuIndicator(.visible).fixedSize()
+                    .menuStyle(.button).buttonStyle(.plain).menuIndicator(.visible).fixedSize()
                     .foregroundStyle(t.secondary).tint(t.secondary)
                     .help("Choose what the sidebar shows")
                 }
@@ -38,7 +38,9 @@ struct RailView: View {
             }
             .frame(height: WindowChrome.height - 16)
             .padding(.horizontal, 8)
-            if let id = docId, !model.railShowsFolders {
+            if model.activeView.kind == "settings" {
+                SettingsRail(section: model.activeView.section ?? "appearance")
+            } else if let id = docId, !model.railShowsFolders, !model.freshDocs.contains(id) {
                 DocumentRail(docId: id).id(id)
             } else {
                 LibraryRail()
@@ -105,7 +107,7 @@ struct SpaceAvatar: View {
 }
 
 struct LibraryRail: View {
-    @EnvironmentObject var model: AppModel
+    @Environment(AppModel.self) var model
     @Environment(\.tokens) var t
     @State private var renameText = ""
 
@@ -115,48 +117,25 @@ struct LibraryRail: View {
             ScrollView {
                 VStack(alignment: .leading, spacing: 1) {
                     SpaceSwitcher().padding(.horizontal, 4).padding(.bottom, 6)
-                    RailRow(icon: "square.grid.2x2", title: "All Docs", isSelected: v.kind == "all") { model.activateTab(model.library.tabs[0].id) }
+                    RailRow(icon: "square.grid.2x2", title: "All Docs", isSelected: v.kind == "all") { model.activateTab(model.tabs[0].id) }
                     RailRow(icon: "magnifyingglass", title: "Quick Open", trailing: AnyView(Text("⌘O").font(.system(size: DS.caption)).foregroundStyle(t.tertiary))) { model.quickOpen = true }
-                    RailRow(icon: "person.2", title: "Shared with Me", isSelected: v.kind == "shared") { model.openView(ViewRef(kind: "shared")) }
+                    if shown("shared") { RailRow(icon: "person.2", title: "Shared with Me", isSelected: v.kind == "shared") { model.openView(ViewRef(kind: "shared")) } }
                     let _ = model.indexTick
-                    RailRow(icon: "sun.max", title: "Today", isSelected: model.activeDocId != nil && model.library.docs[model.activeDocId!]?.dailyDate == model.todayKey,
-                            trailing: AnyView(Text("⇧⌘D").font(.system(size: DS.caption)).foregroundStyle(t.tertiary))) { model.openDaily() }
-                    RailRow(icon: "calendar", title: "Calendar", isSelected: v.kind == "calendar") { model.openView(ViewRef(kind: "calendar")) }
+                    if shown("today") { RailRow(icon: "sun.max", title: "Today", isSelected: model.activeDocId != nil && model.library.docs[model.activeDocId!]?.dailyDate == model.todayKey,
+                            trailing: AnyView(Text("⇧⌘D").font(.system(size: DS.caption)).foregroundStyle(t.tertiary))) { model.openDaily() } }
+                    if shown("calendar") { RailRow(icon: "calendar", title: "Calendar", isSelected: v.kind == "calendar") { model.openView(ViewRef(kind: "calendar")) } }
                     let due = model.tasks(.today).count + model.tasks(.overdue).count
-                    RailRow(icon: "checklist", title: "Tasks", isSelected: v.kind == "tasks",
-                            trailing: due == 0 ? nil : AnyView(Text("\(due)").font(.system(size: DS.caption)).foregroundStyle(t.tertiary))) { model.openView(ViewRef(kind: "tasks")) }
+                    if shown("tasks") { RailRow(icon: "checklist", title: "Tasks", isSelected: v.kind == "tasks",
+                            trailing: due == 0 ? nil : AnyView(Text("\(due)").font(.system(size: DS.caption)).foregroundStyle(t.tertiary))) { model.openView(ViewRef(kind: "tasks")) } }
 
-                    SectionHeader(title: "Starred")
-                    let starred = model.library.liveDocs.filter(\.starred).sorted { $0.title < $1.title }
-                    if starred.isEmpty {
-                        Text("Star documents to keep them close").font(.system(size: DS.footnote)).italic().foregroundStyle(t.tertiary).padding(.horizontal, 10).padding(.vertical, 4)
-                    }
-                    ForEach(starred) { m in
-                        RailRow(icon: "star.fill", title: m.title, isSelected: model.activeDocId == m.id) { model.openView(.doc(m.id)) }
-                    }
-
-                    SectionHeader(title: "Folders", action: { renameText = "New Folder"; model.createFolder() }, actionLabel: "New folder (⇧⌘N)")
-                    RailRow(icon: "tray", title: "Unsorted", isSelected: v.kind == "unsorted") { model.openView(ViewRef(kind: "unsorted")) }
-                    ForEach(model.library.spaceFolders.sorted { $0.order < $1.order }) { f in
-                        folderRow(f)
-                    }
-
-                    RailRow(icon: "trash", title: "Recently Deleted", isSelected: v.kind == "trash",
-                            trailing: model.library.trashedDocs.isEmpty ? nil : AnyView(Text("\(model.library.trashedDocs.count)").font(.system(size: DS.caption)).foregroundStyle(t.tertiary))) {
-                        model.openView(ViewRef(kind: "trash"))
-                    }
-
-                    SectionHeader(title: "Tags")
-                    let tags = model.index.tagCounts(live: model.liveIds)
-                    if tags.isEmpty {
-                        Text("Type # and a word in any document").font(.system(size: DS.footnote)).italic().foregroundStyle(t.tertiary).padding(.horizontal, 10).padding(.vertical, 4)
-                    }
-                    ForEach(tags, id: \.tag) { tag in
-                        RailRow(icon: "number", title: tag.tag, isSelected: v.kind == "tag" && v.section?.lowercased() == tag.tag.lowercased(),
-                                trailing: AnyView(Text("\(tag.count)").font(.system(size: DS.caption)).foregroundStyle(t.tertiary)), tint: Color(hex: model.tagColor(tag.tag))) {
-                            model.openView(ViewRef(kind: "tag", section: tag.tag))
+                    ForEach(model.library.settings.sidebarOrder.filter(shown), id: \.self) { key in
+                        switch key {
+                        case "starred": starredSection(v)
+                        case "folders": foldersSection(v)
+                        default: tagsSection(v)
                         }
                     }
+                    if shown("trash") { trashRow(v) }
                 }.padding(.horizontal, 6)
             }
             Spacer(minLength: 0)
@@ -168,6 +147,48 @@ struct LibraryRail: View {
                 Spacer()
             }.padding(.horizontal, 10).padding(.bottom, 10)
         }
+    }
+
+    func shown(_ key: String) -> Bool { !model.library.settings.sidebarHidden.contains(key) }
+
+    @ViewBuilder func starredSection(_ v: ViewRef) -> some View {
+            SectionHeader(title: "Starred")
+            let starred = model.library.liveDocs.filter(\.starred).sorted { $0.title < $1.title }
+            if starred.isEmpty {
+                Text("Star documents to keep them close").font(.system(size: DS.footnote)).italic().foregroundStyle(t.tertiary).padding(.horizontal, 10).padding(.vertical, 4)
+            }
+            ForEach(starred) { m in
+                RailRow(icon: "star.fill", title: m.title, isSelected: model.activeDocId == m.id) { model.openView(.doc(m.id)) }
+            }
+    }
+
+    @ViewBuilder func foldersSection(_ v: ViewRef) -> some View {
+            SectionHeader(title: "Folders", action: { renameText = "New Folder"; model.createFolder() }, actionLabel: "New folder (⇧⌘N)")
+            RailRow(icon: "tray", title: "Unsorted", isSelected: v.kind == "unsorted") { model.openView(ViewRef(kind: "unsorted")) }
+            ForEach(model.library.spaceFolders.sorted { $0.order < $1.order }) { f in
+                folderRow(f)
+            }
+    }
+
+    @ViewBuilder func trashRow(_ v: ViewRef) -> some View {
+            RailRow(icon: "trash", title: "Recently Deleted", isSelected: v.kind == "trash",
+                    trailing: model.library.trashedDocs.isEmpty ? nil : AnyView(Text("\(model.library.trashedDocs.count)").font(.system(size: DS.caption)).foregroundStyle(t.tertiary))) {
+                model.openView(ViewRef(kind: "trash"))
+            }
+    }
+
+    @ViewBuilder func tagsSection(_ v: ViewRef) -> some View {
+            SectionHeader(title: "Tags")
+            let tags = model.index.tagCounts(live: model.liveIds)
+            if tags.isEmpty {
+                Text("Type # and a word in any document").font(.system(size: DS.footnote)).italic().foregroundStyle(t.tertiary).padding(.horizontal, 10).padding(.vertical, 4)
+            }
+            ForEach(tags, id: \.tag) { tag in
+                RailRow(icon: "number", title: tag.tag, isSelected: v.kind == "tag" && v.section?.lowercased() == tag.tag.lowercased(),
+                        trailing: AnyView(Text("\(tag.count)").font(.system(size: DS.caption)).foregroundStyle(t.tertiary)), tint: Color(hex: model.tagColor(tag.tag))) {
+                    model.openView(ViewRef(kind: "tag", section: tag.tag))
+                }
+            }
     }
 
     @ViewBuilder func folderRow(_ f: Folder) -> some View {
@@ -192,7 +213,7 @@ struct LibraryRail: View {
                 Button("Remove Folder…", role: .destructive) { model.requestDeleteFolder(f.id) }
             }
             if expanded {
-                ForEach(model.library.liveDocs.filter { $0.folderId == f.id && $0.parentDocId == nil }.sorted { $0.title < $1.title }) { m in
+                ForEach(model.docsByFolder[f.id] ?? []) { m in
                     RailRow(icon: "doc.text", title: m.title, isSelected: model.activeDocId == m.id, indent: 18) { model.openView(.doc(m.id)) }
                 }
             }
@@ -202,7 +223,7 @@ struct LibraryRail: View {
 
 /// Honest local-first card in place of an upgrade prompt.
 struct VaultCard: View {
-    @EnvironmentObject var model: AppModel
+    @Environment(AppModel.self) var model
     @Environment(\.tokens) var t
     var body: some View {
         VStack(alignment: .leading, spacing: 6) {
@@ -225,7 +246,7 @@ struct VaultCard: View {
 // MARK: - Document rail
 
 struct DocumentRail: View {
-    @EnvironmentObject var model: AppModel
+    @Environment(AppModel.self) var model
     @Environment(\.tokens) var t
     let docId: String
 
@@ -276,7 +297,7 @@ struct DocumentRail: View {
 }
 
 struct SaveBadge: View {
-    @EnvironmentObject var model: AppModel
+    @Environment(AppModel.self) var model
     @Environment(\.tokens) var t
     var body: some View {
         switch model.saveState {
@@ -300,7 +321,7 @@ struct EmptyHint: View {
 }
 
 struct OutlinePane: View {
-    @EnvironmentObject var model: AppModel
+    @Environment(AppModel.self) var model
     @Environment(\.tokens) var t
     let docId: String
     let content: Node
@@ -309,7 +330,7 @@ struct OutlinePane: View {
         PaneTitle(title: "Table of Contents")
         if items.isEmpty { EmptyHint(text: "Headings and pages in this document will appear here.") }
         ScrollView {
-            VStack(alignment: .leading, spacing: 1) {
+            LazyVStack(alignment: .leading, spacing: 1) {
                 ForEach(items) { it in
                     RailRow(icon: it.kind == "page" ? "doc.text" : "number", title: it.text, indent: CGFloat(it.kind == "page" ? 8 : (it.level - 1) * 12)) {
                         if it.kind == "page", let d = it.docId { model.openView(.doc(d), inPlace: true) }
@@ -322,7 +343,7 @@ struct OutlinePane: View {
 }
 
 struct TasksPane: View {
-    @EnvironmentObject var model: AppModel
+    @Environment(AppModel.self) var model
     @Environment(\.tokens) var t
     let docId: String
     let content: Node
@@ -334,7 +355,7 @@ struct TasksPane: View {
             Text("\(tasks.filter(\.checked).count) of \(tasks.count) done").font(.system(size: DS.footnote)).foregroundStyle(t.secondary).padding(.horizontal, 16).padding(.bottom, 4)
         }
         ScrollView {
-            VStack(alignment: .leading, spacing: 2) {
+            LazyVStack(alignment: .leading, spacing: 2) {
                 ForEach(tasks) { task in
                     HStack(alignment: .top, spacing: 8) {
                         Button { model.editors[docId]?.controller.toggleTask(blockId: task.id) } label: {
@@ -351,7 +372,7 @@ struct TasksPane: View {
 }
 
 struct AttachmentsPane: View {
-    @EnvironmentObject var model: AppModel
+    @Environment(AppModel.self) var model
     @Environment(\.tokens) var t
     let docId: String
     let content: Node
@@ -360,7 +381,7 @@ struct AttachmentsPane: View {
         PaneTitle(title: "Attachments")
         if items.isEmpty { EmptyHint(text: "Images, links and files added to this document will appear here.") }
         ScrollView {
-            VStack(alignment: .leading, spacing: 6) {
+            LazyVStack(alignment: .leading, spacing: 6) {
                 ForEach(items) { a in
                     HStack(spacing: 10) {
                         if a.kind == "image", let img = model.image(forAsset: a.ref) {
@@ -384,7 +405,7 @@ struct AttachmentsPane: View {
 }
 
 struct FindPane: View {
-    @EnvironmentObject var model: AppModel
+    @Environment(AppModel.self) var model
     @Environment(\.tokens) var t
     let docId: String
     @State private var replacement = ""
@@ -401,7 +422,7 @@ struct FindPane: View {
             }
             HStack(spacing: 6) {
                 Image(systemName: "magnifyingglass").foregroundStyle(t.secondary)
-                TextField("Text in page", text: $model.findQuery)
+                TextField("Text in page", text: Binding(get: { model.findQuery }, set: { model.findQuery = $0 }))
                     .textFieldStyle(.plain).focused($focused)
                     .onSubmit { c?.findStep(1) }
                     .accessibilityLabel("Find in page")
@@ -451,7 +472,7 @@ struct MiniPage: View {
 
 /// The Space name in the sidebar is a menu: switch Spaces, create one, or open its settings.
 struct SpaceSwitcher: View {
-    @EnvironmentObject var model: AppModel
+    @Environment(AppModel.self) var model
     @Environment(\.tokens) var t
     @State private var naming = false
     @State private var name = ""

@@ -106,7 +106,30 @@ public enum Migrations {
         return (try decode(value, as: Library.self), from != librarySchemaVersion, from)
     }
 
+    /// A current-schema document: the content tree built from JSONSerialization, the small rest
+    /// decoded as usual (so unknown top-level fields are still kept).
+    static func fastDecode(_ data: Data) -> DocFile? {
+        guard var obj = (try? JSONSerialization.jsonObject(with: data)) as? [String: Any],
+              (obj["schemaVersion"] as? NSNumber)?.intValue == docSchemaVersion,
+              let raw = obj["content"], let content = Node(foundation: raw) else { return nil }
+        obj["content"] = ["type": "doc"]
+        guard let rest = try? JSONSerialization.data(withJSONObject: obj),
+              var doc = try? JSONDecoder().decode(DocFile.self, from: rest) else { return nil }
+        doc.content = content
+        return doc
+    }
+
     public static func migrateDoc(_ data: Data) throws -> (doc: DocFile, migrated: Bool, from: Int) {
+        // Current documents decode straight into DocFile (it keeps unknown fields itself); only
+        // older or newer files take the generic route below.
+        if var doc = fastDecode(data) {
+            doc.content = ensureBlockIds(doc.content)
+            return (doc, false, docSchemaVersion)
+        }
+        if var doc = try? JSONDecoder().decode(DocFile.self, from: data), doc.schemaVersion == docSchemaVersion {
+            doc.content = ensureBlockIds(doc.content)
+            return (doc, false, docSchemaVersion)
+        }
         guard let raw = try JSONDecoder().decode(JSONValue.self, from: data).object else { throw MigrationError(message: "document is not an object") }
         let (value, from) = try run(raw, target: docSchemaVersion, steps: docSteps, what: "A document")
         var doc = try decode(value, as: DocFile.self)

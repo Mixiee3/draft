@@ -2,7 +2,7 @@ import SwiftUI
 import DraftCore
 
 struct LibraryView: View {
-    @EnvironmentObject var model: AppModel
+    @Environment(AppModel.self) var model
     @Environment(\.tokens) var t
     let view: ViewRef
     @FocusState private var searchFocused: Bool
@@ -25,11 +25,13 @@ struct LibraryView: View {
             if view.kind == "trash" {
                 TrashList(docs: docs)
             } else if view.kind == "shared" {
-                EmptyLibrary(message: "Draft is local-first: nothing is shared with you yet. Sharing and collaboration are planned for v2.0, after sync (v1.x).")
+                EmptyLibrary(symbol: "person.2", title: "Nothing shared", message: "Draft is local-first: nothing is shared with you yet. Sharing and collaboration are planned for v2.0, after sync (v1.x).")
             } else if !model.librarySearch.trimmingCharacters(in: .whitespaces).isEmpty && !docs.isEmpty {
                 SearchResults(hits: model.searchHits)
             } else if docs.isEmpty {
-                EmptyLibrary(message: searchErrorText.map { "\($0). Check the brackets and escapes, or turn off .* to search for the words." } ?? (!model.librarySearch.isEmpty ? "No documents match “\(model.librarySearch)”." :
+                EmptyLibrary(symbol: model.librarySearch.isEmpty ? (view.kind == "folder" ? "folder" : "doc.text") : "magnifyingglass",
+                             title: model.librarySearch.isEmpty ? "No documents yet" : "No matches",
+                             message: searchErrorText.map { "\($0). Check the brackets and escapes, or turn off .* to search for the words." } ?? (!model.librarySearch.isEmpty ? "No documents match “\(model.librarySearch)”." :
                                 view.kind == "unsorted" ? "Any documents you haven't moved into a folder will appear here." :
                                 view.kind == "folder" ? "This folder is empty. Press ⌘N to write something here." : "No documents yet. Press ⌘N to start writing."))
             } else {
@@ -52,17 +54,7 @@ struct LibraryView: View {
             if view.kind != "all" {
                 PillGroup { PillButton(symbol: "chevron.left", label: "Back") { model.goBack() } }
             }
-            PillGroup {
-                Menu {
-                    Button("New Document") { model.createDoc() }
-                    Button("From Template…") { model.templatePicker = true }
-                    Divider()
-                    Button("New Folder") { model.createFolder() }
-                } label: { Image(systemName: "plus").font(.system(size: DS.headline, weight: .semibold)).frame(width: 30, height: 30) }
-                .menuStyle(.borderlessButton).menuIndicator(.hidden).frame(width: 32, height: 30)
-                .foregroundStyle(t.pillText).tint(t.pillText)
-                .accessibilityLabel("Create")
-            }
+            PillGroup { PillButton(symbol: "plus", label: "New document (⌘N)") { model.createDoc() } }.tourAnchor(.newNote)
             Text(title).font(.system(size: DS.title3, weight: .semibold)).foregroundStyle(t.text)
             Spacer()
             if view.kind != "trash" && view.kind != "shared" {
@@ -72,7 +64,7 @@ struct LibraryView: View {
                 PillButton(symbol: "list.bullet", label: "List (⌃⌘3)", isActive: model.library.settings.libraryView == .list) { model.setSettings { $0.libraryView = .list } }
             }
             PillGroup {
-                Menu {
+                DraftIconMenu(symbol: "arrow.up.arrow.down", label: "Sort") {
                     Section("Sort By") {
                         ForEach([(SortKey.name, "Name"), (.viewedAt, "Last Viewed"), (.createdAt, "Date Created"), (.updatedAt, "Date Updated")], id: \.0) { k, label in
                             Button {
@@ -86,21 +78,20 @@ struct LibraryView: View {
                             }
                         }
                     }
-                } label: { Image(systemName: "arrow.up.arrow.down").frame(width: 30, height: 30) }
-                .menuStyle(.borderlessButton).menuIndicator(.hidden).frame(width: 32, height: 30).foregroundStyle(t.pillText).tint(t.pillText)
-                .accessibilityLabel("Sort")
+                }
             }
             }
             PillGroup {
-                Menu {
+                DraftIconMenu(symbol: "ellipsis", label: "More") {
+                    Button("New from Template…") { model.templatePicker = true }
+                    Button("New Folder") { model.createFolder() }
+                    Divider()
                     Button("Export All as Markdown…") { model.exportAll() }
                     Button("Import…") { model.chooseImport() }
                     Button("Show Data Folder in Finder") { model.revealVault() }
                     Divider()
                     Button("Stats") { model.openView(ViewRef(kind: "settings", section: "stats")) }
-                } label: { Image(systemName: "ellipsis").frame(width: 30, height: 30) }
-                .menuStyle(.borderlessButton).menuIndicator(.hidden).frame(width: 32, height: 30).foregroundStyle(t.pillText).tint(t.pillText)
-                .accessibilityLabel("More")
+                }
             }
             searchPill
         }
@@ -116,7 +107,7 @@ struct LibraryView: View {
         if model.librarySearchOpen {
             HStack(spacing: 6) {
                 Image(systemName: "magnifyingglass").foregroundStyle(t.pillText.opacity(0.7))
-                TextField(model.searchRegex ? "Regular expression" : "Words, \"a phrase\", -exclude", text: $model.librarySearch)
+                TextField(model.searchRegex ? "Regular expression" : "Words, \"a phrase\", -exclude", text: Binding(get: { model.librarySearch }, set: { model.librarySearch = $0 }))
                     .textFieldStyle(.plain).foregroundStyle(t.pillText).focused($searchFocused).frame(width: 220)
                     .onExitCommand { model.librarySearch = ""; model.librarySearchOpen = false }
                     .onSubmit { if let first = model.searchHits.first { model.openSearchResult(first.meta.id) } }
@@ -139,19 +130,12 @@ struct LibraryView: View {
     }
 }
 
+/// The quiet empty state for lists; skeleton bars read as "still loading".
 struct EmptyLibrary: View {
-    @Environment(\.tokens) var t
+    var symbol = "doc.text"
+    var title = "Nothing here yet"
     var message: String
-    var body: some View {
-        VStack(spacing: 10) {
-            Text(message).font(.system(size: DS.body)).foregroundStyle(t.secondary).multilineTextAlignment(.center)
-                .padding(14).frame(maxWidth: .infinity).background(RoundedRectangle(cornerRadius: DS.rCard).fill(t.hover))
-            ForEach(0..<6, id: \.self) { i in
-                RoundedRectangle(cornerRadius: DS.rCard).fill(t.hover.opacity(1 - Double(i) * 0.15)).frame(height: 48)
-            }
-            Spacer()
-        }.padding(.horizontal, 24).padding(.top, 6)
-    }
+    var body: some View { EmptyState(symbol: symbol, title: title, message: message) }
 }
 
 // MARK: - Cards
@@ -184,7 +168,7 @@ struct DocPreview: View {
 }
 
 struct DocCardMenu: ViewModifier {
-    @EnvironmentObject var model: AppModel
+    @Environment(AppModel.self) var model
     let meta: DocMeta
     func body(content: Content) -> some View {
         content
@@ -244,13 +228,11 @@ func dateBucket(_ ms: Double) -> String {
     if cal.isDateInToday(d) { return "Today" }
     if cal.isDateInYesterday(d) { return "Yesterday" }
     if let w = cal.dateInterval(of: .weekOfYear, for: Date()), w.contains(d) { return "This Week" }
-    let f = DateFormatter()
-    f.dateFormat = cal.isDate(d, equalTo: Date(), toGranularity: .year) ? "LLLL" : "yyyy"
-    return f.string(from: d)
+    return (cal.isDate(d, equalTo: Date(), toGranularity: .year) ? monthFormatter : yearFormatter).string(from: d)
 }
 
 struct GridLayout: View {
-    @EnvironmentObject var model: AppModel
+    @Environment(AppModel.self) var model
     @Environment(\.tokens) var t
     let docs: [DocMeta]
     var body: some View {
@@ -269,6 +251,9 @@ struct GridLayout: View {
     }
 }
 
+private let monthFormatter: DateFormatter = { let f = DateFormatter(); f.dateFormat = "LLLL"; return f }()
+private let yearFormatter: DateFormatter = { let f = DateFormatter(); f.dateFormat = "yyyy"; return f }()
+
 func groupByDate(_ docs: [DocMeta], key: SortKey) -> [(String, [DocMeta])] {
     var order: [String] = []
     var map: [String: [DocMeta]] = [:]
@@ -282,7 +267,7 @@ func groupByDate(_ docs: [DocMeta], key: SortKey) -> [(String, [DocMeta])] {
 }
 
 struct ListLayout: View {
-    @EnvironmentObject var model: AppModel
+    @Environment(AppModel.self) var model
     @Environment(\.tokens) var t
     let docs: [DocMeta]
     let width: CGFloat
@@ -325,7 +310,7 @@ struct ListLayout: View {
 }
 
 struct ListRow: View {
-    @EnvironmentObject var model: AppModel
+    @Environment(AppModel.self) var model
     @Environment(\.tokens) var t
     let meta: DocMeta
     var compact: Bool
@@ -360,7 +345,7 @@ struct ListRow: View {
 
 /// Recently Deleted: restore or delete permanently. Items are purged after 30 days.
 struct TrashList: View {
-    @EnvironmentObject var model: AppModel
+    @Environment(AppModel.self) var model
     @Environment(\.tokens) var t
     let docs: [DocMeta]
     var body: some View {
@@ -372,7 +357,7 @@ struct TrashList: View {
                 Button("Empty Recently Deleted…") { model.requestDeleteForever(docs.map(\.id)) }.disabled(docs.isEmpty)
             }.padding(.horizontal, 18)
             if docs.isEmpty {
-                EmptyLibrary(message: "Nothing here. Deleted documents and pages can be restored from this list.")
+                EmptyLibrary(symbol: "trash", title: "Recently Deleted is empty", message: "Deleted documents and pages can be restored from this list.")
             }
             ScrollView {
                 VStack(spacing: 2) {
@@ -399,7 +384,7 @@ struct TrashList: View {
 
 /// One row per matching document: title, location, match count and a highlighted snippet.
 struct SearchResults: View {
-    @EnvironmentObject var model: AppModel
+    @Environment(AppModel.self) var model
     @Environment(\.tokens) var t
     let hits: [SearchHit]
     var body: some View {

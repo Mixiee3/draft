@@ -62,7 +62,7 @@ extension AppModel {
 /// Browse built-in and saved styles; the selected one is previewed with this document's title
 /// before it is applied.
 struct StyleGallery: View {
-    @EnvironmentObject var model: AppModel
+    @Environment(AppModel.self) var model
     @Environment(\.tokens) var t
     let docId: String
     @State private var query = ""
@@ -104,7 +104,7 @@ struct StyleGallery: View {
             }
             .padding(18)
             .frame(maxWidth: 760, maxHeight: 640)
-            .background(PanelBackground())
+            .surface(.floating)
             .padding(30)
         }
         .onExitCommand { model.styleGallery = false }
@@ -189,16 +189,18 @@ extension AppModel {
         guard id != library.space.id, let target = library.spaces.first(where: { $0.id == id }) else { return }
         flushAll()
         if let i = library.spaces.firstIndex(where: { $0.id == library.space.id }) {
-            library.spaces[i].tabs = library.tabs
-            library.spaces[i].activeTabId = library.activeTabId
+            library.spaces[i].tabs = tabs
+            library.spaces[i].activeTabId = activeTabId
             library.spaces[i].name = library.space.name
+            library.spaces[i].settings = library.settings.spaceScoped
         }
         library.space = target
-        var tabs = target.tabs ?? []
-        tabs.removeAll { $0.view.kind == "doc" && library.docs[$0.view.docId ?? ""].map { library.inSpace($0) && $0.deletedAt == nil } != true }
-        if tabs.first?.view.kind != "all" { tabs.insert(Tab(view: .all), at: 0) }
-        library.tabs = tabs
-        library.activeTabId = tabs.contains { $0.id == target.activeTabId } ? target.activeTabId : tabs[0].id
+        if let own = target.settings { setSettings { $0.apply(own) } }
+        var next = target.tabs ?? []
+        next.removeAll { $0.view.kind == "doc" && library.docs[$0.view.docId ?? ""].map { library.inSpace($0) && $0.deletedAt == nil } != true }
+        if next.first?.view.kind != "all" { next.insert(Tab(view: .all), at: 0) }
+        tabs = next
+        activeTabId = next.contains { $0.id == target.activeTabId } ? target.activeTabId : next[0].id
         panel = nil
         librarySearch = ""
         scheduleLibrarySave()

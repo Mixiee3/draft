@@ -1,0 +1,43 @@
+== assistant-open-close (34.6 fps)
+t=0.37s frames=1 (~29 ms) peak=6.0% share-of-change-in-first-frame=100%
+t=0.43s frames=2 (~58 ms) peak=9.1% share-of-change-in-first-frame=70%
+t=0.52s frames=4 (~115 ms) peak=2.8% share-of-change-in-first-frame=58%
+t=1.47s frames=9 (~260 ms) peak=7.6% share-of-change-in-first-frame=22%
+== assistant-states (59.7 fps)
+t=0.03s frames=1 (~17 ms) peak=1.4% share-of-change-in-first-frame=100%
+== block-drag (38.8 fps)
+t=0.05s frames=10 (~257 ms) peak=6.7% share-of-change-in-first-frame=28%
+== enter-editor-from-library (36.6 fps)
+t=0.25s frames=1 (~27 ms) peak=13.0% share-of-change-in-first-frame=100%
+== library-hover (30.9 fps)
+
+== new-note (36.9 fps)
+t=0.32s frames=1 (~27 ms) peak=13.2% share-of-change-in-first-frame=100%
+== panel-open-close (38.7 fps)
+t=0.03s frames=1 (~26 ms) peak=0.2% share-of-change-in-first-frame=100%
+t=0.39s frames=7 (~181 ms) peak=5.7% share-of-change-in-first-frame=13%
+t=0.59s frames=1 (~26 ms) peak=0.8% share-of-change-in-first-frame=100%
+t=0.65s frames=1 (~26 ms) peak=0.2% share-of-change-in-first-frame=100%
+t=1.29s frames=1 (~26 ms) peak=15.4% share-of-change-in-first-frame=100%
+== panel-switch (36.0 fps)
+t=0.00s frames=1 (~28 ms) peak=1.4% share-of-change-in-first-frame=100%
+t=0.08s frames=2 (~55 ms) peak=4.2% share-of-change-in-first-frame=47%
+t=0.17s frames=3 (~83 ms) peak=3.9% share-of-change-in-first-frame=71%
+t=0.28s frames=1 (~28 ms) peak=0.4% share-of-change-in-first-frame=100%
+t=0.64s frames=9 (~250 ms) peak=5.7% share-of-change-in-first-frame=11%
+t=0.92s frames=1 (~28 ms) peak=0.8% share-of-change-in-first-frame=100%
+t=0.97s frames=1 (~28 ms) peak=0.3% share-of-change-in-first-frame=100%
+t=1.28s frames=2 (~55 ms) peak=5.2% share-of-change-in-first-frame=26%
+t=1.36s frames=6 (~166 ms) peak=3.5% share-of-change-in-first-frame=23%
+t=1.55s frames=1 (~28 ms) peak=0.7% share-of-change-in-first-frame=100%
+== selection-toolbar (39.5 fps)
+t=0.03s frames=1 (~25 ms) peak=15.5% share-of-change-in-first-frame=100%
+== space-switch (38.8 fps)
+t=0.31s frames=1 (~26 ms) peak=54.3% share-of-change-in-first-frame=100%
+t=1.31s frames=1 (~26 ms) peak=54.4% share-of-change-in-first-frame=100%
+== tab-switch (37.9 fps)
+t=0.03s frames=1 (~26 ms) peak=0.4% share-of-change-in-first-frame=100%
+t=0.47s frames=1 (~26 ms) peak=0.4% share-of-change-in-first-frame=100%
+t=0.87s frames=1 (~26 ms) peak=0.4% share-of-change-in-first-frame=100%
+t=1.29s frames=1 (~26 ms) peak=0.4% share-of-change-in-first-frame=100%
+t=1.69s frames=1 (~26 ms) peak=0.4% share-of-change-in-first-frame=100%

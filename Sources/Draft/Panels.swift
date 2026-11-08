@@ -6,7 +6,7 @@ import DraftEditor
 // MARK: - Aa Format panel (block structure + marks; never page appearance)
 
 struct FormatPanel: View {
-    @EnvironmentObject var model: AppModel
+    @Environment(AppModel.self) var model
     @Environment(\.tokens) var t
     let docId: String
 
@@ -141,7 +141,7 @@ let solidBackdrops = ["#e9e6df", "#d9dde3", "#cfe3e9", "#e6d9f2", "#f5d9cf", "#d
 let gradientBackdrops: [(String, String)] = [("#ffd36e", "#ff8a5c"), ("#8fd3e6", "#5b6cf0"), ("#cfe7c4", "#4f8a44"), ("#f7c6d9", "#9d7bd8"), ("#e9e6df", "#b9b2a3"), ("#151a33", "#5b4b9a")]
 
 struct StylePanel: View {
-    @EnvironmentObject var model: AppModel
+    @Environment(AppModel.self) var model
     @Environment(\.tokens) var t
     let docId: String
     @State private var backdropOpen = false
@@ -179,7 +179,7 @@ struct StylePanel: View {
                             BackdropView(backdrop: tok.backdrop).frame(width: 34, height: 24).clipShape(RoundedRectangle(cornerRadius: DS.rControl))
                                 .overlay(RoundedRectangle(cornerRadius: DS.rControl).strokeBorder(t.line, lineWidth: 1))
                         }.buttonStyle(.plain).accessibilityLabel("Backdrop")
-                        .popover(isPresented: $backdropOpen, arrowEdge: .leading) { BackdropPicker(docId: docId).environmentObject(model).environment(\.tokens, t) }
+                        .popover(isPresented: $backdropOpen, arrowEdge: .leading) { BackdropPicker(docId: docId).environment(model).environment(\.tokens, t) }
                     }
                     row("Document Color") {
                         ColorSwatchButton(hex: tok.pageColor, label: "Document color", isPresented: $pageOpen)
@@ -295,7 +295,7 @@ struct StylePreviewCard: View {
 }
 
 struct BackdropPicker: View {
-    @EnvironmentObject var model: AppModel
+    @Environment(AppModel.self) var model
     @Environment(\.tokens) var t
     let docId: String
     @State private var tab = "image"
@@ -377,7 +377,7 @@ struct BackdropPicker: View {
 // MARK: - Info panel
 
 struct InfoPanel: View {
-    @EnvironmentObject var model: AppModel
+    @Environment(AppModel.self) var model
     @Environment(\.tokens) var t
     let docId: String
     @Binding var tab: String
@@ -400,17 +400,22 @@ struct InfoPanel: View {
                         PanelSection(title: "Properties") {
                             prop("calendar", "Created", relative(m.createdAt))
                             prop("clock", "Updated", relative(m.updatedAt))
-                            prop("text.word.spacing", "Words", "\(m.words)")
-                            prop("square.stack", "Blocks", "\(m.blocks)")
+                            let stats = model.liveStats(docId)
+                            prop("text.word.spacing", "Words", "\(stats?.words ?? m.words)")
+                            prop("square.stack", "Blocks", "\(stats?.blocks ?? m.blocks)")
                             prop("folder", "Location", model.folderName(m.folderId))
                         }
                         PanelSection(title: "Actions") {
-                            action("play.rectangle", "Present — planned", enabled: false) {}
+                            action("play.rectangle", "Present") { model.present(docId) }
                             Menu {
                                 Button("Unsorted") { model.move(docId, to: nil) }
                                 ForEach(model.library.spaceFolders) { f in Button(f.name) { model.move(docId, to: f.id) } }
-                            } label: { Label("Move to…", systemImage: "arrow.turn.up.right") }
-                            .menuStyle(.borderlessButton).padding(.horizontal, 10).frame(height: 30)
+                            } label: {
+                                HStack { Image(systemName: "arrow.turn.up.right").frame(width: 18); Text("Move to…"); Spacer() }
+                                    .font(.system(size: DS.body)).padding(.horizontal, 10).frame(height: 30)
+                                    .background(RoundedRectangle(cornerRadius: DS.rControl).fill(t.hover)).contentShape(Rectangle())
+                            }
+                            .menuStyle(.button).buttonStyle(.plain).menuIndicator(.hidden).foregroundStyle(t.text)
                             action(m.starred ? "star.slash" : "star", m.starred ? "Unstar Document" : "Star Document") { model.toggleStar(docId) }
                             action("plus.square.on.square", "Duplicate") { model.duplicate(docId) }
                             action("doc.badge.gearshape", model.library.docs[docId]?.template != nil ? "This is a template" : "Save as Template…", enabled: model.library.docs[docId]?.template == nil) { templateCategory = "General"; savingTemplate = true }
@@ -444,7 +449,7 @@ struct InfoPanel: View {
 }
 
 struct ActionsList: View {
-    @EnvironmentObject var model: AppModel
+    @Environment(AppModel.self) var model
     @Environment(\.tokens) var t
     let docId: String
 
@@ -483,7 +488,7 @@ struct ActionsList: View {
 // MARK: - Share panel
 
 struct SharePanel: View {
-    @EnvironmentObject var model: AppModel
+    @Environment(AppModel.self) var model
     @Environment(\.tokens) var t
     let docId: String
     @State private var tab = "export"
@@ -491,7 +496,7 @@ struct SharePanel: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
-            DraftSegmented("Share", selection: $tab, options: [("share", "Share"), ("publish", "Publish"), ("export", "Export As"), ("transfer", "Transfer")], stretch: true)
+            DraftSegmented("Share", selection: $tab, options: [("share", "Share"), ("publish", "Publish"), ("export", "Export"), ("transfer", "Transfer")], stretch: true)
             switch tab {
             case "share":
                 card(icon: "person.2", title: "Local-only for now", text: "Draft keeps this document on your Mac. Inviting collaborators needs sync, which is planned for v1.x, and real-time collaboration for v2.0.")
@@ -539,7 +544,7 @@ struct SharePanel: View {
 
 /// Automatic local backups of one document (taken at most every 10 minutes while editing).
 struct BackupsList: View {
-    @EnvironmentObject var model: AppModel
+    @Environment(AppModel.self) var model
     @Environment(\.tokens) var t
     let docId: String
     var back: () -> Void
@@ -572,7 +577,7 @@ struct BackupsList: View {
 /// Online image search for backdrops: only when turned on in Settings, and it asks before the
 /// first request of each session.
 struct OnlineImagePicker: View {
-    @EnvironmentObject var model: AppModel
+    @Environment(AppModel.self) var model
     var choose: (String) -> Void
     @State private var query = ""
     @State private var results: [WebImage] = []

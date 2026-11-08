@@ -21,7 +21,19 @@ public final class Vault: @unchecked Sendable {
         "image/png": "png", "image/jpeg": "jpg", "image/gif": "gif", "image/webp": "webp", "image/heic": "heic", "image/tiff": "tiff",
     ]
 
-    public init(dir: URL) { self.dir = dir }
+    public init(dir: URL) { self.dir = dir; writer.setSpecific(key: Vault.onWriter, value: true) }
+
+    private let writer = DispatchQueue(label: "draft.vault.writer", qos: .userInitiated)
+    private static let onWriter = DispatchSpecificKey<Bool>()
+
+    /// Runs a write on the vault's serial queue, so encoding and disk I/O stay off the main thread.
+    /// Writes keep their order; `failed` runs on the main queue.
+    public func enqueue(_ work: @escaping @Sendable () throws -> Void, failed: @escaping @Sendable (Error) -> Void) {
+        writer.async { do { try work() } catch { DispatchQueue.main.async { failed(error) } } }
+    }
+
+    /// Waits for queued writes. Every read calls it, so a read never sees an older file.
+    public func drain() { if DispatchQueue.getSpecific(key: Vault.onWriter) != true { writer.sync {} } }
 
     public static func defaultURL() -> URL {
         if let env = ProcessInfo.processInfo.environment["DRAFT_DATA_DIR"], !env.isEmpty { return URL(fileURLWithPath: env) }
@@ -62,6 +74,7 @@ public final class Vault: @unchecked Sendable {
 
     /// Returns nil on first run (no library yet).
     public func loadLibrary() throws -> Library? {
+        drain()
         guard fm.fileExists(atPath: libraryURL.path) else { return nil }
         let data = try Data(contentsOf: libraryURL)
         do {
@@ -97,6 +110,7 @@ public final class Vault: @unchecked Sendable {
 
     /// The derived link/tag/task index; nil when missing or unreadable (it is then rebuilt).
     public func loadIndex() -> VaultIndex? {
+        drain()
         guard let data = try? Data(contentsOf: indexURL) else { return nil }
         return try? JSONDecoder().decode(VaultIndex.self, from: data)
     }
@@ -107,6 +121,7 @@ public final class Vault: @unchecked Sendable {
     }
 
     public func loadDoc(_ id: String) throws -> DocFile? {
+        drain()
         let url = try docURL(id)
         guard fm.fileExists(atPath: url.path) else { return nil }
         let data = try Data(contentsOf: url)
@@ -121,6 +136,14 @@ public final class Vault: @unchecked Sendable {
             readOnlyReason = e.localizedDescription
             throw e
         }
+    }
+
+    /// A document's look without decoding its content (galleries and page cards need only the cover).
+    public func peekAppearance(_ id: String) -> DocumentAppearance? {
+        struct Look: Decodable { var appearance: DocumentAppearance }
+        drain()
+        guard let url = try? docURL(id), let data = try? Data(contentsOf: url) else { return nil }
+        return (try? JSONDecoder().decode(Look.self, from: data))?.appearance
     }
 
     public func saveDoc(_ doc: DocFile) throws {

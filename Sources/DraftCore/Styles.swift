@@ -52,6 +52,18 @@ public enum Styles {
     }
 
     /// Style tokens with the document's sparse overrides applied.
+    /// What the editor shows: an untouched Paper page turns dark with a dark app. The file keeps
+    /// the light style, so exports and other machines are unaffected.
+    public static func forDisplay(_ a: DocumentAppearance, dark: Bool) -> StyleTokens {
+        var t = resolve(a)
+        guard dark, a.styleId == "paper", a.overrides.pageColor == nil, a.overrides.textColor == nil, a.overrides.backdrop == nil else { return t }
+        t.backdrop = Backdrop(kind: "solid", color: "#19191b")
+        t.pageColor = "#232325"
+        t.textColor = "#e7e4de"
+        t.shellTint = "#1f1f21"
+        return t
+    }
+
     public static func resolve(_ a: DocumentAppearance) -> StyleTokens {
         var t = style(a.styleId).tokens
         let o = a.overrides

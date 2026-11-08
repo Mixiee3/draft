@@ -3,7 +3,7 @@ import EventKit
 import DraftCore
 
 struct PlannerHeader<Trailing: View>: View {
-    @EnvironmentObject var model: AppModel
+    @Environment(AppModel.self) var model
     @Environment(\.tokens) var t
     var title: String
     var symbol: String
@@ -23,7 +23,7 @@ struct PlannerHeader<Trailing: View>: View {
 
 /// One task from any document: the checkbox changes the source block (one undo step).
 struct TaskRow: View {
-    @EnvironmentObject var model: AppModel
+    @Environment(AppModel.self) var model
     @Environment(\.tokens) var t
     @Environment(\.undoManager) var undo
     let doc: String
@@ -63,7 +63,7 @@ struct TaskRow: View {
 }
 
 struct TasksView: View {
-    @EnvironmentObject var model: AppModel
+    @Environment(AppModel.self) var model
     @Environment(\.tokens) var t
     @State private var bucket: TaskBucket
     init(section: String?) { _bucket = State(initialValue: TaskBucket(rawValue: section ?? "") ?? .today) }
@@ -79,7 +79,7 @@ struct TasksView: View {
             }).padding(.horizontal, 18).padding(.bottom, 10).frame(maxWidth: .infinity, alignment: .leading)
             .accessibilityLabel("Task list")
             if rows.isEmpty {
-                EmptyLibrary(message: emptyText)
+                EmptyLibrary(symbol: "checklist", title: "No tasks", message: emptyText)
             } else {
                 ScrollView {
                     LazyVStack(spacing: 6) { ForEach(rows, id: \.task.block) { TaskRow(doc: $0.doc, task: $0.task) } }
@@ -102,7 +102,7 @@ struct TasksView: View {
 }
 
 struct CalendarView: View {
-    @EnvironmentObject var model: AppModel
+    @Environment(AppModel.self) var model
     @Environment(\.tokens) var t
     @ObservedObject var events = CalendarEvents.shared
     let focus: String?
@@ -139,7 +139,7 @@ struct CalendarView: View {
 }
 
 struct DayCard: View {
-    @EnvironmentObject var model: AppModel
+    @Environment(AppModel.self) var model
     @Environment(\.tokens) var t
     @ObservedObject var events = CalendarEvents.shared
     let day: String
@@ -149,7 +149,7 @@ struct DayCard: View {
 
     var body: some View {
         let today = model.todayKey
-        let note = model.library.liveDocs.first { $0.dailyDate == day }
+        let note = model.dailyNotes[day]
         let tasks = model.tasks(on: day).filter { showCompleted || !$0.task.checked }
         let evs = model.settings.calendarEvents ? events.events(on: day) : []
         VStack(alignment: .leading, spacing: 8) {
@@ -196,7 +196,7 @@ struct DayCard: View {
 }
 
 struct TagView: View {
-    @EnvironmentObject var model: AppModel
+    @Environment(AppModel.self) var model
     @Environment(\.tokens) var t
     let tag: String
 
@@ -216,7 +216,7 @@ struct TagView: View {
                 }
             }
             if hits.isEmpty {
-                EmptyLibrary(message: "No blocks use #\(tag) any more.")
+                EmptyLibrary(symbol: "number", title: "No tagged blocks", message: "No blocks use #\(tag) any more.")
             } else {
                 ScrollView {
                     LazyVStack(alignment: .leading, spacing: 14) {
@@ -242,7 +242,7 @@ struct TagView: View {
 }
 
 struct BacklinksPane: View {
-    @EnvironmentObject var model: AppModel
+    @Environment(AppModel.self) var model
     @Environment(\.tokens) var t
     let docId: String
     var body: some View {
@@ -275,7 +275,7 @@ struct BacklinksPane: View {
 
 /// Due date and optional time for a task; writes a date chip into the source block.
 struct DuePicker: View {
-    @EnvironmentObject var model: AppModel
+    @Environment(AppModel.self) var model
     @Environment(\.undoManager) var undo
     @Environment(\.dismiss) var dismiss
     let doc: String

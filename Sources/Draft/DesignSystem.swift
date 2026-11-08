@@ -49,19 +49,12 @@ enum Motion {
 
     static func reduced(_ setting: Bool) -> Bool { setting || systemReduce }
 
-    static func standard(_ setting: Bool) -> Animation? { reduced(setting) ? nil : .easeOut(duration: DS.standard) }
-    static func quick(_ setting: Bool) -> Animation? { reduced(setting) ? nil : .easeOut(duration: DS.quick) }
-    static func panel(_ setting: Bool) -> Animation? { reduced(setting) ? nil : .spring(response: DS.panel + 0.08, dampingFraction: 0.9) }
-}
-
-extension View {
-    func floatingSurface(_ t: Tokens, radius: CGFloat = DS.rPanel) -> some View {
-        let s = DS.floatingShadow(dark: t.dark)
-        return self
-            .background(RoundedRectangle(cornerRadius: radius, style: .continuous).fill(t.dark ? Color(hex: "#2b2b2d") : Color(hex: "#fbfaf8")))
-            .overlay(RoundedRectangle(cornerRadius: radius, style: .continuous).strokeBorder(t.dark ? Color.white.opacity(0.08) : Color.black.opacity(0.08), lineWidth: 0.5))
-            .shadow(color: s.0, radius: s.1, y: s.2)
-    }
+    // Shared timing (see docs/UI_AUDIT_V06.md §4.2). Reduce Motion keeps short fades, never movement.
+    static func standard(_ setting: Bool) -> Animation { reduced(setting) ? .easeOut(duration: 0.1) : .easeOut(duration: DS.standard) }
+    static func quick(_ setting: Bool) -> Animation { reduced(setting) ? .easeOut(duration: 0.08) : .timingCurve(0.2, 0, 0, 1, duration: DS.quick) }
+    static func panel(_ setting: Bool) -> Animation { reduced(setting) ? .easeOut(duration: 0.12) : .spring(response: 0.26, dampingFraction: 0.9) }
+    static func navigate(_ setting: Bool) -> Animation { reduced(setting) ? .easeOut(duration: 0.1) : .timingCurve(0.2, 0, 0, 1, duration: 0.18) }
+    static func emphasis(_ setting: Bool) -> Animation { reduced(setting) ? .easeOut(duration: 0.15) : .spring(response: 0.34, dampingFraction: 0.86) }
 }
 
 /// Draft's segmented control: a quiet track with the chosen segment raised, in place of the

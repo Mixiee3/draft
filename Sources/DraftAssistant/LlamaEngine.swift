@@ -16,6 +16,8 @@ public struct GenerationStats: Sendable, Equatable {
     public var firstTokenSeconds = 0.0
     public var tokensPerSecond = 0.0
     public var cancelled = false
+    /// Prompt tokens taken from the previous turn's saved state instead of being read again.
+    public var reusedTokens = 0
     public init() {}
 }
 
@@ -50,6 +52,8 @@ public final class LlamaEngine: TextGenerator {
     private let vocab: OpaquePointer
     private let ctx: OpaquePointer
     public let contextTokens: Int
+    /// The last prompt's tokens and the model state right after reading them.
+    private var promptState: (tokens: [llama_token], data: [UInt8])?
     private let template: String?
 
     public init(path: URL, minimumMemory: UInt64, contextTokens: Int = 8192) throws {
@@ -81,38 +85,60 @@ public final class LlamaEngine: TextGenerator {
     }
 
     /// ChatML as the model's own template expects; built directly when llama.cpp can't apply it.
-    func format(_ turns: [ChatTurn]) -> String {
+    func format(_ turns: [ChatTurn], openAnswer: Bool = true) -> String {
         if let template {
             var cStrings: [(UnsafeMutablePointer<CChar>, UnsafeMutablePointer<CChar>)] = turns.map { (strdup($0.role)!, strdup($0.text)!) }
             defer { cStrings.forEach { free($0.0); free($0.1) } }
             let msgs = cStrings.map { llama_chat_message(role: $0.0, content: $0.1) }
             var buf = [CChar](repeating: 0, count: turns.reduce(256) { $0 + $1.text.utf8.count * 2 })
-            var n = llama_chat_apply_template(template, msgs, msgs.count, true, &buf, Int32(buf.count))
-            if n > buf.count { buf = [CChar](repeating: 0, count: Int(n) + 1); n = llama_chat_apply_template(template, msgs, msgs.count, true, &buf, Int32(buf.count)) }
+            var n = llama_chat_apply_template(template, msgs, msgs.count, openAnswer, &buf, Int32(buf.count))
+            if n > buf.count { buf = [CChar](repeating: 0, count: Int(n) + 1); n = llama_chat_apply_template(template, msgs, msgs.count, openAnswer, &buf, Int32(buf.count)) }
             if n > 0 { return String(decoding: buf.prefix(Int(n)).map { UInt8(bitPattern: $0) }, as: UTF8.self) }
         }
-        return "<|startoftext|>" + turns.map { "<|im_start|>\($0.role)\n\($0.text)<|im_end|>\n" }.joined() + "<|im_start|>assistant\n"
+        return "<|startoftext|>" + turns.map { "<|im_start|>\($0.role)\n\($0.text)<|im_end|>\n" }.joined() + (openAnswer ? "<|im_start|>assistant\n" : "")
     }
+
+    private func saveState(_ prefix: [llama_token]) {
+        let size = llama_state_seq_get_size(ctx, 0)
+        var data = [UInt8](repeating: 0, count: size)
+        if size > 0, data.withUnsafeMutableBufferPointer({ llama_state_seq_get_data(ctx, $0.baseAddress, size, 0) }) == size { promptState = (prefix, data) }
+    }
+
+    func promptTokens(_ text: String) -> [llama_token] { tokenize(text.hasPrefix("<|startoftext|>") ? text : "<|startoftext|>" + text, special: true) }
 
     public func generate(_ turns: [ChatTurn], maxTokens: Int, cancel: CancelFlag, onPiece: (String) -> Void) throws -> GenerationStats {
         var stats = GenerationStats()
-        let text = format(turns)
-        var tokens = tokenize(text.hasPrefix("<|startoftext|>") ? text : "<|startoftext|>" + text, special: true)
+        var tokens = promptTokens(format(turns))
+        // The system turn (instructions and, for a document, its text) is where follow-ups agree.
+        let fixed = turns.count > 1 ? promptTokens(format([turns[0]], openAnswer: false)) : []
+        let checkpoint = tokens.starts(with: fixed) ? fixed.count : 0
         stats.promptTokens = tokens.count
         guard tokens.count + 16 < contextTokens else { throw EngineError.promptTooLong(tokens: tokens.count, limit: contextTokens) }
         llama_memory_clear(llama_get_memory(ctx), true)
+        // A follow-up about the same text starts with the same system turn: restore the state saved
+        // after it and read only what is new. (A snapshot rather than trimming the cache: LFM2's
+        // convolution layers keep recurrent state that can't be cut back to an earlier position.)
+        var i = 0
+        if let snap = promptState, tokens.count > snap.tokens.count, tokens.starts(with: snap.tokens), snap.tokens.count == checkpoint,
+           snap.data.withUnsafeBufferPointer({ llama_state_seq_set_data(ctx, $0.baseAddress, $0.count, 0) }) == snap.data.count {
+            i = snap.tokens.count
+            stats.reusedTokens = i
+        } else {
+            llama_memory_clear(llama_get_memory(ctx), true)
+        }
+        if i == 0 { promptState = nil }
         let flag = Unmanaged.passUnretained(cancel).toOpaque()
         llama_set_abort_callback(ctx, { data in Unmanaged<CancelFlag>.fromOpaque(data!).takeUnretainedValue().isCancelled }, flag)
         defer { llama_set_abort_callback(ctx, nil, nil) }
 
         let start = Date()
-        var i = 0
         while i < tokens.count {
-            let end = min(tokens.count, i + 512)
+            let end = min(tokens.count, i + 512, i < checkpoint ? checkpoint : Int.max)
             let r = tokens.withUnsafeMutableBufferPointer { llama_decode(ctx, llama_batch_get_one($0.baseAddress! + i, Int32(end - i))) }
             if cancel.isCancelled { stats.cancelled = true; return stats }
             guard r == 0 else { throw EngineError.decodeFailed(r) }
             i = end
+            if i == checkpoint, checkpoint > 0, stats.reusedTokens == 0 { saveState(Array(tokens.prefix(checkpoint))) }
         }
 
         let chain = llama_sampler_chain_init(llama_sampler_chain_default_params())!

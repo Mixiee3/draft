@@ -1,3 +1,4 @@
+import Speech
 import AppKit
 import SwiftUI
 import DraftCore
@@ -92,6 +93,54 @@ extension Automation {
         while a.isRunning && Date().timeIntervalSince(t0) < timeout { await wait(0.2) }
     }
 
+    /// `assistant-quality`: the fixed note benchmark (Tests/Fixtures/assistant-quality.json) run
+    /// through the real Space retrieval and Assistant, scored on expected facts and citations.
+    static func assistantQuality() async {
+        guard let path = ProcessInfo.processInfo.environment["DRAFT_QUALITY_FIXTURE"], let data = FileManager.default.contents(atPath: path),
+              let fx = try? JSONSerialization.jsonObject(with: data) as? [String: Any], let notes = fx["notes"] as? [[String: String]],
+              let questions = fx["questions"] as? [[String: Any]] else { return }
+        var titleToId: [String: String] = [:]
+        for n in notes {
+            let id = newId("d_")
+            var doc = DocFile.empty(id: id, title: n["title"]!)
+            doc.content = ensureBlockIds(Node("doc", content: MarkdownImport.blocks(n["text"]!)))
+            try? m.vault.saveDoc(doc)
+            var meta = DocMeta(id: id, title: n["title"]!); meta.applyDerived(from: doc); meta.spaceId = m.library.space.id
+            m.library.docs[id] = meta
+            titleToId[n["title"]!] = id
+        }
+        m.rebuildIndex()
+        let a = m.assistant
+        a.scope = .space
+        var rows: [[String: Any]] = [], passed = 0
+        func norm(_ s: String) -> String { s.lowercased().replacingOccurrences(of: ",", with: "").replacingOccurrences(of: "\u{2009}", with: "") }
+        for q in questions {
+            a.draft = q["q"] as! String
+            a.send(); await untilIdle(a, timeout: 300)
+            let msg = a.chat.messages.last
+            let text = msg?.text ?? ""
+            var ok: Bool
+            var row: [String: Any] = ["q": q["q"]!, "answer": text, "seconds": a.lastStats.map { $0.firstTokenSeconds } ?? -1]
+            if q["notInNotes"] as? Bool == true {
+                let t = text.lowercased()
+                ok = ["could not find", "couldn't find", "not in these notes", "not mentioned", "no information", "don't contain", "do not contain", "doesn't mention", "does not mention", "not found"].contains { t.contains($0) }
+            } else {
+                let facts = q["facts"] as! [String]
+                let hasFacts = facts.allSatisfy { norm(text).contains(norm($0)) }
+                let want = titleToId[notes[(q["source"] as! Int) - 1]["title"]!]
+                let cited = (msg?.sources ?? []).contains { $0.docId == want }
+                row["facts"] = hasFacts; row["cited"] = cited
+                ok = hasFacts && cited
+            }
+            row["pass"] = ok
+            if ok { passed += 1 }
+            rows.append(row)
+            a.clearHistory() // each question stands alone
+        }
+        let report: [String: Any] = ["model": a.model.name, "questions": questions.count, "passed": passed, "score": Double(passed) / Double(questions.count), "rows": rows]
+        if let d = try? JSONSerialization.data(withJSONObject: report, options: [.prettyPrinted, .sortedKeys]) { try? d.write(to: out.appendingPathComponent("assistant-quality.json")) }
+    }
+
     static func assistantWrite() async {
         guard let w = NSApp.windows.first(where: { $0.isVisible }) else { return }
         w.setFrame(NSRect(x: 60, y: 60, width: 1440, height: 900), display: true)
@@ -155,6 +204,38 @@ extension Automation {
         a.stop(); await untilIdle(a, timeout: 20)
         r["cancelSeconds"] = String(format: "%.2f", Date().timeIntervalSince(c0))
         r["cancelRecorded"] = a.chat.messages.count == count + 2 && a.chat.messages.last?.failed == true ? "yes" : "no"
+
+        // Follow-ups: a Space question resets the saved state, then two questions about the same note.
+        a.scope = .space; a.draft = "Who has the water key?"; a.send(); await untilIdle(a)
+        a.scope = .document
+        var firsts: [Double] = []
+        for q in ["When is the plant sale?", "Who orders the compost?"] {
+            a.draft = q; a.send(); await untilIdle(a)
+            firsts.append(a.lastStats?.firstTokenSeconds ?? -1)
+            r["followUpReused\(firsts.count)"] = "\(a.lastStats?.reusedTokens ?? -1)/\(a.lastStats?.promptTokens ?? -1)"
+        }
+        r["firstQuestionStartSeconds"] = String(format: "%.2f", firsts[0])
+        r["followUpStartSeconds"] = String(format: "%.2f", firsts[1])
+        r["followUpSpeedup"] = String(format: "%.1f", firsts[1] > 0 ? firsts[0] / firsts[1] : 0)
+
+        // Voice: speech output works offline; whether this Mac can dictate on-device is reported.
+        a.voice.speak("Draft can read answers aloud.")
+        let v0 = Date(); var spoke = false
+        while Date().timeIntervalSince(v0) < 8 { if a.voice.speaking { spoke = true }; if spoke && !a.voice.speaking { break }; await wait(0.1) }
+        r["speechOutput"] = spoke && !a.voice.speaking ? "yes" : "no"
+        r["onDeviceDictationAvailable"] = SFSpeechRecognizer()?.supportsOnDeviceRecognition == true ? "yes" : "no"
+
+        // A note several times longer than the context, with the fact near the end.
+        let filler = (0..<260).map { "Week \($0 + 1): the volunteers watered the beds, weeded the paths and logged the rainfall in the shed notebook." }
+        let long = make("Season log", (filler + ["The harvest festival password is heliotrope."]).joined(separator: "\n\n"))
+        m.openView(.doc(long)); await wait(0.5)
+        a.scope = .document; a.draft = "What is the harvest festival password?"
+        let l0 = Date()
+        a.send(); await untilIdle(a, timeout: 400)
+        r["longDocSeconds"] = String(format: "%.0f", Date().timeIntervalSince(l0))
+        r["longDocNotice"] = a.notice ?? ""
+        r["longDocAnswer"] = a.chat.messages.last?.text ?? ""
+        r["longDocFoundEnd"] = (a.chat.messages.last?.text ?? "").lowercased().contains("heliotrope") ? "yes" : "no"
 
         for (theme, tag) in [("light", ""), ("dark", "dark-")] {
             m.setSettings { $0.theme = theme }

@@ -6,10 +6,16 @@ import DraftEditor
 /// Collections: data lives in the `collection` block; every item is a nested page.
 extension AppModel {
     func collectionNode(_ docId: String, _ blockId: String) -> Node? {
-        (editors[docId]?.controller.document() ?? ensureDoc(docId)?.content)?.block(blockId)
+        if let c = editors[docId]?.controller { return c.attachmentNode(blockId: blockId) ?? c.document().block(blockId) }
+        return ensureDoc(docId)?.content.block(blockId)
     }
 
-    func collectionData(_ docId: String, _ blockId: String) -> CollectionData? { collectionNode(docId, blockId).flatMap { CollectionData(node: $0) } }
+    /// Decoded once per edit of the hosting document: views ask for it many times per render.
+    func collectionData(_ docId: String, _ blockId: String) -> CollectionData? {
+        memoized("collection-\(docId)-\(blockId)", [docRevision[docId] ?? 0, collectionTick, editors[docId] == nil]) {
+            collectionNode(docId, blockId).flatMap { CollectionData(node: $0) }
+        }
+    }
 
     func pageTitle(_ id: String) -> String { docTitle(id) }
 
@@ -91,7 +97,7 @@ extension AppModel {
 }
 
 struct CollectionScreen: View {
-    @EnvironmentObject var model: AppModel
+    @Environment(AppModel.self) var model
     @Environment(\.tokens) var t
     @Environment(\.undoManager) var undo
     let docId: String
@@ -117,7 +123,7 @@ struct CollectionScreen: View {
             .background(t.canvas)
             .onAppear { name = data.name }
         } else {
-            EmptyLibrary(message: "This collection is no longer in its document.").background(t.canvas)
+            EmptyLibrary(symbol: "square.grid.3x2", title: "Collection not found", message: "This collection is no longer in its document.").background(t.canvas)
         }
     }
 
@@ -135,23 +141,23 @@ struct CollectionScreen: View {
                 Spacer(minLength: 8)
                 Text("\(data.rows(view, title: model.pageTitle).count) of \(data.items.count)").font(.system(size: DS.footnote)).foregroundStyle(t.secondary)
                 Button { model.addCollectionItem(docId, blockId, undo: undo) } label: { Label("New Item", systemImage: "plus") }
-                    .buttonStyle(.borderedProminent).controlSize(.regular).keyboardShortcut("n", modifiers: [.command, .option, .shift])
-                Menu {
+                    .buttonStyle(.draftPrimary).keyboardShortcut("n", modifiers: [.command, .option, .shift])
+                DraftIconMenu(symbol: "ellipsis", label: "More", onPill: false) {
                     Button("Export CSV…") { exportCSV(data) }
                     Button("Import CSV…") { importCSV() }
                     Divider()
                     Button("Open Document") { model.openView(.doc(docId)) }
-                } label: { Image(systemName: "ellipsis") }.menuStyle(.borderlessButton).menuIndicator(.hidden).frame(width: 28).accessibilityLabel("More")
+                }
             }
             HStack(spacing: 8) {
                 DraftSegmented("View", selection: Binding(get: { view.id }, set: { v in update("Switch View") { $0.activeView = v } }),
                                symbols: data.views.map { v in (v.id, v.name, v.type == "kanban" ? "rectangle.split.3x1" : v.type == "gallery" ? "square.grid.2x2" : "tablecells") })
-                Menu {
+                DraftIconMenu(symbol: "plus.rectangle.on.rectangle", label: "Add or delete views", onPill: false) {
                     ForEach([("table", "Table"), ("gallery", "Gallery"), ("kanban", "Board")], id: \.0) { k, label in
                         Button(label) { update("Add View") { var v = CollectionView(name: label, type: k); if k == "kanban" { v.groupBy = $0.fields.first { $0.type == "select" }?.id }; $0.views.append(v); $0.activeView = v.id } }
                     }
                     if data.views.count > 1 { Divider(); Button("Delete “\(view.name)”", role: .destructive) { update("Delete View") { d in d.views.removeAll { $0.id == view.id }; d.activeView = d.views.first?.id } } }
-                } label: { Image(systemName: "plus.rectangle.on.rectangle") }.menuStyle(.borderlessButton).menuIndicator(.hidden).frame(width: 28).accessibilityLabel("Add or delete views")
+                }
                 Spacer()
                 sortMenu(data, view)
                 Button { filtersOpen.toggle() } label: { Label(view.filters.isEmpty ? "Filter" : "Filter (\(view.filters.count))", systemImage: "line.3.horizontal.decrease.circle") }
@@ -207,7 +213,7 @@ struct CollectionScreen: View {
 
 /// One editable value.
 struct ValueCell: View {
-    @EnvironmentObject var model: AppModel
+    @Environment(AppModel.self) var model
     @Environment(\.tokens) var t
     let field: CollectionField
     let item: CollectionItem
@@ -224,15 +230,21 @@ struct ValueCell: View {
             Menu {
                 ForEach(field.options ?? [], id: \.self) { o in Button(o) { set(.string(o)) } }
                 if v != nil { Divider(); Button("Clear") { set(nil) } }
-            } label: { chip(v?.string) }.menuStyle(.borderlessButton).menuIndicator(.hidden).accessibilityLabel("\(field.name): \(v?.string ?? "empty")")
-        case "multiSelect", "relation":
+            } label: { chip(v?.string) }.menuStyle(.button).buttonStyle(.plain).menuIndicator(.hidden).accessibilityLabel("\(field.name): \(v?.string ?? "empty")")
+        case "relation":
+            let list = v?.items?.compactMap(\.string) ?? []
+            RelationPicker(selected: list) { n in set(n.isEmpty ? nil : .array(n.map { .string($0) })) } label: {
+                chip(data.display(item, field.id, title: model.pageTitle).nilIfEmpty)
+            }
+            .accessibilityLabel("\(field.name): \(data.display(item, field.id, title: model.pageTitle))")
+        case "multiSelect":
             let list = v?.items?.compactMap(\.string) ?? []
             Menu {
                 let choices = field.type == "relation" ? model.library.liveDocs.sorted { $0.title < $1.title }.prefix(40).map { ($0.id, model.docTitle($0.id)) } : (field.options ?? []).map { ($0, $0) }
                 ForEach(choices, id: \.0) { id, label in
                     Button((list.contains(id) ? "✓ " : "") + label) { let n = list.contains(id) ? list.filter { $0 != id } : list + [id]; set(n.isEmpty ? nil : .array(n.map { .string($0) })) }
                 }
-            } label: { chip(data.display(item, field.id, title: model.pageTitle).nilIfEmpty) }.menuStyle(.borderlessButton).menuIndicator(.hidden).accessibilityLabel("\(field.name): \(data.display(item, field.id, title: model.pageTitle))")
+            } label: { chip(data.display(item, field.id, title: model.pageTitle).nilIfEmpty) }.menuStyle(.button).buttonStyle(.plain).menuIndicator(.hidden).accessibilityLabel("\(field.name): \(data.display(item, field.id, title: model.pageTitle))")
         case "date":
             if let s = v?.string, let d = Day.date(s) {
                 DatePicker("", selection: Binding(get: { d }, set: { set(.string(Day.key($0))) }), displayedComponents: .date).labelsHidden().datePickerStyle(.field).accessibilityLabel(field.name)
@@ -260,7 +272,7 @@ struct ValueCell: View {
 }
 
 struct CollectionTable: View {
-    @EnvironmentObject var model: AppModel
+    @Environment(AppModel.self) var model
     @Environment(\.tokens) var t
     @Environment(\.undoManager) var undo
     let docId: String, blockId: String
@@ -336,7 +348,7 @@ struct CollectionTable: View {
                     if view.calc[f.id] != nil { Divider(); Button("None") { model.updateCollection(docId, blockId, "Calculate", undo: undo) { d in if let i = d.views.firstIndex(where: { $0.id == view.id }) { d.views[i].calc[f.id] = nil } } } }
                 } label: {
                     Text(view.calc[f.id].map { "\($0.capitalized) \(data.calculate($0, field: f.id, rows: rows, title: model.pageTitle))" } ?? "Calculate").lineLimit(1)
-                }.menuStyle(.borderlessButton).menuIndicator(.hidden).frame(width: Self.width - 10, alignment: .leading).padding(.leading, 10)
+                }.menuStyle(.button).buttonStyle(.plain).menuIndicator(.hidden).frame(width: Self.width - 10, alignment: .leading).padding(.leading, 10)
                 .accessibilityLabel("Calculation for \(f.name)")
             }
         }
@@ -347,7 +359,7 @@ struct CollectionTable: View {
 
 /// The item page's title, edited in place.
 struct TitleField: View {
-    @EnvironmentObject var model: AppModel
+    @Environment(AppModel.self) var model
     @Environment(\.tokens) var t
     let docId: String
     @State private var text = ""
@@ -360,44 +372,70 @@ struct TitleField: View {
 }
 
 struct CollectionGallery: View {
-    @EnvironmentObject var model: AppModel
+    @Environment(AppModel.self) var model
     @Environment(\.tokens) var t
     @Environment(\.undoManager) var undo
     let docId: String, blockId: String
     let data: CollectionData
     let view: CollectionView
     var body: some View {
+        let _ = model.coverTick
         let rows = data.rows(view, title: model.pageTitle)
         let fields = (view.visible ?? data.fields.map(\.id)).compactMap { data.field($0) }.prefix(3)
         ScrollView {
             LazyVGrid(columns: [GridItem(.adaptive(minimum: 210), spacing: 14)], spacing: 14) {
                 ForEach(rows) { it in
-                    Button { model.openView(.doc(it.docId)) } label: {
-                        VStack(alignment: .leading, spacing: 8) {
-                            ZStack {
-                                if let img = model.ensureDoc(it.docId).flatMap({ model.coverImage($0.appearance.cover) }) { Image(nsImage: img).resizable().aspectRatio(contentMode: .fill) }
-                                else { Color(hex: Tags.defaultColor(model.pageTitle(it.docId))).opacity(0.25); Text(String(model.pageTitle(it.docId).prefix(1)).uppercased()).font(.system(size: DS.display, weight: .bold)).foregroundStyle(t.secondary) }
-                            }.frame(height: 110).clipped().clipShape(RoundedRectangle(cornerRadius: DS.rControl, style: .continuous))
-                            Text(model.pageTitle(it.docId)).font(.system(size: DS.headline, weight: .semibold)).foregroundStyle(t.text).lineLimit(2)
-                            ForEach(Array(fields)) { f in
-                                let s = data.display(it, f.id, title: model.pageTitle)
-                                if !s.isEmpty { Text("\(f.name): \(s)").font(.system(size: DS.footnote)).foregroundStyle(t.secondary).lineLimit(1) }
-                            }
-                        }
-                        .padding(12).frame(maxWidth: .infinity, alignment: .leading)
-                        .background(RoundedRectangle(cornerRadius: DS.rCard, style: .continuous).fill(t.card))
-                    }
-                    .buttonStyle(.plain)
+                    let title = model.pageTitle(it.docId)
+                    GalleryCard(title: title, cover: model.cover(of: it.docId).flatMap { model.coverImage($0) },
+                                lines: fields.compactMap { f in let s = data.display(it, f.id, title: model.pageTitle); return s.isEmpty ? nil : "\(f.name): \(s)" },
+                                tokens: t) { model.openView(.doc(it.docId)) }
+                    .equatable()
                     .contextMenu { Button("Delete Item", role: .destructive) { model.deleteCollectionItems(docId, blockId, [it.id], undo: undo) } }
-                    .accessibilityLabel("Open \(model.pageTitle(it.docId))")
                 }
             }.padding(18)
         }
+        .onAppear { model.prefetchCovers(data.items.map(\.docId)) }
+    }
+}
+
+/// A gallery card built from plain values, so scrolling creates cheap views and unchanged cards
+/// skip re-rendering.
+struct GalleryCard: View, Equatable {
+    let title: String
+    let cover: NSImage?
+    let lines: [String]
+    let tokens: Tokens
+    let open: () -> Void
+
+    static func == (a: GalleryCard, b: GalleryCard) -> Bool { a.title == b.title && a.cover === b.cover && a.lines == b.lines && a.tokens.dark == b.tokens.dark }
+
+    var body: some View {
+        let t = tokens
+        Button(action: open) {
+            VStack(alignment: .leading, spacing: 8) {
+                ZStack {
+                    if let cover { Image(nsImage: cover).resizable().aspectRatio(contentMode: .fill) }
+                    else {
+                        Color(hex: Tags.defaultColor(title)).opacity(0.25)
+                        Text(String(title.prefix(1)).uppercased()).font(.system(size: DS.display, weight: .bold)).foregroundStyle(t.secondary)
+                    }
+                }
+                .frame(height: 110).clipped().clipShape(RoundedRectangle(cornerRadius: DS.rControl, style: .continuous))
+                Text(title).font(.system(size: DS.headline, weight: .semibold)).foregroundStyle(t.text).lineLimit(2)
+                ForEach(lines, id: \.self) { Text($0).font(.system(size: DS.footnote)).foregroundStyle(t.secondary).lineLimit(1) }
+                Spacer(minLength: 0)
+            }
+            .padding(12).frame(maxWidth: .infinity, minHeight: 210, maxHeight: 210, alignment: .topLeading)
+            .background(RoundedRectangle(cornerRadius: DS.rCard, style: .continuous).fill(t.card))
+            .contentShape(RoundedRectangle(cornerRadius: DS.rCard, style: .continuous))
+        }
+        .buttonStyle(.plain)
+        .accessibilityLabel("Open \(title)")
     }
 }
 
 struct CollectionBoard: View {
-    @EnvironmentObject var model: AppModel
+    @Environment(AppModel.self) var model
     @Environment(\.tokens) var t
     @Environment(\.undoManager) var undo
     let docId: String, blockId: String
@@ -566,5 +604,48 @@ struct EditableCell<Editor: View>: View {
             .popover(isPresented: $editing, arrowEdge: .bottom) { editor().environment(\.tokens, t) }
             .accessibilityElement().accessibilityLabel(a11y).accessibilityValue(label.isEmpty ? "empty" : label)
             .accessibilityAddTraits(.isButton).accessibilityAction { editing = true }
+    }
+}
+
+
+/// Links a collection item to any document: a searchable list instead of a 40-item menu.
+struct RelationPicker<Label: View>: View {
+    @Environment(AppModel.self) var model
+    @Environment(\.tokens) var t
+    let selected: [String]
+    let change: ([String]) -> Void
+    @ViewBuilder var label: Label
+    @State private var open = false
+    @State private var query = ""
+
+    var body: some View {
+        Button { open = true } label: { label }.buttonStyle(.plain)
+            .popover(isPresented: $open, arrowEdge: .bottom) {
+                let q = query.trimmingCharacters(in: .whitespaces).lowercased()
+                let docs = model.library.liveDocs.filter { q.isEmpty || $0.title.lowercased().contains(q) }
+                    .sorted { (selected.contains($0.id) ? 0 : 1, $0.title.lowercased()) < (selected.contains($1.id) ? 0 : 1, $1.title.lowercased()) }
+                VStack(spacing: 0) {
+                    DraftTextField(placeholder: "Find a document", text: $query).padding(DS.s2)
+                    Divider().opacity(0.5)
+                    ScrollView {
+                        LazyVStack(alignment: .leading, spacing: 1) {
+                            ForEach(docs.prefix(200)) { d in
+                                let on = selected.contains(d.id)
+                                Button { change(on ? selected.filter { $0 != d.id } : selected + [d.id]) } label: {
+                                    HStack {
+                                        Image(systemName: on ? "checkmark.circle.fill" : "doc.text").foregroundStyle(on ? t.accent : t.secondary).frame(width: 18)
+                                        Text(d.title.isEmpty ? "Untitled" : d.title).foregroundStyle(t.text).lineLimit(1)
+                                        Spacer()
+                                    }.font(.system(size: DS.body)).padding(.horizontal, DS.s2).frame(height: 28).contentShape(Rectangle())
+                                }
+                                .buttonStyle(.plain)
+                                .accessibilityAddTraits(on ? [.isSelected] : [])
+                            }
+                            if docs.isEmpty { Text("No document matches “\(query)”.").font(.system(size: DS.footnote)).foregroundStyle(t.secondary).padding(DS.s3) }
+                        }.padding(DS.s1)
+                    }.frame(height: 280)
+                }
+                .frame(width: 300)
+            }
     }
 }

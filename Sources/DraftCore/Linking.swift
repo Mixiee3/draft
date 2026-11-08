@@ -5,8 +5,19 @@ import Foundation
 /// Calendar days as `yyyy-MM-dd` keys in the user's calendar. A day can start after midnight
 /// (Settings → Advanced → Start of day): before that hour, "today" is still the previous day.
 public enum Day {
-    private static let lock = NSLock()
-    nonisolated(unsafe) private static var formatters: [String: DateFormatter] = [:]
+    static let lock = NSLock()
+    nonisolated(unsafe) static var formatters: [String: DateFormatter] = [:]
+
+    /// Localized formatters by template, cached like `formatter`.
+    static func localized(_ template: String, _ cal: Calendar) -> DateFormatter {
+        let k = "\(template)|\(cal.identifier)|\(cal.timeZone.identifier)|\(Locale.current.identifier)"
+        lock.lock(); defer { lock.unlock() }
+        if let f = formatters[k] { return f }
+        let f = DateFormatter(); f.calendar = cal; f.timeZone = cal.timeZone
+        f.setLocalizedDateFormatFromTemplate(template)
+        formatters[k] = f
+        return f
+    }
 
     /// One formatter per calendar and time zone: making a DateFormatter costs more than using it.
     static func formatter(_ cal: Calendar) -> DateFormatter {
@@ -48,9 +59,7 @@ public enum Day {
 
     public static func title(_ key: String, cal: Calendar = .current) -> String {
         guard let d = date(key, cal: cal) else { return key }
-        let f = DateFormatter(); f.calendar = cal; f.timeZone = cal.timeZone
-        f.setLocalizedDateFormatFromTemplate("EEEEMMMMdyyyy")
-        return f.string(from: d)
+        return localized("EEEEMMMMdyyyy", cal).string(from: d)
     }
 
     /// Short chip label: Today, Tomorrow, Yesterday, a weekday within a week, else "Nov 12".
@@ -62,9 +71,7 @@ public enum Day {
         case -1: return "Yesterday"
         default:
             guard let d = date(key, cal: cal) else { return key }
-            let f = DateFormatter(); f.calendar = cal; f.timeZone = cal.timeZone
-            f.setLocalizedDateFormatFromTemplate(n > 1 && n < 7 ? "EEEE" : (key.prefix(4) == today.prefix(4) ? "MMMd" : "MMMdyyyy"))
-            return f.string(from: d)
+            return localized(n > 1 && n < 7 ? "EEEE" : (key.prefix(4) == today.prefix(4) ? "MMMd" : "MMMdyyyy"), cal).string(from: d)
         }
     }
 }
@@ -75,9 +82,7 @@ public extension Day {
     static func chipLabel(_ value: String, today: String, cal: Calendar = .current) -> String {
         let key = String(value.prefix(10))
         guard let d = date(key, cal: cal) else { return value }
-        let f = DateFormatter(); f.calendar = cal; f.timeZone = cal.timeZone
-        f.setLocalizedDateFormatFromTemplate(key.prefix(4) == today.prefix(4) ? "EEEdMMM" : "EEEdMMMyyyy")
-        return f.string(from: d) + (value.count > 10 ? " " + String(value.suffix(5)) : "")
+        return localized(key.prefix(4) == today.prefix(4) ? "EEEdMMM" : "EEEdMMMyyyy", cal).string(from: d) + (value.count > 10 ? " " + String(value.suffix(5)) : "")
     }
 }
 
@@ -270,13 +275,13 @@ public struct DocIndexEntry: Codable, Hashable, Sendable {
 /// `index/index.json`; deleting it is always safe — it is rebuilt from the document files, and
 /// building it never writes a document.
 public struct VaultIndex: Codable, Hashable, Sendable {
-    public static let version = 1
+    public static let version = 2 // 2: block text kept up to 1,000 characters (was 200) so the Assistant can find later facts
     public var version = VaultIndex.version
     public var rules = ""
     public var entries: [String: DocIndexEntry] = [:]
     public init() {}
 
-    static let blockTextLimit = 200
+    static let blockTextLimit = 1000
 
     /// Index one document. Tasks without their own date are due on their daily note's day.
     public static func entry(for doc: DocFile, daily: String?, rules: TagRules) -> DocIndexEntry {

@@ -1,5 +1,6 @@
 import AppKit
 import SwiftUI
+import Observation
 import UniformTypeIdentifiers
 import DraftCore
 import DraftEditor
@@ -29,59 +30,96 @@ struct ConfirmRequest: Identifiable {
 
 /// App state and every user action. Persistence is debounced and flushed on quit.
 @MainActor
-final class AppModel: ObservableObject {
+@Observable
+final class AppModel {
     static let shared = AppModel()
 
-    @Published var library = Library.empty() { didSet { if library.userStyles != oldValue.userStyles { Styles.user = library.userStyles } } }
-    @Published var docs: [String: DocFile] = [:]
-    @Published var ready = false
-    @Published var fatal: String?
-    @Published var readOnly: String?
-    @Published var panel: Panel?
-    @Published var docRailTab: DocRailTab = .outline
-    @Published var railShowsFolders = false
-    @Published var quickOpen = false
-    @Published var templatePicker = false
-    @Published var styleGallery = false
-    @Published var toasts: [Toast] = []
-    @Published var confirm: ConfirmRequest?
-    @Published var saveState = "saved" // saved | saving | error
-    @Published var librarySearch = ""
-    @Published var librarySearchOpen = false
-    @Published var renamingFolder: String?
-    @Published var editorTick = 0
-    @Published var findQuery = ""
-    @Published var findCount = 0
-    @Published var findFocusNonce = 0
-    @Published var infoTab = "info"
-    @Published var coverEditorDoc: String?
-    /// Bumped when the link/tag/task index changes (backlinks, tags, tasks, calendar).
-    @Published var indexTick = 0
-    @Published var collectionTick = 0
-    @Published var searchRegex = false
-    var index = VaultIndex()
-    var blockDoc: [String: String] = [:]
-    var indexTimer: Timer?
-    var forward: [String: [HistEntry]] = [:]
-    var lastIndexSeconds = 0.0
-    var linkRefreshTimer: Timer?
-    var dayTimer: Timer?
-    var watchedDay = ""
-    var clock: () -> Date = Date.init // replaced only by automation checks
-    let reminders = ReminderScheduler()
-    let online = OnlineServices()
-    lazy var assistant = AssistantModel(app: self)
-    var assistantWindow: NSPanel?
+    var library = Library.empty() {
+        didSet {
+            libraryRevision &+= 1
+            if library.userStyles != oldValue.userStyles { Styles.user = library.userStyles }
+        }
+    }
+    /// Bumped on every library change; keys the memo below.
+    private(set) var libraryRevision = 0
+    @ObservationIgnored private var memo: [String: (key: [AnyHashable], value: Any)] = [:]
+    /// Per-document edit counter, so cached reads of a document (collections) know when to refresh.
+    private(set) var docRevision: [String: Int] = [:]
+    @ObservationIgnored private var knownCovers: [String: Cover?] = [:]
+    @ObservationIgnored private var coverLoads = Set<String>()
+    @ObservationIgnored private var croppedCovers: [Cover: NSImage] = [:]
+    var coverTick = 0
 
-    let vault = Vault(dir: Vault.defaultURL())
+    /// Derived data that views read many times per render (task lists, folder contents,
+    /// collections) is computed once per change instead of once per view.
+    func memoized<T>(_ name: String, _ key: [AnyHashable], _ make: () -> T) -> T {
+        if let m = memo[name], m.key == key, let v = m.value as? T { return v }
+        let v = make()
+        memo[name] = (key, v)
+        return v
+    }
+    /// Open tabs and the active one live outside `library` so switching tabs doesn't count as a
+    /// library change for every view; they're written back into the library when it's saved.
+    var tabs: [DraftCore.Tab] = Library.empty().tabs
+    var activeTabId: String? = Library.empty().activeTabId
+    var docs: [String: DocFile] = [:]
+    /// Notes just created keep the library sidebar until you navigate away, so creating a note
+    /// doesn't flip the sidebar to an empty outline.
+    var freshDocs = Set<String>()
+    var onboarding: Onboarding?
+    @ObservationIgnored var tourNote: String?
+    var ready = false
+    var fatal: String?
+    var readOnly: String?
+    var panel: Panel?
+    var docRailTab: DocRailTab = .outline
+    var railShowsFolders = false
+    var quickOpen = false
+    var templatePicker = false
+    var shortcutsSheet = false
+    var focusMode = false { didSet { if focusMode != oldValue { focusModeChanged() } } }
+    @ObservationIgnored var focusMonitor: Any?
+    @ObservationIgnored var presentWindow: NSWindow?
+    var styleGallery = false
+    var toasts: [Toast] = []
+    var confirm: ConfirmRequest?
+    var saveState = "saved" // saved | saving | error
+    var librarySearch = ""
+    var librarySearchOpen = false
+    var renamingFolder: String?
+    var editorTick = 0
+    var findQuery = ""
+    var findCount = 0
+    var findFocusNonce = 0
+    var infoTab = "info"
+    var coverEditorDoc: String?
+    /// Bumped when the link/tag/task index changes (backlinks, tags, tasks, calendar).
+    var indexTick = 0
+    var collectionTick = 0
+    var searchRegex = false
+    var index = VaultIndex()
+    @ObservationIgnored var blockDoc: [String: String] = [:]
+    @ObservationIgnored var indexTimer: Timer?
+    @ObservationIgnored var forward: [String: [HistEntry]] = [:]
+    @ObservationIgnored var lastIndexSeconds = 0.0
+    @ObservationIgnored var linkRefreshTimer: Timer?
+    @ObservationIgnored var dayTimer: Timer?
+    @ObservationIgnored var watchedDay = ""
+    @ObservationIgnored var clock: () -> Date = Date.init // replaced only by automation checks
+    @ObservationIgnored let reminders = ReminderScheduler()
+    @ObservationIgnored let online = OnlineServices()
+    @ObservationIgnored lazy var assistant = AssistantModel(app: self)
+    @ObservationIgnored var assistantWindow: NSPanel?
+
+    @ObservationIgnored let vault = Vault(dir: Vault.defaultURL())
     private(set) var editors: [String: DocumentEditorView] = [:]
-    private var hosts: [String: EditorHostAdapter] = [:]
-    var history: [String: [HistEntry]] = [:]
-    private var imageCache: [String: NSImage] = [:]
-    private var dirtyDocs = Set<String>()
-    private var libDirty = false
-    private var docTimer: Timer?
-    private var libTimer: Timer?
+    @ObservationIgnored private var hosts: [String: EditorHostAdapter] = [:]
+    @ObservationIgnored var history: [String: [HistEntry]] = [:]
+    @ObservationIgnored private var imageCache: [String: NSImage] = [:]
+    @ObservationIgnored private var dirtyDocs = Set<String>()
+    @ObservationIgnored private var libDirty = false
+    @ObservationIgnored private var docTimer: Timer?
+    @ObservationIgnored private var libTimer: Timer?
 
     // MARK: Boot
 
@@ -101,6 +139,8 @@ final class AppModel: ObservableObject {
             if lib.tabs.first?.view.kind != "all" { lib.tabs.insert(Tab(view: .all), at: 0) }
             if !lib.tabs.contains(where: { $0.id == lib.activeTabId }) { lib.activeTabId = lib.tabs[0].id }
             library = lib
+            tabs = lib.tabs
+            activeTabId = lib.activeTabId
             Styles.user = lib.userStyles
             let expired = lib.expiredTrash()
             if !expired.isEmpty { deleteForever(expired) }
@@ -108,6 +148,7 @@ final class AppModel: ObservableObject {
             startDayWatch()
             if activeView.kind == "doc", let id = activeView.docId { _ = ensureDoc(id) }
             ready = true
+            showWelcomeIfNeeded()
         } catch let e as NewerSchemaError {
             readOnly = e.localizedDescription
             fatal = e.localizedDescription
@@ -130,7 +171,12 @@ final class AppModel: ObservableObject {
         libTimer?.invalidate()
         guard libDirty else { return }
         libDirty = false
-        do { try vault.saveLibrary(library); refreshSaveState() } catch { reportSaveError(error) }
+        var lib = library
+        lib.tabs = tabs
+        lib.activeTabId = activeTabId
+        let v = vault, snapshot = lib
+        v.enqueue({ try v.saveLibrary(snapshot) }, failed: { [weak self] e in onMain { self?.reportSaveError(e) } })
+        refreshSaveState()
     }
 
     func markDocDirty(_ id: String) {
@@ -151,17 +197,17 @@ final class AppModel: ObservableObject {
         guard var d = docs[id] else { return }
         if let ed = editors[id] { d.content = ed.controller.document(); d.updatedAt = nowMs() }
         docs[id] = d
-        do {
-            try vault.saveDoc(d)
-            try? vault.snapshotIfDue(d) // automatic local backups; never block a save on them
-            if var m = library.docs[id] {
-                m.applyDerived(from: d)
-                m.updatedAt = d.updatedAt
-                library.docs[id] = m
-                scheduleLibrarySave()
-                reindex(d)
-            }
-        } catch { reportSaveError(error) }
+        let v = vault, saved = d
+        v.enqueue({
+            try v.saveDoc(saved)
+            _ = try? v.snapshotIfDue(saved) // automatic local backups; never block a save on them
+        }, failed: { [weak self] e in onMain { self?.reportSaveError(e) } })
+        if var m = library.docs[id] {
+            m.applyDerived(from: d)
+            m.updatedAt = d.updatedAt
+            if m != library.docs[id] { library.docs[id] = m; scheduleLibrarySave() }
+            reindex(d)
+        }
     }
 
     private func refreshSaveState() {
@@ -179,11 +225,12 @@ final class AppModel: ObservableObject {
         saveDirtyDocs()
         saveLibraryNow()
         saveIndexNow()
+        vault.drain()
     }
 
     // MARK: Navigation
 
-    var activeTab: DraftCore.Tab { library.tabs.first { $0.id == library.activeTabId } ?? library.tabs[0] }
+    var activeTab: DraftCore.Tab { tabs.first { $0.id == activeTabId } ?? tabs.first ?? Tab(view: .all) }
     var activeView: ViewRef { activeTab.view }
     var activeDocId: String? { activeView.kind == "doc" ? activeView.docId : nil }
 
@@ -198,6 +245,7 @@ final class AppModel: ObservableObject {
 
     func openView(_ view: ViewRef, inPlace: Bool = false, newTab: Bool = false) {
         captureTabStates()
+        if !freshDocs.isEmpty { freshDocs.removeAll() }
         if view.kind == "doc", let id = view.docId {
             guard let meta = library.docs[id] else { return }
             if meta.deletedAt != nil {
@@ -215,20 +263,20 @@ final class AppModel: ObservableObject {
             replaceTabView(cur.id, view)
             return
         }
-        if view.kind == "settings", !newTab, let existing = library.tabs.first(where: { $0.view.kind == "settings" }) {
+        if view.kind == "settings", !newTab, let existing = tabs.first(where: { $0.view.kind == "settings" }) {
             replaceTabView(existing.id, view)
-            library.activeTabId = existing.id
-        } else if let existing = library.tabs.first(where: { $0.view == view }), !newTab {
-            library.activeTabId = existing.id
+            activeTabId = existing.id
+        } else if let existing = tabs.first(where: { $0.view == view }), !newTab {
+            activeTabId = existing.id
         } else if !newTab && view.kind != "doc" && cur.view.kind != "all" && cur.view.kind != "doc" {
             pushHistory(cur)
             replaceTabView(cur.id, view)
             return
         } else {
             let tab = Tab(view: view)
-            let idx = library.tabs.firstIndex { $0.id == cur.id } ?? 0
-            library.tabs.insert(tab, at: idx + 1)
-            library.activeTabId = tab.id
+            let idx = tabs.firstIndex { $0.id == cur.id } ?? 0
+            tabs.insert(tab, at: idx + 1)
+            activeTabId = tab.id
         }
         librarySearch = ""
         librarySearchOpen = false
@@ -236,7 +284,7 @@ final class AppModel: ObservableObject {
     }
 
     private func replaceTabView(_ tabId: String, _ view: ViewRef) {
-        if let i = library.tabs.firstIndex(where: { $0.id == tabId }) { library.tabs[i].view = view }
+        if let i = tabs.firstIndex(where: { $0.id == tabId }) { tabs[i].view = view }
         scheduleLibrarySave()
     }
 
@@ -261,7 +309,7 @@ final class AppModel: ObservableObject {
             forward[cur.id, default: []].append(entry(cur))
             go(to: prev, in: cur.id)
         } else {
-            activateTab(library.tabs[0].id)
+            activateTab(tabs[0].id)
         }
         panel = nil
     }
@@ -297,14 +345,14 @@ final class AppModel: ObservableObject {
 
     /// Remember scroll position and selection of every open document tab.
     func captureTabStates() {
-        for i in library.tabs.indices {
-            guard library.tabs[i].view.kind == "doc", let d = library.tabs[i].view.docId, let e = editors[d] else { continue }
+        for i in tabs.indices {
+            guard tabs[i].view.kind == "doc", let d = tabs[i].view.docId, let e = editors[d] else { continue }
             let y = Double(e.scrollView.contentView.bounds.origin.y.rounded())
             let sel = e.controller.textView.selectedRange()
-            if library.tabs[i].scrollY != y || library.tabs[i].selStart != sel.location || library.tabs[i].selLength != sel.length {
-                library.tabs[i].scrollY = y
-                library.tabs[i].selStart = sel.location
-                library.tabs[i].selLength = sel.length
+            if tabs[i].scrollY != y || tabs[i].selStart != sel.location || tabs[i].selLength != sel.length {
+                tabs[i].scrollY = y
+                tabs[i].selStart = sel.location
+                tabs[i].selLength = sel.length
                 libDirty = true
             }
         }
@@ -314,11 +362,13 @@ final class AppModel: ObservableObject {
 
     /// Put a document tab back where it was, once per launch.
     func restoreTabState(_ docId: String) {
-        guard let tab = library.tabs.first(where: { $0.view.kind == "doc" && $0.view.docId == docId }), !restoredTabs.contains(tab.id),
+        guard let tab = tabs.first(where: { $0.view.kind == "doc" && $0.view.docId == docId }), !restoredTabs.contains(tab.id),
               let e = editors[docId] else { return }
         restoredTabs.insert(tab.id)
         let tv = e.controller.textView
         let len = (tv.string as NSString).length
+        // A note without a title starts in the title (new notes always do); otherwise the body.
+        if tab.selStart == nil, (docs[docId]?.title ?? "").isEmpty { e.focusTitle(); return }
         if let start = tab.selStart {
             let loc = min(start, len)
             tv.setSelectedRange(NSRange(location: loc, length: min(tab.selLength ?? 0, len - loc)))
@@ -332,23 +382,29 @@ final class AppModel: ObservableObject {
         }
     }
 
+    func showSettings(_ section: String) {
+        if let i = tabs.firstIndex(where: { $0.id == activeTabId }), tabs[i].view.kind == "settings" { tabs[i].view = ViewRef(kind: "settings", section: section); scheduleLibrarySave() }
+        else { openView(ViewRef(kind: "settings", section: section)) }
+    }
+
     func activateTab(_ id: String) {
-        guard id != library.activeTabId, let t = library.tabs.first(where: { $0.id == id }) else { return }
+        guard id != activeTabId, let t = tabs.first(where: { $0.id == id }) else { return }
         captureTabStates()
+        if !freshDocs.isEmpty { freshDocs.removeAll() }
         if let d = t.view.docId, t.view.kind == "doc" { _ = ensureDoc(d) }
-        library.activeTabId = id
+        activeTabId = id
         if panel != nil { panel = nil }
         scheduleLibrarySave()
     }
 
     func closeTab(_ id: String) {
-        guard let idx = library.tabs.firstIndex(where: { $0.id == id }), idx > 0 else { return }
-        let closing = library.tabs[idx]
-        library.tabs.remove(at: idx)
+        guard let idx = tabs.firstIndex(where: { $0.id == id }), idx > 0 else { return }
+        let closing = tabs[idx]
+        tabs.remove(at: idx)
         history[id] = nil
         forward[id] = nil
-        if library.activeTabId == id { library.activeTabId = library.tabs[min(idx, library.tabs.count - 1)].id }
-        if closing.view.kind == "doc", let d = closing.view.docId, !library.tabs.contains(where: { $0.view.docId == d }) {
+        if activeTabId == id { activeTabId = tabs[min(idx, tabs.count - 1)].id }
+        if closing.view.kind == "doc", let d = closing.view.docId, !tabs.contains(where: { $0.view.docId == d }) {
             saveDirtyDocs()
             editors[d] = nil
             hosts[d] = nil
@@ -375,12 +431,36 @@ final class AppModel: ObservableObject {
         view.onTitleChange = { [weak self] t in self?.setTitle(id, t) }
         view.onEditCover = { [weak self] in self?.coverEditorDoc = id }
         view.onRemoveCover = { [weak self] in self?.updateAppearance(id) { $0.cover = nil } }
+        view.controller.focusDimming = focusMode
         editors[id] = view
         return view
     }
 
+    /// Focus mode hides the chrome and fades all but the current block; Escape leaves it.
+    func focusModeChanged() {
+        if focusMode { panel = nil }
+        for e in editors.values { e.controller.focusDimming = focusMode }
+        if focusMode, focusMonitor == nil {
+            focusMonitor = NSEvent.addLocalMonitorForEvents(matching: .keyDown) { [weak self] e in
+                guard let self, e.keyCode == 53, e.modifierFlags.intersection([.command, .option, .control, .shift]).isEmpty,
+                      self.activeController?.slash.isOpen != true, self.activeController?.mention.isOpen != true else { return e }
+                self.focusMode = false
+                return nil
+            }
+        } else if !focusMode, let m = focusMonitor { NSEvent.removeMonitor(m); focusMonitor = nil }
+    }
+
+    func dropEditor(_ id: String) { editors[id] = nil; hosts[id] = nil }
+
+    /// Set by the root view from the effective light/dark appearance.
+    var appDark = false { didSet { if appDark != oldValue { retheme() } } }
+
+    func displayTokens(_ a: DocumentAppearance) -> StyleTokens { Styles.forDisplay(a, dark: appDark && library.settings.paperFollowsAppearance) }
+
+    func retheme() { for (id, e) in editors { if let d = docs[id] { e.theme = theme(for: d) } } }
+
     func theme(for doc: DocFile) -> EditorTheme {
-        var t = EditorTheme(tokens: Styles.resolve(doc.appearance), completedTasks: library.settings.completedTasks)
+        var t = EditorTheme(tokens: displayTokens(doc.appearance), completedTasks: library.settings.completedTasks)
         t.tagRules = library.settings.tagRules
         t.tagColors = library.settings.tagColors
         t.dateChips = library.settings.dateStyle != "text"
@@ -391,12 +471,45 @@ final class AppModel: ObservableObject {
     var activeController: EditorController? { activeEditor?.controller }
 
     func editorChanged(_ id: String) {
+        docRevision[id, default: 0] &+= 1
         markDocDirty(id)
     }
 
+    /// A document's cover without loading the document: open documents answer directly; others
+    /// are read on a background thread, and views refresh once via `coverTick`.
+    func cover(of docId: String) -> Cover? {
+        if let d = docs[docId] { return d.appearance.cover }
+        return knownCovers[docId] ?? nil
+    }
+
+    /// Reads the covers of many documents in one background pass (a gallery calls it once when it
+    /// appears), then refreshes views once.
+    func prefetchCovers(_ ids: [String]) {
+        let missing = ids.filter { docs[$0] == nil && knownCovers[$0] == nil && coverLoads.insert($0).inserted }
+        guard !missing.isEmpty else { return }
+        let v = vault
+        DispatchQueue.global(qos: .userInitiated).async { [weak self] in
+            let found = missing.map { ($0, v.peekAppearance($0)?.cover) }
+            DispatchQueue.main.async {
+                guard let self else { return }
+                for (id, c) in found { self.knownCovers[id] = .some(c) }
+                if found.contains(where: { $0.1 != nil }) { self.coverTick &+= 1 }
+            }
+        }
+    }
+
     /// The cover as shown: the stored crop (or the default band) cut from the original image.
+    /// Cached: galleries and page cards ask for it on every render.
     func coverImage(_ cover: Cover?) -> NSImage? {
-        guard let cover, let img = image(forAsset: cover.assetId),
+        guard let cover else { return nil }
+        if let i = croppedCovers[cover] { return i }
+        let i = cropCover(cover)
+        croppedCovers[cover] = i
+        return i
+    }
+
+    private func cropCover(_ cover: Cover) -> NSImage? {
+        guard let img = image(forAsset: cover.assetId),
               let cg = img.cgImage(forProposedRect: nil, context: nil, hints: nil) else { return nil }
         let a = Double(cg.width) / Double(max(1, cg.height))
         let c = CoverCrop.effective(cover, imageAspect: a)
@@ -429,7 +542,7 @@ final class AppModel: ObservableObject {
         scheduleLibrarySave()
         if open {
             openView(.doc(id))
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.05) { self.editors[id]?.focusTitle() }
+            freshDocs = [id] // the caret goes to the title in restoreTabState
         }
         return id
     }
@@ -549,8 +662,8 @@ final class AppModel: ObservableObject {
             index.entries[id] = nil
             do { try vault.purgeDoc(id) } catch { reportSaveError(error) }
         }
-        library.tabs.removeAll { $0.view.kind == "doc" && ids.contains($0.view.docId ?? "") }
-        if !library.tabs.contains(where: { $0.id == library.activeTabId }) { library.activeTabId = library.tabs[0].id }
+        tabs.removeAll { $0.view.kind == "doc" && ids.contains($0.view.docId ?? "") }
+        if !tabs.contains(where: { $0.id == activeTabId }) { activeTabId = tabs[0].id }
         scheduleLibrarySave()
     }
 
@@ -612,8 +725,8 @@ final class AppModel: ObservableObject {
             docs[id] = nil
             editors[id] = nil
             hosts[id] = nil
-            library.tabs.removeAll { $0.view.kind == "doc" && $0.view.docId == id }
-            if !library.tabs.contains(where: { $0.id == library.activeTabId }) { library.activeTabId = library.tabs[0].id }
+            tabs.removeAll { $0.view.kind == "doc" && $0.view.docId == id }
+            if !tabs.contains(where: { $0.id == activeTabId }) { activeTabId = tabs[0].id }
             index.entries[id] = nil
             indexChanged()
             do { try vault.purgeDoc(id) } catch { reportSaveError(error) }
@@ -683,7 +796,16 @@ final class AppModel: ObservableObject {
 
     // MARK: Backups
 
-    func snapshots(_ id: String) -> [Snapshot] { vault.snapshots(id) }
+    /// Listing backups reads the disk; panels ask on every render.
+    func snapshots(_ id: String) -> [Snapshot] {
+        memoized("snapshots.\(id)", [id, saveState, docRevision[id] ?? 0]) { vault.snapshots(id) }
+    }
+
+    /// Word and block counts of the open editor, not the last save.
+    func liveStats(_ id: String) -> (words: Int, blocks: Int)? {
+        guard let c = editors[id]?.controller else { return nil }
+        return memoized("stats.\(id)", [id, docRevision[id] ?? 0]) { let s = docStats(c.document()); return (s.words, s.blocks) }
+    }
 
     func restoreSnapshot(_ id: String, _ s: Snapshot) {
         saveDirtyDocs()
@@ -763,8 +885,8 @@ final class AppModel: ObservableObject {
             guard let self else { return }
             for k in self.library.docs.keys where self.library.docs[k]?.folderId == id { self.library.docs[k]?.folderId = nil }
             self.library.folders.removeAll { $0.id == id }
-            self.library.tabs.removeAll { $0.view.kind == "folder" && $0.view.folderId == id }
-            if !self.library.tabs.contains(where: { $0.id == self.library.activeTabId }) { self.library.activeTabId = self.library.tabs[0].id }
+            self.tabs.removeAll { $0.view.kind == "folder" && $0.view.folderId == id }
+            if !self.tabs.contains(where: { $0.id == self.activeTabId }) { self.activeTabId = self.tabs[0].id }
             self.scheduleLibrarySave()
             self.toast("Folder “\(f.name)” removed")
         }
@@ -783,8 +905,8 @@ final class AppModel: ObservableObject {
         let before = library.settings
         f(&library.settings)
         let now = library.settings
-        if before.completedTasks != now.completedTasks || before.tagRules != now.tagRules || before.tagColors != now.tagColors || before.dateStyle != now.dateStyle {
-            for (id, e) in editors { if let d = docs[id] { e.theme = theme(for: d) } }
+        if before.completedTasks != now.completedTasks || before.tagRules != now.tagRules || before.tagColors != now.tagColors || before.dateStyle != now.dateStyle || before.paperFollowsAppearance != now.paperFollowsAppearance {
+            retheme()
         }
         if before.tagRules != now.tagRules { saveDirtyDocs(); refreshIndex() }
         if before.reminders != now.reminders || before.reminderHour != now.reminderHour { syncReminders(requestIfNeeded: now.reminders && !before.reminders) }
@@ -805,10 +927,11 @@ final class AppModel: ObservableObject {
 
     func toast(_ message: String, action: String? = nil, run: (() -> Void)? = nil) {
         let t = Toast(message: message, actionLabel: action, action: run)
-        withAnimation(Motion.quick(library.settings.reduceMotion)) { toasts = [t] } // one message at a time: a new one replaces the old
-        DispatchQueue.main.asyncAfter(deadline: .now() + (action == nil ? 3.2 : 7)) {
-            withAnimation { self.toasts.removeAll { $0.id == t.id } }
-        }
+        // No withAnimation here: callers (a Space switch) change the whole window in the same turn,
+        // and an animation transaction made SwiftUI render all of it synchronously. The toast
+        // overlay animates itself.
+        toasts = [t] // one message at a time: a new one replaces the old
+        DispatchQueue.main.asyncAfter(deadline: .now() + (action == nil ? 3.2 : 7)) { self.toasts.removeAll { $0.id == t.id } }
     }
 
     // MARK: Assets
@@ -909,6 +1032,10 @@ final class AppModel: ObservableObject {
     // MARK: Library queries
 
     func docsFor(_ view: ViewRef) -> [DocMeta] {
+        memoized("docsFor-\(view.kind)-\(view.folderId ?? "")", [libraryRevision, librarySearch]) { computeDocsFor(view) }
+    }
+
+    private func computeDocsFor(_ view: ViewRef) -> [DocMeta] {
         var list = library.liveDocs.filter { $0.parentDocId == nil && (library.settings.showDailyNotes || $0.dailyDate == nil) }
         switch view.kind {
         case "unsorted": list = list.filter { $0.folderId == nil }

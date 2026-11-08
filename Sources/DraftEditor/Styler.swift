@@ -41,11 +41,19 @@ public struct EditorTheme: Equatable {
     /// The design for a block: code is always mono, a block font wins over the document's.
     public func design(for b: BlockInfo) -> NSFontDescriptor.SystemDesign? { b.kind == .code ? .monospaced : b.font.map(Self.design) }
 
+    nonisolated(unsafe) static let fonts = NSCache<NSString, NSFont>() // NSCache is thread-safe
+
     public func font(size: CGFloat, weight: NSFont.Weight, design: NSFontDescriptor.SystemDesign? = nil, bold: Bool = false, italic: Bool = false) -> NSFont {
-        let base = NSFont.systemFont(ofSize: size, weight: bold ? max(weight, .bold) : weight)
-        var d = base.fontDescriptor.withDesign(design ?? self.design) ?? base.fontDescriptor
+        let w = bold ? max(weight, .bold) : weight, dz = design ?? self.design
+        let key = "\(size)|\(w.rawValue)|\(dz.rawValue)|\(italic)" as NSString
+        // Restyling a 2,000-block note asked for the same few fonts thousands of times.
+        if let f = Self.fonts.object(forKey: key) { return f }
+        let base = NSFont.systemFont(ofSize: size, weight: w)
+        var d = base.fontDescriptor.withDesign(dz) ?? base.fontDescriptor
         if italic { d = d.withSymbolicTraits(.italic) }
-        return NSFont(descriptor: d, size: size) ?? base
+        let f = NSFont(descriptor: d, size: size) ?? base
+        Self.fonts.setObject(f, forKey: key)
+        return f
     }
 
     /// Size and weight for a block's body text.

@@ -52,8 +52,10 @@ final class AssistantTests: XCTestCase {
         let p = AssistantPrompt.prepare(AssistantRequest(action: .summarize, scope: .document, text: text, docId: "d1", docTitle: "Long"), budgetTokens: 1000)
         XCTAssertLessThan(p.includedFraction, 1)
         XCTAssertGreaterThan(p.includedFraction, 0)
-        XCTAssertTrue(p.turns.last!.text.contains("only the first part fits"))
-        XCTAssertFalse(p.turns.last!.text.contains("Line 1999"))
+        // The document sits in the system turn, where follow-up questions reuse it.
+        XCTAssertTrue(p.turns.first!.text.contains("only the first part fits"))
+        XCTAssertFalse(p.turns.first!.text.contains("Line 1999"))
+        XCTAssertFalse(p.turns.last!.text.contains("Line 0 of"))
         XCTAssertEqual(p.sources.first?.docId, "d1")
     }
 
@@ -123,5 +125,30 @@ final class ThinkSplitterTests: XCTestCase {
         XCTAssertTrue(s.inThought)
         XCTAssertEqual(s.answer, "")
         XCTAssertEqual(s.thinking, "still going")
+    }
+}
+
+final class DiffReadabilityTests: XCTestCase {
+    func testSmallEditStaysInline() {
+        let parts = WordDiff.diff("The quick brown fox jumps over the lazy dog today.", "The quick brown fox leaps over the lazy dog today.")
+        XCTAssertLessThan(WordDiff.changedFraction(parts), 0.4)
+    }
+
+    func testRewriteIsShownBeforeAndAfter() {
+        let parts = WordDiff.diff("Meeting notes from Tuesday about the budget.", "A short summary: costs rise, hiring pauses until spring.")
+        XCTAssertGreaterThan(WordDiff.changedFraction(parts), 0.4)
+    }
+}
+
+final class LongDocumentTests: XCTestCase {
+    func testPartsCoverEverythingWithinBudget() {
+        let text = (0..<3000).map { "Line \($0) of the document." }.joined(separator: "\n")
+        let parts = AssistantPrompt.parts(text, budgetTokens: 1000)
+        XCTAssertGreaterThan(parts.count, 1)
+        XCTAssertTrue(parts.allSatisfy { $0.count <= 3500 })
+        XCTAssertEqual(parts.joined(separator: "\n"), text)
+        let req = AssistantRequest(action: .summarize, scope: .document, text: text, docId: "d", docTitle: "Long")
+        XCTAssertTrue(AssistantPrompt.readsInParts(req, budgetTokens: 1000))
+        XCTAssertFalse(AssistantPrompt.readsInParts(AssistantRequest(action: .rewrite, scope: .document, text: text, docId: "d", docTitle: "Long"), budgetTokens: 1000))
     }
 }

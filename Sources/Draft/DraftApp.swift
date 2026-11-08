@@ -6,12 +6,12 @@ import DraftEditor
 @main
 struct DraftApp: App {
     @NSApplicationDelegateAdaptor(AppDelegate.self) var appDelegate
-    @StateObject private var model = AppModel.shared
+    @State private var model = AppModel.shared
 
     var body: some Scene {
         WindowGroup("Draft", id: "main") {
             RootView()
-                .environmentObject(model)
+                .environment(model)
                 .frame(minWidth: 480, minHeight: 480)
         }
         .windowStyle(.hiddenTitleBar)
@@ -33,7 +33,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 }
 
 struct DraftCommands: Commands {
-    @ObservedObject var model: AppModel
+    var model: AppModel
 
     func run(_ id: String) {
         guard let c = model.activeController, let cmd = EditorCommands.command(id) else { return }
@@ -102,6 +102,10 @@ struct DraftCommands: Commands {
             Button("Tasks") { model.openView(ViewRef(kind: "tasks")) }.keyboardShortcut("2", modifiers: [.command, .option, .shift])
         }
         CommandGroup(before: .sidebar) {
+            Button("Present") { if let id = model.activeDocId { model.present(id) } }
+                .keyboardShortcut("p", modifiers: [.command, .option]).disabled(model.activeDocId == nil)
+            Button(model.focusMode ? "Leave Focus Mode" : "Focus Mode") { withAnimation(Motion.standard(model.library.settings.reduceMotion)) { model.focusMode.toggle() } }
+                .keyboardShortcut("f", modifiers: [.command, .shift]).disabled(model.activeDocId == nil && !model.focusMode)
             Button(model.library.settings.railCollapsed ? "Show Sidebar" : "Hide Sidebar") {
                 model.setSettings { $0.railCollapsed.toggle() }
             }.keyboardShortcut("s", modifiers: [.command, .control])
@@ -110,6 +114,12 @@ struct DraftCommands: Commands {
             Button("Grid") { model.setSettings { $0.libraryView = .grid } }.keyboardShortcut("2", modifiers: [.command, .control])
             Button("List") { model.setSettings { $0.libraryView = .list } }.keyboardShortcut("3", modifiers: [.command, .control])
             Divider()
+        }
+        CommandGroup(replacing: .help) {
+            Button("Keyboard Shortcuts") { model.shortcutsSheet = true }.keyboardShortcut("/")
+            Divider()
+            Button("Show Welcome…") { model.showWelcome() }
+            Button("Take the Tour") { model.startTour() }
         }
         CommandGroup(replacing: .appSettings) {
             Button("Settings…") { model.openView(ViewRef(kind: "settings", section: "appearance")) }.keyboardShortcut(",")

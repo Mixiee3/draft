@@ -9,43 +9,28 @@ struct EditorHostView: NSViewRepresentable {
 }
 
 struct DocumentScreen: View {
-    @EnvironmentObject var model: AppModel
+    @Environment(AppModel.self) var model
     @Environment(\.tokens) var t
     let docId: String
 
     var body: some View {
         let doc = model.docs[docId]
-        let tokens = doc.map { Styles.resolve($0.appearance) } ?? Styles.builtIn[0].tokens
+        let tokens = doc.map { model.displayTokens($0.appearance) } ?? Styles.builtIn[0].tokens
         let backdropAsset = tokens.backdrop.image.flatMap { $0.hasPrefix("asset:") ? model.image(forAsset: String($0.dropFirst(6))) : nil }
         let darkPage = ColorMath.isDark(tokens.pageColor)
         ZStack(alignment: .top) {
             BackdropView(backdrop: tokens.backdrop, assetImage: backdropAsset)
             EditorHostView(view: model.editor(for: docId))
                 .accessibilityLabel("Document")
+                .tourAnchor(.page)
                 // Text fades out as it scrolls under the top controls, like paper sliding away.
                 .mask(VStack(spacing: 0) {
                     Color.clear.frame(height: 58)
                     LinearGradient(colors: [.clear, .black], startPoint: .top, endPoint: .bottom).frame(height: 14)
                     Color.black
                 })
-            GeometryReader { g in topBar(tokens: tokens, darkPage: darkPage, narrow: g.size.width < 760) }
-            if let p = model.panel {
-                HStack {
-                    Spacer()
-                    Group {
-                        switch p {
-                        case .format: FormatPanel(docId: docId)
-                        case .style: StylePanel(docId: docId)
-                        case .info: InfoPanel(docId: docId, tab: $model.infoTab)
-                        case .share: SharePanel(docId: docId)
-                        }
-                    }
-                    .frame(width: 304)
-                    .background(PanelBackground())
-                    .padding(.top, 58).padding(.trailing, 12).padding(.bottom, 12)
-                    .transition(.opacity.combined(with: .move(edge: .trailing)))
-                }
-            }
+            if !model.focusMode { GeometryReader { g in topBar(tokens: tokens, darkPage: darkPage, narrow: g.size.width < 760) }.transition(.opacity) }
+            if let p = model.panel { sidePanel(p) }
             if model.styleGallery {
                 StyleGallery(docId: docId)
             }
@@ -53,7 +38,7 @@ struct DocumentScreen: View {
                 CoverCropSheet(docId: docId, cover: cover, image: img)
             }
         }
-        .onChange(of: model.panel, initial: true) { _, p in model.editors[docId]?.trailingInset = p == nil ? 0 : 304 + 24 }
+        .onChange(of: model.panel, initial: true) { old, p in panelChanged(from: old, to: p) }
         .onAppear {
             model.editors[docId]?.controller.refreshPageTitles { model.library.docs[$0]?.title }
             model.editors[docId]?.controller.refreshLinks()
@@ -65,7 +50,7 @@ struct DocumentScreen: View {
         HStack(spacing: 8) {
             PillGroup(onBackdrop: true) { PillButton(symbol: "chevron.left", label: "Back", onBackdrop: true) { model.goBack() } }
             PillGroup(onBackdrop: true) {
-                Menu {
+                DraftIconMenu(symbol: "plus", label: "Insert block", color: Color(hex: "#2a2622")) {
                     ForEach(["Insert", "Text", "Lists"], id: \.self) { g in
                         Section(g == "Insert" ? "Insert" : g) {
                             ForEach(EditorCommands.all.filter { $0.group == g && (g == "Insert" || ["block.code", "list.task", "block.quote"].contains($0.id)) }) { cmd in
@@ -75,10 +60,7 @@ struct DocumentScreen: View {
                             }
                         }
                     }
-                } label: { Image(systemName: "plus").font(.system(size: DS.body, weight: .bold)).frame(width: 30, height: 30) }
-                .menuStyle(.borderlessButton).menuIndicator(.hidden).frame(width: 32, height: 30)
-                .foregroundStyle(Color(hex: "#2a2622")).tint(Color(hex: "#2a2622"))
-                .accessibilityLabel("Insert block")
+                }
             }
             if let day = model.library.docs[docId]?.dailyDate {
                 PillGroup(onBackdrop: true) {
@@ -97,8 +79,32 @@ struct DocumentScreen: View {
                 PillButton(symbol: "paintbrush", label: "Document style (⇧⌘S)", isActive: model.panel == .style, onBackdrop: true) { toggle(.style) }
                 PillButton(symbol: "info.circle", label: "Document info and actions", isActive: model.panel == .info, onBackdrop: true) { toggle(.info) }
             }
+            .tourAnchor(.style)
         }
         .padding(.horizontal, 14).padding(.top, 12)
+    }
+
+    func sidePanel(_ p: Panel) -> some View {
+        HStack {
+            Spacer()
+            Group {
+                switch p {
+                case .format: FormatPanel(docId: docId)
+                case .style: StylePanel(docId: docId)
+                case .info: InfoPanel(docId: docId, tab: Binding(get: { model.infoTab }, set: { model.infoTab = $0 }))
+                case .share: SharePanel(docId: docId)
+                }
+            }
+            .frame(width: 304)
+            .surface(.floating)
+            .padding(.top, 58).padding(.trailing, 12).padding(.bottom, 12)
+        }
+        .panelTransition(reduce: model.library.settings.reduceMotion)
+    }
+
+    func panelChanged(from old: Panel?, to p: Panel?) {
+        let animated = (old == nil) != (p == nil) && !Motion.reduced(model.library.settings.reduceMotion)
+        model.editors[docId]?.setTrailingInset(p == nil ? 0 : 304 + 24, animated: animated)
     }
 
     func toggle(_ p: Panel) {
@@ -106,15 +112,8 @@ struct DocumentScreen: View {
     }
 }
 
-struct PanelBackground: View {
-    @Environment(\.tokens) var t
-    var body: some View {
-        Color.clear.floatingSurface(t)
-    }
-}
-
 struct Breadcrumb: View {
-    @EnvironmentObject var model: AppModel
+    @Environment(AppModel.self) var model
     @Environment(\.tokens) var t
     let docId: String
     var light: Bool
@@ -190,7 +189,7 @@ struct ChipButton: View {
 
 struct PanelHeader: View {
     @Environment(\.tokens) var t
-    @EnvironmentObject var model: AppModel
+    @Environment(AppModel.self) var model
     var title: String
     var body: some View {
         HStack {
