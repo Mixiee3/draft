@@ -18,11 +18,14 @@ struct AssistantView: View {
         VStack(spacing: 0) {
             header
             Divider().opacity(0.5)
-            if installed, a.status != .notInstalled { conversation } else { InstallCard(a: a) }
+            if a.provider == .openai {
+                if a.cloudKeyAvailable { conversation } else { CloudSetupCard(a: a) }
+            } else if installed, a.status != .notInstalled { conversation } else { InstallCard(a: a) }
         }
         .background(t.canvas)
         .modifier(EffectsGate(reduce: model.library.settings.reduceMotion))
         .sheet(item: $a.preview) { p in EditPreview(a: a, preview: p).environment(\.tokens, t) }
+        .sheet(item: $a.cloudConsent) { c in CloudConsentView(a: a, consent: c).environment(\.tokens, t) }
         .accessibilityElement(children: .contain)
         .accessibilityLabel("Assistant")
     }
@@ -38,10 +41,15 @@ struct AssistantView: View {
             }
             VStack(alignment: .leading, spacing: 0) {
                 Text("Assistant").font(.system(size: DS.headline, weight: .semibold)).foregroundStyle(t.text)
-                Text("Runs on this Mac · \(a.model.name)").font(.system(size: DS.caption)).foregroundStyle(t.secondary).lineLimit(1)
+                Text(a.provider == .local ? "Runs on this Mac · \(a.model.name)" : "OpenAI API · \(model.library.settings.openAIModel)")
+                    .font(.system(size: DS.caption)).foregroundStyle(t.secondary).lineLimit(1)
             }
             Spacer(minLength: 0)
             DraftIconMenu(symbol: "ellipsis", label: "More", size: 26, onPill: false) {
+                Picker("Provider", selection: Binding(get: { a.provider }, set: { a.chooseProvider($0) })) {
+                    ForEach(AssistantProvider.allCases, id: \.self) { provider in Text(provider.title).tag(provider) }
+                }
+                Divider()
                 Button("Clear History for This Space", role: .destructive) { a.clearHistory() }.disabled(a.chat.messages.isEmpty)
                 Button("Assistant Settings…") { model.openView(ViewRef(kind: "settings", section: "assistant")) }
             }
@@ -114,7 +122,9 @@ struct AssistantView: View {
             }
             }
             if let p = a.voice.problem { Text(p).font(.system(size: DS.caption)).foregroundStyle(t.secondary).fixedSize(horizontal: false, vertical: true) }
-            Text("Answers come only from the notes you choose and can be wrong. Nothing leaves this Mac.")
+            Text(a.provider == .local
+                 ? "Answers come only from the notes you choose and can be wrong. Nothing leaves this Mac."
+                 : "OpenAI receives only the context you review before sending. Answers may be wrong; API usage may be billed.")
                 .font(.system(size: DS.caption)).foregroundStyle(t.tertiary).fixedSize(horizontal: false, vertical: true)
         }
         .padding(DS.s4)
@@ -277,6 +287,7 @@ struct StreamingRow: View {
         .accessibilityLabel(statusText + (s.answer.isEmpty ? "" : ". " + s.answer))
     }
     var statusText: String {
+        if a.provider == .openai { return s.answer.isEmpty ? "Contacting OpenAI…" : "Writing…" }
         if a.status == .loading { return "Loading the model…" }
         if s.answer.isEmpty && s.thinking.isEmpty { return a.scope == .space ? "Searching this Space…" : "Reading…" }
         return s.inThought ? "Thinking…" : "Writing…"
@@ -328,6 +339,48 @@ struct InstallCard: View {
         }
         .buttonStyle(.plain)
         .accessibilityLabel("Download \(a.model.name), \(ByteCountFormatter.string(fromByteCount: a.model.bytes, countStyle: .file))")
+    }
+}
+
+struct CloudSetupCard: View {
+    var a: AssistantModel
+    @Environment(\.tokens) var t
+    var body: some View {
+        VStack(alignment: .leading, spacing: DS.s3) {
+            Text("Connect OpenAI").font(.system(size: DS.title3, weight: .semibold))
+            Text("Add your own OpenAI API key in Settings → Assistant. Draft will ask you to review the exact note context before each request. Your local Assistant remains available offline.")
+                .font(.system(size: DS.body)).foregroundStyle(t.secondary)
+            Button("Open Assistant Settings") { a.app.openView(ViewRef(kind: "settings", section: "assistant")) }
+        }
+        .padding(DS.s4).frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+    }
+}
+
+struct CloudConsentView: View {
+    var a: AssistantModel
+    let consent: AssistantModel.CloudConsent
+    @Environment(\.tokens) var t
+    var body: some View {
+        VStack(alignment: .leading, spacing: DS.s3) {
+            Text("Review what OpenAI will receive").font(.system(size: DS.headline, weight: .semibold))
+            Text("Context: \(consent.request.scope.title) · Model: \(a.app.library.settings.openAIModel)")
+                .font(.system(size: DS.footnote)).foregroundStyle(t.secondary)
+            ScrollView {
+                Text(consent.prepared.turns.filter { $0.role != "system" }.map { "\($0.role.capitalized):\n\($0.text)" }.joined(separator: "\n\n"))
+                    .font(.system(size: DS.footnote, design: .monospaced)).textSelection(.enabled)
+                    .frame(maxWidth: .infinity, alignment: .leading).padding(DS.s3)
+            }
+            .frame(minHeight: 150, maxHeight: 330)
+            .background(RoundedRectangle(cornerRadius: DS.rControl).fill(t.hover))
+            Text("Only the context and conversation shown here are sent. The API key is sent only to OpenAI for authentication; Draft does not send your whole vault.")
+                .font(.system(size: DS.caption)).foregroundStyle(t.secondary)
+            HStack {
+                Button("Cancel") { a.cloudConsent = nil }.buttonStyle(.draft).keyboardShortcut(.cancelAction)
+                Spacer()
+                Button("Send to OpenAI") { a.confirmCloudSend() }.buttonStyle(.draftPrimary).keyboardShortcut(.defaultAction)
+            }
+        }
+        .padding(DS.s5).frame(width: 560)
     }
 }
 
@@ -438,10 +491,42 @@ struct AssistantSettings: View {
     @Environment(AppModel.self) var model
     var a: AssistantModel
     @Environment(\.tokens) var t
+    @State private var keyInput = ""
+    @State private var keyNotice: String?
     var body: some View {
         VStack(alignment: .leading, spacing: 22) {
             VStack(alignment: .leading, spacing: DS.s2) {
-                Text("Model").font(.system(size: DS.body, weight: .semibold))
+                Text("Assistant provider").font(.system(size: DS.body, weight: .semibold))
+                DraftSegmented("Provider", selection: Binding(get: { a.provider }, set: { a.chooseProvider($0) }),
+                               options: AssistantProvider.allCases.map { ($0, $0.title) })
+                Text("On This Mac remains available without an account or network. OpenAI API is optional and uses your own API key.")
+                    .font(.system(size: DS.footnote)).foregroundStyle(t.secondary)
+            }
+            VStack(alignment: .leading, spacing: DS.s2) {
+                Text("OpenAI API").font(.system(size: DS.body, weight: .semibold))
+                TextField("Model ID", text: Binding(get: { model.library.settings.openAIModel }, set: { value in model.setSettings { $0.openAIModel = value } }))
+                    .textFieldStyle(.roundedBorder)
+                Text(a.cloudKeyAvailable ? "API key saved in this Mac's Keychain" : "No API key saved")
+                    .font(.system(size: DS.footnote)).foregroundStyle(t.secondary)
+                SecureField("Paste OpenAI API key", text: $keyInput).textFieldStyle(.roundedBorder)
+                HStack {
+                    Button("Save Key") {
+                        keyNotice = OpenAIKeyStore.save(keyInput.trimmingCharacters(in: .whitespacesAndNewlines)) ? "Key saved." : "Could not save the key."
+                        keyInput = ""
+                        a.refreshCloudKey()
+                    }.disabled(keyInput.isEmpty)
+                    Button("Remove Key", role: .destructive) {
+                        _ = OpenAIKeyStore.remove()
+                        keyNotice = "Key removed."
+                        a.refreshCloudKey()
+                    }.disabled(!a.cloudKeyAvailable)
+                }
+                if let keyNotice { Text(keyNotice).font(.system(size: DS.footnote)).foregroundStyle(t.secondary) }
+                Text("Cloud requests use the OpenAI Responses API. Draft shows the context before each request and never stores the key in the vault.")
+                    .font(.system(size: DS.footnote)).foregroundStyle(t.secondary)
+            }
+            VStack(alignment: .leading, spacing: DS.s2) {
+                Text("Local model").font(.system(size: DS.body, weight: .semibold))
                 DraftSegmented("Model", selection: Binding(get: { a.model.id }, set: { a.chooseModel($0) }),
                                options: LocalModel.all.map { ($0.id, $0.name + " · " + ByteCountFormatter.string(fromByteCount: $0.bytes, countStyle: .file)) })
                 ModelFacts(model: a.model)
@@ -460,7 +545,7 @@ struct AssistantSettings: View {
             }
             VStack(alignment: .leading, spacing: DS.s2) {
                 Text("Privacy").font(.system(size: DS.body, weight: .semibold))
-                Text("The model runs inside Draft on this Mac. Notes, questions and answers are never sent to Liquid AI or any other service; the only network request is the model download you start here. Chat history is saved per Space in your vault (assistant/), and Clear History removes it.")
+                Text("The local model runs inside Draft on this Mac and does not send note content online. If you choose OpenAI API, Draft shows the exact context and conversation before every request. Chat history is saved separately by provider and Space in your vault (assistant/), and Clear History removes the selected conversation.")
                     .font(.system(size: DS.footnote)).foregroundStyle(t.secondary).fixedSize(horizontal: false, vertical: true)
                 Text("Models are stored in \(a.store.directory.path), outside your vault, so backups and exports never include them.")
                     .font(.system(size: DS.footnote)).foregroundStyle(t.tertiary).textSelection(.enabled).fixedSize(horizontal: false, vertical: true)

@@ -327,7 +327,7 @@ struct SettingsView: View {
     }
 
     var about: some View {
-        SettingsSection(title: nil, footer: "A free, open-source, local-first notes app. No account and no telemetry; nothing goes online unless you turn on image search, link previews or the Assistant's model download.") {
+        SettingsSection(title: nil, footer: "A free, open-source, local-first notes app. No account and no telemetry; nothing goes online unless you turn on image search, link previews, the Assistant's model download, or the optional OpenAI Assistant (after you review what it will send).") {
             SettingsRow(title: "Draft 0.6", detail: "Your documents are portable JSON with Markdown export.") { EmptyView() }
             SettingsRow(title: "Welcome and tour") { Button("Replay Tour") { model.startTour() }.buttonStyle(DraftButtonStyle(compact: true)) }
             SettingsRow(title: "Third-party notices", detail: "llama.cpp, Libraries.dev, Paper Shaders, Liquid AI models") {

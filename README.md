@@ -2,7 +2,8 @@
 
 A free, open-source, local-first notes and document app. **First release: native macOS.**
 No account and no telemetry — your notes are plain files on your Mac. Nothing goes online unless you
-turn it on (image search, link previews, or downloading the Assistant's local model).
+turn it on (image search, link previews, downloading the Assistant's local model, or the optional
+OpenAI Assistant with your own API key).
 
 ![Draft document](docs/screenshots/document.png)
 
@@ -66,6 +67,14 @@ scripts/ux-perf.sh            # tab and Space switching, library, scrolling, pan
 scripts/assistant-test.sh     # the Assistant with all networking denied (needs the downloaded model)
 ```
 
+```bash
+scripts/assistant-quality.sh  # 30-question benchmark: expected facts and citations, offline
+```
+
+```bash
+scripts/agent-test.sh         # Codex/MCP proposals: accept, undo, reject, stale revision, links/tags/tasks kept
+```
+
 ## Local Assistant
 
 Press ⌘J (or the Assistant button). The first time, Draft offers to download **LFM2.5-2.6B** by
@@ -74,6 +83,27 @@ checked against its published SHA-256 and stored in `~/Library/Application Suppo
 outside your vault. Inference runs inside Draft with llama.cpp on Metal: no Python, server, account or
 API key, and it works with networking off. Notes are never sent anywhere. Settings → Assistant
 switches to the smaller 1.2B model or removes the model.
+
+It reads a long document in parts and says so, answers a second question about the same note several
+times faster (the model's state after reading the note is kept), reads answers aloud with the
+system voice, and takes dictation only through Apple's on-device recognizer (Draft refuses
+server-based recognition; macOS asks for microphone and speech permission the first time).
+
+**Optional OpenAI provider.** Settings → Assistant → provider *OpenAI API* uses your own API key
+(stored in the macOS Keychain, never in the vault) and the Responses API with `store: false`. Before
+every request Draft shows exactly which note text and earlier turns will be sent, and nothing is
+sent until you confirm. This is not ChatGPT sign-in and not a Codex agent inside Draft; local
+remains the default.
+
+## Codex and other MCP clients
+
+`scripts/draft-mcp.sh` runs `DraftMCP`, a local stdio MCP server. It can list Spaces and documents,
+search, read documents, blocks and structure, describe Draft's formatting, and **propose** edits
+(`draft_propose_note_edits`). A proposal is written to `agent-requests/` in the vault and never
+touches a document: Draft shows a review sheet, and only Accept applies it through the editor, after
+checking the note hasn't changed since it was read, with a backup, an index update and one Undo step.
+Reject and stale proposals are reported back (`draft_request_status`). Whole-note replacement is
+refused for notes with images, files or nested pages; targeted edits keep them.
 
 Your notes live in `~/Library/Application Support/Draft/Vault` (Settings → Data & Storage →
 Show in Finder). Set `DRAFT_DATA_DIR=/some/folder` to use a different vault.

@@ -2,6 +2,21 @@
 
 Updated 8 November 2026. This is a working handoff, not a claim that v0.6 is finished.
 
+## Status on 8 November 2026 (end of the Claude session)
+
+- `main` contains the v0.6 polish work and the Codex/MCP integration (merged from
+  `feature/v0.6-polish` and `feature/codex-integration` through `feature/v0.6-codex-integration`).
+- Every row of the v0.6 table in `ROADMAP.md` now has a measured result or an honest status. Open:
+  rows 1, 2, 6, 20 need a person (VoiceOver, permission clicks, keyboard layouts and IME); row 3's
+  `scripts/ax-audit.swift` needs a terminal with Accessibility permission; row 5 (localization) and
+  the table parts of row 11 moved to v0.8; Present on a second display is untested.
+- Checks: `swift test`, smoke, drag, links, style, structure, workflow, perf, ux-perf (3 of 4 runs
+  under budget under Parsec load), assistant-test (offline), assistant-quality (27/30),
+  agent-test, and an external stdio MCP round-trip in a throwaway vault.
+- Codex's MCP registration points at `~/Documents/Draft/scripts/draft-mcp.sh`.
+
+The sections below are the original handoff, kept for context.
+
 ## Start here: two concurrent workstreams
 
 | Workstream | Checkout | Branch and state |

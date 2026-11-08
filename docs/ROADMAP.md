@@ -282,6 +282,15 @@ even at idle; all numbers below are under that load and from a limited number of
 | 19 | Assistant: quality checks | ✅ | `scripts/assistant-quality.sh`: 30 questions, LFM2.5 2.6B 27/30 = 90% (was 24/30 before fixing the 200-character index limit, stemming and the prompt) |
 | 20 | Carried: VoiceOver pass of the Assistant | ⬜ needs a person | Not done |
 
+**Codex/MCP and OpenAI (merged from `feature/codex-integration`).** Optional OpenAI provider with
+your own key and per-request context review (live request untested: needs the user's key). `DraftMCP`
+reads notes and proposes edits that Draft applies only after review, with a revision check, backup,
+index update and one Undo; reject and stale paths verified (`scripts/agent-test.sh`) and an external
+stdio round-trip (read → guide → propose → note unchanged → accept in Draft → saved → status
+accepted). Still to do with the same reviewed design: create/rename/move notes, block
+insert/delete/reorder, links/tags/tasks, multi-document proposals; a real Codex app-server mode only
+after supported sign-in exists.
+
 **Polish pass (from `docs/UI_AUDIT_V06.md`).** Shared components and surfaces; centred icon menus;
 Settings rebuilt with grouped rows and a readable shortcut list; one surface and motion for Format,
 Style, Info, Share, Quick Open, templates and dialogs; the page slides aside for panels; new notes

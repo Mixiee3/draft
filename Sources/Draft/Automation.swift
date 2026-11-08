@@ -48,6 +48,9 @@ enum Automation {
             case "audit-frames": await auditFrames()
             case "ux-perf": await uxPerf()
             case "idle": await idle()
+            case "agent-edit": await agentEdit()
+            case "agent-integrity": await agentIntegrity()
+            case "agent-external-accept": await agentExternalAccept()
             default: break
             }
             NSApp.terminate(nil)
