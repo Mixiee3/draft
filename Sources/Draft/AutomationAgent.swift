@@ -8,6 +8,8 @@ extension Automation {
         var result: [String: String] = [:]
         m.showNextAgentProposal()
         if let proposal = m.agentProposal {
+            await wait(0.8)
+            if let w = NSApp.windows.first(where: { $0.isVisible }), let sheet = w.attachedSheet { await captureWindow(sheet, "agent-proposal-review") }
             result["requestId"] = proposal.id
             m.acceptAgentProposal()
             result["status"] = (try? AgentProposalStore.load(proposal.id, vaultURL: m.vault.dir).status) ?? "missing"

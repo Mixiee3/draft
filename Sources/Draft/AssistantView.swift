@@ -375,9 +375,9 @@ struct CloudConsentView: View {
             Text("Only the context and conversation shown here are sent. The API key is sent only to OpenAI for authentication; Draft does not send your whole vault.")
                 .font(.system(size: DS.caption)).foregroundStyle(t.secondary)
             HStack {
-                Button("Cancel") { a.cloudConsent = nil }.keyboardShortcut(.cancelAction)
+                Button("Cancel") { a.cloudConsent = nil }.buttonStyle(.draft).keyboardShortcut(.cancelAction)
                 Spacer()
-                Button("Send to OpenAI") { a.confirmCloudSend() }.keyboardShortcut(.defaultAction)
+                Button("Send to OpenAI") { a.confirmCloudSend() }.buttonStyle(.draftPrimary).keyboardShortcut(.defaultAction)
             }
         }
         .padding(DS.s5).frame(width: 560)

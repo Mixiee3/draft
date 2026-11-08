@@ -108,9 +108,9 @@ struct AgentProposalReview: View {
             }
             .frame(maxHeight: 460)
             HStack {
-                Button("Reject") { model.rejectAgentProposal() }.keyboardShortcut(.cancelAction)
+                Button("Reject") { model.rejectAgentProposal() }.buttonStyle(.draft).keyboardShortcut(.cancelAction)
                 Spacer()
-                Button("Apply Changes") { model.acceptAgentProposal() }.keyboardShortcut(.defaultAction)
+                Button("Apply Changes") { model.acceptAgentProposal() }.buttonStyle(.draftPrimary).keyboardShortcut(.defaultAction)
             }
         }
         .padding(24)
