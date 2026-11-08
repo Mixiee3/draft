@@ -27,7 +27,7 @@ public struct AgentEdit: Codable, Sendable, Hashable {
     }
 
     /// Actions that change the library (a new note, its title or place), applied by the app.
-    public static let documentActions: Set<String> = ["create_document", "rename_document", "move_document"]
+    public static let documentActions: Set<String> = ["create_document", "rename_document", "move_document", "create_folder", "delete_document"]
     /// Actions that stand alone in a proposal.
     static let standalone: Set<String> = documentActions.union(["replace_document", "document_style"])
     static let idPattern = "^[A-Za-z0-9_-]{1,64}$"
@@ -80,6 +80,11 @@ public struct AgentEdit: Codable, Sendable, Hashable {
             guard !(title ?? "").trimmingCharacters(in: .whitespaces).isEmpty || !(text ?? "").isEmpty else { throw AgentEditError.invalid("create_document needs a title or Markdown text.") }
             guard (self.text ?? "").utf8.count <= 100_000, (title ?? "").count <= 300 else { throw AgentEditError.invalid("The new note is too large.") }
             try validateFolder()
+        case "delete_document": break
+        case "create_folder":
+            try Library.checkFolderName(title ?? "")
+            if let value { guard value.range(of: Self.idPattern, options: .regularExpression) != nil else { throw AgentEditError.invalid("Invalid parent folder ID.") } }
+            if let target { guard target.range(of: Self.idPattern, options: .regularExpression) != nil else { throw AgentEditError.invalid("Invalid Space ID.") } }
         case "rename_document":
             guard let title, !title.trimmingCharacters(in: .whitespaces).isEmpty, title.count <= 300, !title.contains("\n") else { throw AgentEditError.invalid("rename_document needs a one-line title.") }
         case "move_document":
@@ -92,7 +97,7 @@ public struct AgentEdit: Codable, Sendable, Hashable {
 
     /// The new note's or renamed note's title (create_document, rename_document); stored in
     /// `expectedText`, which those actions don't otherwise use, so older readers keep decoding.
-    public var title: String? { action == "create_document" || action == "rename_document" ? expectedText : nil }
+    public var title: String? { ["create_document", "rename_document", "create_folder"].contains(action) ? expectedText : nil }
 
     private func validatePosition() throws {
         guard position == nil || ["before", "after"].contains(position!) else { throw AgentEditError.invalid("position must be before or after.") }
@@ -131,13 +136,42 @@ public struct AgentProposal: Codable, Sendable, Identifiable {
         if let first = edits.first, AgentEdit.standalone.contains(first.action) || first.action == "append", first.blockId != documentId {
             throw AgentEditError.invalid("\(first.action) must target the document ID (\"new\" for create_document).")
         }
-        if (documentId == "new") != (edits.first?.action == "create_document") {
-            throw AgentEditError.invalid("Only create_document uses the document ID \"new\".")
+        if (documentId == "new") != ["create_document", "create_folder"].contains(edits.first?.action ?? "") {
+            throw AgentEditError.invalid("Only create_document and create_folder use the document ID \"new\".")
         }
         for edit in edits { try edit.validate() }
         id = newId("request_"); self.documentId = documentId; self.documentTitle = documentTitle
         self.instruction = instruction; self.expectedRevision = expectedRevision; self.edits = edits
         createdAt = nowMs(); status = "pending"
+    }
+}
+
+extension Library {
+    static func checkFolderName(_ name: String) throws {
+        let n = name.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !n.isEmpty, n.count <= 120 else { throw AgentEditError.invalid("A folder name needs 1–120 characters.") }
+        guard !n.contains("/"), !n.contains("\n"), n != ".", n != ".." else { throw AgentEditError.invalid("A folder name can't contain “/” or line breaks, or be “.” or “..”. Create nested folders one level at a time.") }
+    }
+
+    /// “Space › Parent › Child” for showing where a folder is (or will be).
+    public func folderPath(_ id: String?, space: String? = nil) -> String {
+        var names: [String] = [], seen = Set<String>(), cur = id
+        while let c = cur, !seen.contains(c), let f = folders.first(where: { $0.id == c }) { names.insert(f.name, at: 0); seen.insert(c); cur = f.parentId }
+        let sp = space ?? id.flatMap { i in folders.first { $0.id == i }?.spaceId } ?? self.space.id
+        return ([spaces.first { $0.id == sp }?.name ?? self.space.name] + names).joined(separator: " › ")
+    }
+
+    /// Checks a new folder against its Space and parent: the parent must exist there and no sibling
+    /// may already have the name (ignoring case).
+    public func checkNewFolder(name: String, parent: String?, space: String) throws {
+        try Self.checkFolderName(name)
+        guard spaces.contains(where: { $0.id == space }) else { throw AgentEditError.invalid("That Space doesn't exist.") }
+        let inSpace = folders.filter { ($0.spaceId ?? spaces.first?.id) == space }
+        if let parent { guard inSpace.contains(where: { $0.id == parent }) else { throw AgentEditError.invalid("The parent folder doesn't exist in that Space.") } }
+        let n = name.trimmingCharacters(in: .whitespacesAndNewlines)
+        if inSpace.contains(where: { $0.parentId == parent && $0.name.compare(n, options: .caseInsensitive) == .orderedSame }) {
+            throw AgentEditError.invalid("“\(folderPath(parent, space: space)) › \(n)” already exists.")
+        }
     }
 }
 
@@ -161,7 +195,7 @@ public struct AgentPermission: Codable, Hashable, Sendable {
 }
 
 extension AgentProposal {
-    public static let destructiveActions: Set<String> = ["delete_block", "replace_document", "move_document"]
+    public static let destructiveActions: Set<String> = ["delete_block", "replace_document", "move_document", "delete_document"]
     public var requiredAccess: AgentAccess { edits.contains { Self.destructiveActions.contains($0.action) } ? .destructive : .propose }
 }
 

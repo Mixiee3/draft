@@ -109,3 +109,23 @@ final class AgentPermissionTests: XCTestCase {
         XCTAssertTrue(AgentActivity.entries(dir).isEmpty)
     }
 }
+
+final class AgentFolderTests: XCTestCase {
+    func testFolderNamesPathsAndDuplicates() throws {
+        var lib = Library.empty()
+        let projects = Folder(name: "Projects", spaceId: lib.space.id)
+        let y2026 = Folder(name: "2026", parentId: projects.id, spaceId: lib.space.id)
+        lib.folders = [projects, y2026]
+        XCTAssertEqual(lib.folderPath(y2026.id), "\(lib.space.name) › Projects › 2026")
+        XCTAssertNoThrow(try lib.checkNewFolder(name: "Q1", parent: y2026.id, space: lib.space.id))
+        XCTAssertThrowsError(try lib.checkNewFolder(name: "projects", parent: nil, space: lib.space.id), "case-insensitive duplicate")
+        XCTAssertNoThrow(try lib.checkNewFolder(name: "Projects", parent: y2026.id, space: lib.space.id), "same name under another parent is fine")
+        for bad in ["", "  ", "a/b", "..", "two\nlines", String(repeating: "x", count: 121)] {
+            XCTAssertThrowsError(try lib.checkNewFolder(name: bad, parent: nil, space: lib.space.id), bad)
+        }
+        XCTAssertThrowsError(try lib.checkNewFolder(name: "Q1", parent: "f_missing", space: lib.space.id))
+        XCTAssertThrowsError(try lib.checkNewFolder(name: "Q1", parent: nil, space: "s_missing"))
+        XCTAssertNoThrow(try AgentProposal(documentId: "new", documentTitle: "Q1", instruction: "Folder", expectedRevision: String(repeating: "c", count: 64),
+                                           edits: [AgentEdit(action: "create_folder", blockId: "new", value: y2026.id, expectedText: "Q1")]))
+    }
+}

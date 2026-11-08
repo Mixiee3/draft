@@ -49,7 +49,13 @@ let toolList: [[String: Any]] = [
     proposalTool("draft_propose_move_document", "Propose moving a note (with its nested pages) to a folder (folder_id, or \"unsorted\") and/or another Space (space_id). Applied only after review; one Undo moves it back.", [
         "document_id": textField, "expected_revision": textField, "folder_id": textField, "space_id": textField, "instruction": textField
     ], required: ["document_id", "expected_revision", "instruction"]),
-    tool("draft_list_folders", "List folders in a Space (default: the current one).", ["space_id": textField]),
+    proposalTool("draft_propose_create_folder", "Propose a new folder (one level; nest by giving parent_folder_id). Draft shows its Space and full path for review and creates it only when the user applies it. Names must be unique among siblings (ignoring case) and can't contain “/”. One Undo removes it while it's still empty.", [
+        "name": textField, "parent_folder_id": textField, "space_id": textField, "instruction": textField
+    ], required: ["name", "instruction"]),
+    proposalTool("draft_propose_delete_document", "Propose moving a note and its nested pages to Recently Deleted (never a permanent delete; restorable for 30 days). Needs the Destructive permission. The review lists every page and the notes that link to it. One Undo restores it.", [
+        "document_id": textField, "expected_revision": textField, "instruction": textField
+    ], required: ["document_id", "expected_revision", "instruction"]),
+    tool("draft_list_folders", "List folders in a Space (default: the current one), with their full paths.", ["space_id": textField]),
     tool("draft_request_status", "Check whether a proposed edit was accepted or rejected in Draft.", ["request_id": textField], required: ["request_id"]),
 ]
 
@@ -142,12 +148,25 @@ func call(_ name: String, _ args: [String: Any]) throws -> String {
     case "draft_list_folders":
         let space = args["space_id"] as? String ?? draft.library.space.id
         return try resultText(draft.library.folders.filter { ($0.spaceId ?? draft.library.spaces.first?.id) == space }.map {
-            ["id": $0.id, "name": $0.name, "parent_id": $0.parentId ?? ""] as [String: Any]
+            ["id": $0.id, "name": $0.name, "parent_id": $0.parentId ?? "", "path": draft.library.folderPath($0.id)] as [String: Any]
         })
     case "draft_propose_create_document":
         guard let title = args["title"] as? String, let instruction = args["instruction"] as? String else { throw DraftToolError.unavailable("title and instruction are required") }
         let edit = AgentEdit(action: "create_document", blockId: "new", value: args["folder_id"] as? String, text: args["markdown"] as? String, expectedText: title, target: args["space_id"] as? String)
         return try queue(AgentProposal(documentId: "new", documentTitle: title, instruction: instruction, expectedRevision: AgentProposalStore.libraryRevision(draft.library), edits: [edit]), draft)
+    case "draft_propose_create_folder":
+        guard let name = args["name"] as? String, let instruction = args["instruction"] as? String else { throw DraftToolError.unavailable("name and instruction are required") }
+        let space = args["space_id"] as? String ?? draft.library.space.id
+        try draft.library.checkNewFolder(name: name, parent: args["parent_folder_id"] as? String, space: space)
+        let edit = AgentEdit(action: "create_folder", blockId: "new", value: args["parent_folder_id"] as? String, expectedText: name.trimmingCharacters(in: .whitespacesAndNewlines), target: space)
+        return try queue(AgentProposal(documentId: "new", documentTitle: name, instruction: instruction, expectedRevision: AgentProposalStore.libraryRevision(draft.library), edits: [edit]), draft)
+    case "draft_propose_delete_document":
+        guard let id = args["document_id"] as? String, let revision = args["expected_revision"] as? String, let instruction = args["instruction"] as? String else {
+            throw DraftToolError.unavailable("document_id, expected_revision and instruction are required")
+        }
+        let document = try draft.document(id)
+        guard try AgentProposalStore.revision(document) == revision else { throw AgentEditError.invalid("The document changed. Read it again before proposing.") }
+        return try queue(AgentProposal(documentId: id, documentTitle: document.title, instruction: instruction, expectedRevision: revision, edits: [AgentEdit(action: "delete_document", blockId: id)]), draft)
     case "draft_propose_rename_document", "draft_propose_move_document":
         guard let id = args["document_id"] as? String, let revision = args["expected_revision"] as? String, let instruction = args["instruction"] as? String else {
             throw DraftToolError.unavailable("document_id, expected_revision and instruction are required")

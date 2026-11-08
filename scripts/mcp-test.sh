@@ -28,7 +28,7 @@ class MCP:
         self.n += 1
         self.p.stdin.write(json.dumps({"jsonrpc": "2.0", "id": self.n, "method": method, "params": params}) + "\n"); self.p.stdin.flush()
         return json.loads(self.p.stdout.readline())
-    def tool(self, name, **args):
+    def tool(self, name, /, **args):
         r = self.rpc("tools/call", {"name": name, "arguments": args})["result"]
         text = r["content"][0]["text"]
         if r.get("isError"): return {"error": text}
@@ -49,7 +49,7 @@ def filehash(doc): return hashlib.sha256(open(f"{vault}/docs/{doc}.json", "rb").
 m = MCP()
 tools = [t["name"] for t in m.rpc("tools/list", {})["result"]["tools"]]
 print("tools:", ", ".join(tools))
-ok("tools listed", len(tools) == 14, tools)
+ok("tools listed", len(tools) == 16, tools)
 spaces = m.tool("draft_list_spaces"); ok("1 list spaces", len(spaces) == 2, spaces)
 docs = m.tool("draft_list_documents"); note = next(d for d in docs if d["title"] == "MCP test note"); ok("2 list documents", note, docs)
 hits = m.tool("draft_search", query="zebra-quartz"); ok("3 search", hits and hits[0]["document_id"] == note["id"], hits)
@@ -153,6 +153,39 @@ r = review("accept", undo=True); ok("move to folder and undo", r["afterFolder"] 
 st = m.tool("draft_read_structure", document_id=new)
 m.tool("draft_propose_move_document", document_id=new, expected_revision=st["revision"], space_id=work_space["id"], instruction="Move to Work")
 r = review("accept"); ok("move to another Space", r["afterSpace"] == work_space["id"] and any(d["title"] == "Trip plan" for d in m.tool("draft_list_documents", space_id=work_space["id"])), r)
+
+# Folders: reviewed, full path, duplicates and bad names refused, stale, reject, one Undo.
+note_before = filehash(note["id"])
+r = m.tool("draft_propose_create_folder", name="Projects", instruction="A home for projects")
+ok("folder proposal queued", r.get("status") == "pending" and not any(f["name"] == "Projects" for f in m.tool("draft_list_folders")), r)
+r = review("accept", shot="mcp-review-folder")
+projects = r.get("folderId")
+ok("folder created at its path", r["status"] == "accepted" and r.get("folderPath", "").endswith("› Projects") and filehash(note["id"]) == note_before, r)
+r = m.tool("draft_propose_create_folder", name="2026", parent_folder_id=projects, instruction="Year folder")
+r = review("accept", undo=True)
+ok("nested folder shows its path and one Undo removes it", r["status"] == "accepted" and r.get("folderPath", "").endswith("› Projects › 2026") and r.get("folderAfterUndo") == "removed", r)
+ok("duplicate folder name refused", "already exists" in m.tool("draft_propose_create_folder", name="projects", instruction="dup").get("error", ""))
+ok("invalid folder names refused", all("error" in m.tool("draft_propose_create_folder", name=n, instruction="bad") for n in ["a/b", "..", " "]))
+ok("missing parent refused", "error" in m.tool("draft_propose_create_folder", name="X", parent_folder_id="f_missing", instruction="bad"))
+m.tool("draft_propose_create_folder", name="Alpha", instruction="first"); m.tool("draft_propose_create_folder", name="Beta", instruction="second")
+review("accept"); r = review("accept")
+ok("second folder from the same revision is stale", r["status"] == "stale", r)
+m.tool("draft_propose_create_folder", name="Rejected folder", instruction="no")
+r = review("reject"); ok("rejected folder not created", r["status"] == "rejected" and not any(f["name"] == "Rejected folder" for f in m.tool("draft_list_folders")), r)
+
+# Delete whole notes: to Recently Deleted with nested pages, one Undo restores, needs Destructive.
+st = m.tool("draft_read_structure", document_id=note["id"])
+newbie = MCP("newcomer"); r = newbie.tool("draft_propose_delete_document", document_id=note["id"], expected_revision=st["revision"], instruction="Delete"); newbie.close()
+ok("delete needs the Destructive permission", "error" in r and "destructive" in r["error"], r)
+m.tool("draft_propose_delete_document", document_id=note["id"], expected_revision=st["revision"], instruction="Clean up")
+r = review("reject"); ok("rejected delete keeps the note", r["status"] == "rejected" and r["afterDeleted"] == "no", r)
+trashed_before = None
+m.tool("draft_propose_delete_document", document_id=note["id"], expected_revision=st["revision"], instruction="Clean up")
+r = review("accept", undo=True, shot="mcp-review-delete")
+ok("delete moves note and nested page to Recently Deleted", r["status"] == "accepted" and r["afterDeleted"] == "yes" and int(r["afterTrashed"]) >= 2 and "Recently Deleted" in r["result"], r)
+ok("one Undo restores note and nested page", r["undoneDeleted"] == "no" and int(r["undoneTrashed"]) == int(r["afterTrashed"]) - 2 and filehash(note["id"]) == note_before, r)
+r = m.tool("draft_propose_delete_document", document_id=note["id"], expected_revision="0" * 64, instruction="Old")
+ok("stale delete refused", "error" in r and "changed" in r["error"], r)
 
 # Permissions: per client, checked by the server and again when applying.
 blocked = MCP("blocked"); r = blocked.tool("draft_list_documents"); blocked.close()

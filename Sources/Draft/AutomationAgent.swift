@@ -188,6 +188,10 @@ extension Automation {
         r["result"] = saved?.result ?? ""
         let docId = p.documentId == "new" ? (saved?.result?.components(separatedBy: " ").first { $0.hasPrefix("d_") }?.trimmingCharacters(in: .punctuationCharacters) ?? "") : p.documentId
         r["documentId"] = docId
+        if let fid = saved?.result?.components(separatedBy: " ").first(where: { $0.hasPrefix("f_") })?.trimmingCharacters(in: .punctuationCharacters) {
+            r["folderId"] = fid
+            r["folderPath"] = m.library.folderPath(fid)
+        }
         func record(_ prefix: String) {
             let doc = try? m.vault.loadDoc(docId)
             r[prefix + "Text"] = doc.map { docPlainText($0.content) } ?? ""
@@ -202,6 +206,7 @@ extension Automation {
             r[prefix + "Marks"] = marks.sorted().joined(separator: ",")
             r[prefix + "Tasks"] = doc.map { tasksOf($0.content).map { "\($0.checked)" }.joined(separator: ",") } ?? ""
             r[prefix + "Style"] = doc?.appearance.styleId ?? ""
+            r[prefix + "Trashed"] = "\(m.library.docs.values.filter { $0.deletedAt != nil }.count)"
         }
         m.refreshIndex(); await wait(1.2)
         record("after")
@@ -215,6 +220,7 @@ extension Automation {
             }
             m.flushAll(); m.refreshIndex(); await wait(1.2)
             record("undone")
+            if let fid = r["folderId"] { r["folderAfterUndo"] = m.library.folders.contains { $0.id == fid } ? "kept" : "removed" }
         }
     }
 
