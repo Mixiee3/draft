@@ -88,6 +88,9 @@ struct RootView: View {
         .animation(Motion.panel(model.library.settings.reduceMotion), value: pinnedAssistant)
         .onAppear { if !model.ready && model.fatal == nil { model.boot() } }
         .onOpenURL { model.openLink($0) }
+        .sheet(item: $model.agentProposal) { proposal in
+            AgentProposalReview(proposal: proposal).environmentObject(model)
+        }
         .background(WindowChrome())
         .ignoresSafeArea()
     }

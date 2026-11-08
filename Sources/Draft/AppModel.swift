@@ -45,6 +45,7 @@ final class AppModel: ObservableObject {
     @Published var styleGallery = false
     @Published var toasts: [Toast] = []
     @Published var confirm: ConfirmRequest?
+    @Published var agentProposal: AgentProposal?
     @Published var saveState = "saved" // saved | saving | error
     @Published var librarySearch = ""
     @Published var librarySearchOpen = false
@@ -66,6 +67,7 @@ final class AppModel: ObservableObject {
     var lastIndexSeconds = 0.0
     var linkRefreshTimer: Timer?
     var dayTimer: Timer?
+    var agentProposalTimer: Timer?
     var watchedDay = ""
     var clock: () -> Date = Date.init // replaced only by automation checks
     let reminders = ReminderScheduler()
@@ -106,6 +108,7 @@ final class AppModel: ObservableObject {
             if !expired.isEmpty { deleteForever(expired) }
             loadIndex()
             startDayWatch()
+            startAgentProposalWatch()
             if activeView.kind == "doc", let id = activeView.docId { _ = ensureDoc(id) }
             ready = true
         } catch let e as NewerSchemaError {

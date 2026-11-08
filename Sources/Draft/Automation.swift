@@ -44,6 +44,8 @@ enum Automation {
             case "motion-frames": await motionFrames()
             case "ux-perf": await uxPerf()
             case "idle": await idle()
+            case "agent-edit": await agentEdit()
+            case "agent-external-accept": await agentExternalAccept()
             default: break
             }
             NSApp.terminate(nil)

@@ -58,6 +58,47 @@ public struct DraftTools {
         return String(result.markdown.prefix(max(100, min(maxCharacters, 100_000))))
     }
 
+    public struct EditableBlock: Codable, Sendable {
+        public var id: String
+        public var type: String
+        public var text: String
+        public var markdown: String
+        public var attrs: [String: JSONValue]
+    }
+
+    public struct DocumentStructure: Codable, Sendable {
+        public var documentId: String
+        public var title: String
+        public var revision: String
+        public var styleId: String
+        public var blocks: [EditableBlock]
+    }
+
+    public func structure(_ id: String) throws -> DocumentStructure {
+        let doc = try document(id)
+        var blocks: [EditableBlock] = []
+        let editable: Set<String> = ["paragraph", "heading", "codeBlock", "listItem", "taskItem", "toggleItem", "image", "file", "pageCard", "table", "collection", "linkPreview", "horizontalRule", "pageBreak"]
+        func visit(_ node: Node) {
+            if editable.contains(node.type), let blockId = node.id {
+                var fragment = DocFile.empty(id: "excerpt", title: "")
+                let wrapped: Node
+                switch node.type {
+                case "listItem": wrapped = Node("bulletList", content: [node])
+                case "taskItem": wrapped = Node("taskList", content: [node])
+                case "toggleItem": wrapped = Node("toggleList", content: [node])
+                default: wrapped = node
+                }
+                fragment.content = Node("doc", content: [wrapped])
+                let markdown = Markdown.render(fragment, assetPath: { _ in "" }, pageLink: { _, _ in nil }).markdown
+                blocks.append(EditableBlock(id: blockId, type: node.type, text: docPlainText(node), markdown: markdown, attrs: node.attrs ?? [:]))
+                if ["listItem", "taskItem", "toggleItem"].contains(node.type) { return }
+            }
+            for child in node.content ?? [] { visit(child) }
+        }
+        visit(doc.content)
+        return try DocumentStructure(documentId: id, title: doc.title, revision: AgentProposalStore.revision(doc), styleId: doc.appearance.styleId, blocks: blocks)
+    }
+
     public func block(docId: String, blockId: String) throws -> String {
         let doc = try document(docId)
         guard let block = doc.content.block(blockId) else { throw DraftToolError.missingBlock }

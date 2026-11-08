@@ -17,6 +17,7 @@ The reference implementation is `Sources/DraftCore`. All JSON is UTF‑8; timest
   history/<docId>/<ms>.json automatic local backups of a document (≤ 1 per 10 min, 30 kept)
   index/index.json        derived link/tag/task index (safe to delete; rebuilt on launch)
   assistant/<spaceId>.json local Assistant history; <spaceId>-openai.json optional cloud history
+  agent-requests/<requestId>.json local Codex proposals and acceptance status; never document content
 ```
 
 ## Rules for every implementation
@@ -157,6 +158,15 @@ sources?: [{n, docId, blockId?, title, text}], createdAt, failed?}]}`. `action` 
 `summarize`, `explain`, `rewrite`, `shorten`, `expand`, `outline`; `scope` is `selection`, `document` or
 `space`. Sources record which blocks an answer cited. History never changes a document. Models are not
 part of the vault: they live in `~/Library/Application Support/Draft/Models`.
+
+### agent-requests/&lt;requestId&gt;.json
+
+An external Codex MCP client may queue a proposed note edit here. A proposal includes its target
+document ID, the SHA-256 revision of the complete document JSON, a short instruction, a bounded
+list of typed edits, and `status` (`pending`, `accepted`, `rejected`, or `stale`). Queuing a proposal
+does not change `docs/` or `library.json`. The running Mac app shows the proposal for review, checks
+the revision again, and applies accepted edits through its editor with one Undo step. Stale proposals
+cannot overwrite newer text. This directory is local coordination data, not a source of truth for notes.
 
 ### index/index.json (derived)
 
