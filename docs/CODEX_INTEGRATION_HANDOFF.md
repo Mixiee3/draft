@@ -14,10 +14,17 @@
   after the user clicks Apply, rechecks the revision, saves with a backup, updates the index and makes
   it one Undo step (note edits in the note's undo; create/rename/move in Edit › Undo Agent Change and
   the toast). Reject, stale and refused edits leave everything unchanged.
-- Checks: `scripts/mcp-test.sh` (39 checks over real stdio in a throwaway vault),
+- Claude Code was restarted after registration and lists all 14 tools. They point at the personal
+  vault, so all testing uses `--vault` throwaway vaults.
+- Review sheet validated with `scripts/review-gallery.sh`: light, dark and narrow captures in
+  `docs/screenshots/v07/`; Return applies (one Undo reverses it) and Escape rejects, as real key
+  events. Format-only cards now show the block under a neutral label and inline formats preview
+  the result. Tab focus with Keyboard Navigation and VoiceOver still need a person.
+- Checks: `scripts/mcp-test.sh` (43 checks over real stdio in a throwaway vault),
   `scripts/agent-test.sh`, unit tests (`AgentBlockOpsTests`, `AgentLibraryProposalTests`).
-- Not yet: folder creation, deleting whole notes, multi-note proposals, tables and collections,
-  inserting images or files (existing ones are always kept), and a genuine Codex app-server mode.
+- Next (see ROADMAP v0.7 rows 8–17, in order): MCP permissions, folder creation, deleting whole
+  notes to Recently Deleted, multi-note proposals, tables, collections, inserting images and files,
+  richer actions, review-sheet polish, and a Codex app-server mode only after supported sign-in.
 
 The original handoff follows.
 

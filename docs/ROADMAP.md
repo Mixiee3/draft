@@ -303,24 +303,45 @@ Screens: `docs/screenshots/v06/`.
 
 ## v0.7 — "Agents that ask first" (macOS) 🟡 in progress
 
-Codex and Claude Code work on notes through Draft's MCP server; every change is a proposal the user
-reviews and applies in Draft.
+Codex and Claude Code work on notes through Draft's MCP server. Every change is a proposal: the
+server writes only `agent-requests/`, and Draft applies it after the user clicks Apply, rechecks the
+revision, saves with a backup, updates the index and makes it one Undo step. These rules hold for
+every row below; a row isn't done until `scripts/mcp-test.sh` covers accept, one Undo, reject and a
+stale revision for it in a throwaway vault.
+
+**Shared budgets for every row.** Proposal queued by the server < 50 ms; review sheet first frame
+< 100 ms; applying a proposal of up to 100 edits to a 2,000-block note < 250 ms; one Undo < 100 ms;
+typing in the open note unaffected (Return p95 < 33 ms in `scripts/perf.sh`).
+**Shared accessibility.** Every card is one VoiceOver element that reads the change in plain words;
+Return applies, Escape rejects, Tab reaches both buttons with a visible ring; light, dark, narrow
+(760 pt) and Reduce Motion (sheet fades, no slide).
+
+### Done
 
 | # | Feature | Status | Acceptance check (result) |
 |---|---|---|---|
-| 1 | Claude Code and Codex connected to the stable checkout | ✅ | Codex `~/.codex/config.toml` and Claude Code `~/.claude.json` (project scope) run `~/Documents/Draft/scripts/draft-mcp.sh`; Claude Code CLI reports “Connected”. Tools appear in a new Claude Code session (not in the session that added them) |
-| 2 | Read tools | ✅ | Spaces, folders, documents, search, document, structure, block, revision, formatting guide (`scripts/mcp-test.sh`) |
-| 3 | Create notes | ✅ | Reviewed; fresh block ids; folder and Space; index updated; Undo moves it to Recently Deleted; reject, stale (folders changed) and relaunch checked |
-| 4 | Rename and move notes (folder or Space, with nested pages) | ✅ | Reviewed, one Undo each |
-| 5 | Append, insert, delete, reorder blocks | ✅ | One proposal = one Undo; other blocks keep ids and marks (`AgentBlockOpsTests`, end-to-end) |
-| 6 | Block types, headings, lists, tasks, quotes, callouts, code | ✅ | Existing actions plus `task_checked` |
-| 7 | Inline formatting, colours, highlights, links | ✅ | bold/italic/underline/strike/code, text colour, highlight, link (http/https/mailto/draft only), unlink |
-| 8 | Block colours, focus and block decorations, separators (line, strong, dotted, three-dot, wave, tape), document styles | ✅ | Existing actions, verified in the end-to-end block proposal |
-| 9 | Tags and tasks | ✅ | Tags are `#words` in text (indexed after apply); task state via `task_checked` |
-| 10 | Images, files, captions, nested pages and attachments preserved | ✅ | Can't be deleted by a proposal; kept through every other edit; whole-note replacement refused when present |
-| 11 | Review UI in Draft's design | 🟡 | Plain-language card per change with before/after, inline Markdown, light and dark, Return/Escape, VoiceOver-combined cards; checked in dark mode at normal width only; VoiceOver not walked through by a person |
-| 12 | Create folders, delete notes, multi-note proposals, tables/collections, inserting images or files | ⬜ planned | Same reviewed design |
-| 13 | Genuine Codex app-server mode | ⬜ planned | Only after a supported sign-in flow exists |
+| 1 | Claude Code and Codex connected to the stable checkout | ✅ | Both run `~/Documents/Draft/scripts/draft-mcp.sh`; after a restart Claude Code lists all 14 `draft_*` tools |
+| 2 | Read tools | ✅ | Spaces, folders, documents, search, document, structure, block, revision, formatting guide |
+| 3 | Create, rename and move notes | ✅ | Reviewed; fresh ids; folder and Space; one Undo; reject, stale and relaunch checked |
+| 4 | Append, insert, delete, reorder blocks; block types, lists, tasks, quotes, callouts, code | ✅ | One proposal = one Undo; other blocks keep ids and marks |
+| 5 | Inline formats, colours, highlights, links, block colours, decorations, separators, styles | ✅ | Verified end to end |
+| 6 | Images, files, tables, nested pages and links protected | ✅ | Deletes of image, file, table and page card refused; whole-note replacement refused while they exist (43-check `mcp-test.sh`) |
+| 7 | Review sheet | 🟡 | Light, dark and 760 pt captures (`docs/screenshots/v07/`); Return applies and Escape rejects as real key events; readable before/after for text, inline, block, separator, move and rename. **Needs a person:** Tab order and focus ring with Keyboard Navigation on (synthetic Tab didn't move SwiftUI focus), VoiceOver |
+
+### Planned, in order
+
+| # | Feature | Depends on | Acceptance check | Accessibility | Performance |
+|---|---|---|---|---|---|
+| 8 | **MCP permissions and confirmations** | — | Settings → Agents lists connected clients by the name they send, with per-client switches for *Read notes* and *Propose changes* (both on by default for local stdio, off when a client is first seen with a different name); reads are logged (time, tool, document) in a local list the user can clear; a proposal from a client without permission is refused with a clear MCP error. No note content in logs | Settings rows are switches with labels; log is a table VoiceOver reads row by row | Permission check < 1 ms per call; log capped at 1,000 entries |
+| 9 | **Create folders** (`draft_propose_create_folder`, nested under a parent) | 8 | Folder appears after Apply in the right Space and parent; one Undo removes it if still empty, otherwise refuses with an explanation; stale if the parent was deleted | Card: “Create folder “X” in Y” | Apply < 50 ms |
+| 10 | **Delete whole notes with recovery** (`draft_propose_delete_document`) | 8 | Moves the note and its nested pages to Recently Deleted (never permanent); the card lists every page affected and warns about incoming links; one Undo restores; permanent deletion stays human-only | Destructive card styling plus spoken “moves N pages to Recently Deleted”; Apply button reads “Move to Recently Deleted” | Apply < 100 ms for 100 nested pages |
+| 11 | **Multi-note proposals** (one request, several notes, each with its own revision) | 9, 10 | Sheet groups cards by note; Apply is all-or-nothing: any stale note refuses the whole proposal; one Undo reverts every note; partial saves impossible (applied in memory, saved together, rolled back on failure) | Per-note group headings; summary line “Changes 3 notes” | 10 notes × 20 edits applied < 500 ms |
+| 12 | **Tables** (cell text, add/remove/reorder rows and columns) | 11 | Edits address the table block id plus row/column ids; header kept; one Undo; Markdown export matches; refuses edits if the table changed | Card shows a small before/after table; VoiceOver reads “row 2, column Pages: 120 → 140” | Apply < 50 ms for 500 cells |
+| 13 | **Collections** (add/update items and fields, set views) | 12 | Items keep ids; select/relation values validated against the field; relation targets must exist; one Undo | Same as tables, plus field names in every spoken change | Gallery stays ≥ 99% frames on time after apply |
+| 14 | **Insert images and files** | 8 | The client passes a local file path; Draft copies it into `assets/` only after Apply (type and size limits: images ≤ 25 MB, files ≤ 100 MB), shows a thumbnail or file icon in the card; Reject leaves no asset behind; one Undo removes the block and an unreferenced copied asset | Card thumbnail has the alt text; Apply announces the file name | Thumbnail in the card < 150 ms; copying off the main thread |
+| 15 | **Richer agent actions**: link to another note by title (`draft_propose_link_note`), add or remove tags (`#tag` with tag rules), set task due dates, set captions and alt text on existing images, apply a saved style to several notes, daily-note append | 11 | Each action has a plain-language card, validation, one Undo and an end-to-end check; link targets resolve to existing notes; due dates use the user's calendar settings | Cards read naturally (“Add #shopping to 3 tasks”) | Same shared budgets |
+| 16 | **Review sheet polish**: collapse long proposals (show first 20 cards, “Show all”), a mini preview of the note after the change, per-card skip (apply the rest) | 11 | Skipped cards aren't applied and are reported back; a 100-card proposal opens in < 100 ms | Skip is a toggle per card with a label | Sheet first frame < 100 ms for 100 cards |
+| 17 | **Codex app-server integration** (separate from the OpenAI API mode) | 8, 11 | Only after OpenAI documents a supported sign-in for third-party apps: Draft starts `codex app-server`, streams turns, shows approvals in Draft's own sheet, cancel works; no ChatGPT credentials stored by Draft; off by default and clearly labelled | Same review sheet; streaming status announced politely | First token < 2 s on a normal network; cancel < 500 ms |
 
 ## v0.8 — "Trust" (macOS)
 

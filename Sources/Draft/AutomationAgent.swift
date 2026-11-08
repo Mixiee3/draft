@@ -138,6 +138,10 @@ extension Automation {
         defer { if let d = try? JSONSerialization.data(withJSONObject: r, options: [.prettyPrinted, .sortedKeys]) { try? d.write(to: out.appendingPathComponent("agent-review.json")) } }
         await wait(0.6)
         m.agentProposalTimer?.invalidate() // one proposal per run; the next stays queued
+        let env = ProcessInfo.processInfo.environment
+        if let theme = env["DRAFT_AGENT_THEME"] { m.setSettings { $0.theme = theme } }
+        if env["DRAFT_AGENT_NARROW"] != nil, let w = NSApp.windows.first(where: { $0.isVisible }) { w.setFrame(NSRect(x: 60, y: 60, width: 760, height: 720), display: true) }
+        await wait(0.3)
         m.showNextAgentProposal()
         guard let p = m.agentProposal else { r["error"] = "no pending proposal"; return }
         await wait(0.8)
@@ -145,8 +149,25 @@ extension Automation {
             await captureWindow(sheet, name)
         }
         r["requestId"] = p.id
-        let decision = ProcessInfo.processInfo.environment["DRAFT_AGENT_DECISION"] ?? "accept"
-        if decision == "reject" { m.rejectAgentProposal() } else { m.acceptAgentProposal() }
+        let decision = env["DRAFT_AGENT_DECISION"] ?? "accept"
+        if let w = NSApp.windows.first(where: { $0.isVisible }), let sheet = w.attachedSheet {
+            r["sheetSize"] = "\(Int(sheet.frame.width))x\(Int(sheet.frame.height))"
+            r["sheetInsideWindow"] = w.frame.insetBy(dx: -1, dy: -1).contains(sheet.frame) ? "yes" : "no"
+        }
+        if let key = env["DRAFT_AGENT_KEY"] {
+            // A real key press through the app, as a keyboard-only user would: Return applies, Escape rejects.
+            guard let w = NSApp.windows.first(where: { $0.isVisible }), let sheet = w.attachedSheet else { r["error"] = "no sheet"; return }
+            sheet.makeKey()
+            let code: UInt16 = key == "return" ? 36 : 53
+            for type in [NSEvent.EventType.keyDown, .keyUp] {
+                if let e = NSEvent.keyEvent(with: type, location: .zero, modifierFlags: [], timestamp: ProcessInfo.processInfo.systemUptime, windowNumber: sheet.windowNumber,
+                                            context: nil, characters: key == "return" ? "\r" : "\u{1b}", charactersIgnoringModifiers: key == "return" ? "\r" : "\u{1b}", isARepeat: false, keyCode: code) {
+                    NSApp.sendEvent(e)
+                }
+            }
+            await wait(0.6)
+            r["sheetClosedByKey"] = w.attachedSheet == nil ? "yes" : "no"
+        } else if decision == "reject" { m.rejectAgentProposal() } else { m.acceptAgentProposal() }
         await wait(0.5)
         let saved = (try? AgentProposalStore.load(p.id, vaultURL: m.vault.dir))
         r["status"] = saved?.status ?? "missing"
@@ -193,6 +214,7 @@ extension Automation {
         var content = Node("doc", content: MarkdownImport.blocks("Planning zebra-quartz #garden\n- [ ] water the beds\nSee [the guide](https://example.com/guide)\nPlain closing line"))
         content.content!.append(Node("image", attrs: ["assetId": "missing-asset", "alt": "Bed plan", "caption": "Bed plan"]))
         content.content!.append(Node("file", attrs: ["assetId": "missing-file", "name": "plan.pdf", "size": 1200]))
+        if let table = Tables.parse(["| Crop | Bed |", "| --- | --- |", "| Beans | 3 |"]) { content.content!.append(table) }
         if let child = m.createDoc(parentDocId: id, open: false, title: "Seed list") {
             content.content!.append(Node("pageCard", attrs: ["docId": .string(child), "title": "Seed list", "presentation": "card"]))
         }

@@ -94,6 +94,13 @@ ok("16 invalid edit fails in Draft without changes", r["status"] == "failed" and
 image = next(b for b in st["blocks"] if b["type"] == "image")
 m.tool("draft_propose_note_edits", document_id=note["id"], expected_revision=st["revision"], instruction="Remove image", edits=[{"action": "delete_block", "block_id": image["id"]}])
 r = review("accept"); ok("attachments can't be deleted", r["status"] == "failed" and "image" in r["afterTypes"], r)
+for kind in ["file", "table", "pageCard"]:
+    st = m.tool("draft_read_structure", document_id=note["id"]); b = next(x for x in st["blocks"] if x["type"] == kind)
+    m.tool("draft_propose_note_edits", document_id=note["id"], expected_revision=st["revision"], instruction=f"Remove {kind}", edits=[{"action": "delete_block", "block_id": b["id"]}])
+    r = review("accept"); ok(f"{kind} can't be deleted", r["status"] == "failed" and kind in r["afterTypes"], r)
+st = m.tool("draft_read_structure", document_id=note["id"])
+m.tool("draft_propose_note_edits", document_id=note["id"], expected_revision=st["revision"], instruction="Rewrite everything", edits=[{"action": "replace_document", "block_id": note["id"], "text": "# Fresh\nOnly text"}])
+r = review("accept"); ok("whole-note replacement refused with attachments", r["status"] == "failed" and all(k in r["afterTypes"] for k in ["image", "file", "table", "pageCard"]) and "link" in r["afterMarks"], r)
 
 # Block operations, links, tags, tasks and formatting in one proposal; one Undo reverses all of it.
 st = m.tool("draft_read_structure", document_id=note["id"]); by = {b["text"]: b for b in st["blocks"]}
@@ -113,7 +120,7 @@ r = review("accept", undo=True, shot="mcp-review-blocks")
 t = r["afterTypes"].split(",")
 ok("insert, append, move, delete applied", r["status"] == "accepted" and "Next steps" in r["afterText"] and "Summary: plant in April." in r["afterText"] and "See the guide" not in r["afterText"] and r["afterText"].startswith("Plain closing line"), r)
 ok("links, tags, tasks", "link:https://example.com/plan" in r["afterMarks"] and "#shopping" in r["afterText"] and "true" in r["afterTasks"], r)
-ok("images, files and nested page kept", all(x in t for x in ["image", "file", "pageCard"]) and "horizontalRule" in t and "callout" in t, t)
+ok("images, files, table and nested page kept", all(x in t for x in ["image", "file", "table", "pageCard"]) and "horizontalRule" in t and "callout" in t, t)
 ok("block proposal is one Undo", r["undoneText"] == m.tool("draft_read_document", document_id=note["id"]) or "Next steps" not in r["undoneText"] and "See the guide" in r["undoneText"], r)
 
 # Create: reviewed, fresh ids, folder, index; reject; stale; Undo; persistence.
