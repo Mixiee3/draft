@@ -99,7 +99,7 @@ struct RootView: View {
         .onAppear { if !model.ready && model.fatal == nil { model.boot() } }
         .onOpenURL { model.openLink($0) }
         .sheet(item: Binding(get: { model.agentProposal }, set: { model.agentProposal = $0 })) { proposal in
-            AgentProposalReview(proposal: proposal).environment(model)
+            AgentProposalReview(proposal: proposal).environment(model).environment(\.tokens, t)
         }
         .background(WindowChrome())
         .ignoresSafeArea()
