@@ -106,23 +106,39 @@ struct RootView: View {
     }
 }
 
-/// A transparent unified toolbar area: macOS then places the window buttons with room around
-/// them (and keeps them right in full screen), on the same line as the sidebar and tab strip.
+/// A 52 pt title band with the window buttons centred on the tab-strip line. Done by enlarging the
+/// standard title bar rather than adding an empty toolbar: a toolbar's view swallowed clicks on the
+/// tab strip under it on every screen except a document, where a SwiftUI platform view happened to
+/// catch them first.
 struct WindowChrome: NSViewRepresentable {
     static let height: CGFloat = 52
     final class V: NSView {
+        private var observers: [NSObjectProtocol] = []
         override func viewDidMoveToWindow() {
             guard let w = window else { return }
             w.titlebarAppearsTransparent = true
             w.titleVisibility = .hidden
             w.styleMask.insert(.fullSizeContentView)
-            if w.toolbar == nil {
-                let t = NSToolbar(identifier: "draft.window")
-                t.showsBaselineSeparator = false
-                t.allowsUserCustomization = false
-                w.toolbar = t
+            w.toolbar = nil
+            observers.forEach(NotificationCenter.default.removeObserver)
+            observers = [NSWindow.didResizeNotification, NSWindow.didEndLiveResizeNotification, NSWindow.didExitFullScreenNotification,
+                         NSWindow.didEnterFullScreenNotification, NSWindow.didBecomeKeyNotification].map {
+                NotificationCenter.default.addObserver(forName: $0, object: w, queue: .main) { [weak w] _ in if let w { Self.placeButtons(w) } }
             }
-            w.toolbarStyle = .unified
+            Self.placeButtons(w)
+        }
+        deinit { observers.forEach(NotificationCenter.default.removeObserver) }
+
+        static func placeButtons(_ w: NSWindow) {
+            guard !w.styleMask.contains(.fullScreen), let close = w.standardWindowButton(.closeButton),
+                  let bar = close.superview, let container = bar.superview else { return }
+            let h = WindowChrome.height
+            container.frame = NSRect(x: 0, y: w.frame.height - h, width: w.frame.width, height: h)
+            bar.frame = container.bounds
+            for (i, type) in [NSWindow.ButtonType.closeButton, .miniaturizeButton, .zoomButton].enumerated() {
+                guard let b = w.standardWindowButton(type) else { continue }
+                b.setFrameOrigin(NSPoint(x: 20 + CGFloat(i) * 20, y: ((h - b.frame.height) / 2).rounded()))
+            }
         }
     }
     func makeNSView(context: Context) -> NSView { V() }
@@ -151,7 +167,10 @@ struct MainContent: View {
         ZStack {
             switch v.kind {
             case "doc":
-                if let id = v.docId { DocumentScreen(docId: id).id(id) }
+                if let id = v.docId {
+                    if let meta = model.library.docs[id], meta.deletedAt == nil, model.docs[id] != nil { DocumentScreen(docId: id).id(id) }
+                    else { MissingDocument(docId: id) }
+                }
             case "settings": SettingsView(section: v.section ?? "appearance")
             case "tasks": TasksView(section: v.section).id(v)
             case "calendar": CalendarView(focus: v.section).id(v)
@@ -164,6 +183,24 @@ struct MainContent: View {
         .id(v.kind == "doc" ? (v.docId ?? "") : v.kind + (v.section ?? "") + (v.folderId ?? ""))
         .animation(Motion.navigate(model.library.settings.reduceMotion), value: v)
         .frame(maxWidth: .infinity, maxHeight: .infinity)
+    }
+}
+
+/// A tab whose note was deleted or can't be read: say so, instead of showing nothing.
+struct MissingDocument: View {
+    @Environment(AppModel.self) var model
+    let docId: String
+    var body: some View {
+        let meta = model.library.docs[docId]
+        let trashed = meta?.deletedAt != nil
+        EmptyState(symbol: trashed ? "trash" : "doc.questionmark",
+                   title: trashed ? "“\(meta?.title.isEmpty == false ? meta!.title : "Untitled")” is in Recently Deleted" : "This note isn't available",
+                   message: trashed ? "Restore it to keep working, or close this tab." : "It may have been deleted permanently or its file can't be read.") {
+            HStack(spacing: DS.s2) {
+                if trashed { Button("Restore") { model.restore(docId); _ = model.ensureDoc(docId) }.buttonStyle(.draftPrimary) }
+                Button("Close Tab") { model.closeTab(model.activeTab.id) }.buttonStyle(.draft)
+            }
+        }
     }
 }
 
@@ -227,6 +264,7 @@ struct TabStrip: View {
             }
             // Tabs that run past the edge fade out instead of being cut mid-word.
             .mask(HStack(spacing: 0) { Color.black; LinearGradient(colors: [.black, .clear], startPoint: .leading, endPoint: .trailing).frame(width: 18) })
+            
             Spacer(minLength: 0)
             AssistantToolbarButton(compact: compact).tourAnchor(.assistant)
         }
@@ -256,11 +294,23 @@ struct TabItem: View {
                 .opacity(hover || isActive ? 1 : 0)
                 .accessibilityLabel("Close tab \(title)")
             }
-            Image(systemName: icon).font(.system(size: DS.footnote)).opacity(isActive ? 1 : 0.75)
-            if !isHome || isActive {
-                Text(title).lineLimit(1).font(.system(size: DS.body, weight: isActive ? .medium : .regular))
-                    .frame(maxWidth: 170, alignment: .leading)
+            // A real button, not a tap gesture: the strip sits in the title bar, where AppKit takes a
+            // click on bare SwiftUI content as a window drag, so tapping a tab did nothing on every
+            // screen except a document.
+            Button { model.activateTab(tab.id) } label: {
+                HStack(spacing: 6) {
+                    Image(systemName: icon).font(.system(size: DS.footnote)).opacity(isActive ? 1 : 0.75)
+                    if !isHome || isActive {
+                        Text(title).lineLimit(1).font(.system(size: DS.body, weight: isActive ? .medium : .regular))
+                            .frame(maxWidth: 170, alignment: .leading)
+                    }
+                }
+                .frame(height: 32)
+                .contentShape(Rectangle())
             }
+            .buttonStyle(.plain)
+            .accessibilityLabel("Tab \(title)")
+            .accessibilityAddTraits(isActive ? [.isSelected] : [])
         }
         .foregroundStyle(isActive ? (isHome && t.dark ? Color.white : t.text) : t.secondary)
         .padding(.horizontal, isHome && !isActive ? 10 : 12)
@@ -272,10 +322,7 @@ struct TabItem: View {
         )
         .contentShape(Rectangle())
         .onHover { hover = $0 }
-        .onTapGesture { model.activateTab(tab.id) }
-        .accessibilityElement(children: .combine)
-        .accessibilityAddTraits(isActive ? [.isButton, .isSelected] : .isButton)
-        .accessibilityLabel("Tab \(title)")
+        .accessibilityElement(children: .contain)
     }
 }
 

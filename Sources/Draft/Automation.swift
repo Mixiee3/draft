@@ -44,6 +44,7 @@ enum Automation {
             case "assistant-read": await assistantRead()
             case "motion-frames": await motionFrames()
             case "audit-shots": await auditShots()
+            case "nav-test": await navTest()
             case "audit-motion": await auditMotion()
             case "audit-frames": await auditFrames()
             case "ux-perf": await uxPerf()
