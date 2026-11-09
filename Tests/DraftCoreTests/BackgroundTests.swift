@@ -42,4 +42,21 @@ final class BackgroundTests: XCTestCase {
         let field = Backgrounds.presets[0].tokens
         XCTAssertTrue(HTMLExport.css(field, useStyle: true, backdropImage: "backdrop.png").contains("url('backdrop.png')"))
     }
+
+    func testDotTexturesAreVisibleVariedAndPersist() throws {
+        let p = Backgrounds.presets
+        let dots = p.compactMap { $0.tokens.backdrop.dots }
+        XCTAssertEqual(dots.count, p.count, "every preset carries a dot layer")
+        for d in dots {
+            XCTAssertTrue(DotTexture.styles.contains(d.style), d.style)
+            XCTAssertTrue((12...48).contains(d.spacing)); XCTAssertTrue((0.5...3).contains(d.radius))
+            XCTAssertTrue((0.2...0.8).contains(d.opacity), "subtle but visible")
+        }
+        XCTAssertEqual(Set(dots.map(\.style)), Set(DotTexture.styles), "every dot style is used")
+        XCTAssertEqual(Set(dots).count, dots.count, "no two presets share a dot layer")
+        let b = p[0].tokens.backdrop
+        XCTAssertEqual(try JSONDecoder().decode(Backdrop.self, from: JSONEncoder().encode(b)).dots, b.dots)
+        let old = try JSONDecoder().decode(Backdrop.self, from: Data(##"{"kind":"color","color":"#ffffff"}"##.utf8))
+        XCTAssertNil(old.dots, "older documents decode without dots")
+    }
 }
