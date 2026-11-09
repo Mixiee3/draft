@@ -39,10 +39,20 @@ def edits():
                               {"action": "table_insert_row", "block_id": tb["id"], "target": tb["rows"][1]["id"], "position": "after", "text": "Kale | 5"}])(next(x for x in st["blocks"] if x["type"] == "table")),
     }
 results = {}
-for kind in ["text", "inline", "block", "separator", "move", "rename", "table", "collection"]:
+for kind in ["text", "inline", "block", "separator", "move", "rename", "table", "collection", "image"]:
     for theme, narrow in [("light", False), ("dark", True)]:
         rev, e = edits()
         if kind == "rename": tool("draft_propose_rename_document", document_id=note["id"], expected_revision=rev, title="Spring planning", instruction="A clearer title")
+        elif kind == "image":
+            import struct, zlib
+            w, h = 120, 80
+            raw = b"".join(b"\x00" + bytes((x * 2 + y) % 256 for x in range(w * 3)) for y in range(h))
+            ch = lambda t, d: struct.pack(">I", len(d)) + t + d + struct.pack(">I", zlib.crc32(t + d) & 0xffffffff)
+            path = work + "/study-sketch.png"
+            open(path, "wb").write(b"\x89PNG\r\n\x1a\n" + ch(b"IHDR", struct.pack(">IIBBBBB", w, h, 8, 2, 0, 0, 0)) + ch(b"IDAT", zlib.compress(raw)) + ch(b"IEND", b""))
+            st = tool("draft_read_structure", document_id=note["id"]); anchor = next(x for x in st["blocks"] if "zebra-quartz" in x["text"])
+            tool("draft_propose_note_edits", document_id=note["id"], expected_revision=st["revision"], instruction="Add the study sketch", edits=[
+                {"action": "insert_image", "block_id": anchor["id"], "value": path, "text": "Sketch of the spring beds"}])
         elif kind == "collection":
             books = next(d for d in tool("draft_list_documents") if d["title"] == "Reading list")
             bst = tool("draft_read_structure", document_id=books["id"]); cb = next(x for x in bst["blocks"] if x["type"] == "collection")

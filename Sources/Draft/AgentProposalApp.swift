@@ -71,12 +71,14 @@ extension AppModel {
                         throw AgentEditError.invalid("This style is no longer available.")
                     }
                     updateAppearance(doc.id) { $0.styleId = styleId; $0.overrides = StyleOverrides() }
+                } else if proposal.edits.contains(where: { ["insert_image", "insert_file"].contains($0.action) }) {
+                    try applyWithAssets(doc.id, editor.controller, proposal.edits)
                 } else {
                     try editor.controller.applyAgentEdits(proposal.edits)
                 }
                 openView(.doc(doc.id))
                 markDocDirty(doc.id)
-                message = proposal.edits.allSatisfy({ CollectionData.agentActions.contains($0.action) })
+                message = proposal.usesAgentUndo
                     ? "Applied in Draft. Edit › Undo Agent Change reverses it in one step."
                     : "Applied in Draft. Use Command-Z in the note to undo it in one step."
             }
@@ -86,7 +88,7 @@ extension AppModel {
             proposal.status = "accepted"
             proposal.result = message
             try AgentProposalStore.save(proposal, vaultURL: vault.dir)
-            if proposal.changesLibrary || proposal.parts != nil || proposal.edits.allSatisfy({ CollectionData.agentActions.contains($0.action) }) { toast("Applied: \(proposal.instruction)", action: "Undo") { [weak self] in self?.undoAgentChange() } }
+            if proposal.usesAgentUndo { toast("Applied: \(proposal.instruction)", action: "Undo") { [weak self] in self?.undoAgentChange() } }
             else { toast("Changes applied to “\(proposal.documentTitle.isEmpty ? "Untitled" : proposal.documentTitle)”") }
         } catch {
             if proposal.status == "pending" { proposal.status = "failed" }
@@ -298,6 +300,45 @@ extension AppModel {
             }
             for (page, t) in titles { m.setTitle(page, t) }
             m.flushAll()
+        }
+    }
+
+    /// Files from an agent: each is checked again (same type and size rules, and the exact bytes that
+    /// were proposed), copied into the vault, then inserted with the other edits as one editor change.
+    /// If anything fails, copies that weren't in the vault before are removed. One Undo removes the
+    /// blocks and those copies.
+    private func applyWithAssets(_ docId: String, _ c: EditorController, _ edits: [AgentEdit]) throws {
+        var newAssets: [String] = []
+        func cleanup() { for a in newAssets { if let u = try? vault.assetURL(a) { try? FileManager.default.removeItem(at: u) } } }
+        var ready: [AgentEdit] = []
+        do {
+            for var e in edits {
+                if ["insert_image", "insert_file"].contains(e.action) {
+                    let info = try AgentAsset.check(path: e.value ?? "", as: e.action)
+                    if let expected = e.expectedText, expected != info.sha256 {
+                        throw AgentEditError.invalid("“\(info.name)” changed after it was proposed. Ask the agent to propose it again.")
+                    }
+                    let data = try Data(contentsOf: info.url, options: .mappedIfSafe)
+                    let name = "\(info.sha256.prefix(32)).\(info.ext)"
+                    let existed = (try? vault.assetURL(name)).map { FileManager.default.fileExists(atPath: $0.path) } ?? false
+                    let asset = try vault.putAsset(data, ext: info.ext)
+                    if !existed { newAssets.append(asset) }
+                    e.value = asset
+                    if e.action == "insert_file" { e.text = info.name; e.expectedText = String(info.size) } else { e.expectedText = nil }
+                }
+                ready.append(e)
+            }
+            try c.applyAgentEdits(ready)
+        } catch { cleanup(); throw error }
+        let added = newAssets
+        registerAgentUndo("Insert \(edits.filter { ["insert_image", "insert_file"].contains($0.action) }.count == 1 ? "File" : "Files")") { m in
+            if c.undo.groupingLevel > 0 { c.undo.endUndoGrouping() }
+            c.undo.undo()
+            m.markDocDirty(docId); m.flushAll()
+            // Only copies this proposal created, and only if no open note uses them any more.
+            for a in added where !m.docs.values.contains(where: { d in var used = false; walk(d.content) { if $0.attrs?["assetId"]?.string == a { used = true } }; return used }) {
+                if let u = try? m.vault.assetURL(a) { try? FileManager.default.removeItem(at: u) }
+            }
         }
     }
 
@@ -564,6 +605,9 @@ struct AgentProposalReview: View {
             case "table_insert_column": return ("Add a column \(e.position ?? "after") \(blocks[e.target ?? ""] ?? "another column")", nil, e.text.flatMap { $0.isEmpty ? nil : md($0) }, nil, nil)
             case "table_delete_column": return ("Delete \(blocks[e.target ?? ""] ?? "a table column")", nil, nil, nil, nil)
             case "table_move_column": return ("Move \(blocks[e.target ?? ""] ?? "a column") \(e.position ?? "after") \(blocks[e.value ?? ""] ?? "another column")", nil, nil, nil, nil)
+            case "insert_image", "insert_file":
+                let name = URL(fileURLWithPath: e.value ?? "").lastPathComponent
+                return ("Insert \(e.action == "insert_image" ? "image" : "file") “\(name)” \(e.position ?? "after") \(quoted(block))", nil, nil, nil, nil)
             case "collection_create": return ("Add a collection “\(e.text ?? "")” \(e.position ?? "after") \(quoted(block))", nil, nil, nil, nil)
             case "collection_add_item": return ("Add item “\(e.text ?? "Untitled")”", nil, readable(e.value), nil, nil)
             case "collection_update_item": return ("Update \(blocks[e.target ?? ""] ?? "an item")\(e.text.map { ", renamed “\($0)”" } ?? "")", nil, readable(e.value), nil, nil)
@@ -596,6 +640,9 @@ struct AgentProposalReview: View {
                     RoundedRectangle(cornerRadius: 4, style: .continuous).fill(Color(hex: swatch)).frame(width: 16, height: 12)
                         .overlay(RoundedRectangle(cornerRadius: 4, style: .continuous).strokeBorder(t.line, lineWidth: 0.5)).accessibilityHidden(true)
                 }
+            }
+            if ["insert_image", "insert_file"].contains(e.action), let path = e.value {
+                AssetPreview(path: path, caption: e.action == "insert_image" ? e.text : nil)
             }
             if let context, !context.isEmpty { diffLine(e.action == "delete_document" ? "Links" : "Block", AttributedString(context), t.secondary, strike: false) }
             if let before, !before.isEmpty { diffLine("Before", AttributedString(before), Color(hex: "#d4544c"), strike: after != nil || e.action == "delete_block") }
@@ -662,5 +709,55 @@ struct TablePreview: View {
         }
         .accessibilityElement(children: .ignore)
         .accessibilityLabel("\(label): " + Tables.text(table).prefix(8).map { $0.joined(separator: ", ") }.joined(separator: "; "))
+    }
+}
+
+/// The file an agent wants to add, read from where it is now: nothing is copied before Apply.
+struct AssetPreview: View {
+    @Environment(\.tokens) var t
+    let path: String
+    let caption: String?
+    @State private var thumb: NSImage?
+    @State private var meta = ""
+
+    var body: some View {
+        HStack(alignment: .top, spacing: DS.s3) {
+            Group {
+                if let thumb { Image(nsImage: thumb).resizable().aspectRatio(contentMode: .fit) }
+                else { RoundedRectangle(cornerRadius: 8, style: .continuous).fill(t.card) }
+            }
+            .frame(width: 96, height: 72)
+            .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
+            .overlay(RoundedRectangle(cornerRadius: 8, style: .continuous).strokeBorder(t.line, lineWidth: 0.5))
+            .accessibilityHidden(true)
+            VStack(alignment: .leading, spacing: 3) {
+                Text(URL(fileURLWithPath: path).lastPathComponent).font(.system(size: DS.body, weight: .semibold)).foregroundStyle(t.text).lineLimit(1).truncationMode(.middle)
+                Text(meta).font(.system(size: DS.footnote)).foregroundStyle(t.secondary)
+                Text(path).font(.system(size: DS.caption)).foregroundStyle(t.tertiary).lineLimit(1).truncationMode(.middle).textSelection(.enabled)
+                if let caption, !caption.isEmpty { Text("Caption: \(caption)").font(.system(size: DS.footnote)).foregroundStyle(t.secondary).lineLimit(2) }
+            }
+        }
+        .accessibilityElement(children: .combine)
+        .task(id: path) {
+            let p = path
+            let (image, info) = await Task.detached { () -> (NSImage?, String) in
+                let url = URL(fileURLWithPath: p)
+                let size = (try? url.resourceValues(forKeys: [.fileSizeKey]).fileSize) ?? 0
+                let kind = url.pathExtension.uppercased()
+                let isImage = AgentAsset.imageTypes.contains(url.pathExtension.lowercased())
+                var img: NSImage? = isImage ? NSImage(contentsOf: url) : nil
+                if let i = img, i.size.width > 0 {
+                    // A small copy, so a large photo isn't kept full size for a 96 pt thumbnail.
+                    let scale = min(1, 240 / max(i.size.width, i.size.height))
+                    let small = NSImage(size: NSSize(width: i.size.width * scale, height: i.size.height * scale))
+                    small.lockFocus(); i.draw(in: NSRect(origin: .zero, size: small.size)); small.unlockFocus()
+                    img = small
+                }
+                if img == nil { img = NSWorkspace.shared.icon(forFile: p) }
+                let exists = FileManager.default.fileExists(atPath: p)
+                return (img, exists ? "\(kind) · \(ByteCountFormatter.string(fromByteCount: Int64(size), countStyle: .file))" : "File not found")
+            }.value
+            thumb = image; meta = info
+        }
     }
 }

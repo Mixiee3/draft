@@ -110,7 +110,8 @@ It lists Spaces, folders and documents, searches, reads documents, blocks and st
 Draft's formatting (with a restrained "make it look better" recipe), and **proposes** changes:
 note edits (text, append, insert, delete, reorder, headings, lists, tasks, quotes, callouts, code,
 inline formatting, colours, highlights, links, block colours, focus and block decorations,
-separators, document style, table cells, rows and columns, collection items, fields and views), edits across several notes at once (all or nothing), and creating,
+separators, document style, table cells, rows and columns, collection items, fields and views, and images or files from a local path — copied into the vault
+only when you apply), edits across several notes at once (all or nothing), and creating,
 renaming, moving and deleting notes (to Recently Deleted only) and creating folders.
 
 Each agent is listed in Settings › Agents with switches for reading, proposing and destructive

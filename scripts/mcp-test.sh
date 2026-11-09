@@ -232,6 +232,48 @@ m.tool("draft_propose_note_edits", document_id=books["id"], expected_revision=m.
 r = review("accept"); ok("new collection created in the note", r["status"] == "accepted" and r["afterTypes"].count("collection") == 2, r.get("afterTypes"))
 books_ids = sorted(i["id"] for i in m.tool("draft_read_collection", document_id=books["id"], block_id=cb["id"])["items"])
 
+# Images and files: checked when proposed and at Apply, copied only on Apply, one Undo removes them.
+import struct, zlib
+def png(path, w=64, h=40):
+    raw = b"".join(b"\x00" + bytes((x * 4 + w) % 256 for x in range(w * 3)) for _ in range(h))
+    def chunk(t, d): return struct.pack(">I", len(d)) + t + d + struct.pack(">I", zlib.crc32(t + d) & 0xffffffff)
+    open(path, "wb").write(b"\x89PNG\r\n\x1a\n" + chunk(b"IHDR", struct.pack(">IIBBBBB", w, h, 8, 2, 0, 0, 0)) + chunk(b"IDAT", zlib.compress(raw)) + chunk(b"IEND", b""))
+files = work + "/files"; os.makedirs(files, exist_ok=True)
+png(files + "/garden-plan.png"); open(files + "/seeds.pdf", "wb").write(b"%PDF-1.4\n% sample\n" + b"x" * 2000)
+open(files + "/run.sh", "w").write("echo hi"); open(files + "/huge.png", "wb").truncate(26 * 1024 * 1024)
+def assets(): return len(os.listdir(vault + "/assets")) if os.path.isdir(vault + "/assets") else 0
+st = m.tool("draft_read_structure", document_id=note["id"]); anchor = next(b for b in st["blocks"] if b["type"] == "paragraph" and b["text"])
+def propose_asset(action, path, text="", client=None, rev=None):
+    t = (client or m).tool("draft_propose_note_edits", document_id=note["id"], expected_revision=rev or m.tool("draft_read_structure", document_id=note["id"])["revision"], instruction=f"Add {os.path.basename(path)}",
+        edits=[{"action": action, "block_id": anchor["id"], "value": path, "text": text, "position": "after"}])
+    return t
+ok("unsupported type refused", "error" in propose_asset("insert_file", files + "/run.sh"))
+ok("oversized image refused", "MB" in propose_asset("insert_image", files + "/huge.png").get("error", ""))
+ok("missing file refused", "no file" in propose_asset("insert_image", files + "/nope.png").get("error", ""))
+blocked = MCP("blocked"); ok("client without permission refused", "error" in propose_asset("insert_image", files + "/garden-plan.png", client=blocked)); blocked.close()
+a0 = assets()
+p = propose_asset("insert_image", files + "/garden-plan.png", "Bed plan for spring")
+ok("image proposal queued, nothing copied", p.get("status") == "pending" and assets() == a0, p)
+r = review("later"); ok("Later copies nothing", assets() == a0 and r["hiddenAfterLater"] == "yes", r)
+r = review("reject"); ok("Reject copies nothing", r["status"] == "rejected" and assets() == a0, r)
+propose_asset("insert_image", files + "/garden-plan.png", "Bed plan for spring")
+r = review("accept", undo=True, shot="mcp-review-image")
+ok("image inserted and copied", r["status"] == "accepted" and int(r["afterAssets"]) == a0 + 1 and r["afterTypes"].split(",").count("image") == 2, (r["status"], r["result"], r["afterAssets"], r["afterTypes"]))
+ok("one Undo removes the block and the copy", int(r.get("undoneAssets", -1)) == a0 and r["undoneTypes"].split(",").count("image") == 1, r)
+propose_asset("insert_image", files + "/garden-plan.png")
+png(files + "/garden-plan.png", w=65)  # the file changes after it was proposed
+r = review("accept"); ok("file changed after proposal is refused, nothing copied", r["status"] == "failed" and "changed" in r["result"] and assets() == a0, r)
+old_rev = m.tool("draft_read_structure", document_id=note["id"])["revision"]
+m.tool("draft_propose_note_edits", document_id=note["id"], expected_revision=old_rev, instruction="first", edits=[{"action": "italic", "block_id": anchor["id"], "text": anchor["text"].split()[0]}]); propose_asset("insert_file", files + "/seeds.pdf", rev=old_rev)
+r = review("accept"); r = review("accept")
+ok("stale revision refused, nothing copied", r["status"] == "stale" and assets() == a0, r)
+propose_asset("insert_file", files + "/seeds.pdf")
+r = review("accept", shot="mcp-review-file")
+ok("file inserted with its name and size", r["status"] == "accepted" and "file" in r["afterTypes"] and int(r["afterAssets"]) == a0 + 1, r)
+ok("links, table, image, nested page kept", "link" in r["afterMarks"] and all(k in r["afterTypes"] for k in ["table", "image", "pageCard"]), r)
+pdf_asset_block = [b for b in m.tool("draft_read_structure", document_id=note["id"])["blocks"] if b["type"] == "file" and b["attrs"].get("name") == "seeds.pdf"]
+ok("structure shows the attached file", len(pdf_asset_block) == 1 and pdf_asset_block[0]["attrs"].get("size") == os.path.getsize(files + "/seeds.pdf"), pdf_asset_block)
+
 # Folders: reviewed, full path, duplicates and bad names refused, stale, reject, one Undo.
 note_before = filehash(note["id"])
 r = m.tool("draft_propose_create_folder", name="Projects", instruction="A home for projects")
@@ -329,6 +371,7 @@ m = MCP()
 ok("relaunch keeps created, renamed and moved notes", any(d["title"] == "Trip plan" for d in m.tool("draft_list_documents", space_id=work_space["id"])))
 ok("table change persists after relaunch", next(b for b in m.tool("draft_read_structure", document_id=table_note)["blocks"] if b["type"] == "table")["rows"][1]["cells"][1]["text"] == "7")
 ok("collection items and ids persist after relaunch", sorted(i["id"] for i in m.tool("draft_read_collection", document_id=books["id"], block_id=cb["id"])["items"]) == books_ids and set(ids_before) <= set(books_ids))
+ok("attached file persists after relaunch", any(b["type"] == "file" and b["attrs"].get("name") == "seeds.pdf" for b in m.tool("draft_read_structure", document_id=note["id"])["blocks"]))
 ok("index rebuilt from files finds new text", any(h["document_id"] == new for h in m.tool("draft_search", query="station", space_id=work_space["id"])))
 m.close()
 failed = [k for k, v in checks.items() if not v]

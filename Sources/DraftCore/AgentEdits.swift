@@ -97,6 +97,12 @@ public struct AgentEdit: Codable, Sendable, Hashable {
         case "collection_create":
             guard !(text ?? "").trimmingCharacters(in: .whitespaces).isEmpty, (text ?? "").count <= 120 else { throw AgentEditError.invalid("A new collection needs a name of 1–120 characters.") }
             try validatePosition()
+        case "insert_image", "insert_file":
+            // A full path as proposed, or the vault asset id Draft puts there after copying the file.
+            let asset = value?.range(of: "^[a-f0-9]{16,64}\\.[a-z0-9]{1,10}$", options: .regularExpression) != nil
+            guard let value, value.hasPrefix("/") || asset, value.count <= 1_024 else { throw AgentEditError.invalid("\(action) needs the file's full path in value.") }
+            guard (text ?? "").count <= 1_000 else { throw AgentEditError.invalid("Alt text or caption is limited to 1,000 characters.") }
+            try validatePosition()
         case "delete_document": break
         case "create_folder":
             try Library.checkFolderName(title ?? "")
@@ -196,6 +202,13 @@ extension Library {
 }
 
 extension AgentProposal {
+    /// Proposals whose one-step Undo is Edit › Undo Agent Change rather than the note's own ⌘Z:
+    /// library changes, several notes, collections and copied files.
+    public var usesAgentUndo: Bool {
+        changesLibrary || parts != nil || (!edits.isEmpty && edits.allSatisfy { CollectionData.agentActions.contains($0.action) })
+            || edits.contains { ["insert_image", "insert_file"].contains($0.action) }
+    }
+
     /// Applied by the app to the library rather than through a note's editor.
     public var changesLibrary: Bool { edits.count == 1 && AgentEdit.documentActions.contains(edits[0].action) }
 }
@@ -269,6 +282,9 @@ extension AgentProposal {
         guard Set(parts.map(\.documentId)).count == parts.count else { throw AgentEditError.invalid("Each note may appear once; put all its edits in one part.") }
         guard parts.reduce(0, { $0 + $1.edits.count }) <= 300 else { throw AgentEditError.invalid("A multi-note proposal has at most 300 edits.") }
         for part in parts {
+            if part.edits.contains(where: { ["insert_image", "insert_file"].contains($0.action) }) {
+                throw AgentEditError.invalid("Inserting files goes in a single-note proposal.")
+            }
             if part.edits.contains(where: { CollectionData.agentActions.contains($0.action) }) {
                 throw AgentEditError.invalid("Collection changes go in a single-note proposal of their own.")
             }
