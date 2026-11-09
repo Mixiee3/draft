@@ -59,7 +59,7 @@ extension EditorController {
             if edit.action == "replace_text" {
                 guard current == edit.expectedText else { throw AgentEditError.invalid("Text in block \(edit.blockId) changed. Read the note again.") }
                 planned[edit.blockId] = (MarkdownImport.inline(edit.text ?? "")).map { $0.text ?? "" }.joined()
-            } else if ["bold", "italic", "underline", "strike", "code", "highlight", "text_color", "link", "unlink"].contains(edit.action) {
+            } else if ["bold", "italic", "underline", "strike", "code", "highlight", "text_color", "text_effect", "link", "unlink"].contains(edit.action) {
                 let phrase = edit.text ?? ""
                 let count = current.components(separatedBy: phrase).count - 1
                 guard count == 1 else { throw AgentEditError.invalid("The phrase “\(phrase)” must occur exactly once in block \(edit.blockId).") }
@@ -142,7 +142,7 @@ extension EditorController {
                 case "font": setBlockFont(edit.value == "document" ? nil : edit.value)
                 case "align": setAlign(edit.value)
                 case "block_color": setBlockColor(edit.value)
-                case "bold", "italic", "underline", "strike", "code", "highlight", "text_color":
+                case "bold", "italic", "underline", "strike", "code", "highlight", "text_color", "text_effect":
                     let cr = contentRange(paragraph(withId: edit.blockId)!)
                     let phrase = edit.text ?? ""
                     let local = (ns.substring(with: cr) as NSString).range(of: phrase)
@@ -155,9 +155,10 @@ extension EditorController {
                     case "strike": key = .draftStrike
                     case "code": key = .draftCode
                     case "text_color": key = .draftTextColor
+                    case "text_effect": key = .draftEffect
                     default: key = .draftHighlight
                     }
-                    setInline(key, ["highlight", "text_color"].contains(edit.action) ? edit.value : true, range: range)
+                    setInline(key, edit.action == "text_effect" ? (edit.value == "none" ? nil : edit.value) : ["highlight", "text_color"].contains(edit.action) ? edit.value : true, range: range)
                 default: break
                 }
             }

@@ -484,6 +484,7 @@ final class AppModel {
         t.tagRules = library.settings.tagRules
         t.tagColors = library.settings.tagColors
         t.dateChips = library.settings.dateStyle != "text"
+        t.plainEffects = NSWorkspace.shared.accessibilityDisplayShouldIncreaseContrast && ProcessInfo.processInfo.environment["DRAFT_CAPTURE_STANDARD_CONTRAST"] == nil
         return t
     }
 

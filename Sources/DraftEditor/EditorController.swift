@@ -813,6 +813,9 @@ public final class EditorController: NSObject, NSTextStorageDelegate, NSTextView
         if let hex { lastColor = ("highlight", hex) }
     }
 
+    /// A TextEffects kind on the selection (nil removes it). Color and contrast come from the theme.
+    public func setEffect(_ kind: String?) { applyColor(.draftEffect, kind) }
+
     public func setTextColor(_ hex: String?) {
         applyColor(.draftTextColor, hex)
         if let hex { lastColor = ("text", hex) }

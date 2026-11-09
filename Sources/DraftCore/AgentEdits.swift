@@ -61,6 +61,9 @@ public struct AgentEdit: Codable, Sendable, Hashable {
             guard let value, value.range(of: "^#[0-9A-Fa-f]{6}$", options: .regularExpression) != nil else { throw AgentEditError.invalid("Color must be a six-digit hex value.") }
             if action != "block_color" { try validatePhrase() }
         case "bold", "italic", "underline", "strike", "code", "unlink": try validatePhrase()
+        case "text_effect":
+            guard TextEffects.kinds.contains(value ?? "") || value == "none" else { throw AgentEditError.invalid("text_effect needs one of: \(TextEffects.kinds.joined(separator: ", ")), none.") }
+            try validatePhrase()
         case "link":
             try validatePhrase()
             guard let value, value.count <= 2_000, ["https://", "http://", "mailto:", "draft://"].contains(where: { value.lowercased().hasPrefix($0) }) else {

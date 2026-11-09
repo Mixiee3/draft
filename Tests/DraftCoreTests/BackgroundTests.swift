@@ -90,3 +90,19 @@ final class GradientEditTests: XCTestCase {
         for p in Backgrounds.presets { XCTAssertLessThanOrEqual(p.tokens.backdrop.stopContrast, 4.5, "\(p.name) needs no warning") }
     }
 }
+
+final class TextEffectExportTests: XCTestCase {
+    func testEffectsExportAsClassesWithReadableColors() {
+        var doc = DocFile.empty(id: "d_fx", title: "FX", styleId: "paper")
+        doc.content = Node("doc", content: [Node("paragraph", attrs: ["id": "b_p"], content: [.text("Glow", marks: [Mark("effect", attrs: ["kind": "glow"])]), .text(" and "), .text("bad", marks: [Mark("effect", attrs: ["kind": "<script>"])])])])
+        let html = HTMLExport.render(doc, tokens: Styles.builtIn[0].tokens, HTMLExport.Options(useStyle: true, today: "2026-11-09")).html
+        XCTAssertTrue(html.contains("<span class='fx fx-glow'>Glow</span>"))
+        XCTAssertFalse(html.contains("fx-<script>"), "unknown kinds are dropped")
+        XCTAssertTrue(html.contains("prefers-contrast: more"))
+        for s in Styles.all {
+            let c = TextEffects.colors(accent: s.tokens.accent, text: s.tokens.textColor, page: s.tokens.pageColor)
+            XCTAssertGreaterThanOrEqual(ColorMath.contrast(c.start, s.tokens.pageColor), 4.5, s.name)
+            XCTAssertGreaterThanOrEqual(ColorMath.contrast(c.end, s.tokens.pageColor), 4.5, s.name)
+        }
+    }
+}

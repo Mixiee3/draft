@@ -68,6 +68,7 @@ public extension NSAttributedString.Key {
     static let draftCode = NSAttributedString.Key("draft.code")
     static let draftHighlight = NSAttributedString.Key("draft.highlight") // hex String
     static let draftTextColor = NSAttributedString.Key("draft.textColor") // hex String
+    static let draftEffect = NSAttributedString.Key("draft.effect") // TextEffects kind
     static let draftLink = NSAttributedString.Key("draft.link")           // href String
     static let draftDocLink = NSAttributedString.Key("draft.docLink")     // "docId" or "docId#blockId"
     static let draftDate = NSAttributedString.Key("draft.date")           // yyyy-MM-dd[THH:mm]
@@ -89,7 +90,7 @@ public enum InlineMark: String, CaseIterable, Sendable {
     }
 }
 
-public let semanticKeys: [NSAttributedString.Key] = [.draftBold, .draftItalic, .draftUnderline, .draftStrike, .draftCode, .draftHighlight, .draftTextColor, .draftLink, .draftDocLink, .draftDate, .draftLinkMissing]
+public let semanticKeys: [NSAttributedString.Key] = [.draftBold, .draftItalic, .draftUnderline, .draftStrike, .draftCode, .draftHighlight, .draftTextColor, .draftEffect, .draftLink, .draftDocLink, .draftDate, .draftLinkMissing]
 /// Marks that belong to one inserted object and never continue into typed text.
 let chipKeys: Set<NSAttributedString.Key> = [.draftLink, .draftDocLink, .draftDate, .draftLinkMissing]
 

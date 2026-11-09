@@ -560,6 +560,7 @@ struct AgentProposalReview: View {
         case "code": a[r].inlinePresentationIntent = .code
         case "highlight": a[r].backgroundColor = Color(hex: e.value ?? "#fff3a3"); a[r].foregroundColor = Color(hex: "#1d1d1b")
         case "text_color": a[r].foregroundColor = Color(hex: e.value ?? "#000000")
+        case "text_effect": if e.value != "none" { a[r].foregroundColor = .accentColor; a[r].inlinePresentationIntent = .stronglyEmphasized }
         case "link": a[r].link = URL(string: e.value ?? ""); a[r].underlineStyle = .single
         case "unlink": a[r].underlineStyle = nil
         default: break
@@ -625,6 +626,9 @@ struct AgentProposalReview: View {
             case "block_color": return ("Tint the block", nil, nil, block, e.value)
             case "font": return ("Use the \(e.value ?? "") font", nil, nil, block, nil)
             case "align": return ("Align \(e.value ?? "")", nil, nil, block, nil)
+            case "text_effect":
+                let name = TextEffects.all.first { $0.kind == e.value }?.name.lowercased()
+                return (name.map { "Add a \($0) effect to \(quoted(e.text))" } ?? "Remove the effect from \(quoted(e.text))", nil, block.map { formatted($0, e) }, nil, nil)
             case "bold", "italic", "underline", "strike", "code", "highlight", "text_color", "link", "unlink":
                 let verb = ["bold": "Make bold", "italic": "Make italic", "underline": "Underline", "strike": "Strike through", "code": "Format as code",
                             "highlight": "Highlight", "text_color": "Colour", "link": "Link", "unlink": "Remove the link from"][e.action]!

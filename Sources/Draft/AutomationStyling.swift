@@ -22,6 +22,7 @@ extension Automation {
         // Gradient editor: three stops, radial, then one drag of edits = one Undo step.
         m.updateAppearance(id) { $0.overrides.backdrop = { var b = Styles.style("quiet-lavender").tokens.backdrop; b.addStop(); b.radial = true; b.focusX = 0.3; b.focusY = 0.2; return b }() }
         await shotPanel(p + "gradient-editor", w, size: NSSize(width: 290, height: 640), dark: dark) { BackdropPicker(docId: id) }
+        await wait(1.1) // a new drag, not a continuation of the change above
         let before = m.docs[id]?.appearance
         for a in stride(from: 0.0, through: 0.6, by: 0.1) { m.updateAppearance(id) { $0.overrides.backdrop?.updateStop(1) { $0.at = a } } }
         m.editor(for: id).controller.undo.undo()
@@ -29,6 +30,24 @@ extension Automation {
         r["gradientDragIsOneUndo"] = m.docs[id]?.appearance == before ? "yes" : "no"
         m.flushAll()
         r["gradientPersisted"] = (try? m.vault.loadDoc(id))?.appearance.overrides.backdrop?.stops?.count == 4 ? "yes" : "no"
+        m.updateAppearance(id) { $0.overrides.backdrop = nil }
+
+        // Text effects on a few phrases, then the selection menu with its effects row.
+        let c = m.editor(for: id).controller
+        let fx: [(String, String)] = [("Light reactions", "gradient"), ("ATP and NADPH", "accent"), ("thylakoids", "glow"), ("Calvin cycle", "lift"), ("stroma", "shadow"), ("Learn the Z-scheme", "emboss"), ("energy source", "outline")]
+        for (phrase, k) in fx { c.textView.setSelectedRange((c.textView.string as NSString).range(of: phrase)); c.setEffect(k) }
+        c.textView.setSelectedRange(NSRange(location: 0, length: 0))
+        await shot(p + "text-effects", w, settle: 0.6)
+        c.textView.setSelectedRange((c.textView.string as NSString).range(of: "Carbon dioxide"))
+        await shot(p + "selection-menu", w, settle: 0.7)
+        c.toolbar.setMode(.effects)
+        await shot(p + "selection-menu-effects", w, settle: 0.5)
+        r["selectionKeptInEffects"] = c.textView.selectedRange() == (c.textView.string as NSString).range(of: "Carbon dioxide") ? "yes" : "no"
+        c.toolbar.setMode(.palette)
+        await shot(p + "selection-menu-colors", w, settle: 0.5)
+        c.toolbar.setMode(.main)
+        m.flushAll()
+        r["effectsPersisted"] = "\((try? m.vault.loadDoc(id)).flatMap { try? JSONEncoder().encode($0.content) }.map { String(decoding: $0, as: UTF8.self).components(separatedBy: "\"effect\"").count - 1 } ?? 0)"
         r["increaseContrast"] = NSWorkspace.shared.accessibilityDisplayShouldIncreaseContrast ? "on" : "off"
     }
 
