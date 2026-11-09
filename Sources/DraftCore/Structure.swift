@@ -75,6 +75,80 @@ public enum Tables {
         return out
     }
 
+    public static func movingColumn(_ t: Node, from: Int, to: Int) -> Node {
+        var out = t
+        out.content = (t.content ?? []).map { r in
+            var r = r
+            var cs = r.content ?? []
+            if cs.indices.contains(from), cs.indices.contains(to) { cs.insert(cs.remove(at: from), at: to) }
+            r.content = cs
+            return r
+        }
+        return out
+    }
+
+    /// One reviewed agent edit applied to a table node. Rows are addressed by row id, columns by
+    /// the id of any cell in them, so an edit can't land on the wrong cell after other changes.
+    public static func applying(_ e: AgentEdit, to t: Node) throws -> Node {
+        let rows = t.content ?? []
+        func row(_ id: String?) throws -> Int {
+            guard let id, let i = rows.firstIndex(where: { $0.id == id }) else { throw AgentEditError.invalid("Row \(id ?? "") isn't in this table any more.") }
+            return i
+        }
+        func column(_ cellId: String?) throws -> Int {
+            for r in rows { if let c = (r.content ?? []).firstIndex(where: { $0.id == cellId }) { return c } }
+            throw AgentEditError.invalid("Cell \(cellId ?? "") isn't in this table any more.")
+        }
+        let after = e.position != "before"
+        switch e.action {
+        case "table_set_cell":
+            guard let cellId = e.target, let r = rows.firstIndex(where: { ($0.content ?? []).contains { $0.id == cellId } }),
+                  let c = rows[r].content?.firstIndex(where: { $0.id == cellId }) else { throw AgentEditError.invalid("Cell \(e.target ?? "") isn't in this table any more.") }
+            if let expected = e.expectedText, nodeText(rows[r].content![c]) != expected {
+                throw AgentEditError.invalid("Cell \(cellId) changed since it was read. Read the table again.")
+            }
+            var out = t
+            var cells = rows[r].content!
+            cells[c].content = MarkdownImport.inline(e.text ?? "").nilIfEmpty
+            out.content![r].content = cells
+            return out
+        case "table_insert_row":
+            let i = try row(e.target) + (after ? 1 : 0)
+            var out = insertingRow(t, at: i)
+            for (c, text) in (e.text ?? "").split(separator: "|", omittingEmptySubsequences: false).map({ $0.trimmingCharacters(in: .whitespaces) }).enumerated()
+                where !text.isEmpty && c < columnCount(out) { out = settingCell(out, row: i, column: c, inline: MarkdownImport.inline(text)) }
+            return out
+        case "table_delete_row":
+            guard rows.count > 1 else { throw AgentEditError.invalid("A table keeps at least one row.") }
+            return removingRow(t, at: try row(e.target))
+        case "table_move_row":
+            let from = try row(e.target), anchor = try row(e.value)
+            guard from != anchor else { throw AgentEditError.invalid("A row can't move next to itself.") }
+            var to = anchor + (after ? 1 : 0)
+            if from < to { to -= 1 }
+            return movingRow(t, from: from, to: to)
+        case "table_insert_column":
+            let c = try column(e.target) + (after ? 1 : 0)
+            var out = insertingColumn(t, at: c)
+            for (r, text) in (e.text ?? "").split(separator: "|", omittingEmptySubsequences: false).map({ $0.trimmingCharacters(in: .whitespaces) }).enumerated()
+                where !text.isEmpty && r < (out.content ?? []).count { out = settingCell(out, row: r, column: c, inline: MarkdownImport.inline(text)) }
+            return out
+        case "table_delete_column":
+            guard columnCount(t) > 1 else { throw AgentEditError.invalid("A table keeps at least one column.") }
+            return removingColumn(t, at: try column(e.target))
+        case "table_move_column":
+            let from = try column(e.target), anchor = try column(e.value)
+            guard from != anchor else { throw AgentEditError.invalid("A column can't move next to itself.") }
+            var to = anchor + (after ? 1 : 0)
+            if from < to { to -= 1 }
+            return movingColumn(t, from: from, to: to)
+        default:
+            throw AgentEditError.invalid("\(e.action) isn't a table edit.")
+        }
+    }
+
+    public static let agentActions: Set<String> = ["table_set_cell", "table_insert_row", "table_delete_row", "table_move_row", "table_insert_column", "table_delete_column", "table_move_column"]
+
     /// A Markdown pipe table (cells keep their marks).
     public static func markdown(_ t: Node, _ lossy: inout Set<String>) -> [String] {
         let rows = cells(t)
@@ -408,4 +482,8 @@ public extension Node {
         walk(self) { if hit == nil, $0.id == id { hit = $0 } }
         return hit
     }
+}
+
+extension Array {
+    var nilIfEmpty: [Element]? { isEmpty ? nil : self }
 }

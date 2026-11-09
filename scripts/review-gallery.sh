@@ -35,9 +35,11 @@ def edits():
         "block": [{"action": "heading", "block_id": first["id"], "value": "title"}, {"action": "block_kind", "block_id": b["Plain closing line"]["id"], "value": "callout"}, {"action": "decoration", "block_id": task["id"], "value": "focus"}, {"action": "block_color", "block_id": b["Plain closing line"]["id"], "value": "#fff4d6"}],
         "separator": [{"action": "insert_separator", "block_id": task["id"], "value": "wave"}, {"action": "insert_separator", "block_id": first["id"], "value": "tape"}],
         "move": [{"action": "move_block", "block_id": b["Plain closing line"]["id"], "target": first["id"], "position": "before"}],
+        "table": (lambda tb: [{"action": "table_set_cell", "block_id": tb["id"], "target": tb["rows"][1]["cells"][0]["id"], "text": "**Broad beans**", "expected_text": "Beans"},
+                              {"action": "table_insert_row", "block_id": tb["id"], "target": tb["rows"][1]["id"], "position": "after", "text": "Kale | 5"}])(next(x for x in st["blocks"] if x["type"] == "table")),
     }
 results = {}
-for kind in ["text", "inline", "block", "separator", "move", "rename"]:
+for kind in ["text", "inline", "block", "separator", "move", "rename", "table"]:
     for theme, narrow in [("light", False), ("dark", True)]:
         rev, e = edits()
         if kind == "rename": tool("draft_propose_rename_document", document_id=note["id"], expected_revision=rev, title="Spring planning", instruction="A clearer title")

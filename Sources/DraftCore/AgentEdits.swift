@@ -80,6 +80,13 @@ public struct AgentEdit: Codable, Sendable, Hashable {
             guard !(title ?? "").trimmingCharacters(in: .whitespaces).isEmpty || !(text ?? "").isEmpty else { throw AgentEditError.invalid("create_document needs a title or Markdown text.") }
             guard (self.text ?? "").utf8.count <= 100_000, (title ?? "").count <= 300 else { throw AgentEditError.invalid("The new note is too large.") }
             try validateFolder()
+        case "table_set_cell", "table_insert_row", "table_delete_row", "table_move_row", "table_insert_column", "table_delete_column", "table_move_column":
+            guard let target, target.range(of: Self.idPattern, options: .regularExpression) != nil else { throw AgentEditError.invalid("\(action) needs the row or cell ID in target.") }
+            if ["table_move_row", "table_move_column"].contains(action) {
+                guard let value, value.range(of: Self.idPattern, options: .regularExpression) != nil else { throw AgentEditError.invalid("\(action) needs the anchor row or cell ID in value.") }
+            }
+            guard (text ?? "").utf16.count <= 20_000, !(text ?? "").contains("\n") else { throw AgentEditError.invalid("Table text must be one line under 20,000 characters.") }
+            try validatePosition()
         case "delete_document": break
         case "create_folder":
             try Library.checkFolderName(title ?? "")
@@ -198,7 +205,7 @@ public struct AgentPermission: Codable, Hashable, Sendable {
 }
 
 extension AgentProposal {
-    public static let destructiveActions: Set<String> = ["delete_block", "replace_document", "move_document", "delete_document"]
+    public static let destructiveActions: Set<String> = ["delete_block", "replace_document", "move_document", "delete_document", "table_delete_row", "table_delete_column"]
     public var requiredAccess: AgentAccess { allEdits.contains { Self.destructiveActions.contains($0.action) } ? .destructive : .propose }
 }
 

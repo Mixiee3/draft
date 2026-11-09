@@ -64,7 +64,12 @@ public struct DraftTools {
         public var text: String
         public var markdown: String
         public var attrs: [String: JSONValue]
+        /// For tables: row ids and each cell's id, text and Markdown, so edits can address them.
+        public var rows: [TableRow]? = nil
     }
+
+    public struct TableRow: Codable, Sendable { public var id: String; public var cells: [TableCell] }
+    public struct TableCell: Codable, Sendable { public var id: String; public var text: String; public var markdown: String }
 
     public struct DocumentStructure: Codable, Sendable {
         public var documentId: String
@@ -90,7 +95,17 @@ public struct DraftTools {
                 }
                 fragment.content = Node("doc", content: [wrapped])
                 let markdown = Markdown.render(fragment, assetPath: { _ in "" }, pageLink: { _, _ in nil }).markdown
-                blocks.append(EditableBlock(id: blockId, type: node.type, text: docPlainText(node), markdown: markdown, attrs: node.attrs ?? [:]))
+                var block = EditableBlock(id: blockId, type: node.type, text: docPlainText(node), markdown: markdown, attrs: node.attrs ?? [:])
+                if node.type == "table" {
+                    block.rows = (node.content ?? []).map { r in
+                        TableRow(id: r.id ?? "", cells: (r.content ?? []).map { c in
+                            var lossy = Set<String>()
+                            return TableCell(id: c.id ?? "", text: nodeText(c), markdown: Markdown.inline(c.content ?? [], &lossy))
+                        })
+                    }
+                }
+                blocks.append(block)
+                if node.type == "table" { return }
                 if ["listItem", "taskItem", "toggleItem"].contains(node.type) { return }
             }
             for child in node.content ?? [] { visit(child) }
