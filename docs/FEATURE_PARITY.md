@@ -310,3 +310,12 @@ Last updated: v0.4 shipped (native macOS) — 2026‑11‑08.
 | W9 | Table column reordering in one undo; rich text in cells | missing | 0.8 | Not done in v0.6 |
 | W10 | Dark Paper | verified | 0.6 | `Styles.forDisplay` (tested); files and exports keep the light page |
 | W11 | Out-of-process accessibility audit | partial | 0.6 | `scripts/ax-audit.swift` written; needs a terminal with Accessibility permission to run — not run |
+
+## 24. Styling (v0.7 extension)
+
+| ID | Capability | Status | Target | Acceptance check (result) |
+|---|---|---|---|---|
+| ST1 | Layered gradient backgrounds (multi-stop, radial focal point, light, pattern, grain) | working | 0.7 | `BackgroundTests`; renderer static; Increase Contrast fallback |
+| ST2 | 24 original background presets | verified | 0.7 | Contrast ≥ 4.5:1 tested; screenshots light/dark/narrow/Increase Contrast; export check |
+| ST3 | Gradient editor UI | missing | 0.8 | Edit stops, angle and focal point in the Style panel with one Undo |
+| ST4 | Text and block effects (glow, shadow, gradient text, glass blocks, accent headings) | missing | 0.8 | Optional, contrast-checked, exported consistently |

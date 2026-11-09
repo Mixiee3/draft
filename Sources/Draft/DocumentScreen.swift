@@ -19,7 +19,7 @@ struct DocumentScreen: View {
         let backdropAsset = tokens.backdrop.image.flatMap { $0.hasPrefix("asset:") ? model.image(forAsset: String($0.dropFirst(6))) : nil }
         let darkPage = ColorMath.isDark(tokens.pageColor)
         ZStack(alignment: .top) {
-            BackdropView(backdrop: tokens.backdrop, assetImage: backdropAsset)
+            BackdropView(backdrop: tokens.backdrop, assetImage: backdropAsset).equatable()
             EditorHostView(view: model.editor(for: docId))
                 .accessibilityLabel("Document")
                 .tourAnchor(.page)

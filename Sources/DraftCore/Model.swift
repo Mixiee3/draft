@@ -304,7 +304,7 @@ public struct Library: Codable, Hashable, Sendable {
 /* ---------------- Document appearance ---------------- */
 
 public struct Backdrop: Codable, Hashable, Sendable {
-    public var kind: String // none | solid | gradient | image
+    public var kind: String // none | solid | gradient | image | field
     public var color: String?
     public var from: String?
     public var to: String?
@@ -313,9 +313,47 @@ public struct Backdrop: Codable, Hashable, Sendable {
     public var image: String?
     public var blur: Bool?
     public var effect: String? // immersive | faded
-    public init(kind: String, color: String? = nil, from: String? = nil, to: String? = nil, angle: Double? = nil, image: String? = nil, blur: Bool? = nil, effect: String? = nil) {
+    /// Gradient and field: two or more stops (overrides from/to), linear at `angle` or radial
+    /// around the focal point (0…1 of the width and height).
+    public var stops: [ColorStop]?
+    public var radial: Bool?
+    public var focusX: Double?
+    public var focusY: Double?
+    /// Field layers drawn over the gradient: a soft light, a quiet pattern and film grain. All are
+    /// dropped when macOS Increase Contrast is on.
+    public var glow: String?
+    public var glowX: Double?
+    public var glowY: Double?
+    /// dots | grid | halftone | waves | hills | stars | blobs | rings | diagonal | window
+    public var pattern: String?
+    public var patternColor: String?
+    public var patternOpacity: Double?
+    /// 0…0.2
+    public var grain: Double?
+    public init(kind: String, color: String? = nil, from: String? = nil, to: String? = nil, angle: Double? = nil, image: String? = nil, blur: Bool? = nil, effect: String? = nil,
+                stops: [ColorStop]? = nil, radial: Bool? = nil, focusX: Double? = nil, focusY: Double? = nil, glow: String? = nil, glowX: Double? = nil, glowY: Double? = nil,
+                pattern: String? = nil, patternColor: String? = nil, patternOpacity: Double? = nil, grain: Double? = nil) {
         self.kind = kind; self.color = color; self.from = from; self.to = to; self.angle = angle; self.image = image; self.blur = blur; self.effect = effect
+        self.stops = stops; self.radial = radial; self.focusX = focusX; self.focusY = focusY; self.glow = glow; self.glowX = glowX; self.glowY = glowY
+        self.pattern = pattern; self.patternColor = patternColor; self.patternOpacity = patternOpacity; self.grain = grain
     }
+
+    /// Stops to draw: `stops`, else from/to, else the solid colour.
+    public var colorStops: [ColorStop] {
+        if let s = stops, s.count >= 2 { return s.sorted { $0.at < $1.at } }
+        if kind == "gradient" || kind == "field" { return [ColorStop(from ?? "#ffd36e", at: 0), ColorStop(to ?? "#ff8a5c", at: 1)] }
+        let c = color ?? "#e9e6df"
+        return [ColorStop(c, at: 0), ColorStop(c, at: 1)]
+    }
+
+    public static let patterns = ["dots", "grid", "halftone", "waves", "hills", "stars", "blobs", "rings", "diagonal", "window"]
+}
+
+public struct ColorStop: Codable, Hashable, Sendable {
+    public var color: String
+    public var at: Double
+    public var opacity: Double?
+    public init(_ color: String, at: Double, opacity: Double? = nil) { self.color = color; self.at = at; self.opacity = opacity }
 }
 
 /// Document-level visual tokens. Never stored inside content.

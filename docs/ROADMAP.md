@@ -344,6 +344,20 @@ Return applies, Escape rejects, Tab reaches both buttons with a visible ring; li
 | 16 | **Review sheet polish**: collapse long proposals (show first 20 cards, “Show all”), a mini preview of the note after the change, per-card skip (apply the rest) | 11 | Skipped cards aren't applied and are reported back; a 100-card proposal opens in < 100 ms | Skip is a toggle per card with a label | Sheet first frame < 100 ms for 100 cards |
 | 17 | **Codex app-server integration** (separate from the OpenAI API mode) | 8, 11 | Only after OpenAI documents a supported sign-in for third-party apps: Draft starts `codex app-server`, streams turns, shows approvals in Draft's own sheet, cancel works; no ChatGPT credentials stored by Draft; off by default and clearly labelled | Same review sheet; streaming status announced politely | First token < 2 s on a normal network; cancel < 500 ms |
 
+### Styling (v0.7 extension)
+
+| Feature | Status | Evidence |
+|---|---|---|
+| Layered background model: multi-stop gradients with opacity, linear angle or radial focal point, soft light, quiet patterns (dots, grid, halftone, waves, hills, stars, blobs, rings, diagonal, window light), grain | ✅ | `Backdrop` fields (optional, older files decode unchanged), `FieldView` drawn once per size (Equatable, so typing doesn't redraw it); `BackgroundTests` |
+| 24 original background presets | ✅ | Soft Sunrise, Quiet Lavender, Blue Hour, Moss Study, Terracotta Paper, Winter Glass, Coastal Haze, Deep Ink, Apricot Grid, Sage Mist, Midnight Constellation, Rose Paper, Mineral Blue, Amber Desk, Cloud Study, Forest Dusk, Lilac Fog, Copper Evening, Sea Glass, Charcoal Bloom, Lemon Wash, Indigo Paper, Warm Concrete, Morning Window: procedural, no image files or network; distinct palette, texture and light; each text colour ≥ 4.5:1 on its page and accent ≥ 3:1 (tested); Style Gallery section; persisted by style id; screenshots in `docs/screenshots/v07/backgrounds/` (light, dark, narrow, Increase Contrast) |
+| Accessibility fallback | ✅ | Increase Contrast keeps only the gradient (verified on this Mac, which has Increase Contrast and Reduce Transparency on); static, so Reduce Motion needs nothing more |
+| Export | ✅ | HTML/PDF/PNG: field backgrounds are rendered to a picture like scenic backdrops; gradients export their stops (linear or radial) as CSS; `style-test.sh` and a field export check |
+| Performance | ✅ | 10,000-block typing on Midnight Constellation / Copper Evening: keystroke p95 19.8 / 21.8 ms (Paper 14.8), Return p95 11.4 / 11.3 ms (budgets 40 / 33) |
+| MCP and Assistant formatting | ✅ | `draft_formatting_guide` lists `background_styles` with mood guidance and the Increase Contrast rule; applied through the reviewed `document_style` proposal |
+| Gradient editor in the Style panel (stops, angle, focal point) | ⬜ planned | Presets and the model are done; no editing UI yet |
+| Text effects (gradient text, glow, shadow, outline, emboss, 3D offset), block glow/glass/gradient treatments, accent-coloured headings, highlight variants, study-note decorations | ⬜ planned | Not started |
+| Selection formatting menu on translucent material | ⬜ planned | The bar keeps its current style |
+
 ## v0.8 — "Trust" (macOS)
 
 - ⬜ From v0.6: String Catalog localization with two non-English locales and a spelling-language

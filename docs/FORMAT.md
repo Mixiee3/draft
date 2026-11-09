@@ -225,6 +225,14 @@ metadata; anything else is re-indexed from `docs/`. Building the index never wri
 Block `text` keeps up to 1,000 characters (version 2; version 1 kept 200, so a version-1 index is
 rebuilt on launch).
 
+**Backdrops (v0.7).** `appearance` style tokens may use `backdrop.kind: "field"` and, for `gradient`
+and `field`, `stops: [{color, at (0…1), opacity?}]`, `radial`, `focusX`/`focusY` (0…1), `glow` with
+`glowX`/`glowY`, `pattern` (dots, grid, halftone, waves, hills, stars, blobs, rings, diagonal, window)
+with `patternColor`/`patternOpacity`, and `grain` (0…0.2). All are optional; without `stops` the
+`from`/`to` pair is used. Background presets are built-in style ids (for example
+`midnight-constellation`); a missing style id falls back to `paper`. Readers that don't know `field`
+can show the first stop's colour.
+
 `cover.crop` is the visible part of the original image, normalized to 0…1 of its width and height
 (absent: a 3:1 band centered on `focalY`). `cover.ratio` is the user's choice (`original`, `16:9`,
 `2:1`, `3:1`, `4:3`, `free`).

@@ -42,6 +42,8 @@
 - Row 14 done: `insert_image` / `insert_file` with a local path; checked on proposal and at Apply
   (type, size, fingerprint), copied only on Apply, one Undo removes block and copy.
   `scripts/mcp-test.sh` 105 checks.
+- Styling: 24 procedural background presets listed in `draft_formatting_guide` as
+  `background_styles`, applied through `document_style` proposals.
 - Next (see ROADMAP v0.7 rows 15–17, in order): inserting images and files,
   richer actions, review-sheet polish, and a Codex app-server mode only after supported sign-in.
 - Earlier plan line kept for reference: folder creation, deleting whole

@@ -13,7 +13,7 @@ extension AppModel {
 
     /// A scenic backdrop as a picture (scenes are drawn in code, so HTML needs an image of them).
     func sceneImage(_ b: Backdrop) -> Data? {
-        guard b.kind == "image" else { return nil }
+        guard b.kind == "image" || b.kind == "field" else { return nil }
         if let img = b.image, img.hasPrefix("asset:"), let url = try? vault.assetURL(String(img.dropFirst(6))) { return try? Data(contentsOf: url) }
         let r = ImageRenderer(content: BackdropView(backdrop: b).frame(width: 1600, height: 1000))
         r.scale = 1
@@ -65,7 +65,7 @@ extension AppModel {
             let site = SiteExport.build(rootIds: roots, metas: self.library.docs, folders: self.library.folders, load: { self.ensureDoc($0) },
                                         options: { id in
                                             let b = self.docs[id].map { Styles.resolve($0.appearance).backdrop }
-                                            let name = b.flatMap { $0.kind == "image" ? "backdrops/\(Markdown.safeFileName($0.image ?? "scene")).png" : nil }
+                                            let name = b.flatMap { $0.kind == "image" ? "backdrops/\(Markdown.safeFileName($0.image ?? "scene")).png" : $0.kind == "field" ? "backdrops/field-\(String(UInt(bitPattern: $0.hashValue), radix: 36)).png" : nil }
                                             if useStyle, let b, let name, scenes[name] == nil { scenes[name] = self.sceneImage(b) }
                                             return self.htmlOptions(useStyle: useStyle, backdropFile: useStyle ? name : nil)
                                         },

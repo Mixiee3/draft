@@ -45,6 +45,7 @@ enum Automation {
             case "motion-frames": await motionFrames()
             case "audit-shots": await auditShots()
             case "nav-test": await navTest()
+            case "backgrounds-shots": await backgroundShots()
             case "audit-motion": await auditMotion()
             case "audit-frames": await auditFrames()
             case "ux-perf": await uxPerf()
@@ -515,6 +516,7 @@ enum Automation {
         let id = newId("d_")
         var doc = DocFile.empty(id: id, title: "Ten thousand blocks")
         doc.content = content
+        if let style = ProcessInfo.processInfo.environment["DRAFT_PERF_STYLE"] { doc.appearance.styleId = style; r["style"] = style }
         try? m.vault.saveDoc(doc)
         var meta = DocMeta(id: id); meta.applyDerived(from: doc)
         m.library.docs[id] = meta

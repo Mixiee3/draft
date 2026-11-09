@@ -74,6 +74,7 @@ struct StyleGallery: View {
         let current = model.docs[docId]?.appearance.styleId ?? "paper"
         let pick = selected ?? current
         let builtIn = Styles.builtIn.filter { query.isEmpty || $0.name.localizedCaseInsensitiveContains(query) }
+        let backgrounds = Backgrounds.presets.filter { query.isEmpty || $0.name.localizedCaseInsensitiveContains(query) }
         let mine = Styles.all.filter { $0.id.hasPrefix("u_") && (query.isEmpty || $0.name.localizedCaseInsensitiveContains(query)) }
         ZStack {
             Color.black.opacity(0.28).onTapGesture { model.styleGallery = false }
@@ -95,6 +96,10 @@ struct StyleGallery: View {
                                 }
                                 Text("DRAFT STYLES").font(.system(size: DS.caption, weight: .semibold)).foregroundStyle(t.tertiary)
                                 grid(builtIn, current: current, pick: pick)
+                                if !backgrounds.isEmpty {
+                                    Text("BACKGROUNDS").font(.system(size: DS.caption, weight: .semibold)).foregroundStyle(t.tertiary).padding(.top, DS.s1)
+                                    grid(backgrounds, current: current, pick: pick)
+                                }
                             }
                         }
                     }
