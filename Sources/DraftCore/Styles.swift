@@ -43,12 +43,12 @@ public enum Styles {
 
     /// Built-in styles followed by saved ones (pinned first).
     public static var all: [StyleDef] {
-        builtIn + user.sorted { ($0.pinned == true ? 0 : 1, $0.createdAt) < ($1.pinned == true ? 0 : 1, $1.createdAt) }.map { StyleDef(id: $0.id, name: $0.name, tokens: $0.tokens) }
+        builtIn + Backgrounds.presets + user.sorted { ($0.pinned == true ? 0 : 1, $0.createdAt) < ($1.pinned == true ? 0 : 1, $1.createdAt) }.map { StyleDef(id: $0.id, name: $0.name, tokens: $0.tokens) }
     }
 
     public static func style(_ id: String) -> StyleDef {
         if let u = user.first(where: { $0.id == id }) { return StyleDef(id: u.id, name: u.name, tokens: u.tokens) }
-        return builtIn.first { $0.id == id } ?? builtIn[0]
+        return builtIn.first { $0.id == id } ?? Backgrounds.presets.first { $0.id == id } ?? builtIn[0]
     }
 
     /// Style tokens with the document's sparse overrides applied.

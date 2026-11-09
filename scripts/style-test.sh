@@ -21,7 +21,7 @@ assert r["userStyles"] == "Studio" and r["sameLook"] == "yes", r
 assert r["blockFont"] == "mono" and r["card"] == "feature,icon" and r["tapeDiffers"] == "yes" and r["gradient"] == "40.0", r
 styled = open(w["export.html"] + "/" + [f for f in os.listdir(w["export.html"]) if f.endswith(".html")][0]).read()
 plain_dir = w["export.plainHtml"]; plain = open(plain_dir + "/" + [f for f in os.listdir(plain_dir) if f.endswith(".html")][0]).read()
-assert "linear-gradient(130deg, #112233, #ddeeff)" in styled and "#fffef0" in styled and "#fffef0" not in plain, "use style toggle"
+assert "linear-gradient(130deg, #112233 0%, #ddeeff 100%)" in styled and "#fffef0" in styled and "#fffef0" not in plain, "use style toggle"
 assert "font-family:ui-monospace" in styled and "card feature" in styled and styled.count("--r:") == 2
 site = w["export.site"]; files = 0; refs = 0
 for root, _, names in os.walk(site):

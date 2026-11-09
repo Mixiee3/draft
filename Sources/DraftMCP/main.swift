@@ -142,6 +142,8 @@ func call(_ name: String, _ args: [String: Any]) throws -> String {
     case "draft_formatting_guide":
         return try resultText([
             "built_in_styles": Styles.builtIn.map { ["id": $0.id, "name": $0.name, "separator": $0.tokens.separator] },
+            "background_styles": Backgrounds.presets.map { ["id": $0.id, "name": $0.name, "separator": $0.tokens.separator, "dark_page": ColorMath.isDark($0.tokens.pageColor),
+                                                            "texture": $0.tokens.backdrop.pattern ?? "gradient"] as [String: Any] },
             "saved_styles": draft.library.userStyles.map { ["id": $0.id, "name": $0.name, "separator": $0.tokens.separator] },
             "separator_styles": ["default", "line", "strong", "dotted", "dots", "wave", "tape", "page_break"],
             "text_emphasis": ["bold", "italic", "underline", "strike", "code", "highlight", "text_color"],
@@ -152,6 +154,8 @@ func call(_ name: String, _ args: [String: Any]) throws -> String {
                 "Highlight only the few words a reader should notice first. Keep long paragraphs unhighlighted.",
                 "Choose one accent color and keep text contrast readable. Use callouts for genuinely important notes, not every paragraph.",
                 "Preserve the author's meaning, links, block IDs, tasks, and attachments. Review the complete proposal before requesting approval.",
+                "Backgrounds (background_styles) are whole-note styles: a gradient field with at most one quiet texture (dots, grid, halftone, waves, hills, stars, blobs, rings, diagonal or window light) and a matching page, text and accent colour that read at 4.5:1 or more. Pick one by mood: dark pages (Deep Ink, Midnight Constellation, Charcoal Bloom) for focus or evening reading, paper-like ones (Terracotta Paper, Rose Paper, Indigo Paper, Warm Concrete) for study notes, airy ones (Cloud Study, Winter Glass, Sea Glass) for planning. Apply with document_style; never several.",
+                "Draft drops textures, light and grain when the user has Increase Contrast on, so meaning must never depend on them.",
                 "For “make this look better”: a title heading, subtitle-level headings for real sections, at most one callout or focus block, a highlight on one or two key phrases, one separator before a change of topic, and a document style that suits the content. Leave most paragraphs as plain text."
             ],
             "recipe_make_it_look_better": ["heading title on the first line", "heading subtitle for each real section", "list or task for steps", "callout for one warning or decision", "highlight #fff3a3 on one key phrase", "insert_separator wave or dots before the closing section", "document_style that matches the tone"]

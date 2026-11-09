@@ -45,13 +45,23 @@ public enum HTMLExport {
         }
     }
 
+    static func cssColor(_ hex: String, _ opacity: Double?) -> String {
+        guard let o = opacity, o < 1, hex.count == 7, let v = Int(hex.dropFirst(), radix: 16) else { return hex }
+        return "rgba(\(v >> 16 & 255),\(v >> 8 & 255),\(v & 255),\(String(format: "%.2f", o)))"
+    }
+
     public static func css(_ t: StyleTokens, useStyle: Bool, backdropImage: String?) -> String {
         let page = useStyle ? t.pageColor : "#ffffff", text = useStyle ? t.textColor : "#1f1f1f", accent = useStyle ? t.accent : "#3a5bd9"
         var bg = "#ffffff"
         if useStyle {
             switch t.backdrop.kind {
             case "solid": bg = t.backdrop.color ?? "#e9e6df"
-            case "gradient": bg = "linear-gradient(\(Int((t.backdrop.angle ?? 135) + 90))deg, \(t.backdrop.from ?? "#ffd36e"), \(t.backdrop.to ?? "#ff8a5c"))"
+            case "gradient":
+                let stops = t.backdrop.colorStops.map { "\(cssColor($0.color, $0.opacity)) \(Int($0.at * 100))%" }.joined(separator: ", ")
+                bg = t.backdrop.radial == true
+                    ? "radial-gradient(circle at \(Int((t.backdrop.focusX ?? 0.5) * 100))% \(Int((t.backdrop.focusY ?? 0.5) * 100))%, \(stops))"
+                    : "linear-gradient(\(Int((t.backdrop.angle ?? 135) + 90))deg, \(stops))"
+            case "field": bg = backdropImage.map { "\(t.backdrop.colorStops.first?.color ?? t.shellTint) url('\($0)') center / cover no-repeat fixed" } ?? (t.backdrop.colorStops.first?.color ?? t.shellTint)
             case "image": bg = backdropImage.map { "\(t.shellTint) url('\($0)') center / cover no-repeat fixed" } ?? t.shellTint
             default: bg = t.shellTint
             }

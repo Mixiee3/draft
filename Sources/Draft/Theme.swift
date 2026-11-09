@@ -125,18 +125,15 @@ struct SceneView: View {
 }
 
 /// The document backdrop layer: none / solid / gradient / scenic / uploaded image.
-struct BackdropView: View {
+struct BackdropView: View, Equatable {
     let backdrop: Backdrop
     var assetImage: NSImage? = nil
+    static func == (a: BackdropView, b: BackdropView) -> Bool { a.backdrop == b.backdrop && a.assetImage === b.assetImage }
     var body: some View {
         ZStack {
             switch backdrop.kind {
             case "solid": Color(hex: backdrop.color ?? "#e9e6df")
-            case "gradient":
-                let a = Angle(degrees: backdrop.angle ?? 135)
-                LinearGradient(colors: [Color(hex: backdrop.from ?? "#ffd36e"), Color(hex: backdrop.to ?? "#ff8a5c")],
-                               startPoint: UnitPoint(x: 0.5 - cos(a.radians) / 2, y: 0.5 - sin(a.radians) / 2),
-                               endPoint: UnitPoint(x: 0.5 + cos(a.radians) / 2, y: 0.5 + sin(a.radians) / 2))
+            case "gradient", "field": FieldView(backdrop: backdrop)
             case "image":
                 if let img = assetImage {
                     Image(nsImage: img).resizable().aspectRatio(contentMode: .fill)
@@ -149,5 +146,134 @@ struct BackdropView: View {
         .blur(radius: backdrop.blur == true ? 18 : 0)
         .overlay(backdrop.effect == "faded" ? Color.white.opacity(0.42) : Color.clear)
         .clipped()
+    }
+}
+
+/// A layered background drawn once per size: a linear or radial gradient, a soft light, a quiet
+/// pattern and grain. Static, so typing and scrolling never redraw it; Increase Contrast keeps only
+/// the gradient.
+struct FieldView: View {
+    let backdrop: Backdrop
+    @Environment(\.colorSchemeContrast) var contrast
+
+    var body: some View {
+        let b = backdrop
+        // Screens for the standard look can be captured on a Mac that has Increase Contrast on.
+        let increased = contrast == .increased && ProcessInfo.processInfo.environment["DRAFT_CAPTURE_STANDARD_CONTRAST"] == nil
+        let plain = increased || b.kind == "gradient" && b.pattern == nil && b.glow == nil && b.grain == nil
+        Canvas { ctx, size in
+            let rect = CGRect(origin: .zero, size: size)
+            let stops = b.colorStops.map { Gradient.Stop(color: Color(hex: $0.color).opacity($0.opacity ?? 1), location: $0.at) }
+            let g = Gradient(stops: stops)
+            if b.radial == true {
+                let c = CGPoint(x: size.width * (b.focusX ?? 0.5), y: size.height * (b.focusY ?? 0.5))
+                ctx.fill(Path(rect), with: .radialGradient(g, center: c, startRadius: 0, endRadius: max(size.width, size.height) * 1.1))
+            } else {
+                let a = (b.angle ?? 135) * .pi / 180
+                let d = CGPoint(x: cos(a) * size.width / 2, y: sin(a) * size.height / 2)
+                let m = CGPoint(x: size.width / 2, y: size.height / 2)
+                ctx.fill(Path(rect), with: .linearGradient(g, startPoint: CGPoint(x: m.x - d.x, y: m.y - d.y), endPoint: CGPoint(x: m.x + d.x, y: m.y + d.y)))
+            }
+            if plain { return }
+            if let glow = b.glow {
+                let c = CGPoint(x: size.width * (b.glowX ?? 0.5), y: size.height * (b.glowY ?? 0.2))
+                let r = max(size.width, size.height) * 0.55
+                ctx.fill(Path(ellipseIn: CGRect(x: c.x - r, y: c.y - r, width: r * 2, height: r * 2)),
+                         with: .radialGradient(Gradient(colors: [Color(hex: glow).opacity(0.7), Color(hex: glow).opacity(0)]), center: c, startRadius: 0, endRadius: r))
+            }
+            if let p = b.pattern { Self.drawPattern(p, color: Color(hex: b.patternColor ?? "#ffffff").opacity(b.patternOpacity ?? 0.2), in: &ctx, size: size, focus: CGPoint(x: b.focusX ?? 0.5, y: b.focusY ?? 0.5)) }
+            if let grain = b.grain, grain > 0 {
+                var rng = Seeded(seed: 7)
+                let n = Int(size.width * size.height / 40 * min(grain, 0.2))
+                for i in 0..<n {
+                    let x = rng.next() * size.width, y = rng.next() * size.height
+                    ctx.fill(Path(CGRect(x: x, y: y, width: 1, height: 1)), with: .color((i % 2 == 0 ? Color.white : Color.black).opacity(0.18)))
+                }
+            }
+        }
+    }
+
+    /// Deterministic, so every render (and every export) of a preset looks the same.
+    struct Seeded {
+        var state: UInt64
+        init(seed: UInt64) { state = seed &* 6364136223846793005 &+ 1442695040888963407 }
+        mutating func next() -> CGFloat { state = state &* 6364136223846793005 &+ 1442695040888963407; return CGFloat(state >> 33) / CGFloat(1 << 31) }
+    }
+
+    static func drawPattern(_ p: String, color: Color, in ctx: inout GraphicsContext, size: CGSize, focus: CGPoint) {
+        let w = size.width, h = size.height
+        var rng = Seeded(seed: p.unicodeScalars.reduce(3) { $0 &* 31 &+ UInt64($1.value) })
+        switch p {
+        case "dots":
+            var path = Path()
+            for x in stride(from: 9.0, through: w, by: 22) { for y in stride(from: 9.0, through: h, by: 22) { path.addEllipse(in: CGRect(x: x, y: y, width: 2.4, height: 2.4)) } }
+            ctx.fill(path, with: .color(color))
+        case "grid":
+            var path = Path()
+            for x in stride(from: 0.0, through: w, by: 28) { path.move(to: CGPoint(x: x, y: 0)); path.addLine(to: CGPoint(x: x, y: h)) }
+            for y in stride(from: 0.0, through: h, by: 28) { path.move(to: CGPoint(x: 0, y: y)); path.addLine(to: CGPoint(x: w, y: y)) }
+            ctx.stroke(path, with: .color(color), lineWidth: 0.7)
+        case "halftone":
+            var path = Path()
+            for x in stride(from: 0.0, through: w, by: 16) {
+                for y in stride(from: 0.0, through: h, by: 16) {
+                    let r = 3.2 * max(0.15, 1 - (x / max(w, 1) + y / max(h, 1)) / 2)
+                    path.addEllipse(in: CGRect(x: x - r, y: y - r, width: r * 2, height: r * 2))
+                }
+            }
+            ctx.fill(path, with: .color(color))
+        case "waves":
+            var path = Path()
+            for y in stride(from: 30.0, through: h, by: 46) {
+                path.move(to: CGPoint(x: 0, y: y))
+                for x in stride(from: 0.0, through: w, by: 8) { path.addLine(to: CGPoint(x: x, y: y + sin(x / 38 + y / 90) * 7)) }
+            }
+            ctx.stroke(path, with: .color(color), lineWidth: 1.2)
+        case "hills":
+            for i in 0..<3 {
+                var path = Path()
+                let base = h * (0.62 + Double(i) * 0.12)
+                path.move(to: CGPoint(x: 0, y: h))
+                for x in stride(from: 0.0, through: w + 8, by: 8) { path.addLine(to: CGPoint(x: x, y: base - sin(x / (w / (2.2 + Double(i))) + Double(i)) * h * 0.07)) }
+                path.addLine(to: CGPoint(x: w, y: h)); path.closeSubpath()
+                ctx.fill(path, with: .color(color.opacity(0.55 + Double(i) * 0.2)))
+            }
+        case "stars":
+            let count = Int(w * h / 5200)
+            for i in 0..<count {
+                let x = rng.next() * w, y = rng.next() * h * 0.85
+                let r = i % 9 == 0 ? 1.8 : 0.9
+                ctx.fill(Path(ellipseIn: CGRect(x: x - r, y: y - r, width: r * 2, height: r * 2)), with: .color(color.opacity(i % 9 == 0 ? 1 : 0.6)))
+            }
+        case "blobs":
+            ctx.drawLayer { l in
+                l.addFilter(.blur(radius: min(w, h) * 0.06))
+                for _ in 0..<5 {
+                    let r = min(w, h) * (0.18 + rng.next() * 0.22)
+                    l.fill(Path(ellipseIn: CGRect(x: rng.next() * w - r, y: rng.next() * h - r, width: r * 2.2, height: r * 1.6)), with: .color(color))
+                }
+            }
+        case "rings":
+            let c = CGPoint(x: w * focus.x, y: h * focus.y)
+            var path = Path()
+            for r in stride(from: 40.0, through: max(w, h) * 1.2, by: 44) { path.addEllipse(in: CGRect(x: c.x - r, y: c.y - r, width: r * 2, height: r * 2)) }
+            ctx.stroke(path, with: .color(color), lineWidth: 1)
+        case "diagonal":
+            var path = Path()
+            for x in stride(from: -h, through: w, by: 22) { path.move(to: CGPoint(x: x, y: h)); path.addLine(to: CGPoint(x: x + h, y: 0)) }
+            ctx.stroke(path, with: .color(color), lineWidth: 1)
+        case "window":
+            ctx.drawLayer { l in
+                l.addFilter(.blur(radius: 24))
+                for i in 0..<3 {
+                    var path = Path()
+                    let x = w * (0.15 + Double(i) * 0.16)
+                    path.move(to: CGPoint(x: x, y: 0)); path.addLine(to: CGPoint(x: x + w * 0.08, y: 0))
+                    path.addLine(to: CGPoint(x: x + w * 0.5, y: h)); path.addLine(to: CGPoint(x: x + w * 0.38, y: h)); path.closeSubpath()
+                    l.fill(path, with: .color(color))
+                }
+            }
+        default: break
+        }
     }
 }
