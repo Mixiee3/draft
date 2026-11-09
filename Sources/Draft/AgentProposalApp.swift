@@ -61,7 +61,11 @@ extension AppModel {
                 try checkRevision(&proposal, doc)
                 if let spaceId = meta.spaceId, spaceId != library.space.id { switchSpace(spaceId) }
                 let editor = editor(for: doc.id)
-                if proposal.edits[0].action == "document_style" {
+                if proposal.edits.allSatisfy({ CollectionData.agentActions.contains($0.action) }) {
+                    try applyCollectionEdits(doc.id, proposal.edits)
+                } else if proposal.edits.contains(where: { CollectionData.agentActions.contains($0.action) }) {
+                    throw AgentEditError.invalid("Collection changes must be their own proposal.")
+                } else if proposal.edits[0].action == "document_style" {
                     guard proposal.edits.count == 1, let styleId = proposal.edits[0].value,
                           Styles.all.contains(where: { $0.id == styleId }) else {
                         throw AgentEditError.invalid("This style is no longer available.")
@@ -72,7 +76,9 @@ extension AppModel {
                 }
                 openView(.doc(doc.id))
                 markDocDirty(doc.id)
-                message = "Applied in Draft. Use Command-Z in the note to undo it in one step."
+                message = proposal.edits.allSatisfy({ CollectionData.agentActions.contains($0.action) })
+                    ? "Applied in Draft. Edit › Undo Agent Change reverses it in one step."
+                    : "Applied in Draft. Use Command-Z in the note to undo it in one step."
             }
             flushAll()
             refreshIndex()
@@ -80,7 +86,7 @@ extension AppModel {
             proposal.status = "accepted"
             proposal.result = message
             try AgentProposalStore.save(proposal, vaultURL: vault.dir)
-            if proposal.changesLibrary || proposal.parts != nil { toast("Applied: \(proposal.instruction)", action: "Undo") { [weak self] in self?.undoAgentChange() } }
+            if proposal.changesLibrary || proposal.parts != nil || proposal.edits.allSatisfy({ CollectionData.agentActions.contains($0.action) }) { toast("Applied: \(proposal.instruction)", action: "Undo") { [weak self] in self?.undoAgentChange() } }
             else { toast("Changes applied to “\(proposal.documentTitle.isEmpty ? "Untitled" : proposal.documentTitle)”") }
         } catch {
             if proposal.status == "pending" { proposal.status = "failed" }
@@ -245,6 +251,56 @@ extension AppModel {
         return "Applied to \(parts.count) notes. Edit › Undo Agent Change reverts all of them."
     }
 
+    /// Collection changes: every edit is checked on a copy first; only then are item pages created,
+    /// titles set and the collection written once. One Undo restores the data, trashes the new
+    /// pages, brings back deleted ones and resets titles.
+    private func applyCollectionEdits(_ docId: String, _ edits: [AgentEdit]) throws {
+        var before: [String: CollectionData] = [:], after: [String: CollectionData] = [:]
+        var placeholders: [String: String] = [:] // placeholder page id -> title
+        for e in edits {
+            guard let base = after[e.blockId] ?? collectionData(docId, e.blockId) else { throw AgentEditError.invalid("Block \(e.blockId) isn't a collection.") }
+            if before[e.blockId] == nil { before[e.blockId] = base }
+            after[e.blockId] = try base.applying(e) {
+                let p = "pending-\(placeholders.count)"; placeholders[p] = e.text ?? ""; return p
+            }
+            if e.action == "collection_update_item", let t = e.text, !t.isEmpty, base.items.first(where: { $0.id == e.target }) == nil {
+                throw AgentEditError.invalid("Item \(e.target ?? "") isn't in the collection any more.")
+            }
+        }
+        // Everything passed: create pages, then substitute their ids.
+        var real: [String: String] = [:]
+        for (p, title) in placeholders.sorted(by: { $0.key < $1.key }) {
+            guard let page = createNestedPage(parent: docId, title: title, content: Node("doc", content: [Node("paragraph", attrs: ["id": .string(newId("b_"))])])) else {
+                for id in real.values { _ = library.trash(id) }
+                throw AgentEditError.invalid("Draft couldn't create an item page.")
+            }
+            real[p] = page
+        }
+        var oldTitles: [String: String] = [:]
+        for (block, var data) in after {
+            for i in data.items.indices { if let r = real[data.items[i].docId] { data.items[i].docId = r } }
+            after[block] = data
+            for e in edits where e.blockId == block && e.action == "collection_update_item" {
+                if let t = e.text, !t.isEmpty, let page = data.items.first(where: { $0.id == e.target })?.docId {
+                    oldTitles[page] = oldTitles[page] ?? docTitle(page); setTitle(page, t)
+                }
+            }
+            let old = before[block]!
+            for gone in Set(old.items.map(\.docId)).subtracting(data.items.map(\.docId)) { _ = library.trash(gone) }
+            writeCollection(docId, block, data)
+        }
+        scheduleLibrarySave()
+        let done = after, was = before, titles = oldTitles
+        registerAgentUndo("Collection Change") { m in
+            for (block, old) in was {
+                if let now = done[block] { m.restoreItemPages(old, comparedTo: now) }
+                m.writeCollection(docId, block, old)
+            }
+            for (page, t) in titles { m.setTitle(page, t) }
+            m.flushAll()
+        }
+    }
+
     private func registerAgentUndo(_ name: String, _ undo: @escaping (AppModel) -> Void) {
         agentUndo.beginUndoGrouping()
         agentUndo.registerUndo(withTarget: self) { m in onMain { undo(m); m.refreshIndex() } }
@@ -268,7 +324,7 @@ struct AgentProposalReview: View {
     var structure: DraftTools.DocumentStructure? { ["new", "multi"].contains(proposal.documentId) ? nil : try? DraftTools(vaultURL: model.vault.dir).structure(proposal.documentId) }
 
     var body: some View {
-        let blocks = Dictionary((structure?.blocks ?? []).map { ($0.id, $0.text) }, uniquingKeysWith: { a, _ in a }).merging(tableLabels(structure), uniquingKeysWith: { a, _ in a })
+        let blocks = Dictionary((structure?.blocks ?? []).map { ($0.id, $0.text) }, uniquingKeysWith: { a, _ in a }).merging(tableLabels(structure), uniquingKeysWith: { a, _ in a }).merging(collectionLabels(proposal.documentId), uniquingKeysWith: { a, _ in a })
         VStack(alignment: .leading, spacing: DS.s3) {
             VStack(alignment: .leading, spacing: DS.s1) {
                 Text("Review proposed changes").font(.system(size: DS.title2, weight: .bold)).foregroundStyle(t.text).accessibilityAddTraits(.isHeader)
@@ -314,6 +370,49 @@ struct AgentProposalReview: View {
         .interactiveDismissDisabled()
     }
 
+    /// View settings in words: “Sort: Pages ↓ · Filter: Status is not To do”.
+    func viewSummary(_ json: String?) -> AttributedString? {
+        guard let o = json.flatMap({ try? JSONDecoder().decode(JSONValue.self, from: Data($0.utf8)) })?.object else { return json.map { AttributedString($0) } }
+        var parts: [String] = []
+        if let t = o["type"]?.string { parts.append("Layout: \(t)") }
+        if let sort = o["sort"]?.items { parts.append("Sort: " + sort.map { "\($0.object?["field"]?.string ?? "") \($0.object?["ascending"]?.bool == false ? "↓" : "↑")" }.joined(separator: ", ")) }
+        if let f = o["filters"]?.items { parts.append("Filter: " + (f.isEmpty ? "none" : f.map { "\($0.object?["field"]?.string ?? "") \($0.object?["op"]?.string ?? "") \($0.object?["value"]?.string ?? "")".trimmingCharacters(in: .whitespaces) }.joined(separator: (o["match"]?.string == "any") ? " or " : " and "))) }
+        if let g = o["groupBy"] { parts.append("Group by: \(g.string ?? "none")") }
+        if let v = o["visible"]?.items { parts.append("Shows: " + v.compactMap(\.string).joined(separator: ", ")) }
+        if let n = o["name"]?.string { parts.append("Name: \(n)") }
+        return AttributedString(parts.joined(separator: " · "))
+    }
+
+    /// Collection item, field and view ids named for the cards.
+    func collectionLabels(_ docId: String) -> [String: String] {
+        guard let doc = try? DraftTools(vaultURL: model.vault.dir).document(docId) else { return [:] }
+        var out: [String: String] = [:]
+        walk(doc.content) { n in
+            guard let d = CollectionData(node: n) else { return }
+            for it in d.items { out[it.id] = "“\(model.docTitle(it.docId))”" }
+            for f in d.fields { out[f.id] = "“\(f.name)”" }
+            for v in d.views { out[v.id] = "the “\(v.name)” view" }
+        }
+        return out
+    }
+
+    /// `{"Status": "Doing", "Pages": 412}` as “Status: Doing · Pages: 412”.
+    func readable(_ json: String?) -> AttributedString? {
+        guard let json else { return nil }
+        guard let o = (try? JSONDecoder().decode(JSONValue.self, from: Data(json.utf8)))?.object else { return AttributedString(json) }
+        func text(_ v: JSONValue) -> String {
+            switch v {
+            case .string(let s): return s
+            case .number(let n): return n.rounded() == n ? String(Int(n)) : String(n)
+            case .bool(let b): return b ? "Yes" : "No"
+            case .array(let a): return a.map(text).joined(separator: ", ")
+            case .null: return "(cleared)"
+            case .object: return "…"
+            }
+        }
+        return AttributedString(o.sorted { $0.key < $1.key }.map { "\($0.key): \(text($0.value))" }.joined(separator: " · "))
+    }
+
     /// Row ids named by their first cell, cell ids by their column's header, for readable titles.
     func tableLabels(_ st: DraftTools.DocumentStructure?) -> [String: String] {
         var out: [String: String] = [:]
@@ -327,9 +426,24 @@ struct AgentProposalReview: View {
         return out
     }
 
-    /// Each table the proposal touches, as it is and as it will be after every edit.
+    /// Each table the proposal touches, as it is and as it will be after every edit; a collection
+    /// is shown as a table of its items (title and fields), with new items titled from the proposal.
     func tablePreviews(_ docId: String, _ edits: [AgentEdit]) -> [(String, Node, Node)] {
         guard let doc = try? DraftTools(vaultURL: model.vault.dir).document(docId) else { return [] }
+        if edits.allSatisfy({ CollectionData.agentActions.contains($0.action) }) {
+            var out: [(String, Node, Node)] = []
+            for block in Array(NSOrderedSet(array: edits.map(\.blockId))) as? [String] ?? [] {
+                guard let n = doc.content.block(block), let base = CollectionData(node: n) else { continue }
+                var titles: [String: String] = [:], d = base, k = 0
+                for e in edits where e.blockId == block {
+                    if let next = try? d.applying(e, newPage: { k += 1; let p = "pending-\(k)"; titles[p] = e.text ?? ""; return p }) { d = next }
+                    if e.action == "collection_update_item", let t = e.text, let page = d.items.first(where: { $0.id == e.target })?.docId { titles[page] = t }
+                }
+                let title = { (id: String) in titles[id] ?? model.docTitle(id) }
+                out.append((block, collectionTable(base, title: { model.docTitle($0) }), collectionTable(d, title: title)))
+            }
+            return out
+        }
         var order: [String] = [], after: [String: Node] = [:], before: [String: Node] = [:]
         for e in edits where Tables.agentActions.contains(e.action) {
             guard let t = before[e.blockId] ?? doc.content.block(e.blockId) else { continue }
@@ -337,6 +451,17 @@ struct AgentProposalReview: View {
             after[e.blockId] = (try? Tables.applying(e, to: after[e.blockId] ?? t)) ?? after[e.blockId] ?? t
         }
         return order.map { ($0, before[$0]!, after[$0]!) }
+    }
+
+    func collectionTable(_ d: CollectionData, title: (String) -> String) -> Node {
+        let fields = d.fields.prefix(5)
+        let header = Node("tableRow", attrs: ["id": "hdr"], content: [Node("tableCell", attrs: ["id": "hdr-title"], content: [.text("Title")])]
+            + fields.map { Node("tableCell", attrs: ["id": .string("hdr-\($0.id)")], content: [.text($0.name)]) })
+        let rows = d.items.map { it in
+            Node("tableRow", attrs: ["id": .string(it.id)], content: [Node("tableCell", attrs: ["id": .string("\(it.id)-title")], content: [.text(title(it.docId))])]
+                + fields.map { f in Node("tableCell", attrs: ["id": .string("\(it.id)-\(f.id)")], content: d.display(it, f.id, title: title).isEmpty ? nil : [.text(d.display(it, f.id, title: title))]) })
+        }
+        return Node("table", content: [header] + rows)
     }
 
     var destructive: Bool { proposal.requiredAccess == .destructive }
@@ -439,6 +564,16 @@ struct AgentProposalReview: View {
             case "table_insert_column": return ("Add a column \(e.position ?? "after") \(blocks[e.target ?? ""] ?? "another column")", nil, e.text.flatMap { $0.isEmpty ? nil : md($0) }, nil, nil)
             case "table_delete_column": return ("Delete \(blocks[e.target ?? ""] ?? "a table column")", nil, nil, nil, nil)
             case "table_move_column": return ("Move \(blocks[e.target ?? ""] ?? "a column") \(e.position ?? "after") \(blocks[e.value ?? ""] ?? "another column")", nil, nil, nil, nil)
+            case "collection_create": return ("Add a collection “\(e.text ?? "")” \(e.position ?? "after") \(quoted(block))", nil, nil, nil, nil)
+            case "collection_add_item": return ("Add item “\(e.text ?? "Untitled")”", nil, readable(e.value), nil, nil)
+            case "collection_update_item": return ("Update \(blocks[e.target ?? ""] ?? "an item")\(e.text.map { ", renamed “\($0)”" } ?? "")", nil, readable(e.value), nil, nil)
+            case "collection_delete_item": return ("Delete \(blocks[e.target ?? ""] ?? "an item") (its page goes to Recently Deleted)", nil, nil, nil, nil)
+            case "collection_move_item": return ("Move \(blocks[e.target ?? ""] ?? "an item") \(e.position ?? "after") \(blocks[e.value ?? ""] ?? "another")", nil, nil, nil, nil)
+            case "collection_add_field": return ("Add field “\(e.text ?? "")” (\(e.value ?? "text"))", nil, e.expectedText.map { AttributedString("Options: " + $0.replacingOccurrences(of: "|", with: ", ")) }, nil, nil)
+            case "collection_rename_field": return ("Rename \(blocks[e.target ?? ""] ?? "a field") to “\(e.text ?? "")”", nil, nil, nil, nil)
+            case "collection_delete_field": return ("Delete \(blocks[e.target ?? ""] ?? "a field") and its values", nil, nil, nil, nil)
+            case "collection_add_view": return ("Add a \(e.value ?? "table") view “\(e.text ?? "")”", nil, nil, nil, nil)
+            case "collection_set_view": return ("Change \(blocks[e.target ?? ""] ?? "a view")", nil, viewSummary(e.value), nil, nil)
             case "insert_separator": return ("Insert a \(e.value == "dots" ? "three-dot" : e.value == "page_break" ? "page break" : (e.value ?? "")) separator after \(quoted(block))", nil, nil, nil, nil)
             case "separator_style": return ("Change the separator to \(e.value ?? "")", nil, nil, nil, nil)
             case "heading", "block_kind", "list": return ("Make it \(names[e.value ?? ""] ?? e.value ?? "")", nil, nil, block, nil)

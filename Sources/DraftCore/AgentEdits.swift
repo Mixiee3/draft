@@ -87,6 +87,16 @@ public struct AgentEdit: Codable, Sendable, Hashable {
             }
             guard (text ?? "").utf16.count <= 20_000, !(text ?? "").contains("\n") else { throw AgentEditError.invalid("Table text must be one line under 20,000 characters.") }
             try validatePosition()
+        case "collection_add_item", "collection_update_item", "collection_delete_item", "collection_move_item",
+             "collection_add_field", "collection_rename_field", "collection_delete_field", "collection_set_view", "collection_add_view":
+            guard (value ?? "").utf8.count <= 20_000, (text ?? "").utf16.count <= 2_000 else { throw AgentEditError.invalid("A collection edit is limited to 20 KB.") }
+            if ["collection_update_item", "collection_delete_item", "collection_move_item", "collection_rename_field", "collection_delete_field", "collection_set_view"].contains(action) {
+                guard let target, target.range(of: Self.idPattern, options: .regularExpression) != nil else { throw AgentEditError.invalid("\(action) needs the item, field or view ID in target.") }
+            }
+            try validatePosition()
+        case "collection_create":
+            guard !(text ?? "").trimmingCharacters(in: .whitespaces).isEmpty, (text ?? "").count <= 120 else { throw AgentEditError.invalid("A new collection needs a name of 1–120 characters.") }
+            try validatePosition()
         case "delete_document": break
         case "create_folder":
             try Library.checkFolderName(title ?? "")
@@ -205,7 +215,7 @@ public struct AgentPermission: Codable, Hashable, Sendable {
 }
 
 extension AgentProposal {
-    public static let destructiveActions: Set<String> = ["delete_block", "replace_document", "move_document", "delete_document", "table_delete_row", "table_delete_column"]
+    public static let destructiveActions: Set<String> = ["delete_block", "replace_document", "move_document", "delete_document", "table_delete_row", "table_delete_column", "collection_delete_item", "collection_delete_field"]
     public var requiredAccess: AgentAccess { allEdits.contains { Self.destructiveActions.contains($0.action) } ? .destructive : .propose }
 }
 
@@ -259,6 +269,9 @@ extension AgentProposal {
         guard Set(parts.map(\.documentId)).count == parts.count else { throw AgentEditError.invalid("Each note may appear once; put all its edits in one part.") }
         guard parts.reduce(0, { $0 + $1.edits.count }) <= 300 else { throw AgentEditError.invalid("A multi-note proposal has at most 300 edits.") }
         for part in parts {
+            if part.edits.contains(where: { CollectionData.agentActions.contains($0.action) }) {
+                throw AgentEditError.invalid("Collection changes go in a single-note proposal of their own.")
+            }
             if part.edits.contains(where: { AgentEdit.documentActions.contains($0.action) }) {
                 throw AgentEditError.invalid("Creating, renaming, moving or deleting notes must be its own proposal.")
             }
