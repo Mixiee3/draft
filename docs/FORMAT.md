@@ -204,7 +204,9 @@ id as `blockId`, a row id or cell id as `target`, the anchor row or cell id as `
 `collection_set_view`) use the collection block's id as `blockId`, an item, field or view id as
 `target`, and JSON in `value` for item values (field name or id → value) and view settings;
 `collection_create` inserts a starter collection after `blockId`. A proposal with collection actions
-contains only those. Note actions are listed in `draft_propose_note_edits`; `target` names the other block for
+contains only those. `insert_image` and `insert_file` carry the file's full local path in `value`
+(caption or alt text in `text`, and the SHA-256 of the proposed file in `expectedText`); the vault
+gets a copy only when the proposal is applied. Note actions are listed in `draft_propose_note_edits`; `target` names the other block for
 `move_block` and `position` is `before`/`after` for `insert_blocks` and `move_block`.
 
 The running app shows each proposal for review. Applying rechecks the revision (a mismatch sets

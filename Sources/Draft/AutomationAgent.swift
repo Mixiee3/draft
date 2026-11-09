@@ -211,6 +211,7 @@ extension Automation {
                 d.items.map { it in ([m.docTitle(it.docId)] + d.fields.map { d.display(it, $0.id, title: { m.docTitle($0) }) }).joined(separator: "|") }.joined(separator: " / ")
                     + " ;fields=" + d.fields.map(\.name).joined(separator: ",") + " ;views=" + d.views.map { "\($0.name):\($0.type):\($0.sort.count)s\($0.filters.count)f" }.joined(separator: ",")
             } ?? ""
+            r[prefix + "Assets"] = "\((try? FileManager.default.contentsOfDirectory(atPath: m.vault.dir.appendingPathComponent("assets").path))?.count ?? 0)"
             r[prefix + "Trashed"] = "\(m.library.docs.values.filter { $0.deletedAt != nil }.count)"
         }
         m.refreshIndex(); await wait(1.2)
@@ -226,7 +227,7 @@ extension Automation {
         recordParts("after")
         r["backups"] = "\(m.snapshots(docId).count)"
         if ProcessInfo.processInfo.environment["DRAFT_AGENT_UNDO"] != nil, saved?.status == "accepted" {
-            if p.changesLibrary || p.parts != nil || p.edits.allSatisfy({ CollectionData.agentActions.contains($0.action) }) { m.undoAgentChange() }
+            if p.usesAgentUndo { m.undoAgentChange() }
             else if let um = m.editors[docId]?.controller.undo {
                 if um.groupingLevel > 0 { um.endUndoGrouping() }
                 um.undo()

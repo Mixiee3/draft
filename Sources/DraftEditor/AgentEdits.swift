@@ -16,6 +16,12 @@ extension EditorController {
             try edit.validate()
             if edit.action == "append" { continue }
             if CollectionData.agentActions.contains(edit.action) { throw AgentEditError.invalid("Collection changes are applied by Draft, not the editor.") }
+            if ["insert_image", "insert_file"].contains(edit.action) {
+                // By now Draft has copied the file and put its asset id in value.
+                guard let v = edit.value, !v.hasPrefix("/") else { throw AgentEditError.invalid("Files are copied by Draft before they're inserted.") }
+                guard paragraph(withId: edit.blockId) != nil else { throw AgentEditError.invalid("Block \(edit.blockId) is missing.") }
+                continue
+            }
             if edit.action == "collection_create" {
                 guard paragraph(withId: edit.blockId) != nil else { throw AgentEditError.invalid("Block \(edit.blockId) is missing.") }
                 continue
@@ -63,6 +69,17 @@ extension EditorController {
         undoGroup {
             for edit in edits {
                 if ["append", "insert_blocks", "delete_block", "move_block"].contains(edit.action) { applyStructural(edit); continue }
+                if ["insert_image", "insert_file"].contains(edit.action), let pr = paragraph(withId: edit.blockId), let asset = edit.value {
+                    textView.setSelectedRange(NSRange(location: edit.position == "before" ? pr.location : NSMaxRange(contentRange(pr)), length: 0))
+                    if edit.action == "insert_image" {
+                        var attrs: [String: JSONValue] = ["assetId": .string(asset), "alt": .string(edit.text ?? "")]
+                        if let caption = edit.text, !caption.isEmpty { attrs["caption"] = .string(caption) }
+                        insertAttachmentBlock(kind: .image, node: Node("image", attrs: attrs))
+                    } else {
+                        insertFile(assetId: asset, name: edit.text ?? asset, size: Int(edit.expectedText ?? "") ?? 0)
+                    }
+                    continue
+                }
                 if edit.action == "collection_create", let pr = paragraph(withId: edit.blockId) {
                     // A starter collection (Status, Date, Tags; table, gallery and board views) after or before the block.
                     textView.setSelectedRange(NSRange(location: edit.position == "before" ? pr.location : NSMaxRange(contentRange(pr)), length: 0))
