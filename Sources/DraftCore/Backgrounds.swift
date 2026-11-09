@@ -67,3 +67,69 @@ public enum Backgrounds {
               page: "#fffdf8", text: "#2b241c", accent: "#9e6720", font: "serif", separator: "wave", shell: "#f7ead8"),
     ]
 }
+
+/// Gradient stop editing used by the Style panel and by reviewed agent proposals.
+public extension Backdrop {
+    static func mix(_ a: String, _ b: String, _ t: Double) -> String {
+        let x = ColorMath.rgb(a), y = ColorMath.rgb(b)
+        return ColorMath.hex(x.0 + (y.0 - x.0) * t, x.1 + (y.1 - x.1) * t, x.2 + (y.2 - x.2) * t)
+    }
+
+    /// Editable stops: always explicit, sorted, at least two.
+    var editableStops: [ColorStop] { colorStops }
+
+    /// Adds a stop in the middle of the widest gap, coloured between its neighbours.
+    mutating func addStop() {
+        var s = editableStops
+        guard s.count < 8 else { return }
+        let i = (0..<(s.count - 1)).max { (s[$0 + 1].at - s[$0].at) < (s[$1 + 1].at - s[$1].at) } ?? 0
+        s.insert(ColorStop(Self.mix(s[i].color, s[i + 1].color, 0.5), at: (s[i].at + s[i + 1].at) / 2), at: i + 1)
+        stops = s
+    }
+
+    mutating func removeStop(_ i: Int) {
+        var s = editableStops
+        guard s.count > 2, s.indices.contains(i) else { return }
+        s.remove(at: i); stops = s
+    }
+
+    /// Reorders colours while every position stays where it was.
+    mutating func moveStop(_ i: Int, by d: Int) {
+        var s = editableStops
+        let j = i + d
+        guard s.indices.contains(i), s.indices.contains(j) else { return }
+        (s[i].color, s[j].color) = (s[j].color, s[i].color)
+        (s[i].opacity, s[j].opacity) = (s[j].opacity, s[i].opacity)
+        stops = s
+    }
+
+    mutating func updateStop(_ i: Int, _ f: (inout ColorStop) -> Void) {
+        var s = editableStops
+        guard s.indices.contains(i) else { return }
+        f(&s[i])
+        s[i].at = min(1, max(0, s[i].at))
+        if let o = s[i].opacity { s[i].opacity = o >= 0.995 ? nil : max(0, o) }
+        stops = s
+    }
+
+    /// The strongest luminance jump between two stops. Above 4.5:1 the toolbar chips that float on
+    /// the backdrop can sit on a part they do not match.
+    var stopContrast: Double {
+        let c = editableStops.map(\.color)
+        return c.flatMap { a in c.map { ColorMath.contrast(a, $0) } }.max() ?? 1
+    }
+
+    /// A calmer version: stops move toward their average until the jump is at most `limit`.
+    func softened(limit: Double = 4.5) -> Backdrop {
+        var b = self
+        var s = editableStops
+        let rgb = s.map { ColorMath.rgb($0.color) }
+        let avg = ColorMath.hex(rgb.map(\.0).reduce(0, +) / Double(rgb.count), rgb.map(\.1).reduce(0, +) / Double(rgb.count), rgb.map(\.2).reduce(0, +) / Double(rgb.count))
+        let base = s.map(\.color)
+        for step in 1...20 where b.stopContrast > limit {
+            for k in s.indices { s[k].color = Self.mix(base[k], avg, Double(step) / 20) }
+            b.stops = s
+        }
+        return b
+    }
+}

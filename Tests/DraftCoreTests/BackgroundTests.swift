@@ -60,3 +60,33 @@ final class BackgroundTests: XCTestCase {
         XCTAssertNil(old.dots, "older documents decode without dots")
     }
 }
+
+final class GradientEditTests: XCTestCase {
+    func testStopEditing() {
+        var b = Backdrop(kind: "gradient", from: "#000000", to: "#ffffff", angle: 90)
+        b.addStop()
+        XCTAssertEqual(b.stops?.map(\.at), [0, 0.5, 1]); XCTAssertEqual(b.stops?[1].color, "#808080")
+        b.moveStop(0, by: 1)
+        XCTAssertEqual(b.stops?.map(\.color), ["#808080", "#000000", "#ffffff"]); XCTAssertEqual(b.stops?.map(\.at), [0, 0.5, 1], "positions stay")
+        b.updateStop(1) { $0.opacity = 0.4; $0.at = 0.7 }
+        XCTAssertEqual(b.stops?[1].opacity, 0.4); XCTAssertEqual(b.stops?[1].at, 0.7)
+        b.updateStop(2) { $0.at = 1.4 }
+        XCTAssertEqual(b.stops?.last?.at, 1, "positions stay inside 0…1")
+        b.updateStop(0) { $0.opacity = 1 }
+        XCTAssertNil(b.stops?[0].opacity, "full opacity is stored as nothing")
+        b.removeStop(0); b.removeStop(0)
+        XCTAssertEqual(b.stops?.count, 2, "never fewer than two stops")
+        b.moveStop(1, by: 1)
+        XCTAssertEqual(b.stops?.count, 2)
+        XCTAssertEqual(try JSONDecoder().decode(Backdrop.self, from: JSONEncoder().encode(b)), b)
+    }
+
+    func testSofteningCalmsHarshGradients() {
+        let harsh = Backdrop(kind: "gradient", stops: [ColorStop("#000000", at: 0), ColorStop("#ffffff", at: 1)])
+        XCTAssertGreaterThan(harsh.stopContrast, 20)
+        let calm = harsh.softened()
+        XCTAssertLessThanOrEqual(calm.stopContrast, 4.5)
+        XCTAssertEqual(calm.stops?.map(\.at), [0, 1])
+        for p in Backgrounds.presets { XCTAssertLessThanOrEqual(p.tokens.backdrop.stopContrast, 4.5, "\(p.name) needs no warning") }
+    }
+}

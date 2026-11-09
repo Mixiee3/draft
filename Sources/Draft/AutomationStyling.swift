@@ -1,0 +1,44 @@
+import AppKit
+import SwiftUI
+import DraftCore
+
+/// `styling-shots`: the gradient editor, text and block effects and the selection menu on a sample
+/// note. AUDIT_DARK / AUDIT_NARROW as in audit-shots.
+extension Automation {
+    static func stylingShots() async {
+        guard let w = NSApp.windows.first(where: { $0.isVisible }) else { return }
+        let env = ProcessInfo.processInfo.environment
+        let narrow = env["AUDIT_NARROW"] != nil, dark = env["AUDIT_DARK"] != nil
+        let p = (narrow ? "narrow-" : "") + (dark ? "dark-" : "")
+        w.setFrame(NSRect(x: 40, y: 40, width: narrow ? 760 : 1440, height: narrow ? 720 : 900), display: true)
+        m.setSettings { $0.theme = dark ? "dark" : "light" }
+        var r: [String: String] = [:]
+        defer { if let d = try? JSONSerialization.data(withJSONObject: r, options: [.prettyPrinted, .sortedKeys]) { try? d.write(to: out.appendingPathComponent(p + "styling.json")) } }
+        guard let id = m.createDoc(title: "Photosynthesis — study notes") else { return }
+        m.editor(for: id).controller.pastePlainForAutomation("## Light reactions\nWater is split and oxygen released; ATP and NADPH are made in the thylakoids.\n- [ ] Learn the Z-scheme\n> Light is the energy source; carbon comes from the air.\n## Calvin cycle\nCarbon dioxide is fixed into sugars in the stroma.")
+        m.updateAppearance(id) { $0.styleId = "quiet-lavender" }
+        await wait(0.5)
+
+        // Gradient editor: three stops, radial, then one drag of edits = one Undo step.
+        m.updateAppearance(id) { $0.overrides.backdrop = { var b = Styles.style("quiet-lavender").tokens.backdrop; b.addStop(); b.radial = true; b.focusX = 0.3; b.focusY = 0.2; return b }() }
+        await shotPanel(p + "gradient-editor", w, size: NSSize(width: 290, height: 640), dark: dark) { BackdropPicker(docId: id) }
+        let before = m.docs[id]?.appearance
+        for a in stride(from: 0.0, through: 0.6, by: 0.1) { m.updateAppearance(id) { $0.overrides.backdrop?.updateStop(1) { $0.at = a } } }
+        m.editor(for: id).controller.undo.undo()
+        await wait(0.3)
+        r["gradientDragIsOneUndo"] = m.docs[id]?.appearance == before ? "yes" : "no"
+        m.flushAll()
+        r["gradientPersisted"] = (try? m.vault.loadDoc(id))?.appearance.overrides.backdrop?.stops?.count == 4 ? "yes" : "no"
+        r["increaseContrast"] = NSWorkspace.shared.accessibilityDisplayShouldIncreaseContrast ? "on" : "off"
+    }
+
+    /// Hosts `content` in a window beside the document (popovers cannot be captured reliably).
+    static func shotPanel<V: View>(_ name: String, _ w: NSWindow, size: NSSize, dark: Bool, @ViewBuilder _ content: () -> V) async {
+        let tokens = Tokens.make(dark: dark, accent: m.library.settings.accent, tint: nil)
+        let host = NSHostingView(rootView: content().environment(m).environment(\.tokens, tokens).preferredColorScheme(dark ? .dark : .light).background(tokens.card))
+        let panel = NSPanel(contentRect: NSRect(x: w.frame.maxX - size.width - 30, y: w.frame.maxY - size.height - 90, width: size.width, height: size.height), styleMask: [.borderless], backing: .buffered, defer: false)
+        panel.contentView = host; panel.level = .floating; panel.orderFrontRegardless()
+        await shot(name, w, settle: 0.8)
+        panel.orderOut(nil)
+    }
+}
