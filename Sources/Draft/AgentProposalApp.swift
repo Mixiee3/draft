@@ -268,7 +268,7 @@ struct AgentProposalReview: View {
     var structure: DraftTools.DocumentStructure? { ["new", "multi"].contains(proposal.documentId) ? nil : try? DraftTools(vaultURL: model.vault.dir).structure(proposal.documentId) }
 
     var body: some View {
-        let blocks = Dictionary((structure?.blocks ?? []).map { ($0.id, $0.text) }, uniquingKeysWith: { a, _ in a })
+        let blocks = Dictionary((structure?.blocks ?? []).map { ($0.id, $0.text) }, uniquingKeysWith: { a, _ in a }).merging(tableLabels(structure), uniquingKeysWith: { a, _ in a })
         VStack(alignment: .leading, spacing: DS.s3) {
             VStack(alignment: .leading, spacing: DS.s1) {
                 Text("Review proposed changes").font(.system(size: DS.title2, weight: .bold)).foregroundStyle(t.text).accessibilityAddTraits(.isHeader)
@@ -281,12 +281,15 @@ struct AgentProposalReview: View {
                 VStack(alignment: .leading, spacing: DS.s2) {
                     if let parts = proposal.parts {
                         ForEach(Array(parts.enumerated()), id: \.offset) { _, part in
-                            let pb = Dictionary(((try? DraftTools(vaultURL: model.vault.dir).structure(part.documentId))?.blocks ?? []).map { ($0.id, $0.text) }, uniquingKeysWith: { a, _ in a })
+                            let ps = try? DraftTools(vaultURL: model.vault.dir).structure(part.documentId)
+                            let pb = Dictionary((ps?.blocks ?? []).map { ($0.id, $0.text) }, uniquingKeysWith: { a, _ in a }).merging(tableLabels(ps), uniquingKeysWith: { a, _ in a })
                             Text(part.documentTitle.isEmpty ? "Untitled" : part.documentTitle).font(.system(size: DS.footnote, weight: .semibold)).foregroundStyle(t.secondary)
                                 .textCase(.uppercase).tracking(0.5).padding(.top, DS.s1).accessibilityAddTraits(.isHeader)
+                            ForEach(tablePreviews(part.documentId, part.edits), id: \.0) { _, before, after in TablePreview(before: before, after: after) }
                             ForEach(Array(part.edits.enumerated()), id: \.offset) { i, edit in card(i, edit, pb) }
                         }
                     } else {
+                        ForEach(tablePreviews(proposal.documentId, proposal.edits), id: \.0) { _, before, after in TablePreview(before: before, after: after) }
                         ForEach(Array(proposal.edits.enumerated()), id: \.offset) { i, edit in card(i, edit, blocks) }
                     }
                 }
@@ -309,6 +312,31 @@ struct AgentProposalReview: View {
         .frame(minWidth: 420, idealWidth: 600, maxWidth: 600)
         .background(t.canvas)
         .interactiveDismissDisabled()
+    }
+
+    /// Row ids named by their first cell, cell ids by their column's header, for readable titles.
+    func tableLabels(_ st: DraftTools.DocumentStructure?) -> [String: String] {
+        var out: [String: String] = [:]
+        for b in st?.blocks ?? [] {
+            guard let rows = b.rows, let header = rows.first else { continue }
+            for r in rows {
+                out[r.id] = "row “\(r.cells.first?.text ?? "")”"
+                for (i, c) in r.cells.enumerated() { out[c.id] = "the “\(i < header.cells.count ? header.cells[i].text : "")” column" }
+            }
+        }
+        return out
+    }
+
+    /// Each table the proposal touches, as it is and as it will be after every edit.
+    func tablePreviews(_ docId: String, _ edits: [AgentEdit]) -> [(String, Node, Node)] {
+        guard let doc = try? DraftTools(vaultURL: model.vault.dir).document(docId) else { return [] }
+        var order: [String] = [], after: [String: Node] = [:], before: [String: Node] = [:]
+        for e in edits where Tables.agentActions.contains(e.action) {
+            guard let t = before[e.blockId] ?? doc.content.block(e.blockId) else { continue }
+            if before[e.blockId] == nil { before[e.blockId] = t; order.append(e.blockId) }
+            after[e.blockId] = (try? Tables.applying(e, to: after[e.blockId] ?? t)) ?? after[e.blockId] ?? t
+        }
+        return order.map { ($0, before[$0]!, after[$0]!) }
     }
 
     var destructive: Bool { proposal.requiredAccess == .destructive }
@@ -404,6 +432,13 @@ struct AgentProposalReview: View {
             case "delete_block": return ("Delete a paragraph", block, nil, nil, nil)
             case "move_block": return ("Move \(quoted(block)) \(e.position ?? "after") \(quoted(e.target.flatMap { blocks[$0] }))", nil, nil, nil, nil)
             case "task_checked": return (e.value == "true" ? "Check off a task" : "Uncheck a task", nil, nil, block, nil)
+            case "table_set_cell": return ("Change a cell in \(blocks[e.target ?? ""] ?? "the table")", e.expectedText, md(e.text), nil, nil)
+            case "table_insert_row": return ("Add a row \(e.position ?? "after") \(blocks[e.target ?? ""] ?? "another row")", nil, e.text.flatMap { $0.isEmpty ? nil : md($0) }, nil, nil)
+            case "table_delete_row": return ("Delete \(blocks[e.target ?? ""] ?? "a table row")", nil, nil, nil, nil)
+            case "table_move_row": return ("Move \(blocks[e.target ?? ""] ?? "a row") \(e.position ?? "after") \(blocks[e.value ?? ""] ?? "another row")", nil, nil, nil, nil)
+            case "table_insert_column": return ("Add a column \(e.position ?? "after") \(blocks[e.target ?? ""] ?? "another column")", nil, e.text.flatMap { $0.isEmpty ? nil : md($0) }, nil, nil)
+            case "table_delete_column": return ("Delete \(blocks[e.target ?? ""] ?? "a table column")", nil, nil, nil, nil)
+            case "table_move_column": return ("Move \(blocks[e.target ?? ""] ?? "a column") \(e.position ?? "after") \(blocks[e.value ?? ""] ?? "another column")", nil, nil, nil, nil)
             case "insert_separator": return ("Insert a \(e.value == "dots" ? "three-dot" : e.value == "page_break" ? "page break" : (e.value ?? "")) separator after \(quoted(block))", nil, nil, nil, nil)
             case "separator_style": return ("Change the separator to \(e.value ?? "")", nil, nil, nil, nil)
             case "heading", "block_kind", "list": return ("Make it \(names[e.value ?? ""] ?? e.value ?? "")", nil, nil, block, nil)
@@ -443,5 +478,54 @@ struct AgentProposalReview: View {
             Text(text).font(.system(size: DS.footnote + 1)).foregroundStyle(t.text.opacity(strike ? 0.65 : 1)).strikethrough(strike, color: color.opacity(0.6))
                 .lineLimit(12).textSelection(.enabled).fixedSize(horizontal: false, vertical: true)
         }
+    }
+}
+
+/// Before and after of a table: changed and new cells tinted green, cells that go away tinted red.
+struct TablePreview: View {
+    @Environment(\.tokens) var t
+    let before: Node
+    let after: Node
+
+    var body: some View {
+        let beforeText = Dictionary(Tables.cells(before).flatMap { $0 }.compactMap { c in c.id.map { ($0, nodeText(c)) } }, uniquingKeysWith: { a, _ in a })
+        let afterIds = Set(Tables.cells(after).flatMap { $0 }.compactMap(\.id))
+        VStack(alignment: .leading, spacing: DS.s2) {
+            grid("Before", before) { c in afterIds.contains(c.id ?? "") ? nil : Color(hex: "#d4544c") }
+            grid("After", after) { c in beforeText[c.id ?? ""] == nodeText(c) ? nil : Color(hex: "#2f9a5a") }
+        }
+        .padding(DS.s3)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(RoundedRectangle(cornerRadius: DS.rControl, style: .continuous).fill(t.hover))
+    }
+
+    func grid(_ label: String, _ table: Node, tint: @escaping (Node) -> Color?) -> some View {
+        let rows = Array(Tables.cells(table).prefix(8))
+        let cols = min(6, Tables.columnCount(table))
+        return VStack(alignment: .leading, spacing: 4) {
+            Text(label.uppercased()).font(.system(size: DS.micro + 1, weight: .semibold)).tracking(0.5).foregroundStyle(label == "After" ? Color(hex: "#2f9a5a") : t.secondary)
+            Grid(alignment: .leading, horizontalSpacing: 1, verticalSpacing: 1) {
+                ForEach(Array(rows.enumerated()), id: \.offset) { r, row in
+                    GridRow {
+                        ForEach(0..<cols, id: \.self) { c in
+                            let cell = c < row.count ? row[c] : Node("tableCell")
+                            let color = tint(cell)
+                            Text(nodeText(cell).isEmpty ? " " : nodeText(cell)).font(.system(size: DS.footnote, weight: r == 0 ? .semibold : .regular))
+                                .foregroundStyle(t.text).lineLimit(1)
+                                .padding(.horizontal, 6).padding(.vertical, 3)
+                                .frame(minWidth: 60, maxWidth: 200, alignment: .leading)
+                                .background(color.map { $0.opacity(0.18) } ?? t.card)
+                        }
+                    }
+                }
+            }
+            .clipShape(RoundedRectangle(cornerRadius: 6, style: .continuous))
+            .overlay(RoundedRectangle(cornerRadius: 6, style: .continuous).strokeBorder(t.line, lineWidth: 0.5))
+            if Tables.cells(table).count > 8 || Tables.columnCount(table) > 6 {
+                Text("Showing the first 8 rows and 6 columns.").font(.system(size: DS.caption)).foregroundStyle(t.tertiary)
+            }
+        }
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel("\(label): " + Tables.text(table).prefix(8).map { $0.joined(separator: ", ") }.joined(separator: "; "))
     }
 }

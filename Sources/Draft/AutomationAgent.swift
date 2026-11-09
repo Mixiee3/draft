@@ -206,6 +206,7 @@ extension Automation {
             r[prefix + "Marks"] = marks.sorted().joined(separator: ",")
             r[prefix + "Tasks"] = doc.map { tasksOf($0.content).map { "\($0.checked)" }.joined(separator: ",") } ?? ""
             r[prefix + "Style"] = doc?.appearance.styleId ?? ""
+            r[prefix + "Table"] = doc?.content.content?.first { $0.type == "table" }.map { Tables.text($0).map { $0.joined(separator: "|") }.joined(separator: " / ") } ?? ""
             r[prefix + "Trashed"] = "\(m.library.docs.values.filter { $0.deletedAt != nil }.count)"
         }
         m.refreshIndex(); await wait(1.2)

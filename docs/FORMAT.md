@@ -195,7 +195,10 @@ id), `create_folder` (`documentId`/`blockId` `"new"`, `expectedText` = name, `va
 id, `target` = Space id) and `delete_document` (moves the note and its nested pages to Recently
 Deleted). A multi-note proposal has `documentId` `"multi"`, empty `edits`, and
 `"parts": [{"documentId", "documentTitle", "expectedRevision", "edits"}]` (2–20 notes, note edits
-only), applied all-or-nothing. Note actions are listed in `draft_propose_note_edits`; `target` names the other block for
+only), applied all-or-nothing. Table actions (`table_set_cell`, `table_insert_row`, `table_delete_row`,
+`table_move_row`, `table_insert_column`, `table_delete_column`, `table_move_column`) use the table's
+id as `blockId`, a row id or cell id as `target`, the anchor row or cell id as `value` for moves, and
+`text` for cell Markdown (cells separated by `|` for new rows and columns). Note actions are listed in `draft_propose_note_edits`; `target` names the other block for
 `move_block` and `position` is `before`/`after` for `insert_blocks` and `move_block`.
 
 The running app shows each proposal for review. Applying rechecks the revision (a mismatch sets

@@ -155,6 +155,38 @@ st = m.tool("draft_read_structure", document_id=new)
 m.tool("draft_propose_move_document", document_id=new, expected_revision=st["revision"], space_id=work_space["id"], instruction="Move to Work")
 r = review("accept"); ok("move to another Space", r["afterSpace"] == work_space["id"] and any(d["title"] == "Trip plan" for d in m.tool("draft_list_documents", space_id=work_space["id"])), r)
 
+# Tables: cells, rows and columns by id; preview; one Undo; all or nothing; permission; persistence.
+def table_block():
+    st = m.tool("draft_read_structure", document_id=note["id"]); return st, next(b for b in st["blocks"] if b["type"] == "table")
+st, tb = table_block()
+ok("structure lists table rows and cell ids", tb.get("rows") and tb["rows"][1]["cells"][0]["text"] == "Beans" and all(c["id"] for r in tb["rows"] for c in r["cells"]), tb)
+hdr, beans = tb["rows"][0], tb["rows"][1]
+p = m.tool("draft_propose_note_edits", document_id=note["id"], expected_revision=st["revision"], instruction="Tidy the table", edits=[
+    {"action": "table_set_cell", "block_id": tb["id"], "target": beans["cells"][0]["id"], "text": "**Broad beans**", "expected_text": "Beans"},
+    {"action": "table_insert_row", "block_id": tb["id"], "target": beans["id"], "position": "after", "text": "Kale | 5"},
+    {"action": "table_insert_column", "block_id": tb["id"], "target": hdr["cells"][1]["id"], "position": "after", "text": "Notes | early | late"},
+    {"action": "table_move_column", "block_id": tb["id"], "target": hdr["cells"][1]["id"], "value": hdr["cells"][0]["id"], "position": "before"}])
+r = review("accept", undo=True, shot="mcp-review-table")
+ok("table edits applied", r["status"] == "accepted" and r["afterTable"] == "Bed|Crop|Notes / 3|Broad beans|early / 5|Kale|late", r.get("afterTable"))
+ok("table proposal is one Undo", r["undoneTable"] == "Crop|Bed / Beans|3", r.get("undoneTable"))
+ok("links, image, file and nested page kept through table edits", "link" in r["afterMarks"] and all(k in r["afterTypes"] for k in ["image", "file", "pageCard"]), r)
+st, tb = table_block(); before_t = content(note["id"])
+m.tool("draft_propose_note_edits", document_id=note["id"], expected_revision=st["revision"], instruction="Conflicting", edits=[
+    {"action": "table_set_cell", "block_id": tb["id"], "target": tb["rows"][1]["cells"][1]["id"], "text": "9"},
+    {"action": "table_delete_row", "block_id": tb["id"], "target": tb["rows"][1]["id"]},
+    {"action": "table_move_row", "block_id": tb["id"], "target": tb["rows"][1]["id"], "value": tb["rows"][0]["id"]}])
+r = review("accept"); ok("table proposal all or nothing", r["status"] == "failed" and content(note["id"]) == before_t, r)
+m.tool("draft_propose_note_edits", document_id=note["id"], expected_revision=st["revision"], instruction="Stale cell", edits=[
+    {"action": "table_set_cell", "block_id": tb["id"], "target": tb["rows"][1]["cells"][0]["id"], "text": "x", "expected_text": "Carrots"}])
+r = review("accept"); ok("changed cell refused", r["status"] == "failed" and "changed" in r["result"], r)
+newbie = MCP("newcomer"); r = newbie.tool("draft_propose_note_edits", document_id=note["id"], expected_revision=st["revision"], instruction="Delete row", edits=[
+    {"action": "table_delete_row", "block_id": tb["id"], "target": tb["rows"][1]["id"]}]); newbie.close()
+ok("deleting a table row needs Destructive", "error" in r and "destructive" in r["error"], r)
+m.tool("draft_propose_note_edits", document_id=note["id"], expected_revision=st["revision"], instruction="Bed numbers", edits=[
+    {"action": "table_set_cell", "block_id": tb["id"], "target": tb["rows"][1]["cells"][1]["id"], "text": "7", "expected_text": "3"}])
+r = review("accept"); ok("table cell saved", r["status"] == "accepted" and r["afterTable"] == "Crop|Bed / Beans|7", r.get("afterTable"))
+table_note = note["id"]
+
 # Folders: reviewed, full path, duplicates and bad names refused, stale, reject, one Undo.
 note_before = filehash(note["id"])
 r = m.tool("draft_propose_create_folder", name="Projects", instruction="A home for projects")
@@ -250,6 +282,7 @@ r = review("accept")  # a plain relaunch: nothing should be left to review
 ok("relaunch with nothing pending", r.get("error") == "no pending proposal", r)
 m = MCP()
 ok("relaunch keeps created, renamed and moved notes", any(d["title"] == "Trip plan" for d in m.tool("draft_list_documents", space_id=work_space["id"])))
+ok("table change persists after relaunch", next(b for b in m.tool("draft_read_structure", document_id=table_note)["blocks"] if b["type"] == "table")["rows"][1]["cells"][1]["text"] == "7")
 ok("index rebuilt from files finds new text", any(h["document_id"] == new for h in m.tool("draft_search", query="station", space_id=work_space["id"])))
 m.close()
 failed = [k for k, v in checks.items() if not v]

@@ -34,7 +34,9 @@
   refused), `draft_propose_delete_document` (to Recently Deleted with nested pages; Destructive
   permission), `draft_propose_multi_note_edits` (2–20 notes, all-or-nothing, one Undo). 17 tools;
   `scripts/mcp-test.sh` 69 checks.
-- Next (see ROADMAP v0.7 rows 12–17, in order): tables, collections, inserting images and files,
+- Row 12 done: table edits through `draft_propose_note_edits` (cells, rows, columns by id; preview
+  grids in the review; Destructive for deletes). `scripts/mcp-test.sh` 78 checks.
+- Next (see ROADMAP v0.7 rows 13–17, in order): collections, inserting images and files,
   richer actions, review-sheet polish, and a Codex app-server mode only after supported sign-in.
 - Earlier plan line kept for reference: folder creation, deleting whole
   notes to Recently Deleted, multi-note proposals, tables, collections, inserting images and files,

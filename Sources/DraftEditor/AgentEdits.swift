@@ -11,9 +11,18 @@ extension EditorController {
             return
         }
         var planned: [String: String] = [:]
+        var tables: [String: Node] = [:] // each table as it will be after the edits so far
         for edit in edits {
             try edit.validate()
             if edit.action == "append" { continue }
+            if Tables.agentActions.contains(edit.action) {
+                guard let pr = paragraph(withId: edit.blockId), block(at: pr).kind == .table,
+                      let a = storage.attribute(.attachment, at: pr.location, effectiveRange: nil) as? BlockAttachment else {
+                    throw AgentEditError.invalid("Block \(edit.blockId) isn't a table.")
+                }
+                tables[edit.blockId] = try Tables.applying(edit, to: tables[edit.blockId] ?? a.node)
+                continue
+            }
             guard let pr = paragraph(withId: edit.blockId) else { throw AgentEditError.invalid("Block \(edit.blockId) is missing.") }
             let kind = block(at: pr).kind
             switch edit.action {
@@ -49,6 +58,10 @@ extension EditorController {
         undoGroup {
             for edit in edits {
                 if ["append", "insert_blocks", "delete_block", "move_block"].contains(edit.action) { applyStructural(edit); continue }
+                if Tables.agentActions.contains(edit.action) {
+                    if let pr = paragraph(withId: edit.blockId) { updateAttachment(at: pr.location) { n in if let t = try? Tables.applying(edit, to: n) { n = t } } }
+                    continue
+                }
                 guard let pr = paragraph(withId: edit.blockId) else { continue }
                 textView.setSelectedRange(NSRange(location: pr.location, length: 0))
                 switch edit.action {
