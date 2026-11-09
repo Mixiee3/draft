@@ -50,7 +50,7 @@ def content(doc): return m.tool("draft_read_document", document_id=doc)  # what 
 m = MCP()
 tools = [t["name"] for t in m.rpc("tools/list", {})["result"]["tools"]]
 print("tools:", ", ".join(tools))
-ok("tools listed", len(tools) == 17, tools)
+ok("tools listed", len(tools) == 18, tools)
 spaces = m.tool("draft_list_spaces"); ok("1 list spaces", len(spaces) == 2, spaces)
 docs = m.tool("draft_list_documents"); note = next(d for d in docs if d["title"] == "MCP test note"); ok("2 list documents", note, docs)
 hits = m.tool("draft_search", query="zebra-quartz"); ok("3 search", hits and hits[0]["document_id"] == note["id"], hits)
@@ -187,6 +187,51 @@ m.tool("draft_propose_note_edits", document_id=note["id"], expected_revision=st[
 r = review("accept"); ok("table cell saved", r["status"] == "accepted" and r["afterTable"] == "Crop|Bed / Beans|7", r.get("afterTable"))
 table_note = note["id"]
 
+# Collections: items (pages), fields, views; preview; one Undo; all or nothing; permission; persistence.
+books = next(d for d in m.tool("draft_list_documents") if d["title"] == "Reading list")
+def collection():
+    st = m.tool("draft_read_structure", document_id=books["id"]); b = next(x for x in st["blocks"] if x["type"] == "collection")
+    return st, b, m.tool("draft_read_collection", document_id=books["id"], block_id=b["id"])
+st, cb, col = collection()
+ok("read collection", [i["title"] for i in col["items"]] == ["Atlas", "Zen", "Ulysses"] and {f["name"] for f in col["fields"]} >= {"Status", "Date", "Tags"} and {v["type"] for v in col["views"]} == {"table", "gallery", "kanban"}, col)
+items = {i["title"]: i["id"] for i in col["items"]}; table_view = next(v["id"] for v in col["views"] if v["type"] == "table")
+ids_before = sorted(items.values())
+p = m.tool("draft_propose_note_edits", document_id=books["id"], expected_revision=st["revision"], instruction="Organise the books", edits=[
+    {"action": "collection_add_field", "block_id": cb["id"], "text": "Pages", "value": "number"},
+    {"action": "collection_add_item", "block_id": cb["id"], "text": "Dune", "value": '{"Status": "Doing", "Pages": 412}'},
+    {"action": "collection_update_item", "block_id": cb["id"], "target": items["Atlas"], "value": '{"Pages": "120", "Status": "Done"}'},
+    {"action": "collection_move_item", "block_id": cb["id"], "target": items["Ulysses"], "value": items["Atlas"], "position": "before"},
+    {"action": "collection_set_view", "block_id": cb["id"], "target": table_view, "value": '{"sort": [{"field": "Pages", "ascending": false}], "filters": [{"field": "Status", "op": "isNot", "value": "To do"}]}'}])
+ok("collection proposal queued", p.get("status") == "pending", p)
+r = review("accept", undo=True, shot="mcp-review-collection")
+ok("collection changes applied", r["status"] == "accepted" and r["afterCollection"].startswith("Ulysses|Done") and "Dune|Doing|||412" in r["afterCollection"] and "Atlas|Done|||120" in r["afterCollection"] and "Table:table:1s1f" in r["afterCollection"], r.get("afterCollection"))
+ok("collection proposal is one Undo (item page gone too)", r["undoneCollection"].startswith("Atlas|To do") and "Dune" not in r["undoneCollection"] and "Pages" not in r["undoneCollection"] and int(r["undoneTrashed"]) == int(r["afterTrashed"]) + 1, r)
+st, cb, col = collection()
+before_c = m.tool("draft_read_collection", document_id=books["id"], block_id=cb["id"])
+m.tool("draft_propose_note_edits", document_id=books["id"], expected_revision=st["revision"], instruction="One bad value", edits=[
+    {"action": "collection_add_item", "block_id": cb["id"], "text": "Kafka"},
+    {"action": "collection_update_item", "block_id": cb["id"], "target": items["Zen"], "value": '{"Status": "Someday"}'}])
+r = review("accept")
+ok("collection all or nothing (no page created)", r["status"] == "failed" and "option" in r["result"] and m.tool("draft_read_collection", document_id=books["id"], block_id=cb["id"]) == before_c and not any(d["title"] == "Kafka" for d in m.tool("draft_list_documents")), r)
+m.tool("draft_propose_note_edits", document_id=books["id"], expected_revision=st["revision"], instruction="Rejected", edits=[{"action": "collection_add_item", "block_id": cb["id"], "text": "Rejected book"}])
+r = review("reject"); ok("rejected collection proposal changes nothing", r["status"] == "rejected" and m.tool("draft_read_collection", document_id=books["id"], block_id=cb["id"]) == before_c, r)
+newbie = MCP("newcomer"); r = newbie.tool("draft_propose_note_edits", document_id=books["id"], expected_revision=st["revision"], instruction="Delete", edits=[
+    {"action": "collection_delete_item", "block_id": cb["id"], "target": items["Zen"]}]); newbie.close()
+ok("deleting an item needs Destructive", "error" in r and "destructive" in r["error"], r)
+m.tool("draft_propose_note_edits", document_id=books["id"], expected_revision=st["revision"], instruction="Done with Zen", edits=[{"action": "collection_delete_item", "block_id": cb["id"], "target": items["Zen"]}])
+m.tool("draft_propose_note_edits", document_id=books["id"], expected_revision=st["revision"], instruction="Same revision", edits=[{"action": "collection_add_item", "block_id": cb["id"], "text": "Late"}])
+r = review("accept", undo=True)
+ok("deleted item's page goes to Recently Deleted; Undo restores", r["status"] == "accepted" and "Zen" not in r["afterCollection"] and "Zen" in r["undoneCollection"] and int(r["afterTrashed"]) == int(r["undoneTrashed"]) + 1, r)
+r = review("accept"); ok("collection proposal stale after another change", r["status"] == "stale", r)
+st, cb, col = collection()
+m.tool("draft_propose_note_edits", document_id=books["id"], expected_revision=st["revision"], instruction="Keep", edits=[{"action": "collection_add_item", "block_id": cb["id"], "text": "Middlemarch", "value": '{"Status": "To do", "Date": "2026-12-01"}'}])
+r = review("accept"); ok("item added and kept", r["status"] == "accepted" and "Middlemarch|To do|2026-12-01" in r["afterCollection"], r.get("afterCollection"))
+p_first = next(b for b in m.tool("draft_read_structure", document_id=books["id"])["blocks"] if b["type"] == "paragraph")
+m.tool("draft_propose_note_edits", document_id=books["id"], expected_revision=m.tool("draft_read_structure", document_id=books["id"])["revision"], instruction="Another list", edits=[
+    {"action": "collection_create", "block_id": p_first["id"], "text": "Films", "position": "after"}])
+r = review("accept"); ok("new collection created in the note", r["status"] == "accepted" and r["afterTypes"].count("collection") == 2, r.get("afterTypes"))
+books_ids = sorted(i["id"] for i in m.tool("draft_read_collection", document_id=books["id"], block_id=cb["id"])["items"])
+
 # Folders: reviewed, full path, duplicates and bad names refused, stale, reject, one Undo.
 note_before = filehash(note["id"])
 r = m.tool("draft_propose_create_folder", name="Projects", instruction="A home for projects")
@@ -283,6 +328,7 @@ ok("relaunch with nothing pending", r.get("error") == "no pending proposal", r)
 m = MCP()
 ok("relaunch keeps created, renamed and moved notes", any(d["title"] == "Trip plan" for d in m.tool("draft_list_documents", space_id=work_space["id"])))
 ok("table change persists after relaunch", next(b for b in m.tool("draft_read_structure", document_id=table_note)["blocks"] if b["type"] == "table")["rows"][1]["cells"][1]["text"] == "7")
+ok("collection items and ids persist after relaunch", sorted(i["id"] for i in m.tool("draft_read_collection", document_id=books["id"], block_id=cb["id"])["items"]) == books_ids and set(ids_before) <= set(books_ids))
 ok("index rebuilt from files finds new text", any(h["document_id"] == new for h in m.tool("draft_search", query="station", space_id=work_space["id"])))
 m.close()
 failed = [k for k, v in checks.items() if not v]

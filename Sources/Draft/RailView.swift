@@ -21,20 +21,23 @@ struct RailView: View {
             HStack(spacing: 6) {
                 Spacer().frame(width: narrow ? 0 : 76) // window buttons
                 Spacer()
-                if docId != nil {
-                    Menu {
-                        Picker("Show in sidebar", selection: Binding(get: { model.railShowsFolders }, set: { model.railShowsFolders = $0 })) {
-                            Text("Document").tag(false)
-                            Text("Folders").tag(true)
-                        }.pickerStyle(.inline)
-                    } label: {
-                        Image(systemName: model.railShowsFolders ? "folder" : "list.bullet.indent")
+                HStack(spacing: 6) {
+                    if docId != nil {
+                        Menu {
+                            Picker("Show in sidebar", selection: Binding(get: { model.railShowsFolders }, set: { model.railShowsFolders = $0 })) {
+                                Text("Document").tag(false)
+                                Text("Folders").tag(true)
+                            }.pickerStyle(.inline)
+                        } label: {
+                            Image(systemName: model.railShowsFolders ? "folder" : "list.bullet.indent")
+                        }
+                        .menuStyle(.button).buttonStyle(.plain).menuIndicator(.visible).fixedSize()
+                        .foregroundStyle(t.secondary).tint(t.secondary)
+                        .help("Choose what the sidebar shows")
                     }
-                    .menuStyle(.button).buttonStyle(.plain).menuIndicator(.visible).fixedSize()
-                    .foregroundStyle(t.secondary).tint(t.secondary)
-                    .help("Choose what the sidebar shows")
+                    IconButton(symbol: "sidebar.left", label: "Hide sidebar (⌃⌘S)") { model.setSettings { $0.railCollapsed = true } }
                 }
-                IconButton(symbol: "sidebar.left", label: "Hide sidebar (⌃⌘S)") { model.setSettings { $0.railCollapsed = true } }
+                
             }
             .frame(height: WindowChrome.height - 16)
             .padding(.horizontal, 8)

@@ -39,10 +39,19 @@ def edits():
                               {"action": "table_insert_row", "block_id": tb["id"], "target": tb["rows"][1]["id"], "position": "after", "text": "Kale | 5"}])(next(x for x in st["blocks"] if x["type"] == "table")),
     }
 results = {}
-for kind in ["text", "inline", "block", "separator", "move", "rename", "table"]:
+for kind in ["text", "inline", "block", "separator", "move", "rename", "table", "collection"]:
     for theme, narrow in [("light", False), ("dark", True)]:
         rev, e = edits()
         if kind == "rename": tool("draft_propose_rename_document", document_id=note["id"], expected_revision=rev, title="Spring planning", instruction="A clearer title")
+        elif kind == "collection":
+            books = next(d for d in tool("draft_list_documents") if d["title"] == "Reading list")
+            bst = tool("draft_read_structure", document_id=books["id"]); cb = next(x for x in bst["blocks"] if x["type"] == "collection")
+            col = tool("draft_read_collection", document_id=books["id"], block_id=cb["id"]); its = {i["title"]: i["id"] for i in col["items"]}
+            tv = next(v["id"] for v in col["views"] if v["type"] == "table")
+            tool("draft_propose_note_edits", document_id=books["id"], expected_revision=bst["revision"], instruction="Organise the reading list", edits=[
+                {"action": "collection_add_item", "block_id": cb["id"], "text": "Dune", "value": '{"Status": "Doing"}'},
+                {"action": "collection_update_item", "block_id": cb["id"], "target": its["Atlas"], "value": '{"Status": "Done"}'},
+                {"action": "collection_set_view", "block_id": cb["id"], "target": tv, "value": '{"sort": [{"field": "Status", "ascending": true}], "filters": [{"field": "Status", "op": "isNot", "value": "To do"}]}'}])
         else: tool("draft_propose_note_edits", document_id=note["id"], expected_revision=rev, instruction=f"Review: {kind}", edits=e[kind])
         r = review(f"review-{kind}-{theme}{'-narrow' if narrow else ''}", theme, narrow)
         results[f"{kind}-{theme}"] = {k: r.get(k) for k in ["status", "sheetSize", "sheetInsideWindow"]}

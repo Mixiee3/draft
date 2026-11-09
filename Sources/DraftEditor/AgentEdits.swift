@@ -15,6 +15,11 @@ extension EditorController {
         for edit in edits {
             try edit.validate()
             if edit.action == "append" { continue }
+            if CollectionData.agentActions.contains(edit.action) { throw AgentEditError.invalid("Collection changes are applied by Draft, not the editor.") }
+            if edit.action == "collection_create" {
+                guard paragraph(withId: edit.blockId) != nil else { throw AgentEditError.invalid("Block \(edit.blockId) is missing.") }
+                continue
+            }
             if Tables.agentActions.contains(edit.action) {
                 guard let pr = paragraph(withId: edit.blockId), block(at: pr).kind == .table,
                       let a = storage.attribute(.attachment, at: pr.location, effectiveRange: nil) as? BlockAttachment else {
@@ -58,6 +63,12 @@ extension EditorController {
         undoGroup {
             for edit in edits {
                 if ["append", "insert_blocks", "delete_block", "move_block"].contains(edit.action) { applyStructural(edit); continue }
+                if edit.action == "collection_create", let pr = paragraph(withId: edit.blockId) {
+                    // A starter collection (Status, Date, Tags; table, gallery and board views) after or before the block.
+                    textView.setSelectedRange(NSRange(location: edit.position == "before" ? pr.location : NSMaxRange(contentRange(pr)), length: 0))
+                    insertAttachmentBlock(kind: .collection, node: CollectionData.starter(name: edit.text ?? "Collection").node(id: newId("b_")))
+                    continue
+                }
                 if Tables.agentActions.contains(edit.action) {
                     if let pr = paragraph(withId: edit.blockId) { updateAttachment(at: pr.location) { n in if let t = try? Tables.applying(edit, to: n) { n = t } } }
                     continue

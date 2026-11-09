@@ -198,7 +198,13 @@ Deleted). A multi-note proposal has `documentId` `"multi"`, empty `edits`, and
 only), applied all-or-nothing. Table actions (`table_set_cell`, `table_insert_row`, `table_delete_row`,
 `table_move_row`, `table_insert_column`, `table_delete_column`, `table_move_column`) use the table's
 id as `blockId`, a row id or cell id as `target`, the anchor row or cell id as `value` for moves, and
-`text` for cell Markdown (cells separated by `|` for new rows and columns). Note actions are listed in `draft_propose_note_edits`; `target` names the other block for
+`text` for cell Markdown (cells separated by `|` for new rows and columns). Collection actions
+(`collection_add_item`, `collection_update_item`, `collection_delete_item`, `collection_move_item`,
+`collection_add_field`, `collection_rename_field`, `collection_delete_field`, `collection_add_view`,
+`collection_set_view`) use the collection block's id as `blockId`, an item, field or view id as
+`target`, and JSON in `value` for item values (field name or id → value) and view settings;
+`collection_create` inserts a starter collection after `blockId`. A proposal with collection actions
+contains only those. Note actions are listed in `draft_propose_note_edits`; `target` names the other block for
 `move_block` and `position` is `before`/`after` for `insert_blocks` and `move_block`.
 
 The running app shows each proposal for review. Applying rechecks the revision (a mismatch sets

@@ -207,6 +207,10 @@ extension Automation {
             r[prefix + "Tasks"] = doc.map { tasksOf($0.content).map { "\($0.checked)" }.joined(separator: ",") } ?? ""
             r[prefix + "Style"] = doc?.appearance.styleId ?? ""
             r[prefix + "Table"] = doc?.content.content?.first { $0.type == "table" }.map { Tables.text($0).map { $0.joined(separator: "|") }.joined(separator: " / ") } ?? ""
+            r[prefix + "Collection"] = doc?.content.content?.first { $0.type == "collection" }.flatMap { CollectionData(node: $0) }.map { d in
+                d.items.map { it in ([m.docTitle(it.docId)] + d.fields.map { d.display(it, $0.id, title: { m.docTitle($0) }) }).joined(separator: "|") }.joined(separator: " / ")
+                    + " ;fields=" + d.fields.map(\.name).joined(separator: ",") + " ;views=" + d.views.map { "\($0.name):\($0.type):\($0.sort.count)s\($0.filters.count)f" }.joined(separator: ",")
+            } ?? ""
             r[prefix + "Trashed"] = "\(m.library.docs.values.filter { $0.deletedAt != nil }.count)"
         }
         m.refreshIndex(); await wait(1.2)
@@ -222,7 +226,7 @@ extension Automation {
         recordParts("after")
         r["backups"] = "\(m.snapshots(docId).count)"
         if ProcessInfo.processInfo.environment["DRAFT_AGENT_UNDO"] != nil, saved?.status == "accepted" {
-            if p.changesLibrary || p.parts != nil { m.undoAgentChange() }
+            if p.changesLibrary || p.parts != nil || p.edits.allSatisfy({ CollectionData.agentActions.contains($0.action) }) { m.undoAgentChange() }
             else if let um = m.editors[docId]?.controller.undo {
                 if um.groupingLevel > 0 { um.endUndoGrouping() }
                 um.undo()
@@ -258,6 +262,18 @@ extension Automation {
         m.editors[id]?.controller.load(m.docs[id]!.content)
         if let d = m.docs[id] { m.library.docs[id]?.applyDerived(from: d) }
         m.markDocDirty(id)
+        // A second note with a collection of three books (each item a page).
+        if let list = m.createDoc(open: false, title: "Reading list") {
+            var data = CollectionData.starter(name: "Books")
+            for (t, st) in [("Atlas", "To do"), ("Zen", "Doing"), ("Ulysses", "Done")] {
+                if let page = m.createNestedPage(parent: list, title: t, content: Node("doc", content: [Node("paragraph", attrs: ["id": .string(newId("b_"))])])) {
+                    data.items.append(CollectionItem(docId: page, values: [data.fields[0].id: .string(st)]))
+                }
+            }
+            m.docs[list]?.content = ensureBlockIds(Node("doc", content: [Node("paragraph", content: [.text("Books to read")]), data.node(id: newId("b_")), Node("paragraph")]))
+            if let d = m.docs[list] { m.library.docs[list]?.applyDerived(from: d) }
+            m.markDocDirty(list)
+        }
         let home = m.library.space.id
         m.createSpace("Work"); m.switchSpace(home)
         m.flushAll(); m.rebuildIndex(); await wait(1.0); m.flushAll()

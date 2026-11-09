@@ -400,10 +400,21 @@ final class AppModel {
         guard id != activeTabId, let t = tabs.first(where: { $0.id == id }) else { return }
         captureTabStates()
         if !freshDocs.isEmpty { freshDocs.removeAll() }
-        if let d = t.view.docId, t.view.kind == "doc" { _ = ensureDoc(d) }
+        if let d = t.view.docId, t.view.kind == "doc" {
+            _ = ensureDoc(d)
+            if railShowsFolders { revealInFolders(d) }
+        }
         activeTabId = id
         if panel != nil { panel = nil }
         scheduleLibrarySave()
+    }
+
+    /// Opens the sidebar folders down to a note's folder (only when the sidebar shows folders).
+    func revealInFolders(_ docId: String) {
+        var chain: [String] = [], cur = library.docs[docId]?.folderId
+        while let f = cur, !chain.contains(f) { chain.append(f); cur = library.folders.first { $0.id == f }?.parentId }
+        let missing = chain.filter { !library.expandedFolders.contains($0) }
+        if !missing.isEmpty { library.expandedFolders += missing }
     }
 
     func closeTab(_ id: String) {

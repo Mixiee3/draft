@@ -281,6 +281,148 @@ public struct CollectionData: Codable, Hashable, Sendable {
         return Node("collection", attrs: ["id": .string(id), "data": v])
     }
 
+    public static let agentActions: Set<String> = ["collection_add_item", "collection_update_item", "collection_delete_item", "collection_move_item",
+                                                    "collection_add_field", "collection_rename_field", "collection_delete_field", "collection_set_view", "collection_add_view"]
+
+    /// A value from an agent, checked and converted for the field's type.
+    func coerce(_ v: JSONValue, for f: CollectionField) throws -> JSONValue? {
+        func fail() -> AgentEditError { .invalid("“\(v)” isn't a valid \(f.type) for “\(f.name)”.") }
+        if case .null = v { return nil }
+        switch f.type {
+        case "number":
+            if let d = v.double { return .number(d) }
+            if let s = v.string, let d = Double(s.replacingOccurrences(of: ",", with: ".")) { return .number(d) }
+            throw fail()
+        case "checkbox":
+            if let b = v.bool { return .bool(b) }
+            if let s = v.string?.lowercased(), ["true", "false", "yes", "no"].contains(s) { return .bool(s == "true" || s == "yes") }
+            throw fail()
+        case "date":
+            guard let s = v.string, s.range(of: "^\\d{4}-\\d{2}-\\d{2}$", options: .regularExpression) != nil else { throw fail() }
+            return .string(s)
+        case "select":
+            guard let s = v.string else { throw fail() }
+            guard (f.options ?? []).contains(s) else { throw AgentEditError.invalid("“\(s)” isn't an option of “\(f.name)” (\((f.options ?? []).joined(separator: ", "))).") }
+            return .string(s)
+        case "multiSelect", "relation":
+            let list = v.items?.compactMap(\.string) ?? v.string.map { $0.split(separator: ";").map { $0.trimmingCharacters(in: .whitespaces) } } ?? []
+            if f.type == "multiSelect", let bad = list.first(where: { !(f.options ?? []).contains($0) && !(f.options ?? []).isEmpty }) {
+                throw AgentEditError.invalid("“\(bad)” isn't an option of “\(f.name)”.")
+            }
+            return .array(list.map { .string($0) })
+        default:
+            guard let s = v.string ?? v.double.map({ String($0) }) else { throw fail() }
+            return .string(s)
+        }
+    }
+
+    func field(named key: String) -> CollectionField? {
+        fields.first { $0.id == key } ?? fields.first { $0.name.compare(key, options: .caseInsensitive) == .orderedSame }
+    }
+
+    func values(_ json: String?) throws -> [String: JSONValue] {
+        guard let json, !json.isEmpty else { return [:] }
+        guard let obj = (try? JSONDecoder().decode(JSONValue.self, from: Data(json.utf8)))?.object else { throw AgentEditError.invalid("Values must be a JSON object of field name or ID to value.") }
+        var out: [String: JSONValue] = [:]
+        for (k, v) in obj {
+            guard let f = field(named: k) else { throw AgentEditError.invalid("The collection has no field “\(k)”.") }
+            out[f.id] = try coerce(v, for: f) ?? .null
+        }
+        return out
+    }
+
+    /// One reviewed agent edit applied to a copy. New items get `newPage()` as their page id (the app
+    /// creates the real pages only after every edit has passed).
+    public func applying(_ e: AgentEdit, newPage: () -> String) throws -> CollectionData {
+        var d = self
+        func item(_ id: String?) throws -> Int {
+            guard let id, let i = d.items.firstIndex(where: { $0.id == id }) else { throw AgentEditError.invalid("Item \(id ?? "") isn't in the collection any more.") }
+            return i
+        }
+        func fieldIndex(_ id: String?) throws -> Int {
+            guard let id, let i = d.fields.firstIndex(where: { $0.id == id }) else { throw AgentEditError.invalid("Field \(id ?? "") isn't in the collection any more.") }
+            return i
+        }
+        switch e.action {
+        case "collection_add_item":
+            var it = CollectionItem(docId: newPage(), values: try d.values(e.value).filter { if case .null = $0.value { return false }; return true })
+            it.id = newId("i_")
+            d.items.append(it)
+        case "collection_update_item":
+            let i = try item(e.target)
+            for (k, v) in try d.values(e.value) { if case .null = v { d.items[i].values[k] = nil } else { d.items[i].values[k] = v } }
+        case "collection_delete_item":
+            d.items.remove(at: try item(e.target))
+        case "collection_move_item":
+            let from = try item(e.target), anchor = try item(e.value)
+            guard from != anchor else { throw AgentEditError.invalid("An item can't move next to itself.") }
+            let it = d.items.remove(at: from)
+            let a = d.items.firstIndex { $0.id == e.value }!
+            d.items.insert(it, at: e.position == "before" ? a : a + 1)
+        case "collection_add_field":
+            let name = (e.text ?? "").trimmingCharacters(in: .whitespaces)
+            guard !name.isEmpty, name.count <= 80 else { throw AgentEditError.invalid("A field needs a name of 1–80 characters.") }
+            guard d.field(named: name) == nil, name.lowercased() != "title" else { throw AgentEditError.invalid("The collection already has a field “\(name)”.") }
+            let type = e.value ?? "text"
+            guard CollectionField.types.contains(type) else { throw AgentEditError.invalid("Field type must be one of \(CollectionField.types.joined(separator: ", ")).") }
+            let options = (e.expectedText ?? "").split(separator: "|").map { $0.trimmingCharacters(in: .whitespaces) }.filter { !$0.isEmpty }
+            d.fields.append(CollectionField(name: name, type: type, options: ["select", "multiSelect"].contains(type) ? options : nil))
+        case "collection_rename_field":
+            let i = try fieldIndex(e.target)
+            let name = (e.text ?? "").trimmingCharacters(in: .whitespaces)
+            guard !name.isEmpty, name.count <= 80 else { throw AgentEditError.invalid("A field needs a name of 1–80 characters.") }
+            if let other = d.field(named: name), other.id != e.target { throw AgentEditError.invalid("The collection already has a field “\(other.name)”.") }
+            d.fields[i].name = name
+        case "collection_delete_field":
+            let i = try fieldIndex(e.target), id = d.fields[i].id
+            d.fields.remove(at: i)
+            for j in d.items.indices { d.items[j].values[id] = nil }
+            for j in d.views.indices {
+                d.views[j].sort.removeAll { $0.field == id }; d.views[j].filters.removeAll { $0.field == id }
+                d.views[j].visible?.removeAll { $0 == id }; d.views[j].calc[id] = nil
+                if d.views[j].groupBy == id { d.views[j].groupBy = nil }
+            }
+        case "collection_add_view":
+            let type = e.value ?? "table"
+            guard ["table", "gallery", "kanban"].contains(type) else { throw AgentEditError.invalid("A view is a table, gallery or kanban.") }
+            var v = CollectionView(name: (e.text ?? "").isEmpty ? type.capitalized : e.text!, type: type)
+            if type == "kanban" { v.groupBy = d.fields.first { $0.type == "select" }?.id }
+            d.views.append(v)
+        case "collection_set_view":
+            guard let i = d.views.firstIndex(where: { $0.id == e.target }) else { throw AgentEditError.invalid("View \(e.target ?? "") isn't in the collection any more.") }
+            guard let spec = (try? JSONDecoder().decode(JSONValue.self, from: Data((e.value ?? "{}").utf8)))?.object else { throw AgentEditError.invalid("View settings must be a JSON object.") }
+            var v = d.views[i]
+            func fid(_ key: String) throws -> String {
+                if key == Self.titleField { return key }
+                guard let f = d.field(named: key) else { throw AgentEditError.invalid("The collection has no field “\(key)”.") }
+                return f.id
+            }
+            if let name = spec["name"]?.string { v.name = name }
+            if let type = spec["type"]?.string { guard ["table", "gallery", "kanban"].contains(type) else { throw AgentEditError.invalid("A view is a table, gallery or kanban.") }; v.type = type }
+            if let sort = spec["sort"]?.items { v.sort = try sort.map { s in SortRule(field: try fid(s.object?["field"]?.string ?? ""), ascending: s.object?["ascending"]?.bool ?? true) } }
+            if let filters = spec["filters"]?.items {
+                let ops = ["is", "isNot", "contains", "isEmpty", "isNotEmpty", "gt", "lt", "before", "after", "checked", "unchecked"]
+                v.filters = try filters.map { f in
+                    let op = f.object?["op"]?.string ?? ""
+                    guard ops.contains(op) else { throw AgentEditError.invalid("Filter op must be one of \(ops.joined(separator: ", ")).") }
+                    return FilterRule(field: try fid(f.object?["field"]?.string ?? ""), op: op, value: f.object?["value"]?.string)
+                }
+            }
+            if let m = spec["match"]?.string { guard ["all", "any"].contains(m) else { throw AgentEditError.invalid("match is all or any.") }; v.match = m }
+            if let g = spec["groupBy"] {
+                if case .null = g { v.groupBy = nil } else { v.groupBy = try fid(g.string ?? "") }
+            }
+            if let vis = spec["visible"]?.items { v.visible = try vis.map { try fid($0.string ?? "") } }
+            if v.type == "kanban" {
+                guard let g = v.groupBy, d.field(g)?.type == "select" else { throw AgentEditError.invalid("A kanban view groups by a select field.") }
+            }
+            d.views[i] = v
+        default:
+            throw AgentEditError.invalid("\(e.action) isn't a collection edit.")
+        }
+        return d
+    }
+
     public var view: CollectionView? { views.first { $0.id == activeView } ?? views.first }
     public func field(_ id: String) -> CollectionField? { fields.first { $0.id == id } }
 

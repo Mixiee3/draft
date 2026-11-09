@@ -72,6 +72,14 @@ scripts/assistant-quality.sh  # 30-question benchmark: expected facts and citati
 ```
 
 ```bash
+scripts/mcp-test.sh           # the MCP server end to end over stdio in a throwaway vault
+```
+
+```bash
+scripts/nav-test.sh           # tab navigation with real clicks from every kind of screen
+```
+
+```bash
 scripts/agent-test.sh         # Codex/MCP proposals: accept, undo, reject, stale revision, links/tags/tasks kept
 ```
 
@@ -102,7 +110,7 @@ It lists Spaces, folders and documents, searches, reads documents, blocks and st
 Draft's formatting (with a restrained "make it look better" recipe), and **proposes** changes:
 note edits (text, append, insert, delete, reorder, headings, lists, tasks, quotes, callouts, code,
 inline formatting, colours, highlights, links, block colours, focus and block decorations,
-separators, document style, table cells, rows and columns), edits across several notes at once (all or nothing), and creating,
+separators, document style, table cells, rows and columns, collection items, fields and views), edits across several notes at once (all or nothing), and creating,
 renaming, moving and deleting notes (to Recently Deleted only) and creating folders.
 
 Each agent is listed in Settings › Agents with switches for reading, proposing and destructive

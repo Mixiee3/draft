@@ -50,7 +50,7 @@ extension AppModel {
 
     /// Item pages follow their items through undo and redo: removed items' pages go to Recently
     /// Deleted, restored items bring theirs back.
-    private func restoreItemPages(_ target: CollectionData, comparedTo current: CollectionData) {
+    func restoreItemPages(_ target: CollectionData, comparedTo current: CollectionData) {
         let keep = Set(target.items.map(\.docId)), now = Set(current.items.map(\.docId))
         for id in keep.subtracting(now) where library.docs[id]?.deletedAt != nil { library.restore(id) }
         for id in now.subtracting(keep) where library.docs[id]?.deletedAt == nil { library.trash(id) }
