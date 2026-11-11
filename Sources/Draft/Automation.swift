@@ -48,6 +48,8 @@ enum Automation {
             case "chrome-test": await chromeTest()
             case "selection-test": await selectionTest()
             case "editor-audit": await editorAudit()
+            case "effects-live": await effectsLive(read: false)
+            case "effects-read": await effectsLive(read: true)
             case "spectrum-test": await spectrumTest(read: false)
             case "spectrum-read": await spectrumTest(read: true)
             case "backgrounds-shots": await backgroundShots()

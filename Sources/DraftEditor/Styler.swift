@@ -216,7 +216,8 @@ public enum Styler {
             sh.shadowColor = (own ?? .black).withAlphaComponent((theme.isDarkPage ? 0.7 : 0.4) * (0.4 + k))
             sh.shadowOffset = NSSize(width: 0, height: theme.isDarkPage ? -1 : 1)
         case "outline":
-            attrs[.strokeWidth] = -(1.5 + 4 * k); attrs[.strokeColor] = (own ?? NSColor(hex: d.start)).withAlphaComponent(0.55); return
+            // A coloured rim around letters that keep the text colour.
+            attrs[.strokeWidth] = -(1.5 + 4 * k); attrs[.strokeColor] = (own ?? theme.accentColor).withAlphaComponent(0.85); return
         default: return
         }
         attrs[.shadow] = sh

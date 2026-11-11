@@ -94,6 +94,7 @@ struct TextEffectEditor: View {
     func defaultColor(_ kind: String) -> String {
         switch kind {
         case "shadow", "emboss": return "#000000"
+        case "outline": return c.theme.accent
         case "lift": return TextEffects.colors(accent: c.theme.accent, text: c.theme.textColor, page: c.theme.pageColor).end
         default: return c.theme.accent
         }
