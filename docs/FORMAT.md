@@ -126,7 +126,7 @@ document files at any time. `parentDocId` marks a nested page.
 | `hardBreak` | — | — |
 
 Marks: `bold`, `italic`, `underline`, `strike`, `code`, `highlight {color}`, `textStyle {color}`,
-`effect {kind}` (`accent`/`gradient`/`glow`/`shadow`/`outline`/`lift`/`emboss`, or `spectrum` with
+`effect {kind}` (`accent`/`gradient` (one gradient across the phrase)/`glow`/`shadow`/`outline`/`lift`/`emboss`, or `spectrum` with
 `palette` (aurora/prism/sunset/ocean/neon), `speed` (still/slow/normal/fast) and `direction`
 (forward/backward); colours come from the document style; readers that don't know it show plain text), `link {href}`, `docLink {docId, blockId?}`, `date {date}`.
 

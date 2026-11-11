@@ -117,3 +117,57 @@ final class SpectrumTests: XCTestCase {
         XCTAssertNil(c.storage.attribute(.draftEffect, at: 8, effectiveRange: nil), "never across paragraphs")
     }
 }
+
+/// Renders the editor to a bitmap and reads the pixels of the run.
+final class GradientRenderingTests: XCTestCase {
+    func render(_ c: EditorController, _ view: NSView) -> NSBitmapImageRep {
+        let rep = c.textView.bitmapImageRepForCachingDisplay(in: c.textView.bounds)!
+        c.textView.cacheDisplay(in: c.textView.bounds, to: rep)
+        return rep
+    }
+    /// Median hue of saturated pixels per column inside `rect` (view points).
+    func hues(_ rep: NSBitmapImageRep, _ rect: NSRect, scale: CGFloat) -> [CGFloat] {
+        var out: [CGFloat] = []
+        for x in Int(rect.minX * scale)..<Int(rect.maxX * scale) {
+            var hs: [CGFloat] = []
+            for y in Int(rect.minY * scale)..<Int(rect.maxY * scale) {
+                guard let c = rep.colorAt(x: x, y: y)?.usingColorSpace(.sRGB), c.saturationComponent > 0.3 else { continue }
+                hs.append(c.hueComponent)
+            }
+            if hs.count >= 2 { out.append(hs.sorted()[hs.count / 2]) }
+        }
+        return out
+    }
+
+    func testOneContinuousGradientThatMovesOnlyWhenAllowed() throws {
+        let view = DocumentEditorView(frame: NSRect(x: 0, y: 0, width: 900, height: 400))
+        let window = NSWindow(contentRect: view.frame, styleMask: [.titled], backing: .buffered, defer: false)
+        window.contentView = view
+        let c = view.controller
+        c.load(Node("doc", content: [Node("heading", attrs: ["id": "b_h", "level": 1], content: [.text("Spectrum heading text", marks: [Mark("effect", attrs: ["kind": "spectrum", "palette": "prism", "speed": "fast", "direction": "forward"])])])]))
+        view.layoutSubtreeIfNeeded()
+        let gr = c.layout.glyphRange(forCharacterRange: NSRange(location: 0, length: 21), actualCharacterRange: nil)
+        let o = c.textView.textContainerOrigin
+        let run = c.layout.boundingRect(forGlyphRange: gr, in: c.container).offsetBy(dx: o.x, dy: o.y)
+        let a = render(c, view)
+        let scale = CGFloat(a.pixelsWide) / c.textView.bounds.width
+        let h1 = hues(a, run, scale: scale)
+        XCTAssertGreaterThan(h1.count, 40, "the run is drawn in colour")
+        let jumps = zip(h1, h1.dropFirst()).filter { min(abs($0 - $1), 1 - abs($0 - $1)) > 0.12 }.count
+        XCTAssertLessThanOrEqual(jumps, 2, "one gradient across the phrase, not one per letter (\(jumps) jumps)")
+        XCTAssertGreaterThan((h1.max() ?? 0) - (h1.min() ?? 0), 0.3, "several colours across the run")
+        Thread.sleep(forTimeInterval: 0.6)
+        let b = render(c, view)
+        XCTAssertNotEqual(hues(b, run, scale: scale), h1, "it moves")
+        var th = c.theme; th.animateEffects = false; c.theme = th
+        let s1 = hues(render(c, view), run, scale: scale)
+        Thread.sleep(forTimeInterval: 0.6)
+        XCTAssertEqual(hues(render(c, view), run, scale: scale), s1, "still under Reduce Motion")
+        // The plain Gradient effect uses the same layer: one smooth gradient, still.
+        c.load(Node("doc", content: [Node("heading", attrs: ["id": "b_h", "level": 1], content: [.text("Gradient heading text", marks: [Mark("effect", attrs: ["kind": "gradient"])])])]))
+        view.layoutSubtreeIfNeeded()
+        let g1 = render(c, view)
+        Thread.sleep(forTimeInterval: 0.3)
+        XCTAssertEqual(hues(render(c, view), run, scale: scale), hues(g1, run, scale: scale), "Gradient is still")
+    }
+}

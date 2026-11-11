@@ -171,13 +171,6 @@ public enum Styler {
                 if let k = a[.draftEffect] as? String, a[.draftHighlight] == nil { applyEffect(k, &attrs, &fg, theme: theme) }
                 attrs[.foregroundColor] = fg
                 s.setAttributes(attrs, range: r)
-                if a[.draftEffect] as? String == "gradient", a[.draftHighlight] == nil, r.length > 1 {
-                    let c = TextEffects.colors(accent: theme.accent, text: theme.textColor, page: theme.pageColor)
-                    // shortcut: per-character colors, not a true pattern gradient; fine for short phrases.
-                    for i in 0..<r.length {
-                        s.addAttribute(.foregroundColor, value: NSColor(hex: Backdrop.mix(c.start, c.end, Double(i) / Double(r.length - 1))), range: NSRange(location: r.location + i, length: 1))
-                    }
-                }
             }
             if b.kind != .code, ns.range(of: "#", options: .literal, range: pr).location != NSNotFound {
                 for t in Tags.find(in: ns.substring(with: pr), rules: theme.tagRules) {
@@ -195,7 +188,7 @@ public enum Styler {
 
     static func applyEffect(_ k: String, _ attrs: inout [NSAttributedString.Key: Any], _ fg: inout NSColor, theme: EditorTheme) {
         let c = TextEffects.colors(accent: theme.accent, text: theme.textColor, page: theme.pageColor)
-        if k == "accent" || k == "glow" || k == "lift" { fg = NSColor(hex: c.start) }
+        if k == "accent" || k == "glow" || k == "lift" || k == "gradient" { fg = NSColor(hex: c.start) } // gradient: drawn by the layout manager; this is the fallback
         if let s = Spectrum(k) { fg = NSColor(hex: s.colors(page: theme.pageColor)[0]); return } // drawn by the layout manager; this colour is the fallback
         guard !theme.plainEffects else { return }
         let sh = NSShadow()

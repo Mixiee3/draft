@@ -36,8 +36,10 @@ class MCP:
         except ValueError: return text
     def close(self): self.p.stdin.close(); self.p.wait(timeout=5)
 
-def review(decision="accept", undo=False, shot=None, revoke=False):
+def review(decision="accept", undo=False, shot=None, revoke=False, narrow=False, theme=None):
     env = dict(os.environ, DRAFT_DATA_DIR=vault, DRAFT_OUT=work, DRAFT_AUTOMATION="agent-review", DRAFT_AGENT_DECISION=decision)
+    if narrow: env["DRAFT_AGENT_NARROW"] = "1"
+    if theme: env["DRAFT_AGENT_THEME"] = theme
     if revoke: env["DRAFT_AGENT_REVOKE"] = "1"
     if undo: env["DRAFT_AGENT_UNDO"] = "1"
     if shot: env["DRAFT_AGENT_SHOT"] = shot
@@ -130,6 +132,25 @@ ok("multi-note style applied and undone", r["status"] == "accepted" and "2 notes
    and r["after:" + note["id"]].endswith("|style:sea-glass") and r["after:" + reading["id"]].endswith("|style:sea-glass"), r)
 def style_of(d): return json.load(open(f"{vault}/docs/{d}.json"))["appearance"]["styleId"]
 ok("multi-note style one Undo", style_of(note["id"]) != "sea-glass" and style_of(reading["id"]) != "sea-glass", (style_of(note["id"]), style_of(reading["id"])))
+# Item 16: a long proposal (40 changes) stays readable, grouped and on screen, in narrow dark too.
+def long_edits(st):
+    first = next(b for b in st["blocks"] if "zebra-quartz" in b["text"])
+    return [{"action": "insert_blocks", "block_id": first["id"], "position": "after", "text": f"Inserted line {i}"} for i in range(36)] + [
+        {"action": "highlight", "block_id": first["id"], "text": "zebra-quartz", "value": "#c9ecf7"},
+        {"action": "decoration", "block_id": first["id"], "value": "glass"},
+        {"action": "add_tag", "block_id": first["id"], "value": "#long"},
+        {"action": "heading", "block_id": first["id"], "value": "subtitle"}]
+st = m.tool("draft_read_structure", document_id=note["id"]); original = content(note["id"])
+m.tool("draft_propose_note_edits", document_id=note["id"], expected_revision=st["revision"], instruction="A long tidy-up with many inserted lines", edits=long_edits(st))
+r = review("reject", shot="mcp-review-long-narrow-dark", narrow=True, theme="dark")
+print("narrow:", {k: r.get(k) for k in ("status", "sheetSize", "sheetInsideWindow", "sheetOpenMs", "error")})
+ok("long proposal fits a narrow window", r["status"] == "rejected" and r.get("sheetInsideWindow") == "yes" and content(note["id"]) == original, {k: r.get(k) for k in ("status", "sheetSize", "sheetInsideWindow")})
+ok("long proposal opens fast", int(r.get("sheetOpenMs", "9999")) < 1000, r.get("sheetOpenMs"))
+m.tool("draft_propose_note_edits", document_id=note["id"], expected_revision=st["revision"], instruction="A long tidy-up with many inserted lines", edits=long_edits(st))
+r = review("accept", undo=True, shot="mcp-review-long", theme="light")
+ok("long proposal applied", r["status"] == "accepted" and "Inserted line 35" in r["afterText"] and "#long" in r["afterText"], r.get("result"))
+ok("long proposal one Undo", "Inserted line" not in r["undoneText"] and content(note["id"]) == original, r.get("undoneText", "")[:200])
+print("sheet open ms:", r.get("sheetOpenMs"), "size:", r.get("sheetSize"))
 daily = m.tool("draft_propose_daily_append", markdown="- [ ] check the beds", instruction="Add to today")
 ok("daily append needs today's note", "error" in daily and "doesn't exist yet" in daily["error"], daily)
 st = m.tool("draft_read_structure", document_id=note["id"]); original = content(note["id"])

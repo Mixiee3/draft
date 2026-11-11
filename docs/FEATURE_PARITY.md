@@ -321,6 +321,8 @@ Last updated: v0.4 shipped (native macOS) — 2026‑11‑08.
 | ST4 | Text effects (accent, gradient, glow, shadow, outline, lift, emboss) | verified | 0.7 | ≥ 4.5:1 by construction, Increase Contrast fallback, export, MCP (`TextEffectTests`, `mcp-test.sh`) |
 | ST5 | Block effects (gradient, glass, glow, accent; accent heading underline) | verified | 0.7 | Ids and content unchanged, one Undo, export, MCP (`BlockEffectTests`, `mcp-test.sh`) |
 | ST6 | Dot textures on presets | verified | 0.7 | Scene-style halftone lattice, six styles, distinct per preset, in the visible margins, exported (`BackgroundTests`, captures compared with the original scenes) |
-| ST7 | Spectrum (moving gradient) text | verified | 0.7 | Five palettes, speed, direction; still for Reduce Motion, solid for Increase Contrast, ≥ 4.5:1, still gradient in exports (`SpectrumTests`) |
+| ST9 | Selection bar and context menu (interaction-audited) | verified | 0.7 | Mouse/keyboard probe in five modes; `SelectionToolbarTests` |
+| AG16 | Review sheet for long proposals | verified | 0.7 | Summary, collapsible groups, removals marked, fits 720×640; `mcp-test.sh` 129/129 |
+| ST7 | Spectrum (moving gradient) text | verified | 0.7 | Five palettes, speed, direction; verified from screen pixels in the live editor (moves, one gradient, still for Reduce Motion and Increase Contrast, survives scroll/tabs/styles/theme/undo/paste/reopen/relaunch); `SpectrumTests`, `GradientRenderingTests`, `spectrum-test` |
 | ST8 | Window chrome | verified | 0.7 | Window buttons inside the window and centred on the tab row in 13 states; empty title row drags and double-click zooms (`nav-test.sh` chrome check) |
 | AG15 | Richer agent actions (links to notes, tags, due dates, image text, folders, styles, daily note) | verified | 0.7 | `RicherAgentActionTests`, `mcp-test.sh` 123/123 |
