@@ -206,6 +206,10 @@ extension Automation {
             r[prefix + "Marks"] = marks.sorted().joined(separator: ",")
             r[prefix + "Tasks"] = doc.map { tasksOf($0.content).map { "\($0.checked)" }.joined(separator: ",") } ?? ""
             r[prefix + "Style"] = doc?.appearance.styleId ?? ""
+            r[prefix + "Folders"] = m.library.folders.map(\.name).sorted().joined(separator: ",")
+            r[prefix + "UserStyles"] = m.library.userStyles.map(\.name).joined(separator: ",")
+            r[prefix + "StyleId"] = doc?.appearance.styleId ?? ""
+            r[prefix + "Json"] = doc.flatMap { try? JSONEncoder().encode($0.content) }.map { String(decoding: $0, as: UTF8.self) } ?? ""
             r[prefix + "Backdrop"] = doc?.appearance.overrides.backdrop?.colorStops.map(\.color).joined(separator: ",") ?? ""
             r[prefix + "Decorations"] = doc?.content.content?.compactMap { $0.attrs?["decoration"]?.string }.joined(separator: ",") ?? ""
             r[prefix + "Table"] = doc?.content.content?.first { $0.type == "table" }.map { Tables.text($0).map { $0.joined(separator: "|") }.joined(separator: " / ") } ?? ""
@@ -223,7 +227,7 @@ extension Automation {
                 let d = try? m.vault.loadDoc(part.documentId)
                 var marks: [String] = []
                 if let c = d?.content { walk(c) { n in for mk in n.marks ?? [] { marks.append(mk.type) } } }
-                r["\(prefix):\(part.documentId)"] = (d.map { docPlainText($0.content) } ?? "") + " |marks:" + marks.sorted().joined(separator: ",")
+                r["\(prefix):\(part.documentId)"] = (d.map { docPlainText($0.content) } ?? "") + " |marks:" + marks.sorted().joined(separator: ",") + " |style:" + (d?.appearance.styleId ?? "")
             }
         }
         recordParts("after")

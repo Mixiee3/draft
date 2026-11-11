@@ -81,9 +81,9 @@ struct DraftSegmented<T: Hashable>: View {
                 Button { selection = o.value } label: {
                     HStack(spacing: 5) {
                         if let s = o.symbol { Image(systemName: s).font(.system(size: DS.footnote, weight: .medium)) }
-                        if o.symbol == nil || !iconOnly { Text(o.title).font(.system(size: DS.footnote, weight: on ? .semibold : .medium)).lineLimit(1) }
+                        if o.symbol == nil || !iconOnly { Text(o.title).font(.system(size: DS.footnote, weight: on ? .semibold : .medium)).lineLimit(1).minimumScaleFactor(0.85) }
                     }
-                    .padding(.horizontal, DS.s3)
+                    .padding(.horizontal, stretch ? DS.s1 : DS.s3) // stretched segments share the width; labels must not truncate
                     .frame(maxWidth: stretch ? .infinity : nil, minHeight: DS.controlSmall)
                     .background(RoundedRectangle(cornerRadius: DS.rControl - 3, style: .continuous)
                         .fill(on ? (t.dark ? Color.white.opacity(0.16) : Color.white) : .clear)

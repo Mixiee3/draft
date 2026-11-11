@@ -111,7 +111,8 @@ Draft's formatting (with a restrained "make it look better" recipe), and **propo
 note edits (text, append, insert, delete, reorder, headings, lists, tasks, quotes, callouts, code,
 inline formatting, colours, highlights, text effects, links, block colours, block decorations
 and effects (focus, block, gradient, glass, glow, accent), separators, document style, a custom
-gradient backdrop (contrast-checked; the review shows the look before and after), table cells, rows and columns, collection items, fields and views, and images or files from a local path — copied into the vault
+gradient backdrop (contrast-checked; the review shows the look before and after), links to other notes,
+tags, task due dates, image captions and descriptions, saved styles, folder names, today's daily note, table cells, rows and columns, collection items, fields and views, and images or files from a local path — copied into the vault
 only when you apply), edits across several notes at once (all or nothing), and creating,
 renaming, moving and deleting notes (to Recently Deleted only) and creating folders.
 

@@ -484,6 +484,7 @@ final class AppModel {
         t.tagRules = library.settings.tagRules
         t.tagColors = library.settings.tagColors
         t.dateChips = library.settings.dateStyle != "text"
+        t.animateEffects = !library.settings.reduceMotion && !NSWorkspace.shared.accessibilityDisplayShouldReduceMotion
         t.solidGlass = NSWorkspace.shared.accessibilityDisplayShouldReduceTransparency
         t.plainEffects = NSWorkspace.shared.accessibilityDisplayShouldIncreaseContrast && ProcessInfo.processInfo.environment["DRAFT_CAPTURE_STANDARD_CONTRAST"] == nil
         return t
@@ -592,7 +593,7 @@ final class AppModel {
         setAppearance(id, d.appearance, previous: old)
     }
 
-    private var lastStyleUndo: (doc: String, kind: String, at: Date)?
+    var lastStyleUndo: (doc: String, kind: String, at: Date)?
 
     /// Which parts of the look a change touches (a drag repeats the same kind).
     static func changeKind(_ a: DocumentAppearance, _ b: DocumentAppearance) -> String {

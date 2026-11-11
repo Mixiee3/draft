@@ -17,5 +17,15 @@ for k in ["folder", "all", "settings", "calendar", "tasks", "trash", "quickopen"
 assert r["docTabs"] == "1" and r["textKept"] == "yes" and r["breadcrumb"] == "Unsorted", r
 assert r["probePlusWorked"] == "yes" and r["probeCardWorked"].startswith("yes"), r
 assert r["deletedTabState"] == "shown" and r["backAvailable"] == "yes", r
+PY
+# Window buttons stay inside the window, centred on the tab row, after resize, zoom, theme and
+# focus changes and full screen; the empty title row drags and double-click zooms.
+DRAFT_DATA_DIR="$WORK/vault2" DRAFT_OUT="$WORK" DRAFT_AUTOMATION=chrome-test "$APP" >/dev/null 2>&1
+python3 -I - "$WORK/chrome-test.json" <<'PY'
+import json, sys
+r = json.load(open(sys.argv[1])); print(json.dumps(r, indent=1, sort_keys=True))
+for k in ["launch", "narrow", "resized", "dark", "light", "zoomed", "settings", "gallery", "inactive", "reactivated", "afterFullscreen", "afterFullscreenResize", "afterDoubleClick"]:
+    assert r[k] == "ok", (k, r[k])
+assert r["fullscreenEntered"] == "yes" and r["doubleClickZooms"] == "yes" and r["movable"] == "yes" and r["titleRowOwner"] == "V", r
 print("NAV TEST PASSED")
 PY

@@ -25,7 +25,7 @@ public enum DraftPalette {
 public final class SelectionToolbar: NSView {
     public override func resetCursorRects() { addCursorRect(bounds, cursor: .arrow) }
     public override func cursorUpdate(with event: NSEvent) { NSCursor.arrow.set() }
-    public enum Mode { case main, palette, effects, link }
+    public enum Mode { case main, palette, effects, spectrum, link }
     struct Item {
         var id: String
         var label: String
@@ -136,10 +136,28 @@ public final class SelectionToolbar: NSView {
         case .effects:
             let current = c.value(of: .draftEffect)
             let symbols = ["accent": "paintbrush.pointed", "gradient": "paintpalette", "glow": "sun.max", "shadow": "shadow", "outline": "character", "lift": "square.stack.3d.up", "emboss": "seal"]
-            items = [Item(id: "fxnone", label: "No effect", symbol: "nosign", width: 30, action: { [weak self] in self?.controller.setEffect(nil); self?.setMode(.main) }, isActive: current == nil)]
-            for e in TextEffects.all {
+            items = [Item(id: "fxspectrum", label: "Spectrum (moving gradient)", symbol: "rainbow", action: { [weak self] in self?.setMode(.spectrum) }, isActive: current.flatMap(Spectrum.init) != nil),
+                     Item(id: "fxnone", label: "No effect", symbol: "nosign", width: 30, action: { [weak self] in self?.controller.setEffect(nil); self?.setMode(.main) }, isActive: current == nil)]
+            for e in TextEffects.all where e.kind != "spectrum" {
                 items.append(Item(id: "fx" + e.kind, label: e.name, symbol: symbols[e.kind] ?? "sparkles", action: { [weak self] in self?.controller.setEffect(e.kind); self?.setMode(.main) }, isActive: current == e.kind))
             }
+        case .spectrum:
+            let current = c.value(of: .draftEffect).flatMap(Spectrum.init) ?? Spectrum()
+            let on = c.value(of: .draftEffect).flatMap(Spectrum.init) != nil
+            items = [Item(id: "spback", label: "Back to effects", symbol: "chevron.left", width: 30, action: { [weak self] in self?.setMode(.effects) })]
+            for p in Spectrum.palettes {
+                var s = current; s.palette = p.id
+                items.append(Item(id: "sp" + p.id, label: "Spectrum \(p.name)", symbol: nil, swatch: p.colors[0], width: 26, action: { [weak self] in self?.controller.setEffect(s.value); self?.buildItems() }, isActive: on && current.palette == p.id))
+            }
+            items.append(Item(id: "spsep", label: "", symbol: nil, width: 9, isSeparator: true))
+            for sp in Spectrum.speeds {
+                var s = current; s.speed = sp.id
+                let sym = ["still": "pause", "slow": "tortoise", "normal": "hare", "fast": "bolt"][sp.id] ?? "circle"
+                items.append(Item(id: "sps" + sp.id, label: "Speed \(sp.name)", symbol: sym, action: { [weak self] in self?.controller.setEffect(s.value); self?.buildItems() }, isActive: on && current.speed == sp.id, isEnabled: on))
+            }
+            var flipped = current; flipped.direction = current.direction == "forward" ? "backward" : "forward"
+            items.append(Item(id: "spdir", label: current.direction == "forward" ? "Direction: forward" : "Direction: backward", symbol: current.direction == "forward" ? "arrow.right" : "arrow.left",
+                              action: { [weak self] in self?.controller.setEffect(flipped.value); self?.buildItems() }, isEnabled: on))
         case .link:
             let has = c.value(of: .draftLink) != nil
             items = [Item(id: "linkicon", label: "Link", symbol: "link", width: 30, isEnabled: false)]
@@ -197,7 +215,7 @@ public final class SelectionToolbar: NSView {
             hide(); return
         }
         if superview !== controller.overlayHost { controller.overlayHost?.addSubview(self) }
-        if !isVisible || mode != .main && (window?.firstResponder === controller.textView) && mode != .palette && mode != .effects { mode = .main; linkField.isHidden = true }
+        if !isVisible || mode != .main && (window?.firstResponder === controller.textView) && mode != .palette && mode != .effects && mode != .spectrum { mode = .main; linkField.isHidden = true }
         buildItems()
         position()
         if !isVisible {

@@ -27,7 +27,7 @@ public struct AgentEdit: Codable, Sendable, Hashable {
     }
 
     /// Actions that change the library (a new note, its title or place), applied by the app.
-    public static let documentActions: Set<String> = ["create_document", "rename_document", "move_document", "create_folder", "delete_document"]
+    public static let documentActions: Set<String> = ["create_document", "rename_document", "move_document", "create_folder", "delete_document", "rename_folder", "create_style"]
     /// Actions that stand alone in a proposal.
     static let standalone: Set<String> = documentActions.union(["replace_document", "document_style", "document_backdrop"])
     static let idPattern = "^[A-Za-z0-9_-]{1,64}$"
@@ -80,8 +80,9 @@ public struct AgentEdit: Codable, Sendable, Hashable {
             if action != "block_color" { try validatePhrase() }
         case "bold", "italic", "underline", "strike", "code", "unlink": try validatePhrase()
         case "text_effect":
-            guard TextEffects.kinds.contains(value ?? "") || value == "none" else { throw AgentEditError.invalid("text_effect needs one of: \(TextEffects.kinds.joined(separator: ", ")), none.") }
+            guard TextEffects.isValid(value ?? "") || value == "none" else { throw AgentEditError.invalid("text_effect needs one of: \(TextEffects.kinds.joined(separator: ", ")), spectrum:<palette>:<speed>:<direction>, none.") }
             try validatePhrase()
+            if value?.hasPrefix("spectrum") == true, (text ?? "").count > Spectrum.maxLength { throw AgentEditError.invalid("Spectrum is for titles and short labels (\(Spectrum.maxLength) characters at most).") }
         case "link":
             try validatePhrase()
             guard let value, value.count <= 2_000, ["https://", "http://", "mailto:", "draft://"].contains(where: { value.lowercased().hasPrefix($0) }) else {
@@ -129,6 +130,20 @@ public struct AgentEdit: Codable, Sendable, Hashable {
             try Library.checkFolderName(title ?? "")
             if let value { guard value.range(of: Self.idPattern, options: .regularExpression) != nil else { throw AgentEditError.invalid("Invalid parent folder ID.") } }
             if let target { guard target.range(of: Self.idPattern, options: .regularExpression) != nil else { throw AgentEditError.invalid("Invalid Space ID.") } }
+        case "rename_folder":
+            try Library.checkFolderName(title ?? "")
+        case "create_style":
+            guard let title, !title.trimmingCharacters(in: .whitespaces).isEmpty, title.count <= 80, !title.contains("\n") else { throw AgentEditError.invalid("create_style needs a one-line name.") }
+            _ = try Self.styleTokens(value)
+        case "link_note":
+            try validatePhrase()
+            guard let value, value.range(of: Self.idPattern, options: .regularExpression) != nil else { throw AgentEditError.invalid("link_note needs the target note's ID in value.") }
+        case "add_tag", "remove_tag":
+            guard let value, value.range(of: "^#[\\p{L}\\p{N}_/-]{1,40}$", options: .regularExpression) != nil else { throw AgentEditError.invalid("\(action) needs a tag like #reading (letters, numbers, _, - or /).") }
+        case "task_due":
+            guard let value, value == "none" || (value.count == 10 && Day.date(value) != nil) else { throw AgentEditError.invalid("task_due needs a date as YYYY-MM-DD, or none.") }
+        case "image_caption", "image_alt":
+            guard let text, text.count <= 1_000, !text.contains("\n") else { throw AgentEditError.invalid("\(action) needs one line of text (empty clears it).") }
         case "rename_document":
             guard let title, !title.trimmingCharacters(in: .whitespaces).isEmpty, title.count <= 300, !title.contains("\n") else { throw AgentEditError.invalid("rename_document needs a one-line title.") }
         case "move_document":
@@ -141,7 +156,28 @@ public struct AgentEdit: Codable, Sendable, Hashable {
 
     /// The new note's or renamed note's title (create_document, rename_document); stored in
     /// `expectedText`, which those actions don't otherwise use, so older readers keep decoding.
-    public var title: String? { ["create_document", "rename_document", "create_folder"].contains(action) ? expectedText : nil }
+    public var title: String? { ["create_document", "rename_document", "create_folder", "rename_folder", "create_style"].contains(action) ? expectedText : nil }
+
+    /// A saved style proposed as JSON: `{"base": style id, "backdrop": {document_backdrop JSON},
+    /// "pageColor", "textColor", "accent": "#RRGGBB", "font": system|serif|mono|rounded,
+    /// "separator": line|dotted|dots|strong|tape|wave}`; all optional. Text must reach 4.5:1 on the
+    /// page and the accent 3:1.
+    public static func styleTokens(_ json: String?) throws -> StyleTokens {
+        struct In: Decodable { var base: String?; var backdrop: JSONValue?; var pageColor: String?; var textColor: String?; var accent: String?; var font: String?; var separator: String? }
+        guard let json, json.utf8.count <= 8_000, let v = try? JSONDecoder().decode(In.self, from: Data(json.utf8)) else { throw AgentEditError.invalid("create_style needs JSON (base, backdrop, pageColor, textColor, accent, font, separator).") }
+        let hex = "^#[0-9A-Fa-f]{6}$"
+        for c in [v.pageColor, v.textColor, v.accent].compactMap({ $0 }) where c.range(of: hex, options: .regularExpression) == nil { throw AgentEditError.invalid("Style colors must be #RRGGBB.") }
+        if let b = v.base, !Styles.all.contains(where: { $0.id == b }) { throw AgentEditError.invalid("Unknown base style \(b).") }
+        if let f = v.font, !["system", "serif", "mono", "rounded"].contains(f) { throw AgentEditError.invalid("font must be system, serif, mono or rounded.") }
+        if let s = v.separator, !["line", "dotted", "dots", "strong", "tape", "wave"].contains(s) { throw AgentEditError.invalid("Unknown separator \(s).") }
+        var t = Styles.style(v.base ?? "paper").tokens
+        if let b = v.backdrop { t.backdrop = try backdrop(String(decoding: try JSONEncoder().encode(b), as: UTF8.self)) }
+        if let c = v.pageColor { t.pageColor = c }; if let c = v.textColor { t.textColor = c }; if let c = v.accent { t.accent = c }
+        if let f = v.font { t.font = f }; if let s = v.separator { t.separator = s }
+        guard ColorMath.contrast(t.textColor, t.pageColor) >= 4.5 else { throw AgentEditError.invalid(String(format: "Text on the page reads at %.1f:1; it needs 4.5:1.", ColorMath.contrast(t.textColor, t.pageColor))) }
+        guard ColorMath.contrast(t.accent, t.pageColor) >= 3 else { throw AgentEditError.invalid(String(format: "The accent reads at %.1f:1 on the page; it needs 3:1.", ColorMath.contrast(t.accent, t.pageColor))) }
+        return t
+    }
 
     private func validatePosition() throws {
         guard position == nil || ["before", "after"].contains(position!) else { throw AgentEditError.invalid("position must be before or after.") }
@@ -194,7 +230,7 @@ public struct AgentProposal: Codable, Sendable, Identifiable {
 }
 
 extension Library {
-    static func checkFolderName(_ name: String) throws {
+    public static func checkFolderName(_ name: String) throws {
         let n = name.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !n.isEmpty, n.count <= 120 else { throw AgentEditError.invalid("A folder name needs 1–120 characters.") }
         guard !n.contains("/"), !n.contains("\n"), n != ".", n != ".." else { throw AgentEditError.invalid("A folder name can't contain “/” or line breaks, or be “.” or “..”. Create nested folders one level at a time.") }

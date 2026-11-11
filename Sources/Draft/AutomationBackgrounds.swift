@@ -18,6 +18,10 @@ extension Automation {
         let c = m.editor(for: id).controller
         c.pastePlainForAutomation("## Light reactions\nWater is split and oxygen released; ATP and NADPH are made in the thylakoids.\n- [ ] Learn the Z-scheme\n- Compare C3 and C4 plants\n> Light is the energy source; carbon comes from the air.\n## Calvin cycle\nCarbon dioxide is fixed into sugars in the stroma.")
         await wait(0.5)
+        for ref in ["tidepool", "ember"] { // the original scenes: the reference for the dot language
+            m.updateAppearance(id) { $0.styleId = ref; $0.overrides = StyleOverrides() }
+            await shot(p + "ref-" + ref, w, settle: 0.6)
+        }
         for s in Backgrounds.presets {
             m.updateAppearance(id) { $0.styleId = s.id; $0.overrides = StyleOverrides() }
             await shot(p + "bg-" + s.id, w, settle: 0.6)

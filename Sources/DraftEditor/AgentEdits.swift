@@ -45,8 +45,11 @@ extension EditorController {
             case "move_block":
                 guard let t = edit.target, paragraph(withId: t) != nil else { throw AgentEditError.invalid("Target block \(edit.target ?? "") is missing.") }
                 continue
-            case "task_checked":
+            case "task_checked", "task_due":
                 guard kind == .task else { throw AgentEditError.invalid("Block \(edit.blockId) is not a task.") }
+                continue
+            case "image_caption", "image_alt":
+                guard kind == .image else { throw AgentEditError.invalid("Block \(edit.blockId) is not an image.") }
                 continue
             default: break
             }
@@ -59,7 +62,7 @@ extension EditorController {
             if edit.action == "replace_text" {
                 guard current == edit.expectedText else { throw AgentEditError.invalid("Text in block \(edit.blockId) changed. Read the note again.") }
                 planned[edit.blockId] = (MarkdownImport.inline(edit.text ?? "")).map { $0.text ?? "" }.joined()
-            } else if ["bold", "italic", "underline", "strike", "code", "highlight", "text_color", "text_effect", "link", "unlink"].contains(edit.action) {
+            } else if ["bold", "italic", "underline", "strike", "code", "highlight", "text_color", "text_effect", "link", "unlink", "link_note"].contains(edit.action) {
                 let phrase = edit.text ?? ""
                 let count = current.components(separatedBy: phrase).count - 1
                 guard count == 1 else { throw AgentEditError.invalid("The phrase “\(phrase)” must occur exactly once in block \(edit.blockId).") }
@@ -135,6 +138,30 @@ extension EditorController {
                     else if block(at: pr).kind != kind { toggleList(kind) }
                 case "task_checked":
                     if block(at: pr).checked != (edit.value == "true") { toggleTask(at: pr) }
+                case "link_note":
+                    // The phrase becomes a link chip to the other note; its text stays as written.
+                    let cr = contentRange(pr), live = storage.string as NSString
+                    let local = (live.substring(with: cr) as NSString).range(of: edit.text ?? "")
+                    if local.location != NSNotFound, let target = edit.value { setInline(.draftDocLink, target, range: NSRange(location: cr.location + local.location, length: local.length)) }
+                case "add_tag", "remove_tag":
+                    guard let tag = edit.value else { break }
+                    let cr = contentRange(pr), current = (storage.string as NSString).substring(with: cr)
+                    let pattern = "(^|\\s)" + NSRegularExpression.escapedPattern(for: tag) + "(?=\\s|$|[.,;:!?])"
+                    let found = (try? NSRegularExpression(pattern: pattern, options: [.caseInsensitive]))?.firstMatch(in: current, range: NSRange(location: 0, length: (current as NSString).length))
+                    if edit.action == "add_tag", found == nil {
+                        let at = NSMaxRange(cr)
+                        var attrs = at > cr.location ? storage.attributes(at: at - 1, effectiveRange: nil).filter { $0.key == .draftBlock } : [.draftBlock: block(at: pr)]
+                        if attrs.isEmpty { attrs[.draftBlock] = block(at: pr) }
+                        replace(NSRange(location: at, length: 0), with: NSAttributedString(string: (current.isEmpty ? "" : " ") + tag, attributes: attrs))
+                    } else if edit.action == "remove_tag", let m = found {
+                        replace(NSRange(location: cr.location + m.range.location, length: m.range.length), with: NSAttributedString(string: ""))
+                    }
+                case "task_due":
+                    _ = setTaskDue(blockId: edit.blockId, due: edit.value == "none" ? nil : edit.value)
+                case "image_caption", "image_alt":
+                    let key = edit.action == "image_caption" ? "caption" : "alt"
+                    let text = edit.text ?? ""
+                    updateAttachment(at: pr.location) { $0[attr: key] = key == "caption" && text.isEmpty ? nil : .string(text) }
                 case "link", "unlink":
                     let cr = contentRange(pr)
                     let local = (ns.substring(with: cr) as NSString).range(of: edit.text ?? "")

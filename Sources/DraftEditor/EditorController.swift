@@ -64,6 +64,19 @@ public final class EditorController: NSObject, NSTextStorageDelegate, NSTextView
         textView.autoresizingMask = [.width]
         textView.setAccessibilityLabel("Document body")
         layout.theme = theme
+        spectrumTick()
+    }
+
+    /// Redraws only the visible spectrum runs, ~30 times a second while any are on screen; checks
+    /// twice a second otherwise. Never touches layout or attributes.
+    private func spectrumTick() {
+        var delay = 0.5
+        if let w = textView.window, w.occlusionState.contains(.visible) {
+            let rects = layout.spectrumRects(in: textView.visibleRect, origin: textView.textContainerOrigin)
+            for r in rects { textView.setNeedsDisplay(r) }
+            if !rects.isEmpty { delay = 1.0 / 30 }
+        }
+        DispatchQueue.main.asyncAfter(deadline: .now() + delay) { [weak self] in self?.spectrumTick() }
     }
 
     // MARK: - Load / serialize
@@ -814,7 +827,15 @@ public final class EditorController: NSObject, NSTextStorageDelegate, NSTextView
     }
 
     /// A TextEffects kind on the selection (nil removes it). Color and contrast come from the theme.
-    public func setEffect(_ kind: String?) { applyColor(.draftEffect, kind) }
+    public func setEffect(_ kind: String?) {
+        if let kind, kind.hasPrefix("spectrum") {
+            // Spectrum is for a title or a short label: one paragraph, 200 characters at most.
+            let sel = textView.selectedRange()
+            let ns = textView.string as NSString
+            guard sel.length <= Spectrum.maxLength, ns.substring(with: sel).rangeOfCharacter(from: .newlines) == nil else { NSSound.beep(); return }
+        }
+        applyColor(.draftEffect, kind)
+    }
 
     public func setTextColor(_ hex: String?) {
         applyColor(.draftTextColor, hex)

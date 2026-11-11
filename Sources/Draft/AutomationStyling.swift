@@ -38,6 +38,14 @@ extension Automation {
         for (phrase, k) in fx { c.textView.setSelectedRange((c.textView.string as NSString).range(of: phrase)); c.setEffect(k) }
         c.textView.setSelectedRange(NSRange(location: 0, length: 0))
         await shot(p + "text-effects", w, settle: 0.6)
+        // Spectrum: two frames half a second apart show the gradient moving; the menu shows the palettes.
+        let title = (c.textView.string as NSString).range(of: "Calvin cycle")
+        c.textView.setSelectedRange(title); c.setEffect("spectrum:neon:fast:forward")
+        c.textView.setSelectedRange(NSRange(location: 0, length: 0))
+        await shot(p + "spectrum-a", w, settle: 0.5); await shot(p + "spectrum-b", w, settle: 0.5)
+        r["spectrumAnimates"] = c.theme.animateEffects ? "yes" : "no (Reduce Motion)"
+        c.textView.setSelectedRange(title); c.toolbar.setMode(.spectrum); await shot(p + "selection-menu-spectrum", w, settle: 0.5)
+        c.toolbar.setMode(.main)
         c.textView.setSelectedRange((c.textView.string as NSString).range(of: "Carbon dioxide"))
         await shot(p + "selection-menu", w, settle: 0.7)
         c.toolbar.setMode(.effects)

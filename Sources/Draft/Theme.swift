@@ -181,8 +181,8 @@ struct FieldView: View {
                 ctx.fill(Path(ellipseIn: CGRect(x: c.x - r, y: c.y - r, width: r * 2, height: r * 2)),
                          with: .radialGradient(Gradient(colors: [Color(hex: glow).opacity(0.7), Color(hex: glow).opacity(0)]), center: c, startRadius: 0, endRadius: r))
             }
+            if let d = b.dots { Self.drawDots(d, in: &ctx, size: size) } // before the pattern, so hills keep the land clean
             if let p = b.pattern { Self.drawPattern(p, color: Color(hex: b.patternColor ?? "#ffffff").opacity(b.patternOpacity ?? 0.2), in: &ctx, size: size, focus: CGPoint(x: b.focusX ?? 0.5, y: b.focusY ?? 0.5)) }
-            if let d = b.dots { Self.drawDots(d, in: &ctx, size: size) }
             if let grain = b.grain, grain > 0 {
                 var rng = Seeded(seed: 7)
                 let n = Int(size.width * size.height / 40 * min(grain, 0.2))
@@ -201,59 +201,49 @@ struct FieldView: View {
         mutating func next() -> CGFloat { state = state &* 6364136223846793005 &+ 1442695040888963407; return CGFloat(state >> 33) / CGFloat(1 << 31) }
     }
 
-    /// Dots in a few opacity buckets (one fill each), faded by distance from the texture's focus.
+    /// Dots in the language of Draft's scenes: a ~13 pt lattice whose dot size (not opacity) falls
+    /// off as 1 − d² inside soft discs anchored to the light, one palette colour, one fill. Styles
+    /// only change where the discs are and how the size is modulated.
     static func drawDots(_ d: DotTexture, in ctx: inout GraphicsContext, size: CGSize) {
-        let w = size.width, h = size.height, sp = max(6, d.spacing)
-        let focus = CGPoint(x: w * (d.focusX ?? 0.85), y: h * (d.focusY ?? 0.15))
-        let far = max(hypot(focus.x, focus.y), hypot(w - focus.x, focus.y), hypot(focus.x, h - focus.y), hypot(w - focus.x, h - focus.y))
-        func weight(_ p: CGPoint) -> CGFloat { max(0, 1 - CGFloat(d.fade ?? 0) * hypot(p.x - focus.x, p.y - focus.y) / far) }
-        var buckets = Array(repeating: Path(), count: 6)
-        func add(_ p: CGPoint, _ r: CGFloat, _ wt: CGFloat) {
-            guard wt > 0.04, r > 0.2 else { return }
-            buckets[min(5, Int(wt * 6))].addEllipse(in: CGRect(x: p.x - r, y: p.y - r, width: r * 2, height: r * 2))
-        }
-        var rng = Seeded(seed: d.style.unicodeScalars.reduce(11) { $0 &* 31 &+ UInt64($1.value) })
-        let r0 = CGFloat(d.radius)
+        let w = size.width, h = size.height, sp = max(8, CGFloat(d.spacing)), r0 = CGFloat(d.radius)
+        let R = min(w, h) * (0.28 + 0.22 * CGFloat(d.fade ?? 0.6))
+        let focus = CGPoint(x: w * (d.focusX ?? 0.8), y: h * (d.focusY ?? 0.2))
+        var rng = Seeded(seed: (d.style + d.color).unicodeScalars.reduce(11) { $0 &* 31 &+ UInt64($1.value) })
+        var discs: [(c: CGPoint, r: CGFloat)] = [(focus, R)]
         switch d.style {
-        case "radial":
-            for ring in stride(from: sp, through: far, by: sp) {
-                let n = max(6, Int(2 * .pi * ring / sp))
-                for i in 0..<n {
-                    let a = Double(i) / Double(n) * 2 * .pi + ring / 97
-                    let p = CGPoint(x: focus.x + cos(a) * ring, y: focus.y + sin(a) * ring)
-                    if p.x >= 0, p.x <= w, p.y >= 0, p.y <= h { add(p, r0, weight(p)) }
-                }
-            }
+        case "halftone": // a second, smaller disc across the page, like the scenes' lower-left cluster
+            discs.append((CGPoint(x: w - focus.x * 0.85, y: min(h * 0.82, focus.y + h * 0.42)), R * 0.75))
         case "cluster":
-            let groups = max(4, Int(w * h / (sp * sp * 30)))
-            for _ in 0..<groups {
-                let c = CGPoint(x: rng.next() * w, y: rng.next() * h)
-                for _ in 0..<(6 + Int(rng.next() * 8)) {
-                    let p = CGPoint(x: c.x + (rng.next() - 0.5) * sp * 4, y: c.y + (rng.next() - 0.5) * sp * 4)
-                    add(p, r0 * (0.6 + rng.next() * 0.7), weight(p))
-                }
-            }
-        case "scatter":
-            for _ in 0..<Int(w * h / (sp * sp)) {
-                let p = CGPoint(x: rng.next() * w, y: rng.next() * h)
-                add(p, r0 * (0.5 + rng.next() * 0.9), weight(p))
-            }
-        default: // grid, halftone, fade
+            discs[0].r = R * 0.62
+            // groups stay in the side margins, where the page card doesn't cover them
+            for i in 0..<3 { let side = (i + (focus.x > w / 2 ? 1 : 0)) % 2 == 0 ? 0.03 + rng.next() * 0.15 : 0.82 + rng.next() * 0.15
+                discs.append((CGPoint(x: side * w, y: (0.12 + rng.next() * 0.76) * h), R * (0.3 + rng.next() * 0.25))) }
+        default: break
+        }
+        var path = Path()
+        for y in stride(from: sp / 2, through: h, by: sp) {
             for x in stride(from: sp / 2, through: w, by: sp) {
-                for y in stride(from: sp / 2, through: h, by: sp) {
-                    let p = CGPoint(x: x, y: y), wt = weight(p)
-                    switch d.style {
-                    case "halftone": add(p, r0 * max(0.15, wt), wt > 0.04 ? 1 : 0)
-                    case "fade": add(p, r0, wt * wt)
-                    default: add(p, r0, wt)
-                    }
+                var p = CGPoint(x: x, y: y)
+                let jitter = d.style == "scatter" ? (rng.next() - 0.5, rng.next() - 0.5, rng.next()) : (0, 0, 1)
+                if d.style == "scatter" { p.x += jitter.0 * sp * 0.9; p.y += jitter.1 * sp * 0.9 }
+                var s: CGFloat = 0
+                for disc in discs {
+                    let q = hypot(p.x - disc.c.x, p.y - disc.c.y) / disc.r
+                    if q < 1 { s = max(s, 1 - q * q) }
                 }
+                let dist = hypot(p.x - focus.x, p.y - focus.y)
+                var r: CGFloat
+                switch d.style {
+                case "radial": r = r0 * s * (0.3 + 0.7 * (0.5 + 0.5 * cos(dist / (sp * 1.7) * .pi)))
+                case "scatter": r = jitter.2 < 0.45 ? 0 : r0 * s.squareRoot() * (0.45 + jitter.2 * 0.7)
+                case "fade": r = r0 * max(0, 1 - dist / (R * 1.9))
+                case "grid": r = r0 * 0.8 * min(1, s * 2.2)
+                default: r = r0 * s // halftone, cluster
+                }
+                if r > 0.35 { path.addEllipse(in: CGRect(x: p.x - r, y: p.y - r, width: r * 2, height: r * 2)) }
             }
         }
-        let color = Color(hex: d.color)
-        for (i, path) in buckets.enumerated() where !path.isEmpty {
-            ctx.fill(path, with: .color(color.opacity(d.opacity * (Double(i) + 1) / 6)))
-        }
+        ctx.fill(path, with: .color(Color(hex: d.color).opacity(d.opacity)))
     }
 
     static func drawPattern(_ p: String, color: Color, in ctx: inout GraphicsContext, size: CGSize, focus: CGPoint) {

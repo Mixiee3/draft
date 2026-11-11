@@ -142,7 +142,7 @@ extension Automation {
         let narrow = ProcessInfo.processInfo.environment["AUDIT_NARROW"] != nil
         let dark = ProcessInfo.processInfo.environment["AUDIT_DARK"] != nil
         let p = (narrow ? "narrow-" : "") + (dark ? "dark-" : "")
-        w.setFrame(NSRect(x: 40, y: 40, width: narrow ? 760 : 1440, height: narrow ? 720 : 900), display: true)
+        w.setFrame(NSRect(x: 40, y: 40, width: narrow ? 720 : 1440, height: narrow ? 640 : 900), display: true)
         m.setSettings { $0.theme = dark ? "dark" : "light" }
         await shot(p + "01-first-launch", w, settle: 1.2)
         try? popups(w.contentView!).map { "\(Swift.type(of: $0.0)) \(Int($0.1.minX)),\(Int($0.1.minY)) \(Int($0.1.width))x\(Int($0.1.height))" }.joined(separator: "\n")
@@ -258,6 +258,24 @@ extension Automation {
         m.panel = nil
         m.openView(.all); await wait(0.3)
         if let (more, _) = popups(w.contentView!).sorted(by: { $0.1.minX < $1.1.minX }).last { await shotMenu(p + "28-library-more-menu", at: point(of: more, w), w) }
+        m.flushAll()
+
+        // Folder, Recently Deleted, a long document, then maximized, full screen and back.
+        if let f = m.library.folders.first { m.openView(ViewRef(kind: "folder", folderId: f.id)); await shot(p + "29-folder", w, settle: 0.6) }
+        if let gone = m.createDoc(title: "Old draft") { m.requestDelete(gone) }
+        m.openView(ViewRef(kind: "trash")); await shot(p + "30-recently-deleted", w, settle: 0.6)
+        if let long = m.createDoc(title: "Long document") {
+            m.editor(for: long).controller.pastePlainForAutomation((1...60).map { i in i % 12 == 0 ? "## Section \(i / 12)" : "Paragraph \(i): a sentence long enough to wrap across the page so the layout of a long note can be judged at a glance." }.joined(separator: "\n"))
+            await wait(0.4)
+            m.editors[long]?.scrollView.contentView.scroll(to: NSPoint(x: 0, y: 1400)); await shot(p + "31-long-document", w, settle: 0.6)
+            if !narrow {
+                w.zoom(nil); await shot(p + "32-maximized", w, settle: 0.8); w.zoom(nil); await wait(0.6)
+                w.toggleFullScreen(nil); await wait(1.6)
+                if let s = NSScreen.main { await shot(p + "33-full-screen", w, settle: 0.4, rect: s.frame) }
+                w.toggleFullScreen(nil); await wait(1.6)
+                w.setFrame(NSRect(x: 40, y: 40, width: 1100, height: 760), display: true); await shot(p + "34-after-resize", w, settle: 0.6)
+            }
+        }
         m.flushAll()
     }
 
