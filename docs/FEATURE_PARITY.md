@@ -317,5 +317,7 @@ Last updated: v0.4 shipped (native macOS) — 2026‑11‑08.
 |---|---|---|---|---|
 | ST1 | Layered gradient backgrounds (multi-stop, radial focal point, light, pattern, grain) | working | 0.7 | `BackgroundTests`; renderer static; Increase Contrast fallback |
 | ST2 | 24 original background presets | verified | 0.7 | Contrast ≥ 4.5:1 tested; screenshots light/dark/narrow/Increase Contrast; export check |
-| ST3 | Gradient editor UI | missing | 0.8 | Edit stops, angle and focal point in the Style panel with one Undo |
-| ST4 | Text and block effects (glow, shadow, gradient text, glass blocks, accent headings) | missing | 0.8 | Optional, contrast-checked, exported consistently |
+| ST3 | Gradient editor UI | verified | 0.7 | Stops, angle, focal point, reset, one Undo per drag, contrast warning (`GradientEditTests`, `styling-shots`) |
+| ST4 | Text effects (accent, gradient, glow, shadow, outline, lift, emboss) | verified | 0.7 | ≥ 4.5:1 by construction, Increase Contrast fallback, export, MCP (`TextEffectTests`, `mcp-test.sh`) |
+| ST5 | Block effects (gradient, glass, glow, accent; accent heading underline) | verified | 0.7 | Ids and content unchanged, one Undo, export, MCP (`BlockEffectTests`, `mcp-test.sh`) |
+| ST6 | Dot textures on presets | verified | 0.7 | Six styles, distinct per preset, exported (`BackgroundTests`, 96 captures) |
