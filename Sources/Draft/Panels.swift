@@ -581,9 +581,15 @@ struct SharePanel: View {
                 VStack(spacing: 6) {
                     exportRow("doc.richtext", "Markdown + assets folder…") { model.exportDoc(docId) }
                     exportRow("doc.on.clipboard", "Copy as Markdown") { model.copyMarkdown(docId) }
-                    exportRow("printer", "Print… (Save as PDF from the dialog)") { model.editors[docId]?.controller.textView.printView(nil) }
+                    exportRow("printer", "Print…") { model.editors[docId]?.controller.textView.printView(nil) }
+                        .help("Print, or save as PDF from the print dialog")
                     exportRow("plus.square.on.square", "Duplicate") { model.duplicate(docId) }
-                    Toggle("Use document style", isOn: $useStyle).toggleStyle(.switch).controlSize(.small).font(.system(size: DS.footnote)).accessibilityLabel("Use document style in PDF, HTML and image export")
+                    HStack {
+                        Text("Use document style").font(.system(size: DS.footnote)).foregroundStyle(t.secondary)
+                        Spacer()
+                        Toggle("Use document style", isOn: $useStyle).toggleStyle(.switch).controlSize(.small).labelsHidden()
+                            .accessibilityLabel("Use document style in PDF, HTML and image export")
+                    }.padding(.horizontal, DS.s3).padding(.top, DS.s1)
                     exportRow("doc", "PDF…") { model.exportStyled(docId, as: "pdf", useStyle: useStyle) }
                     exportRow("globe", "Web page (HTML)…") { model.exportStyled(docId, as: "html", useStyle: useStyle) }
                     exportRow("photo", "Image (PNG)…") { model.exportStyled(docId, as: "png", useStyle: useStyle) }

@@ -229,7 +229,67 @@ public final class DraftLayoutManager: NSLayoutManager {
         }
     }
 
+    // MARK: Spectrum text
+
+    /// Whole runs of spectrum text being drawn (view coordinates), so one gradient spans each run
+    /// even when it is drawn in pieces.
+    private var spectrumRuns: [(rect: NSRect, colors: [NSColor], spec: Spectrum)] = []
+
+    /// Spectrum runs that intersect `visible`, as view rects (used by the editor's clock).
+    func spectrumRects(in visible: NSRect, origin: NSPoint) -> [NSRect] {
+        guard let s = textStorage, let tc = textContainers.first, !theme.plainEffects, theme.animateEffects else { return [] }
+        let gr = glyphRange(forBoundingRect: visible.offsetBy(dx: -origin.x, dy: -origin.y), in: tc)
+        let cr = characterRange(forGlyphRange: gr, actualGlyphRange: nil)
+        var out: [NSRect] = []
+        s.enumerateAttribute(.draftEffect, in: cr) { v, r, _ in
+            guard let v = v as? String, let sp = Spectrum(v), sp.seconds > 0 else { return }
+            out.append(boundingRect(forGlyphRange: glyphRange(forCharacterRange: r, actualCharacterRange: nil), in: tc).offsetBy(dx: origin.x, dy: origin.y).insetBy(dx: -2, dy: -2))
+        }
+        return out
+    }
+
+    private func collectSpectrumRuns(_ glyphsToShow: NSRange, origin: NSPoint) {
+        spectrumRuns = []
+        guard !theme.plainEffects, let s = textStorage, let tc = textContainers.first else { return }
+        let cr = characterRange(forGlyphRange: glyphsToShow, actualGlyphRange: nil)
+        s.enumerateAttribute(.draftEffect, in: cr) { v, r, _ in
+            guard let v = v as? String, let sp = Spectrum(v) else { return }
+            var full = NSRange()
+            _ = s.attribute(.draftEffect, at: r.location, longestEffectiveRange: &full, in: NSRange(location: 0, length: s.length))
+            let rect = boundingRect(forGlyphRange: glyphRange(forCharacterRange: full, actualCharacterRange: nil), in: tc).offsetBy(dx: origin.x, dy: origin.y)
+            spectrumRuns.append((rect, sp.colors(page: theme.pageColor).map { NSColor(hex: $0) }, sp))
+        }
+    }
+
+    public override func showCGGlyphs(_ glyphs: UnsafePointer<CGGlyph>, positions: UnsafePointer<CGPoint>, count: Int, font: NSFont,
+                                      textMatrix: CGAffineTransform, attributes: [NSAttributedString.Key: Any] = [:], in ctx: CGContext) {
+        guard count > 0, let v = attributes[.draftEffect] as? String, Spectrum(v) != nil,
+              let run = spectrumRuns.first(where: { $0.rect.insetBy(dx: -4, dy: -4).contains(positions[0]) }) else {
+            super.showCGGlyphs(glyphs, positions: positions, count: count, font: font, textMatrix: textMatrix, attributes: attributes, in: ctx)
+            return
+        }
+        ctx.saveGState()
+        ctx.textMatrix = textMatrix
+        ctx.setTextDrawingMode(.clip)
+        CTFontDrawGlyphs(font, glyphs, positions, count, ctx)
+        // One gradient period spans the whole run; it slides by the phase, so the colours move
+        // without any layout or attribute change.
+        let colors = run.colors.map(\.cgColor) as CFArray
+        if let g = CGGradient(colorsSpace: CGColorSpace(name: CGColorSpace.sRGB), colors: colors, locations: nil) {
+            let w = max(run.rect.width, 40)
+            var phase = run.spec.seconds > 0 && theme.animateEffects ? (CACurrentMediaTime() / run.spec.seconds).truncatingRemainder(dividingBy: 1) : 0
+            if run.spec.direction == "backward" { phase = -phase }
+            let x0 = run.rect.minX - CGFloat(phase) * w - w
+            for k in 0..<3 {
+                let a = x0 + CGFloat(k) * w
+                ctx.drawLinearGradient(g, start: CGPoint(x: a, y: 0), end: CGPoint(x: a + w, y: 0), options: [])
+            }
+        }
+        ctx.restoreGState()
+    }
+
     public override func drawGlyphs(forGlyphRange glyphsToShow: NSRange, at origin: NSPoint) {
+        collectSpectrumRuns(glyphsToShow, origin: origin)
         super.drawGlyphs(forGlyphRange: glyphsToShow, at: origin)
         guard let s = textStorage else { return }
         let charRange = characterRange(forGlyphRange: glyphsToShow, actualGlyphRange: nil)

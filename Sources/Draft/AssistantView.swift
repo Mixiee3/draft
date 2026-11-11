@@ -423,7 +423,7 @@ struct EditPreview: View {
                 VStack(alignment: .leading, spacing: DS.s3) {
                     if stacked {
                         if preview.canReplace { block("Before", Text(preview.original), tint: nil) }
-                        block(preview.canReplace ? "After" : "New text", Text(preview.markdown), tint: t.accent)
+                        block(preview.canReplace ? "After" : "New text", Text((try? AttributedString(markdown: preview.markdown, options: .init(interpretedSyntax: .inlineOnlyPreservingWhitespace))) ?? AttributedString(preview.markdown)), tint: t.accent)
                     } else {
                         block("Changes", inline(parts), tint: nil)
                     }

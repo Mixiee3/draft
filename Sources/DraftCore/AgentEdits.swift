@@ -80,8 +80,9 @@ public struct AgentEdit: Codable, Sendable, Hashable {
             if action != "block_color" { try validatePhrase() }
         case "bold", "italic", "underline", "strike", "code", "unlink": try validatePhrase()
         case "text_effect":
-            guard TextEffects.kinds.contains(value ?? "") || value == "none" else { throw AgentEditError.invalid("text_effect needs one of: \(TextEffects.kinds.joined(separator: ", ")), none.") }
+            guard TextEffects.isValid(value ?? "") || value == "none" else { throw AgentEditError.invalid("text_effect needs one of: \(TextEffects.kinds.joined(separator: ", ")), spectrum:<palette>:<speed>:<direction>, none.") }
             try validatePhrase()
+            if value?.hasPrefix("spectrum") == true, (text ?? "").count > Spectrum.maxLength { throw AgentEditError.invalid("Spectrum is for titles and short labels (\(Spectrum.maxLength) characters at most).") }
         case "link":
             try validatePhrase()
             guard let value, value.count <= 2_000, ["https://", "http://", "mailto:", "draft://"].contains(where: { value.lowercased().hasPrefix($0) }) else {

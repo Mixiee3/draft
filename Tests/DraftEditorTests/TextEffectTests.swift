@@ -82,3 +82,38 @@ final class BlockEffectTests: XCTestCase {
         XCTAssertThrowsError(try AgentEdit(action: "decoration", blockId: "b_h", value: "sparkle").validate())
     }
 }
+
+final class SpectrumTests: XCTestCase {
+    func testSpectrumPersistsAnimatesOnlyWhenAllowedAndStaysShort() throws {
+        let view = DocumentEditorView(frame: NSRect(x: 0, y: 0, width: 900, height: 700))
+        let window = NSWindow(contentRect: view.frame, styleMask: [.titled], backing: .buffered, defer: false)
+        window.contentView = view
+        let c = view.controller
+        c.load(Node("doc", content: [Node("heading", attrs: ["id": "b_h", "level": 1], content: [.text("Aurora notes")]), Node("paragraph", attrs: ["id": "b_p"], content: [.text(String(repeating: "long body text ", count: 20))])]))
+        window.makeFirstResponder(c.textView)
+        let r = NSRange(location: 0, length: 6)
+        c.textView.setSelectedRange(r)
+        c.setEffect("spectrum:neon:fast:backward")
+        XCTAssertEqual(c.document().content?[0].content?.first?.marks, [Mark("effect", attrs: ["kind": "spectrum", "palette": "neon", "speed": "fast", "direction": "backward"])])
+        c.textView.undoManager?.undo()
+        XCTAssertNil(c.storage.attribute(.draftEffect, at: 0, effectiveRange: nil), "one Undo")
+        c.textView.undoManager?.redo()
+        c.load(c.document())
+        XCTAssertEqual(c.storage.attribute(.draftEffect, at: 0, effectiveRange: nil) as? String, "spectrum:neon:fast:backward", "survives reload")
+        view.display() // the clipped gradient draws
+        XCTAssertFalse(c.layout.spectrumRects(in: c.textView.bounds, origin: .zero).isEmpty, "moving runs are redrawn")
+        var th = c.theme; th.animateEffects = false; c.theme = th
+        XCTAssertTrue(c.layout.spectrumRects(in: c.textView.bounds, origin: .zero).isEmpty, "Reduce Motion: still")
+        th.animateEffects = true; th.plainEffects = true; c.theme = th
+        let fg = (c.storage.attribute(.foregroundColor, at: 0, effectiveRange: nil) as! NSColor).usingColorSpace(.sRGB)!
+        XCTAssertGreaterThanOrEqual(ColorMath.contrast(ColorMath.hex(Double(fg.redComponent), Double(fg.greenComponent), Double(fg.blueComponent)), th.pageColor), 4.4, "Increase Contrast: a readable solid colour")
+        // Too long or across paragraphs: refused.
+        let ns = c.storage.string as NSString
+        c.textView.setSelectedRange(NSRange(location: ns.range(of: "long").location, length: 250))
+        c.setEffect("spectrum")
+        XCTAssertNil(c.storage.attribute(.draftEffect, at: ns.range(of: "long").location, effectiveRange: nil))
+        c.textView.setSelectedRange(NSRange(location: 2, length: 20))
+        c.setEffect("spectrum")
+        XCTAssertNil(c.storage.attribute(.draftEffect, at: 8, effectiveRange: nil), "never across paragraphs")
+    }
+}

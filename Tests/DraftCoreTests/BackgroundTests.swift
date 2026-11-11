@@ -137,3 +137,23 @@ final class AgentBackdropTests: XCTestCase {
         }
     }
 }
+
+final class SpectrumCoreTests: XCTestCase {
+    func testParsingColorsExportAndValidation() throws {
+        XCTAssertEqual(Spectrum("spectrum")?.value, "spectrum:aurora:slow:forward")
+        XCTAssertEqual(Spectrum("spectrum:prism:still")?.seconds, 0)
+        for bad in ["spectrum:rainbow", "spectrum:prism:warp", "spectrum:prism:slow:up", "glow", "spectrum:a:b:c:d"] { XCTAssertNil(Spectrum(bad), bad) }
+        XCTAssertEqual(Spectrum.palettes.map(\.name), ["Aurora", "Prism", "Sunset Spectrum", "Ocean Rainbow", "Neon Dusk"])
+        for s in Styles.all { for p in Spectrum.palettes { for c in Spectrum(palette: p.id).colors(page: s.tokens.pageColor) {
+            XCTAssertGreaterThanOrEqual(ColorMath.contrast(c, s.tokens.pageColor), 4.5, "\(p.name) on \(s.name)")
+        } } }
+        var doc = DocFile.empty(id: "d_sp", title: "S", styleId: "deep-ink")
+        doc.content = Node("doc", content: [Node("heading", attrs: ["id": "b_h", "level": 1], content: [.text("Title", marks: [Mark("effect", attrs: ["kind": "spectrum", "palette": "ocean", "speed": "fast", "direction": "forward"])])])])
+        let html = HTMLExport.render(doc, tokens: Styles.style("deep-ink").tokens, HTMLExport.Options(useStyle: true, today: "2026-11-11")).html
+        XCTAssertTrue(html.contains("class='fx fx-spectrum' style='background-image:linear-gradient(90deg,"), "a still gradient")
+        XCTAssertFalse(html.contains("animation"), "exports never animate")
+        XCTAssertNoThrow(try AgentEdit(action: "text_effect", blockId: "b_h", value: "spectrum:sunset:normal:backward", text: "Title").validate())
+        XCTAssertThrowsError(try AgentEdit(action: "text_effect", blockId: "b_h", value: "spectrum", text: String(repeating: "x", count: 201)).validate())
+        XCTAssertThrowsError(try AgentEdit(action: "text_effect", blockId: "b_h", value: "spectrum:rainbow", text: "Title").validate())
+    }
+}

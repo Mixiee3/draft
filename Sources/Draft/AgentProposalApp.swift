@@ -632,6 +632,10 @@ struct AgentProposalReview: View {
             case "font": return ("Use the \(e.value ?? "") font", nil, nil, block, nil)
             case "align": return ("Align \(e.value ?? "")", nil, nil, block, nil)
             case "text_effect":
+                if let s = e.value.flatMap(Spectrum.init) {
+                    let speed = Spectrum.speeds.first { $0.id == s.speed }?.name.lowercased() ?? s.speed
+                    return ("Add a \(s.seconds > 0 ? "moving" : "still") \(s.name) gradient to \(quoted(e.text)) (\(speed)\(s.seconds > 0 ? ", \(s.direction)" : ""))", nil, block.map { formatted($0, e) }, nil, nil)
+                }
                 let name = TextEffects.all.first { $0.kind == e.value }?.name.lowercased()
                 return (name.map { "Add a \($0) effect to \(quoted(e.text))" } ?? "Remove the effect from \(quoted(e.text))", nil, block.map { formatted($0, e) }, nil, nil)
             case "bold", "italic", "underline", "strike", "code", "highlight", "text_color", "link", "unlink":

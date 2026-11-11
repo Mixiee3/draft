@@ -19,6 +19,15 @@ extension AppModel {
         w.setFrame(frame, display: true)
         w.makeKeyAndOrderFront(nil)
         presentWindow = w
+        // Back in the note with the caret and selection where they were, so the formatting bar and
+        // typing work right away.
+        let main = NSApp.windows.first { $0.isVisible && $0 !== w && !($0 is NSPanel) }
+        var token: NSObjectProtocol?
+        token = NotificationCenter.default.addObserver(forName: NSWindow.willCloseNotification, object: w, queue: .main) { [weak self] _ in
+            if let token { NotificationCenter.default.removeObserver(token) }
+            main?.makeKeyAndOrderFront(nil)
+            if let tv = self?.editors[docId]?.controller.textView { main?.makeFirstResponder(tv) }
+        }
     }
 }
 

@@ -23,6 +23,8 @@ public struct EditorTheme: Equatable {
     public var dateChips = true
     /// Increase Contrast: effects keep their readable color but drop glow, shadow and outline.
     public var plainEffects = false
+    /// Spectrum text moves only when this is on (off for Reduce Motion and Increase Contrast).
+    public var animateEffects = true
     /// Reduce Transparency: glass becomes a solid card.
     public var solidGlass = false
 
@@ -194,6 +196,7 @@ public enum Styler {
     static func applyEffect(_ k: String, _ attrs: inout [NSAttributedString.Key: Any], _ fg: inout NSColor, theme: EditorTheme) {
         let c = TextEffects.colors(accent: theme.accent, text: theme.textColor, page: theme.pageColor)
         if k == "accent" || k == "glow" || k == "lift" { fg = NSColor(hex: c.start) }
+        if let s = Spectrum(k) { fg = NSColor(hex: s.colors(page: theme.pageColor)[0]); return } // drawn by the layout manager; this colour is the fallback
         guard !theme.plainEffects else { return }
         let sh = NSShadow()
         switch k {

@@ -75,6 +75,7 @@ public enum HTMLExport {
         .fx-shadow{text-shadow:0 2px 2.5px rgba(0,0,0,\(dark ? ".7" : ".35"))}.fx-lift{text-shadow:1.5px 1.5px 0 color-mix(in srgb, var(--fx2) 35%, transparent)}
         .fx-emboss{text-shadow:0 \(dark ? "1px 0 rgba(0,0,0,.7)" : "-1px 0 rgba(0,0,0,.4)")}.fx-outline{-webkit-text-stroke:1px color-mix(in srgb, var(--fx1) 55%, transparent);paint-order:stroke fill}
         .fx-gradient{background:linear-gradient(90deg,var(--fx1),var(--fx2));-webkit-background-clip:text;background-clip:text;color:transparent}
+        .fx-spectrum{-webkit-background-clip:text;background-clip:text;color:transparent}@media (prefers-contrast: more){.fx-spectrum{background:none!important;color:var(--fx1)}}
         [data-deco]{--t:var(--tint,var(--accent));border-radius:10px;padding:6px 12px;margin:.5em 0}[data-deco=focus]{border-radius:0;padding:0 0 0 14px;border-left:3px solid var(--t)}
         [data-deco=block]{background:color-mix(in srgb, var(--tint,var(--text)) \(dark ? 28 : 12)%, transparent)}[data-deco=gradient]{background:linear-gradient(90deg,color-mix(in srgb, var(--t) \(dark ? 32 : 20)%, transparent),color-mix(in srgb, var(--t) \(dark ? 6 : 3)%, transparent))}
         [data-deco=glass]{background:rgba(255,255,255,\(dark ? ".07" : ".6"));border:.5px solid \(dark ? "rgba(255,255,255,.18)" : "color-mix(in srgb, var(--text) 10%, transparent)");backdrop-filter:blur(12px)}
@@ -157,7 +158,14 @@ public enum HTMLExport {
                     case "code": s = "<code>\(s)</code>"
                     case "highlight": s = "<mark style='background:\(attr(m.attrs?["color"]?.string ?? "#fff3a3"))'>\(s)</mark>"
                     case "textStyle": if let c = m.attrs?["color"]?.string { s = "<span style='color:\(attr(c))'>\(s)</span>" }
-                    case "effect": if let k = m.attrs?["kind"]?.string, TextEffects.kinds.contains(k), !marks.contains(where: { $0.type == "highlight" }) { s = "<span class='fx fx-\(k)'>\(s)</span>" }
+                    case "effect":
+                        guard let k = m.attrs?["kind"]?.string, TextEffects.kinds.contains(k), !marks.contains(where: { $0.type == "highlight" }) else { break }
+                        if k == "spectrum" {
+                            // A still gradient: exports never animate.
+                            let sp = Spectrum(palette: m.attrs?["palette"]?.string ?? "aurora", speed: "still")
+                            let c = (Spectrum(sp.value) ?? Spectrum()).colors(page: o.useStyle ? tokens.pageColor : "#ffffff")
+                            s = "<span class='fx fx-spectrum' style='background-image:linear-gradient(90deg,\(c.joined(separator: ","))'>\(s)</span>"
+                        } else { s = "<span class='fx fx-\(k)'>\(s)</span>" }
                     default: break
                     }
                 }
