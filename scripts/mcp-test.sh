@@ -50,7 +50,7 @@ def content(doc): return m.tool("draft_read_document", document_id=doc)  # what 
 m = MCP()
 tools = [t["name"] for t in m.rpc("tools/list", {})["result"]["tools"]]
 print("tools:", ", ".join(tools))
-ok("tools listed", len(tools) == 18, tools)
+ok("tools listed", len(tools) == 21, tools)
 spaces = m.tool("draft_list_spaces"); ok("1 list spaces", len(spaces) == 2, spaces)
 docs = m.tool("draft_list_documents"); note = next(d for d in docs if d["title"] == "MCP test note"); ok("2 list documents", note, docs)
 hits = m.tool("draft_search", query="zebra-quartz"); ok("3 search", hits and hits[0]["document_id"] == note["id"], hits)
@@ -88,6 +88,46 @@ p = m.tool("draft_propose_note_edits", document_id=note["id"], expected_revision
 r = review("accept", undo=True, shot="mcp-review-style")
 ok("backdrop applied", r["status"] == "accepted" and r["afterBackdrop"] == "#e3ecfa,#c9d7f2,#b8c7ea", r)
 ok("backdrop one Undo", r["undoneBackdrop"] == "" and content(note["id"]) == original, r)
+
+# Item 15: spectrum text, links to notes, tags, due dates, image text, folders, styles, daily notes.
+st = m.tool("draft_read_structure", document_id=note["id"]); blocks = st["blocks"]
+first = next(b for b in blocks if "zebra-quartz" in b["text"]); task = next(b for b in blocks if "water the beds" in b["text"]); image = next(b for b in blocks if b["type"] == "image")
+reading = next(d for d in m.tool("draft_list_documents") if d["title"] == "Reading list")
+bad = m.tool("draft_propose_note_edits", document_id=note["id"], expected_revision=st["revision"], instruction="Link", edits=[{"action": "link_note", "block_id": first["id"], "text": "Planning", "value": "d_missing"}])
+ok("link to a missing note refused", "error" in bad, bad)
+p = m.tool("draft_propose_note_edits", document_id=note["id"], expected_revision=st["revision"], instruction="Link, tag, date, caption, spectrum", edits=[
+    {"action": "link_note", "block_id": first["id"], "text": "Planning", "value": reading["id"]},
+    {"action": "add_tag", "block_id": first["id"], "value": "#plan"},
+    {"action": "remove_tag", "block_id": first["id"], "value": "#garden"},
+    {"action": "task_due", "block_id": task["id"], "value": "2026-12-01"},
+    {"action": "image_caption", "block_id": image["id"], "text": "Raised beds"},
+    {"action": "image_alt", "block_id": image["id"], "text": "Sketch of four raised beds"},
+    {"action": "text_effect", "block_id": first["id"], "text": "zebra-quartz", "value": "spectrum:aurora:slow:forward"}])
+r = review("accept", undo=True, shot="mcp-review-item15")
+j = r["afterJson"]
+ok("item 15 applied", r["status"] == "accepted" and reading["id"] in j and "#plan" in r["afterText"] and "#garden" not in r["afterText"] and "2026-12-01" in j
+   and "Raised beds" in j and "Sketch of four raised beds" in j and "spectrum" in j and "aurora" in j, r)
+ok("item 15 one Undo", content(note["id"]) == original and "#garden" in r["undoneText"] and "spectrum" not in r["undoneJson"], r)
+ok("image kept", "missing-asset" in r["afterJson"] and "missing-asset" in r["undoneJson"], r)
+folders = m.tool("draft_list_folders"); archive = next(f for f in folders if f["name"] == "Archive")
+rf = m.tool("draft_propose_rename_folder", folder_id=archive["id"], name="Old things", instruction="Rename the folder")
+r = review("accept", undo=True)
+ok("rename folder", r["status"] == "accepted" and "Old things" in r["afterFolders"] and "Archive" in r["undoneFolders"], r)
+dup = m.tool("draft_propose_rename_folder", folder_id=archive["id"], name="a/b", instruction="Bad name"); ok("bad folder name refused", "error" in dup, dup)
+st = m.tool("draft_read_structure", document_id=note["id"])
+weak = m.tool("draft_propose_create_style", name="Pale", style=json.dumps({"pageColor": "#ffffff", "textColor": "#dddddd"}), instruction="Pale")
+ok("unreadable style refused", "4.5:1" in str(weak.get("error", "")), weak)
+cs = m.tool("draft_propose_create_style", name="Garden Study", style=json.dumps({"base": "sage-mist", "accent": "#3f7d4a", "font": "serif", "separator": "wave"}), document_id=note["id"], expected_revision=st["revision"], instruction="A study style for garden notes")
+r = review("accept", undo=True, shot="mcp-review-create-style")
+ok("create style applied", r["status"] == "accepted" and r["afterUserStyles"] == "Garden Study" and r["afterStyleId"].startswith("u_"), r)
+ok("create style one Undo", r["undoneUserStyles"] == "" and not r["undoneStyleId"].startswith("u_"), r)
+daily = m.tool("draft_propose_daily_append", markdown="- [ ] check the beds", instruction="Add to today")
+ok("daily append needs today's note", "error" in daily and "doesn't exist yet" in daily["error"], daily)
+st = m.tool("draft_read_structure", document_id=note["id"]); original = content(note["id"])
+stale = m.tool("draft_propose_note_edits", document_id=note["id"], expected_revision="0" * 64, instruction="Stale", edits=[{"action": "add_tag", "block_id": first["id"], "value": "#late"}])
+ok("item 15 stale revision refused", "error" in stale, stale)
+m.tool("draft_propose_note_edits", document_id=note["id"], expected_revision=st["revision"], instruction="Later", edits=[{"action": "add_tag", "block_id": first["id"], "value": "#later"}])
+r = review("reject"); ok("item 15 reject leaves the note", r["status"] == "rejected" and content(note["id"]) == original, r)
 
 st = m.tool("draft_read_structure", document_id=note["id"]); before = filehash(note["id"])
 p = m.tool("draft_propose_note_edits", document_id=note["id"], expected_revision=st["revision"], instruction="Reword", edits=[{"action": "replace_text", "block_id": first["id"], "text": "Rejected words", "expected_text": first["text"]}])

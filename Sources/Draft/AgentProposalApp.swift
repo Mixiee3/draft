@@ -75,6 +75,8 @@ extension AppModel {
                     guard proposal.edits.count == 1 else { throw AgentEditError.invalid("A backdrop change is its own proposal.") }
                     let b = try AgentEdit.backdrop(proposal.edits[0].value)
                     updateAppearance(doc.id) { $0.overrides.backdrop = b }
+                } else if let bad = proposal.edits.first(where: { $0.action == "link_note" && library.docs[$0.value ?? ""].map { $0.deletedAt != nil } ?? true }) {
+                    throw AgentEditError.invalid("The note \(bad.value ?? "") to link to no longer exists.")
                 } else if proposal.edits.contains(where: { ["insert_image", "insert_file"].contains($0.action) }) {
                     try applyWithAssets(doc.id, editor.controller, proposal.edits)
                 } else {
@@ -212,6 +214,46 @@ extension AppModel {
             }
             indexTick &+= 1
             return "Moved\(ids.count > 1 ? " with \(ids.count - 1) nested page(s)" : "")."
+        case "rename_folder":
+            guard AgentProposalStore.libraryRevision(library) == proposal.expectedRevision else {
+                proposal.status = "stale"
+                throw AgentEditError.invalid("Folders changed after the proposal was made. Propose the rename again.")
+            }
+            guard let i = library.folders.firstIndex(where: { $0.id == edit.blockId }) else { throw AgentEditError.invalid("The folder no longer exists.") }
+            let f = library.folders[i], name = (edit.title ?? "").trimmingCharacters(in: .whitespacesAndNewlines)
+            try Library.checkFolderName(name)
+            guard !library.folders.contains(where: { $0.id != f.id && $0.parentId == f.parentId && $0.spaceId == f.spaceId && $0.name.caseInsensitiveCompare(name) == .orderedSame }) else {
+                throw AgentEditError.invalid("A folder named “\(name)” already exists there.")
+            }
+            let old = f.name
+            library.folders[i].name = name
+            scheduleLibrarySave()
+            registerAgentUndo("Rename Folder “\(old)”") { m in
+                if let j = m.library.folders.firstIndex(where: { $0.id == f.id }) { m.library.folders[j].name = old }
+                m.scheduleLibrarySave(); m.flushAll()
+            }
+            return "Renamed the folder to “\(name)”."
+        case "create_style":
+            let tokens = try AgentEdit.styleTokens(edit.value)
+            let name = (edit.title ?? "").trimmingCharacters(in: .whitespacesAndNewlines)
+            let u = UserStyle(name: name, base: "paper", tokens: tokens)
+            library.userStyles.append(u)
+            scheduleLibrarySave()
+            // Optionally apply it to the proposal's note in the same step.
+            var applied: (id: String, old: DocumentAppearance)?
+            if proposal.documentId != "none", let doc = ensureDoc(proposal.documentId), library.docs[doc.id]?.deletedAt == nil {
+                try checkRevision(&proposal, doc)
+                applied = (doc.id, doc.appearance)
+                var a = doc.appearance; a.styleId = u.id; a.overrides = StyleOverrides()
+                setAppearance(doc.id, a, previous: doc.appearance, registering: false)
+            }
+            registerAgentUndo("Create Style “\(name)”") { m in
+                if let applied { m.setAppearance(applied.id, applied.old, previous: nil, registering: false) }
+                // Notes that picked the style up since fall back to its base, as when a style is deleted.
+                if m.library.userStyles.contains(where: { $0.id == u.id }) { m.deleteStyle(u.id) }
+                m.scheduleLibrarySave(); m.flushAll()
+            }
+            return "Created the style “\(name)”\(applied != nil ? " and applied it" : ""). Undo removes it."
         default:
             throw AgentEditError.invalid("Unknown library action.")
         }
@@ -583,6 +625,23 @@ struct AgentProposalReview: View {
             switch e.action {
             case "create_document": return ("Create note “\(e.title ?? "Untitled")” in \(folder(e.value))", nil, md(e.text), nil, nil)
             case "rename_document": return ("Rename note", proposal.documentTitle, md(e.title), nil, nil)
+            case "rename_folder":
+                return ("Rename folder", model.library.folders.first { $0.id == e.blockId }.map { model.library.folderPath($0.id) }, md(e.title), nil, nil)
+            case "create_style":
+                return ("Create the style “\(e.title ?? "")”\(proposal.documentId == "none" ? "" : " and use it for this note")", nil, nil, nil, nil)
+            case "link_note":
+                let target = model.library.docs[e.value ?? ""].map { $0.title.isEmpty ? "Untitled" : $0.title } ?? "a missing note"
+                return ("Link \(quoted(e.text)) to “\(target)”", nil, nil, block, nil)
+            case "add_tag": return ("Add \(e.value ?? "")", nil, nil, block, nil)
+            case "remove_tag": return ("Remove \(e.value ?? "")", nil, nil, block, nil)
+            case "task_due":
+                return (e.value == "none" ? "Clear the due date" : "Set the due date to \(Day.date(e.value ?? "").map { $0.formatted(date: .abbreviated, time: .omitted) } ?? e.value ?? "")", nil, nil, block, nil)
+            case "image_caption", "image_alt":
+                let key = e.action == "image_caption" ? "caption" : "alt"
+                let old = model.docs[proposal.documentId]?.content.block(e.blockId)?.attrs?[key]?.string
+                    ?? model.editors[proposal.documentId]?.controller.document().block(e.blockId)?.attrs?[key]?.string
+                let title = key == "caption" ? (e.text?.isEmpty == false ? "Set the image caption" : "Remove the image caption") : "Set the image description (for VoiceOver)"
+                return (title, old.flatMap { $0.isEmpty ? nil : $0 }, e.text.map { AttributedString($0) }, nil, nil)
             case "create_folder":
                 let path = model.library.folderPath(e.value, space: e.target ?? model.library.space.id) + " › " + (e.title ?? "")
                 return ("Create folder “\(e.title ?? "")”", nil, AttributedString(path), nil, nil)
@@ -654,20 +713,25 @@ struct AgentProposalReview: View {
                         .overlay(RoundedRectangle(cornerRadius: 4, style: .continuous).strokeBorder(t.line, lineWidth: 0.5)).accessibilityHidden(true)
                 }
             }
-            if ["document_style", "document_backdrop"].contains(e.action), let now = model.docs[proposal.documentId]?.appearance ?? model.vault.peekAppearance(proposal.documentId) {
-                let next: DocumentAppearance = {
-                    var a = now
+            if ["document_style", "document_backdrop", "create_style"].contains(e.action) {
+                let now = model.docs[proposal.documentId]?.appearance ?? model.vault.peekAppearance(proposal.documentId)
+                let before = now.map { Styles.resolve($0) }
+                let after: StyleTokens? = {
+                    if e.action == "create_style" { return try? AgentEdit.styleTokens(e.value) }
+                    guard var a = now else { return nil }
                     if e.action == "document_style" { a.styleId = e.value ?? a.styleId; a.overrides = StyleOverrides() }
                     else if let b = try? AgentEdit.backdrop(e.value) { a.overrides.backdrop = b }
-                    return a
+                    return Styles.resolve(a)
                 }()
+                let name = proposal.documentTitle.isEmpty ? "Untitled" : proposal.documentTitle
                 HStack(spacing: DS.s2) {
-                    ForEach([("Before", now), ("After", next)], id: \.0) { label, a in
+                    ForEach([("Before", before), ("After", after)].compactMap { l, tok in tok.map { (l, $0) } }, id: \.0) { label, tok in
                         VStack(alignment: .leading, spacing: 4) {
                             Text(label.uppercased()).font(.system(size: DS.micro + 1, weight: .semibold)).tracking(0.5).foregroundStyle(label == "After" ? Color(hex: "#2f9a5a") : t.secondary)
-                            StylePreviewCard(tokens: Styles.resolve(a), name: proposal.documentTitle.isEmpty ? "Untitled" : proposal.documentTitle, height: 110)
+                            StylePreviewCard(tokens: tok, name: e.action == "create_style" && label == "After" ? (e.title ?? name) : name, height: 110)
                         }
-                        .accessibilityElement(children: .ignore).accessibilityLabel("\(label): \(Styles.style(a.styleId).name)\(a.overrides.backdrop != nil ? " with a custom backdrop" : "")")
+                        .accessibilityElement(children: .ignore)
+                        .accessibilityLabel(String(format: "%@: page %@, text contrast %.1f to 1", label, tok.pageColor, ColorMath.contrast(tok.textColor, tok.pageColor)))
                     }
                 }
                 .frame(maxWidth: 420)

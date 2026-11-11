@@ -141,11 +141,13 @@ struct EmptyLibrary: View {
 // MARK: - Cards
 
 struct DocPreview: View {
+    @Environment(AppModel.self) var model
     let meta: DocMeta
     var height: CGFloat
     var titleSize: CGFloat = 17
     var body: some View {
-        let style = Styles.style(meta.styleId).tokens
+        // The same page colours as the open note (Paper follows dark mode when that's on).
+        let style = model.displayTokens(DocumentAppearance(styleId: meta.styleId))
         let page = Color(hex: style.pageColor)
         let ink = Color(hex: style.textColor)
         let fontDesign: Font.Design = style.font == "serif" ? .serif : style.font == "mono" ? .monospaced : style.font == "rounded" ? .rounded : .default
