@@ -317,11 +317,26 @@ public final class EditorController: NSObject, NSTextStorageDelegate, NSTextView
 
     /// Keep the caret out of collapsed toggles.
     public func textView(_ textView: NSTextView, willChangeSelectionFromCharacterRange old: NSRange, toCharacterRange new: NSRange) -> NSRange {
+        if new.length > 0, let e = NSApp.currentEvent, [.leftMouseDown, .leftMouseDragged, .leftMouseUp].contains(e.type) { return trimmedMouseSelection(new) }
         guard new.length == 0, hiddenChars.contains(new.location) else { return new }
         if new.location > old.location, let after = (new.location..<storage.length).first(where: { !hiddenChars.contains($0) }) { return NSRange(location: after, length: 0) }
         var i = new.location
         while i > 0, hiddenChars.contains(i) { i -= 1 }
         return NSRange(location: contentRange(paragraphRange(at: i)).upperBound, length: 0)
+    }
+
+    /// A mouse selection (drag, double- or triple-click) that runs past the end of a line picks up
+    /// the paragraph break and any empty paragraphs after it, which TextKit then paints as a wide
+    /// band of selected "air". Those breaks are dropped so the selection, the highlight and any
+    /// format applied cover only the text. Keyboard extension is left alone (trimming it would stop
+    /// Shift-arrow from moving), and empty blocks are still selectable as blocks.
+    func trimmedMouseSelection(_ new: NSRange) -> NSRange {
+        guard !isBlockMode else { return new }
+        var r = new
+        let s = ns
+        while r.length > 1, NSMaxRange(r) <= s.length, s.character(at: NSMaxRange(r) - 1) == 10 { r.length -= 1 }
+        while r.length > 1, s.character(at: r.location) == 10 { r.location += 1; r.length -= 1 }
+        return r
     }
 
     public func textViewDidChangeSelection(_ notification: Notification) {

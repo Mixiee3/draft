@@ -47,6 +47,7 @@ enum Automation {
             case "nav-test": await navTest()
             case "chrome-test": await chromeTest()
             case "selection-test": await selectionTest()
+            case "editor-audit": await editorAudit()
             case "spectrum-test": await spectrumTest(read: false)
             case "spectrum-read": await spectrumTest(read: true)
             case "backgrounds-shots": await backgroundShots()

@@ -245,9 +245,11 @@ public final class DocumentEditorView: NSView, NSTextViewDelegate {
         var paperW = min(840, width - margin * 2)
         var paperX = ((width - paperW) / 2).rounded()
         if trailingInset > 0 {
+            // A side panel slides the page left when there is room, but never narrows it: a narrower
+            // page re-wraps every paragraph and the text under the reader jumps. What doesn't fit
+            // sits under the floating panel.
             let avail = width - trailingInset - margin
             if paperX + paperW > avail { paperX = max(margin, avail - paperW) }
-            if paperX + paperW > avail, avail - margin >= 560 { paperW = avail - margin; paperX = margin }
         }
         let top: CGFloat = topInset > 0 ? 14 : 70
         let pad: CGFloat = paperW < 560 ? 22 : (paperW < 700 ? 44 : 68)
