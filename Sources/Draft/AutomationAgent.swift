@@ -227,7 +227,7 @@ extension Automation {
                 let d = try? m.vault.loadDoc(part.documentId)
                 var marks: [String] = []
                 if let c = d?.content { walk(c) { n in for mk in n.marks ?? [] { marks.append(mk.type) } } }
-                r["\(prefix):\(part.documentId)"] = (d.map { docPlainText($0.content) } ?? "") + " |marks:" + marks.sorted().joined(separator: ",")
+                r["\(prefix):\(part.documentId)"] = (d.map { docPlainText($0.content) } ?? "") + " |marks:" + marks.sorted().joined(separator: ",") + " |style:" + (d?.appearance.styleId ?? "")
             }
         }
         recordParts("after")

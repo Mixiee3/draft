@@ -121,6 +121,15 @@ cs = m.tool("draft_propose_create_style", name="Garden Study", style=json.dumps(
 r = review("accept", undo=True, shot="mcp-review-create-style")
 ok("create style applied", r["status"] == "accepted" and r["afterUserStyles"] == "Garden Study" and r["afterStyleId"].startswith("u_"), r)
 ok("create style one Undo", r["undoneUserStyles"] == "" and not r["undoneStyleId"].startswith("u_"), r)
+st1 = m.tool("draft_read_structure", document_id=note["id"]); st2 = m.tool("draft_read_structure", document_id=reading["id"])
+mm = m.tool("draft_propose_multi_note_edits", instruction="Give both notes the Sea Glass style", notes=[
+    {"document_id": note["id"], "expected_revision": st1["revision"], "edits": [{"action": "document_style", "block_id": note["id"], "value": "sea-glass"}]},
+    {"document_id": reading["id"], "expected_revision": st2["revision"], "edits": [{"action": "document_style", "block_id": reading["id"], "value": "sea-glass"}]}])
+r = review("accept", undo=True)
+ok("multi-note style applied and undone", r["status"] == "accepted" and "2 notes" in r["result"]
+   and r["after:" + note["id"]].endswith("|style:sea-glass") and r["after:" + reading["id"]].endswith("|style:sea-glass"), r)
+def style_of(d): return json.load(open(f"{vault}/docs/{d}.json"))["appearance"]["styleId"]
+ok("multi-note style one Undo", style_of(note["id"]) != "sea-glass" and style_of(reading["id"]) != "sea-glass", (style_of(note["id"]), style_of(reading["id"])))
 daily = m.tool("draft_propose_daily_append", markdown="- [ ] check the beds", instruction="Add to today")
 ok("daily append needs today's note", "error" in daily and "doesn't exist yet" in daily["error"], daily)
 st = m.tool("draft_read_structure", document_id=note["id"]); original = content(note["id"])
