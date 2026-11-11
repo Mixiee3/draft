@@ -161,6 +161,8 @@ public final class DraftLayoutManager: NSLayoutManager {
                 let bg = NSRect(x: origin.x, y: r.minY - 6, width: width, height: r.height + 12)
                 theme.text.withAlphaComponent(theme.isDarkPage ? 0.09 : 0.055).setFill()
                 NSBezierPath(roundedRect: bg, xRadius: 10, yRadius: 10).fill()
+            } else if let d = b.decoration, d != "block", d != "focus", BlockEffects.kinds.contains(d) {
+                drawEffect(d, b, rect: r, origin: origin, width: width)
             } else if b.decoration == "block" || b.blockColor != nil {
                 let bg = NSRect(x: origin.x, y: r.minY - 5, width: width, height: r.height + 10)
                 let color = b.blockColor.map { NSColor(hex: $0, alpha: theme.isDarkPage ? 0.28 : 0.22) } ?? theme.text.withAlphaComponent(0.06)
@@ -181,6 +183,42 @@ public final class DraftLayoutManager: NSLayoutManager {
                 theme.text.withAlphaComponent(0.28).setFill()
                 NSBezierPath(roundedRect: NSRect(x: origin.x + 3, y: r.minY + 1, width: 3, height: r.height - 2), xRadius: 1.5, yRadius: 1.5).fill()
             }
+        }
+    }
+
+    /// Block effects. Plain fills and strokes only (no blur), so scrolling and typing stay cheap.
+    private func drawEffect(_ d: String, _ b: BlockInfo, rect r: NSRect, origin: NSPoint, width: CGFloat) {
+        let tint = b.blockColor.map { NSColor(hex: $0) } ?? theme.accentColor
+        let dark = theme.isDarkPage
+        if d == "accent" && b.kind == .heading {
+            let line = NSRect(x: origin.x, y: r.maxY - 2, width: min(width, 64), height: 3)
+            tint.setFill(); NSBezierPath(roundedRect: line, xRadius: 1.5, yRadius: 1.5).fill()
+            return
+        }
+        // The line fragments include paragraph spacing; the box hugs the text instead.
+        let ps = Styler.paragraphStyle(b, theme: theme)
+        let top = r.minY + ps.paragraphSpacingBefore - 5, bottom = r.maxY - ps.paragraphSpacing + 5
+        let bg = NSRect(x: origin.x, y: top, width: width, height: max(0, bottom - top))
+        let path = NSBezierPath(roundedRect: bg, xRadius: 10, yRadius: 10)
+        switch d {
+        case "gradient":
+            if theme.plainEffects { tint.withAlphaComponent(dark ? 0.22 : 0.12).setFill(); path.fill() }
+            else { NSGradient(starting: tint.withAlphaComponent(dark ? 0.32 : 0.2), ending: tint.withAlphaComponent(dark ? 0.06 : 0.03))?.draw(in: path, angle: 0) }
+        case "glass":
+            let solid = theme.plainEffects || theme.solidGlass
+            (dark ? NSColor.white.withAlphaComponent(solid ? 0.1 : 0.07) : NSColor.white.withAlphaComponent(solid ? 0.9 : 0.6)).setFill(); path.fill()
+            if !solid { NSGradient(starting: NSColor.white.withAlphaComponent(dark ? 0.08 : 0.5), ending: .clear)?.draw(in: path, angle: -90) }
+            (dark ? NSColor.white.withAlphaComponent(0.18) : theme.text.withAlphaComponent(solid ? 0.25 : 0.1)).setStroke()
+            path.lineWidth = solid ? 1 : 0.5; path.stroke()
+        case "glow":
+            NSGraphicsContext.saveGraphicsState()
+            if !theme.plainEffects { let sh = NSShadow(); sh.shadowColor = tint.withAlphaComponent(dark ? 0.7 : 0.45); sh.shadowBlurRadius = 10; sh.set() }
+            tint.withAlphaComponent(dark ? 0.16 : 0.07).setFill(); path.fill()
+            NSGraphicsContext.restoreGraphicsState()
+            tint.withAlphaComponent(0.6).setStroke(); path.lineWidth = 1; path.stroke()
+        default: // accent
+            tint.withAlphaComponent(dark ? 0.08 : 0.04).setFill(); path.fill()
+            tint.setStroke(); path.lineWidth = 1.5; path.stroke()
         }
     }
 

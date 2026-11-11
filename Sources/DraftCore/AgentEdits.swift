@@ -53,7 +53,7 @@ public struct AgentEdit: Codable, Sendable, Hashable {
                 throw AgentEditError.invalid("Unknown separator style.")
             }
         case "block_kind": guard ["body", "quote", "callout", "code"].contains(value ?? "") else { throw AgentEditError.invalid("Unknown block kind.") }
-        case "decoration": guard ["none", "focus", "block"].contains(value ?? "") else { throw AgentEditError.invalid("Unknown decoration.") }
+        case "decoration": guard (["none"] + BlockEffects.kinds).contains(value ?? "") else { throw AgentEditError.invalid("Unknown decoration.") }
         case "list": guard ["bullet", "numbered", "task", "none"].contains(value ?? "") else { throw AgentEditError.invalid("Unknown list style.") }
         case "font": guard ["document", "system", "serif", "mono", "rounded"].contains(value ?? "") else { throw AgentEditError.invalid("Unknown font.") }
         case "align": guard ["left", "center", "right", "justify"].contains(value ?? "") else { throw AgentEditError.invalid("Unknown alignment.") }

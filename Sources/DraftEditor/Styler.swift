@@ -23,6 +23,8 @@ public struct EditorTheme: Equatable {
     public var dateChips = true
     /// Increase Contrast: effects keep their readable color but drop glow, shadow and outline.
     public var plainEffects = false
+    /// Reduce Transparency: glass becomes a solid card.
+    public var solidGlass = false
 
     public init() {}
     public func tagColor(_ tag: String) -> NSColor { NSColor(hex: tagColors[tag.lowercased()] ?? Tags.defaultColor(tag)) }
@@ -101,7 +103,9 @@ public enum Styler {
         if b.kind == .callout { indent = 42; tail = -14; p.paragraphSpacingBefore = 6 }
         if b.kind == .code { indent = 16; tail = -16; p.paragraphSpacingBefore = 4; p.paragraphSpacing = 12 }
         if b.decoration == "focus" { indent += 16 }
-        if b.kind != .callout && (b.decoration == "block" || (b.blockColor != nil && b.kind != .code)) { indent += 12; tail = -12 }
+        if b.kind != .callout && (BlockEffects.isBoxed(b.decoration, heading: b.kind == .heading) || (b.blockColor != nil && b.kind != .code)) { indent += 12; tail = -12 }
+        // Outlined effects need room so stacked boxes never touch (Block merges on purpose).
+        if b.kind != .callout, b.decoration != "block", BlockEffects.isBoxed(b.decoration, heading: b.kind == .heading) { p.paragraphSpacingBefore += 6; p.paragraphSpacing += 6 }
         p.firstLineHeadIndent = indent
         p.headIndent = indent
         p.tailIndent = tail

@@ -97,9 +97,11 @@ struct FormatPanel: View {
                     }
                 }
                 PanelSection(title: "Decorations") {
-                    HStack(spacing: 6) {
-                        ChipButton(title: "Focus", symbol: "rectangle.lefthalf.inset.filled", isActive: block?.decoration == "focus") { c?.setDecoration("focus"); model.editorTick &+= 1 }
-                        ChipButton(title: "Block", symbol: "rectangle.fill", isActive: block?.decoration == "block") { c?.setDecoration("block"); model.editorTick &+= 1 }
+                    LazyVGrid(columns: [GridItem(.flexible(), spacing: 6), GridItem(.flexible(), spacing: 6)], spacing: 6) {
+                        ForEach([("focus", "rectangle.lefthalf.inset.filled"), ("block", "rectangle.fill"), ("gradient", "square.bottomhalf.filled"), ("glass", "rectangle.on.rectangle"), ("glow", "rays"), ("accent", "rectangle.dashed")], id: \.0) { k, sym in
+                            ChipButton(title: BlockEffects.all.first { $0.kind == k }?.name ?? k, symbol: sym, isActive: block?.decoration == k, isEnabled: !(block?.kind.isAttachment ?? true), height: 30) { c?.setDecoration(k); model.editorTick &+= 1 }
+                                .help(BlockEffects.all.first { $0.kind == k }?.use ?? "")
+                        }
                     }
                 }
                 PanelSection(title: "Color") {

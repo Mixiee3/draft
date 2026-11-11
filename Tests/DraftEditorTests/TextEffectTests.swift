@@ -53,3 +53,32 @@ final class TextEffectTests: XCTestCase {
         XCTAssertThrowsError(try AgentEdit(action: "text_effect", blockId: "b_a", value: "sparkle", text: "Light").validate())
     }
 }
+
+final class BlockEffectTests: XCTestCase {
+    func testBlockEffectsKeepContentIdsAndUndo() throws {
+        let view = DocumentEditorView(frame: NSRect(x: 0, y: 0, width: 900, height: 700))
+        let window = NSWindow(contentRect: view.frame, styleMask: [.titled], backing: .buffered, defer: false)
+        window.contentView = view
+        let c = view.controller
+        c.load(Node("doc", content: [Node("heading", attrs: ["id": "b_h", "level": 2], content: [.text("Summary")]), Node("paragraph", attrs: ["id": "b_p"], content: [.text("Keep this")])]))
+        window.makeFirstResponder(c.textView)
+        let before = c.document()
+        c.textView.setSelectedRange(NSRange(location: 9, length: 0))
+        for k in BlockEffects.kinds {
+            c.setDecoration(k)
+            let d = c.document()
+            XCTAssertEqual(d.content?[1].attrs?["decoration"], .string(k))
+            XCTAssertEqual(d.content?.map { $0.attrs?["id"] }, before.content?.map { $0.attrs?["id"] }, "block IDs unchanged")
+            XCTAssertEqual(d.content?[1].content, before.content?[1].content, "content unchanged")
+            view.display() // draws every effect without crashing
+            c.setDecoration(k) // same again removes it
+            XCTAssertNil(c.document().content?[1].attrs?["decoration"])
+        }
+        c.setDecoration("glow")
+        c.textView.undoManager?.undo()
+        XCTAssertNil(c.document().content?[1].attrs?["decoration"], "one Undo")
+        try c.applyAgentEdits([AgentEdit(action: "decoration", blockId: "b_h", value: "accent")])
+        XCTAssertEqual(c.document().content?[0].attrs?["decoration"], "accent")
+        XCTAssertThrowsError(try AgentEdit(action: "decoration", blockId: "b_h", value: "sparkle").validate())
+    }
+}

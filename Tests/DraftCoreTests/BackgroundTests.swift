@@ -106,3 +106,19 @@ final class TextEffectExportTests: XCTestCase {
         }
     }
 }
+
+final class BlockEffectExportTests: XCTestCase {
+    func testDecorationsExport() {
+        var doc = DocFile.empty(id: "d_be", title: "B", styleId: "paper")
+        doc.content = Node("doc", content: [
+            Node("heading", attrs: ["id": "b_h", "level": 2, "decoration": "accent"], content: [.text("Sum")]),
+            Node("paragraph", attrs: ["id": "b_g", "decoration": "glass", "blockColor": "#a9e2c0"], content: [.text("Aside")]),
+            Node("paragraph", attrs: ["id": "b_x", "decoration": "x' onload='1"], content: [.text("Bad")]),
+        ])
+        let html = HTMLExport.render(doc, tokens: Styles.builtIn[0].tokens, HTMLExport.Options(useStyle: true, today: "2026-11-09")).html
+        XCTAssertTrue(html.contains("<h2 id='b_h' data-deco='accent'>"))
+        XCTAssertTrue(html.contains("data-deco='glass' style='--tint:#a9e2c0'"))
+        XCTAssertFalse(html.contains("onload"), "unknown decorations are dropped")
+        XCTAssertTrue(html.contains("h2[data-deco=accent]"))
+    }
+}

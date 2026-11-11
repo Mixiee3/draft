@@ -46,6 +46,23 @@ extension Automation {
         c.toolbar.setMode(.palette)
         await shot(p + "selection-menu-colors", w, settle: 0.5)
         c.toolbar.setMode(.main)
+        // Block effects, one per block, with the Format panel open.
+        if let bid = m.createDoc(title: "Block effects") {
+            let bc = m.editor(for: bid).controller
+            bc.pastePlainForAutomation("## Key ideas\nFocus: the one paragraph to remember.\nBlock: a quiet tinted box.\nGradient: a soft wash for a summary.\nGlass: a frosted aside on a field backdrop.\nGlow: a single decision or warning.\nAccent: an outlined definition.")
+            await wait(0.4)
+            let ns = bc.textView.string as NSString
+            for (phrase, k) in [("Key ideas", "accent"), ("Focus:", "focus"), ("Block:", "block"), ("Gradient:", "gradient"), ("Glass:", "glass"), ("Glow:", "glow"), ("Accent:", "accent")] {
+                bc.textView.setSelectedRange(NSRange(location: ns.range(of: phrase).location, length: 0)); bc.setDecoration(k)
+            }
+            m.updateAppearance(bid) { $0.styleId = "sea-glass" }
+            bc.textView.setSelectedRange(NSRange(location: ns.range(of: "Glass:").location, length: 0))
+            m.panel = .format
+            await shot(p + "block-effects", w, settle: 0.8)
+            m.panel = nil
+            m.flushAll()
+            r["blockEffectsPersisted"] = "\((try? m.vault.loadDoc(bid))?.content.content?.compactMap { $0.attrs?["decoration"]?.string }.count ?? 0)"
+        }
         m.flushAll()
         r["effectsPersisted"] = "\((try? m.vault.loadDoc(id)).flatMap { try? JSONEncoder().encode($0.content) }.map { String(decoding: $0, as: UTF8.self).components(separatedBy: "\"effect\"").count - 1 } ?? 0)"
         r["increaseContrast"] = NSWorkspace.shared.accessibilityDisplayShouldIncreaseContrast ? "on" : "off"
