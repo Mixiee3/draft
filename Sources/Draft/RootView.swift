@@ -47,6 +47,7 @@ struct RootView: View {
                                 if narrow { railOverlay.toggle() } else { model.setSettings { $0.railCollapsed = false } }
                             })
                             .frame(height: WindowChrome.height)
+                            .background(TitleBarArea())
                             .opacity(focus ? 0 : 1).allowsHitTesting(!focus)
                             .animation(nil, value: pinnedAssistant)
                             MainContent()
@@ -125,20 +126,54 @@ struct WindowChrome: NSViewRepresentable {
                          NSWindow.didEnterFullScreenNotification, NSWindow.didBecomeKeyNotification].map {
                 NotificationCenter.default.addObserver(forName: $0, object: w, queue: .main) { [weak w] _ in if let w { Self.placeButtons(w) } }
             }
+            // AppKit lays the title bar out again on its own (appearance changes, activation, layout
+            // passes) and puts it back to its native height, which pushed the buttons above the
+            // window. Re-apply whenever it does.
+            if let bar = w.standardWindowButton(.closeButton)?.superview, let container = bar.superview {
+                for v in [container, bar] {
+                    v.postsFrameChangedNotifications = true
+                    observers.append(NotificationCenter.default.addObserver(forName: NSView.frameDidChangeNotification, object: v, queue: .main) { [weak w] _ in
+                        if let w { Self.placeButtons(w) }
+                    })
+                }
+            }
             Self.placeButtons(w)
         }
+        override func viewDidChangeEffectiveAppearance() { if let w = window { Self.placeButtons(w) } }
         deinit { observers.forEach(NotificationCenter.default.removeObserver) }
 
         static func placeButtons(_ w: NSWindow) {
             guard !w.styleMask.contains(.fullScreen), let close = w.standardWindowButton(.closeButton),
                   let bar = close.superview, let container = bar.superview else { return }
             let h = WindowChrome.height
-            container.frame = NSRect(x: 0, y: w.frame.height - h, width: w.frame.width, height: h)
-            bar.frame = container.bounds
+            let target = NSRect(x: 0, y: w.frame.height - h, width: w.frame.width, height: h)
+            if container.frame != target { container.frame = target } // only when AppKit moved it, so the frame observer settles
+            if bar.frame != container.bounds { bar.frame = container.bounds }
             for (i, type) in [NSWindow.ButtonType.closeButton, .miniaturizeButton, .zoomButton].enumerated() {
                 guard let b = w.standardWindowButton(type) else { continue }
                 b.setFrameOrigin(NSPoint(x: 20 + CGFloat(i) * 20, y: ((h - b.frame.height) / 2).rounded()))
             }
+        }
+    }
+    func makeNSView(context: Context) -> NSView { V() }
+    func updateNSView(_ nsView: NSView, context: Context) {}
+}
+
+/// The empty parts of the tab row and sidebar header behave like a title bar: drag moves the window,
+/// a double click zooms or minimises as set in System Settings › Desktop & Dock. Controls in front of
+/// it keep their own clicks.
+struct TitleBarArea: NSViewRepresentable {
+    final class V: NSView {
+        override var mouseDownCanMoveWindow: Bool { true }
+        override func mouseDown(with e: NSEvent) {
+            guard let w = window else { return }
+            if e.clickCount == 2 {
+                switch UserDefaults.standard.string(forKey: "AppleActionOnDoubleClick") ?? "Maximize" {
+                case "Minimize": w.performMiniaturize(nil)
+                case "None": break
+                default: w.performZoom(nil)
+                }
+            } else { w.performDrag(with: e) }
         }
     }
     func makeNSView(context: Context) -> NSView { V() }
