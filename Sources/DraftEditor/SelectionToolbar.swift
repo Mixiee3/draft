@@ -159,13 +159,20 @@ public final class SelectionToolbar: NSView {
             }, isEnabled: current != nil || currentText != nil, title: "None"))
         case .effects:
             let current = c.value(of: .draftEffect)
+            let currentKind = current.flatMap(EffectSpec.init)?.kind
             items = [back(.main, "Format"), label("Effects")]
             for e in TextEffects.all where e.kind != "spectrum" {
-                items.append(Item(id: "fx" + e.kind, label: "\(e.name) effect: \(e.use)", symbol: nil, action: { [weak self] in self?.controller.setEffect(e.kind); self?.setMode(.main) }, isActive: current == e.kind, title: e.name))
+                // Picking the effect already on the text keeps its colours; another one starts fresh.
+                items.append(Item(id: "fx" + e.kind, label: "\(e.name) effect: \(e.use)", symbol: nil, action: { [weak self] in
+                    if currentKind != e.kind { self?.controller.setEffect(e.kind) }; self?.setMode(.main)
+                }, isActive: currentKind == e.kind, title: e.name))
             }
             items.append(Item(id: "fxspectrum", label: "Spectrum: a moving colour gradient for a title or label", symbol: "chevron.right", action: { [weak self] in self?.setMode(.spectrum) },
                               isActive: current.flatMap(Spectrum.init) != nil, title: "Spectrum"))
             items.append(sep(1))
+            items.append(Item(id: "fxcustom", label: "Customize colours and strength in the Format panel", symbol: "slider.horizontal.3", action: { [weak self] in
+                self?.controller.onCustomizeEffect?(); self?.setMode(.main)
+            }, isEnabled: current != nil, title: "Customize…"))
             items.append(Item(id: "fxnone", label: "Remove the effect", symbol: "nosign", action: { [weak self] in self?.controller.setEffect(nil); self?.setMode(.main) }, isEnabled: current != nil, title: "None"))
         case .spectrum:
             let currentSpec = c.value(of: .draftEffect).flatMap(Spectrum.init)

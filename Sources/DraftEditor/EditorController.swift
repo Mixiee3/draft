@@ -842,6 +842,36 @@ public final class EditorController: NSObject, NSTextStorageDelegate, NSTextView
     }
 
     /// A TextEffects kind on the selection (nil removes it). Color and contrast come from the theme.
+    /// Opens the effect editor (the app shows the Format panel's Text Effect section).
+    public var onCustomizeEffect: (() -> Void)?
+    private var lastEffectEdit: (key: NSAttributedString.Key, range: NSRange, at: Date)?
+    private var undoObservers: [NSObjectProtocol] = []
+    deinit { undoObservers.forEach(NotificationCenter.default.removeObserver) }
+
+    /// For live controls (sliders, colour wells): repeated changes to the same range within a moment
+    /// are one Undo step. The first change registers the undo with the original look.
+    public func setEffect(_ value: String?, coalescing: Bool) { setLive(.draftEffect, value, coalescing: coalescing) { self.setEffect(value) } }
+    public func setTextColor(_ hex: String?, coalescing: Bool) { setLive(.draftTextColor, hex, coalescing: coalescing) { self.setTextColor(hex) } }
+
+    private func setLive(_ key: NSAttributedString.Key, _ value: String?, coalescing: Bool, first: () -> Void) {
+        let sel = textView.selectedRange()
+        if undoObservers.isEmpty, let um = textView.undoManager {
+            // After Undo or Redo the next change starts a new step.
+            undoObservers = [Notification.Name.NSUndoManagerDidUndoChange, .NSUndoManagerDidRedoChange].map {
+                NotificationCenter.default.addObserver(forName: $0, object: um, queue: .main) { [weak self] _ in self?.lastEffectEdit = nil }
+            }
+        }
+        if coalescing, let last = lastEffectEdit, last.key == key, last.range == sel, Date().timeIntervalSince(last.at) < 1.2, sel.length > 0, let um = textView.undoManager {
+            um.disableUndoRegistration()
+            storage.beginEditing(); if let value { storage.addAttribute(key, value: value, range: sel) } else { storage.removeAttribute(key, range: sel) }; storage.endEditing()
+            um.enableUndoRegistration()
+            host?.editorDidChange(); toolbar.update()
+        } else {
+            first()
+        }
+        lastEffectEdit = coalescing ? (key, sel, Date()) : nil
+    }
+
     public func setEffect(_ kind: String?) {
         if let kind, kind.hasPrefix("spectrum") {
             // Spectrum is for a title or a short label: one paragraph, 200 characters at most.

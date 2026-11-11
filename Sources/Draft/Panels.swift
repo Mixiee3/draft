@@ -30,6 +30,7 @@ struct FormatPanel: View {
         ScrollView {
             VStack(alignment: .leading, spacing: 16) {
                 PanelHeader(title: "Format")
+                if let c { TextEffectEditor(c: c) }
                 PanelSection(title: "Titles") {
                     HStack(spacing: 6) {
                         chip("block.title", "Title", font: .system(size: DS.headline, weight: .bold))
