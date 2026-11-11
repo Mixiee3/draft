@@ -1,5 +1,12 @@
 # Draft AI integration handoff
 
+## Item 16: long proposals (11 November 2026)
+
+- The review sheet keeps a summary visible (changes, notes, removals, kinds) and groups changes by
+  note (or block) or by kind in collapsible sections; long groups show 10 cards with “Show N more”.
+  Removals are marked. Every change is still applied together, with one Undo; there is no per-card
+  skip yet, so propose separate requests when parts should be decided separately.
+
 ## Item 15: richer agent actions (11 November 2026)
 
 - 21 tools. New proposal tools: `draft_propose_rename_folder`, `draft_propose_create_style`,
