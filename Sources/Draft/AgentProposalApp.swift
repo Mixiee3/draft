@@ -420,36 +420,114 @@ struct AgentProposalReview: View {
     @Environment(\.tokens) var t
     let proposal: AgentProposal
 
+    /// One collapsible section of the review: a note, a block or a kind of operation.
+    struct Group: Identifiable {
+        var id: String
+        var title: String
+        var subtitle: String?
+        var cards: [(index: Int, edit: AgentEdit, docId: String)]
+        var destructive: Int { cards.filter { AgentProposal.destructiveActions.contains($0.edit.action) }.count }
+    }
+    /// Read once when the sheet opens, not on every redraw: block text per note.
+    @State private var blocksByDoc: [String: [String: String]] = [:]
+    @State private var grouping = "note"
+    @State private var collapsed: Set<String> = []
+    @State private var prepared = false
+    /// Groups whose full list of cards was asked for (long groups show their first 10).
+    @State private var showAll: Set<String> = []
+
     var structure: DraftTools.DocumentStructure? { ["new", "multi"].contains(proposal.documentId) ? nil : try? DraftTools(vaultURL: model.vault.dir).structure(proposal.documentId) }
 
+    var allCards: [(index: Int, edit: AgentEdit, docId: String)] {
+        if let parts = proposal.parts {
+            var i = 0
+            return parts.flatMap { p in p.edits.map { e in defer { i += 1 }; return (i, e, p.documentId) } }
+        }
+        return proposal.edits.enumerated().map { ($0.offset, $0.element, proposal.documentId) }
+    }
+
+    static func category(_ a: String) -> String {
+        if AgentProposal.destructiveActions.contains(a) { return "Removals" }
+        if a.hasPrefix("table_") { return "Table" }
+        if a.hasPrefix("collection_") { return "Collection" }
+        if ["replace_text", "append", "insert_blocks"].contains(a) { return "Text" }
+        if ["bold", "italic", "underline", "strike", "code", "highlight", "text_color", "text_effect", "link", "unlink", "link_note", "add_tag", "remove_tag"].contains(a) { return "Formatting" }
+        if ["document_style", "document_backdrop", "create_style"].contains(a) { return "Look" }
+        if ["insert_image", "insert_file", "image_caption", "image_alt"].contains(a) { return "Images" }
+        if ["task_checked", "task_due"].contains(a) { return "Tasks" }
+        return "Structure"
+    }
+
+    var groups: [Group] {
+        let cards = allCards
+        if grouping == "operation" {
+            var order: [String] = [], map: [String: [(index: Int, edit: AgentEdit, docId: String)]] = [:]
+            for c in cards { let k = Self.category(c.edit.action); if map[k] == nil { order.append(k) }; map[k, default: []].append(c) }
+            return order.map { Group(id: "op:" + $0, title: $0, subtitle: nil, cards: map[$0]!) }
+        }
+        if let parts = proposal.parts {
+            return parts.map { p in Group(id: "doc:" + p.documentId, title: p.documentTitle.isEmpty ? "Untitled" : p.documentTitle, subtitle: "Note", cards: cards.filter { $0.docId == p.documentId }) }
+        }
+        // One note: by block, in the order the changes come.
+        var order: [String] = [], map: [String: [(index: Int, edit: AgentEdit, docId: String)]] = [:]
+        for c in cards {
+            let k = c.edit.blockId == proposal.documentId || c.edit.blockId == "new" || c.edit.blockId == "none" ? "note" : c.edit.blockId
+            if map[k] == nil { order.append(k) }; map[k, default: []].append(c)
+        }
+        let blocks = blocksByDoc[proposal.documentId] ?? [:]
+        return order.map { k in
+            let text = k == "note" ? "The whole note" : (blocks[k].map { $0.isEmpty ? "Empty block" : "“\($0.prefix(60))\($0.count > 60 ? "…" : "")”" } ?? "Block \(k)")
+            return Group(id: "block:" + k, title: text, subtitle: k == "note" ? nil : "Block", cards: map[k]!)
+        }
+    }
+
+    /// The list takes what the window leaves, so the summary and buttons stay on screen.
+    var listHeight: CGFloat {
+        // The document window the sheet hangs from (the key window can be the sheet itself or nothing).
+        let h = NSApp.windows.first { $0.isVisible && $0.sheetParent == nil && !($0 is NSPanel) && $0.attachedSheet != nil }?.frame.height
+            ?? NSApp.windows.first { $0.isVisible && $0.sheetParent == nil && !($0 is NSPanel) }?.frame.height ?? 800
+        return max(140, min(520, h - 420)) // header, summary, footer and the sheet margins take ~400 pt
+    }
+
     var body: some View {
-        let blocks = Dictionary((structure?.blocks ?? []).map { ($0.id, $0.text) }, uniquingKeysWith: { a, _ in a }).merging(tableLabels(structure), uniquingKeysWith: { a, _ in a }).merging(collectionLabels(proposal.documentId), uniquingKeysWith: { a, _ in a })
+        let gs = groups
+        let total = allCards.count
+        let destructiveCount = allCards.filter { AgentProposal.destructiveActions.contains($0.edit.action) }.count
         VStack(alignment: .leading, spacing: DS.s3) {
             VStack(alignment: .leading, spacing: DS.s1) {
                 Text("Review proposed changes").font(.system(size: DS.title2, weight: .bold)).foregroundStyle(t.text).accessibilityAddTraits(.isHeader)
                 Text(proposal.documentId == "new" ? (proposal.edits.first?.action == "create_folder" ? "New folder" : "New note") : (proposal.documentTitle.isEmpty ? "Untitled" : proposal.documentTitle))
                     .font(.system(size: DS.headline, weight: .semibold)).foregroundStyle(t.text)
-                Text(proposal.instruction).font(.system(size: DS.body)).foregroundStyle(t.secondary).fixedSize(horizontal: false, vertical: true)
+                Text(proposal.instruction).font(.system(size: DS.body)).foregroundStyle(t.secondary).fixedSize(horizontal: false, vertical: true).lineLimit(4)
             }
             permissionBox
+            if total > 1 { summary(total: total, groups: gs, destructive: destructiveCount) }
             ScrollView {
-                VStack(alignment: .leading, spacing: DS.s2) {
-                    if let parts = proposal.parts {
-                        ForEach(Array(parts.enumerated()), id: \.offset) { _, part in
-                            let ps = try? DraftTools(vaultURL: model.vault.dir).structure(part.documentId)
-                            let pb = Dictionary((ps?.blocks ?? []).map { ($0.id, $0.text) }, uniquingKeysWith: { a, _ in a }).merging(tableLabels(ps), uniquingKeysWith: { a, _ in a })
-                            Text(part.documentTitle.isEmpty ? "Untitled" : part.documentTitle).font(.system(size: DS.footnote, weight: .semibold)).foregroundStyle(t.secondary)
-                                .textCase(.uppercase).tracking(0.5).padding(.top, DS.s1).accessibilityAddTraits(.isHeader)
-                            ForEach(tablePreviews(part.documentId, part.edits), id: \.0) { _, before, after in TablePreview(before: before, after: after) }
-                            ForEach(Array(part.edits.enumerated()), id: \.offset) { i, edit in card(i, edit, pb) }
+                LazyVStack(alignment: .leading, spacing: DS.s2) {
+                    ForEach(gs) { g in
+                        if gs.count > 1 { header(g) }
+                        if !collapsed.contains(g.id) {
+                            ForEach(tablePreviews(g.cards.first?.docId ?? proposal.documentId, g.cards.map(\.edit)), id: \.0) { _, before, after in TablePreview(before: before, after: after) }
+                            let shown = g.cards.count > 15 && !showAll.contains(g.id) ? Array(g.cards.prefix(10)) : g.cards
+                            ForEach(shown, id: \.index) { c in
+                                card(c.index, c.edit, blocksByDoc[c.docId] ?? [:])
+                                    .overlay(alignment: .leading) {
+                                        if AgentProposal.destructiveActions.contains(c.edit.action) {
+                                            RoundedRectangle(cornerRadius: 2).fill(Color(hex: "#d4544c")).frame(width: 3).padding(.vertical, 6).accessibilityHidden(true)
+                                        }
+                                    }
+                                    .accessibilityHint(AgentProposal.destructiveActions.contains(c.edit.action) ? "Removes or moves content" : "")
+                            }
+                            if shown.count < g.cards.count {
+                                Button("Show \(g.cards.count - shown.count) more change\(g.cards.count - shown.count == 1 ? "" : "s")") { showAll.insert(g.id) }
+                                    .buttonStyle(.link).font(.system(size: DS.footnote)).padding(.leading, DS.s1)
+                                    .accessibilityHint("Every change is applied either way; this only shows them")
+                            }
                         }
-                    } else {
-                        ForEach(tablePreviews(proposal.documentId, proposal.edits), id: \.0) { _, before, after in TablePreview(before: before, after: after) }
-                        ForEach(Array(proposal.edits.enumerated()), id: \.offset) { i, edit in card(i, edit, blocks) }
                     }
                 }
             }
-            .frame(maxHeight: 420)
+            .frame(maxHeight: listHeight)
             Text("Nothing changes until you apply. Draft checks that nothing changed since the agent read it, keeps a backup of any note it changes, and one Undo reverses the whole proposal.")
                 .font(.system(size: DS.footnote)).foregroundStyle(t.tertiary).fixedSize(horizontal: false, vertical: true)
             HStack(spacing: DS.s2) {
@@ -464,9 +542,77 @@ struct AgentProposalReview: View {
             }
         }
         .padding(DS.s5)
-        .frame(minWidth: 420, idealWidth: 600, maxWidth: 600)
+        .frame(minWidth: 380, idealWidth: 600, maxWidth: 600)
         .background(t.canvas)
         .interactiveDismissDisabled()
+        .onAppear(perform: prepare)
+    }
+
+    func prepare() {
+        guard !prepared else { return }
+        prepared = true
+        let tools = try? DraftTools(vaultURL: model.vault.dir)
+        let ids = proposal.parts?.map(\.documentId) ?? [proposal.documentId]
+        for id in ids where !["new", "none"].contains(id) {
+            let st = try? tools?.structure(id)
+            blocksByDoc[id] = Dictionary((st?.blocks ?? []).map { ($0.id, $0.text) }, uniquingKeysWith: { a, _ in a })
+                .merging(tableLabels(st), uniquingKeysWith: { a, _ in a }).merging(collectionLabels(id), uniquingKeysWith: { a, _ in a })
+        }
+        // Long proposals open with only the first section expanded.
+        if allCards.count > 20 { collapsed = Set(groups.dropFirst().map(\.id)) }
+    }
+
+    func summary(total: Int, groups: [Group], destructive: Int) -> some View {
+        let notes = proposal.parts?.count ?? 1
+        let kinds = Dictionary(grouping: allCards, by: { Self.category($0.edit.action) }).map { ($0.key, $0.value.count) }.sorted { $0.1 > $1.1 }
+        return VStack(alignment: .leading, spacing: DS.s2) {
+            HStack(spacing: DS.s2) {
+                Text("\(total) change\(total == 1 ? "" : "s")\(notes > 1 ? " in \(notes) notes" : "")").font(.system(size: DS.body, weight: .semibold)).foregroundStyle(t.text)
+                if destructive > 0 {
+                    Label("\(destructive) remove\(destructive == 1 ? "s" : "") or move\(destructive == 1 ? "s" : "") content", systemImage: "exclamationmark.triangle.fill")
+                        .font(.system(size: DS.footnote, weight: .semibold)).foregroundStyle(Color(hex: "#d4544c"))
+                }
+                Spacer()
+                if groups.count > 1 {
+                    Button(collapsed.isEmpty ? "Collapse All" : "Expand All") { collapsed = collapsed.isEmpty ? Set(groups.map(\.id)) : [] }
+                        .buttonStyle(.link).font(.system(size: DS.footnote))
+                }
+            }
+            HStack(spacing: DS.s2) {
+                DraftSegmented("Group changes by", selection: $grouping, options: [("note", proposal.parts == nil ? "Block" : "Note"), ("operation", "Kind")])
+                    .fixedSize()
+                    .onChange(of: grouping) { _, _ in collapsed = [] }
+                Text(kinds.prefix(3).map { "\($0.1) \($0.0.lowercased())" }.joined(separator: " · "))
+                    .font(.system(size: DS.footnote)).foregroundStyle(t.secondary).lineLimit(1).truncationMode(.tail)
+            }
+        }
+        .accessibilityElement(children: .contain)
+        .accessibilityLabel("Summary: \(total) changes\(destructive > 0 ? ", \(destructive) remove or move content" : "")")
+    }
+
+    func header(_ g: Group) -> some View {
+        let open = !collapsed.contains(g.id)
+        return Button {
+            if open { collapsed.insert(g.id) } else { collapsed.remove(g.id) }
+        } label: {
+            HStack(spacing: DS.s2) {
+                Image(systemName: "chevron.right").font(.system(size: DS.micro + 1, weight: .bold)).rotationEffect(.degrees(open ? 90 : 0)).foregroundStyle(t.secondary)
+                if let sub = g.subtitle { Text(sub.uppercased()).font(.system(size: DS.micro + 1, weight: .semibold)).tracking(0.5).foregroundStyle(t.tertiary) }
+                Text(g.title).font(.system(size: DS.footnote + 1, weight: .semibold)).foregroundStyle(t.text).lineLimit(1).truncationMode(.tail)
+                Spacer()
+                if g.destructive > 0 { Image(systemName: "exclamationmark.triangle.fill").font(.system(size: DS.micro + 1)).foregroundStyle(Color(hex: "#d4544c")) }
+                Text("\(g.cards.count)").font(.system(size: DS.footnote, weight: .medium, design: .rounded)).foregroundStyle(t.secondary)
+                    .padding(.horizontal, 6).padding(.vertical, 1).background(Capsule().fill(t.hover))
+            }
+            .padding(.vertical, 6).padding(.horizontal, DS.s1)
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .padding(.top, DS.s1)
+        .accessibilityLabel("\(g.subtitle.map { "\($0) " } ?? "")\(g.title), \(g.cards.count) change\(g.cards.count == 1 ? "" : "s")\(g.destructive > 0 ? ", \(g.destructive) remove or move content" : "")")
+        .accessibilityValue(open ? "expanded" : "collapsed")
+        .accessibilityAddTraits(.isHeader)
+        .accessibilityHint(open ? "Collapses this section" : "Expands this section")
     }
 
     /// View settings in words: “Sort: Pages ↓ · Filter: Status is not To do”.

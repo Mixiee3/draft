@@ -140,14 +140,17 @@ extension Automation {
         m.agentProposalTimer?.invalidate() // one proposal per run; the next stays queued
         let env = ProcessInfo.processInfo.environment
         if let theme = env["DRAFT_AGENT_THEME"] { m.setSettings { $0.theme = theme } }
-        if env["DRAFT_AGENT_NARROW"] != nil, let w = NSApp.windows.first(where: { $0.isVisible }) { w.setFrame(NSRect(x: 60, y: 60, width: 760, height: 720), display: true) }
+        if env["DRAFT_AGENT_NARROW"] != nil, let w = NSApp.windows.first(where: { $0.isVisible }) { w.setFrame(NSRect(x: 60, y: 60, width: 720, height: 640), display: true) }
         await wait(0.3)
         if let theme = env["DRAFT_AGENT_SETTINGS"], let w = NSApp.windows.first(where: { $0.isVisible }) {
             m.setSettings { $0.theme = theme }
             m.openView(ViewRef(kind: "settings", section: "agents")); await shot("agents-settings-\(theme)", w, settle: 0.8); return
         }
+        let opened = CACurrentMediaTime()
         m.showNextAgentProposal()
         guard let p = m.agentProposal else { r["error"] = "no pending proposal"; return }
+        for _ in 0..<200 { if NSApp.windows.first(where: { $0.isVisible && $0.attachedSheet != nil }) != nil { break }; await wait(0.01) }
+        r["sheetOpenMs"] = String(format: "%.0f", (CACurrentMediaTime() - opened) * 1000)
         await wait(0.8)
         if let name = ProcessInfo.processInfo.environment["DRAFT_AGENT_SHOT"], let w = NSApp.windows.first(where: { $0.isVisible }), let sheet = w.attachedSheet {
             await captureWindow(sheet, name)
