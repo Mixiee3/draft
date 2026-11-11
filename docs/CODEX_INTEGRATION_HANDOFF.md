@@ -1,5 +1,11 @@
 # Draft AI integration handoff
 
+## Effect colors (12 November 2026)
+
+- `text_effect` values may carry the effect's own colors: `glow?color=#ff4fd8&intensity=0.7`,
+  `outline?color=#3a5bd9`, `gradient?stops=#3a5bd9,#8b5cf6,#d6336c&angle=30`. The text color stays
+  `text_color`. Fill colors are kept readable by Draft; malformed values are refused by the server.
+
 ## Item 16: long proposals (11 November 2026)
 
 - The review sheet keeps a summary visible (changes, notes, removals, kinds) and groups changes by
