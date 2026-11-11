@@ -593,7 +593,7 @@ final class AppModel {
         setAppearance(id, d.appearance, previous: old)
     }
 
-    private var lastStyleUndo: (doc: String, kind: String, at: Date)?
+    var lastStyleUndo: (doc: String, kind: String, at: Date)?
 
     /// Which parts of the look a change touches (a drag repeats the same kind).
     static func changeKind(_ a: DocumentAppearance, _ b: DocumentAppearance) -> String {

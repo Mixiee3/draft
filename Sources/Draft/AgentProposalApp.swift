@@ -282,7 +282,19 @@ extension AppModel {
         do {
             for part in parts {
                 let c = editor(for: part.documentId).controller
-                try c.applyAgentEdits(part.edits)
+                if part.edits.count == 1, let e = part.edits.first, ["document_style", "document_backdrop"].contains(e.action) {
+                    // A look change, through the note's own undo so the rollback and one Undo cover it.
+                    let backdrop = e.action == "document_backdrop" ? try AgentEdit.backdrop(e.value) : nil
+                    guard e.action == "document_backdrop" || Styles.all.contains(where: { $0.id == e.value }) else { throw AgentEditError.invalid("The style \(e.value ?? "") is no longer available.") }
+                    c.undo.beginUndoGrouping()
+                    lastStyleUndo = nil
+                    updateAppearance(part.documentId) { a in
+                        if let backdrop { a.overrides.backdrop = backdrop } else { a.styleId = e.value ?? a.styleId; a.overrides = StyleOverrides() }
+                    }
+                    c.undo.endUndoGrouping()
+                } else {
+                    try c.applyAgentEdits(part.edits)
+                }
                 applied.append((part.documentId, c))
                 markDocDirty(part.documentId)
             }
