@@ -49,8 +49,8 @@ final class BackgroundTests: XCTestCase {
         XCTAssertEqual(dots.count, p.count, "every preset carries a dot layer")
         for d in dots {
             XCTAssertTrue(DotTexture.styles.contains(d.style), d.style)
-            XCTAssertTrue((12...48).contains(d.spacing)); XCTAssertTrue((0.5...3).contains(d.radius))
-            XCTAssertTrue((0.2...0.8).contains(d.opacity), "subtle but visible")
+            XCTAssertTrue((10...18).contains(d.spacing), "the scenes' ~13 pt lattice"); XCTAssertTrue((1.8...3).contains(d.radius), "the scenes' 2.6 pt dots")
+            XCTAssertTrue((0.35...0.65).contains(d.opacity), "subtle but visible")
         }
         XCTAssertEqual(Set(dots.map(\.style)), Set(DotTexture.styles), "every dot style is used")
         XCTAssertEqual(Set(dots).count, dots.count, "no two presets share a dot layer")
