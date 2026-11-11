@@ -207,13 +207,15 @@ public enum Styler {
             sh.shadowColor = (own ?? theme.accentColor).withAlphaComponent((theme.isDarkPage ? 0.95 : 0.75) * min(1, 0.4 + k))
             sh.shadowBlurRadius = 2 + 5 * k
         case "shadow":
-            sh.shadowColor = (own ?? .black).withAlphaComponent((theme.isDarkPage ? 0.7 : 0.35) * (0.4 + k))
-            sh.shadowBlurRadius = 1 + 2.5 * k; sh.shadowOffset = NSSize(width: 0, height: -(1 + 1.7 * k))
+            sh.shadowColor = (own ?? .black).withAlphaComponent(min(1, (theme.isDarkPage ? 1.0 : 0.35) * (0.4 + k)))
+            sh.shadowBlurRadius = (theme.isDarkPage ? 2 : 1) + 2.5 * k; sh.shadowOffset = NSSize(width: 0, height: -(1 + (theme.isDarkPage ? 2.4 : 1.7) * k))
         case "lift":
             sh.shadowColor = (own ?? NSColor(hex: d.end)).withAlphaComponent(0.2 + 0.25 * k)
             sh.shadowOffset = NSSize(width: 0.8 + 1.2 * k, height: -(0.8 + 1.2 * k))
         case "emboss":
-            sh.shadowColor = (own ?? .black).withAlphaComponent((theme.isDarkPage ? 0.7 : 0.4) * (0.4 + k))
+            // Pressed in: a dark edge above on light pages, a faint light edge below on dark ones
+            // (a dark edge can't show on a dark page).
+            sh.shadowColor = (own ?? (theme.isDarkPage ? .white : .black)).withAlphaComponent((theme.isDarkPage ? 0.3 : 0.4) * (0.4 + k))
             sh.shadowOffset = NSSize(width: 0, height: theme.isDarkPage ? -1 : 1)
         case "outline":
             // A colored rim around letters that keep the text color.
