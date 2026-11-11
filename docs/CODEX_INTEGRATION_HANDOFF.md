@@ -1,5 +1,17 @@
 # Draft AI integration handoff
 
+## Item 15: richer agent actions (11 November 2026)
+
+- 21 tools. New proposal tools: `draft_propose_rename_folder`, `draft_propose_create_style`,
+  `draft_propose_daily_append`. New note-edit actions: `link_note` (value = another note's id; text =
+  the phrase), `add_tag` / `remove_tag` (value = `#tag`), `task_due` (YYYY-MM-DD or none),
+  `image_caption` / `image_alt` (text), and `text_effect` `spectrum:<palette>:<speed>:<direction>`.
+- All go through the same review sheet (plain-language cards with before and after), stale-revision
+  check, backup, index update, Reject / Later and one-step Undo. Link targets are checked by the
+  server and again in Draft at Apply.
+- To give several notes a saved style, use `document_style` with its `u_…` id in
+  `draft_propose_multi_note_edits` (all or nothing).
+
 ## Styling through MCP (11 November 2026)
 
 - `draft_formatting_guide` now returns `text_effects` and `block_effects` (value, name, where it
@@ -20,7 +32,7 @@
 - Merged into `main`. Codex runs `~/Documents/Draft/scripts/draft-mcp.sh`; Claude Code has the same
   server registered for this project (`~/.claude.json`, project `/Users/danielpekarek/Documents/Draft`,
   server `draft`) and its CLI reports it connected.
-- DraftMCP tools (17 now; 14 at the time of this paragraph): `draft_list_spaces`, `draft_list_documents`, `draft_list_folders`,
+- DraftMCP tools (21 now; 14 at the time of this paragraph): `draft_list_spaces`, `draft_list_documents`, `draft_list_folders`,
   `draft_search`, `draft_read_document`, `draft_read_structure`, `draft_read_block`,
   `draft_document_revision`, `draft_formatting_guide`, `draft_propose_note_edits`,
   `draft_propose_create_document`, `draft_propose_rename_document`, `draft_propose_move_document`,

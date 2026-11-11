@@ -126,8 +126,9 @@ document files at any time. `parentDocId` marks a nested page.
 | `hardBreak` | — | — |
 
 Marks: `bold`, `italic`, `underline`, `strike`, `code`, `highlight {color}`, `textStyle {color}`,
-`effect {kind}` (`accent`/`gradient`/`glow`/`shadow`/`outline`/`lift`/`emboss`; colours come from the
-document style; readers that don't know it show plain text), `link {href}`, `docLink {docId, blockId?}`, `date {date}`.
+`effect {kind}` (`accent`/`gradient`/`glow`/`shadow`/`outline`/`lift`/`emboss`, or `spectrum` with
+`palette` (aurora/prism/sunset/ocean/neon), `speed` (still/slow/normal/fast) and `direction`
+(forward/backward); colours come from the document style; readers that don't know it show plain text), `link {href}`, `docLink {docId, blockId?}`, `date {date}`.
 
 - **`docLink`** marks the text of a link chip. `docId` is the linked document; `blockId`, when
   present, makes it a block reference. The text is a cached title: readers show the target's current
@@ -233,7 +234,9 @@ with `patternColor`/`patternOpacity`, and `grain` (0…0.2). All are optional; w
 `from`/`to` pair is used. Background presets are built-in style ids (for example
 `midnight-constellation`); a missing style id falls back to `paper`. Readers that don't know `field`
 can show the first stop's colour. `dots: {style, spacing, radius, opacity, color, fade?, focusX?, focusY?}`
-adds a dot layer (`style`: grid, radial, halftone, cluster, scatter, fade).
+adds a dot layer (`style`: grid, radial, halftone, cluster, scatter, fade): dots every `spacing` pt,
+up to `radius` pt, sized by distance inside soft discs around `focusX`/`focusY`; `fade` (0…1) sets how
+far the discs reach.
 
 `cover.crop` is the visible part of the original image, normalized to 0…1 of its width and height
 (absent: a 3:1 band centered on `focalY`). `cover.ratio` is the user's choice (`original`, `16:9`,

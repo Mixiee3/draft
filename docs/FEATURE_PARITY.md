@@ -320,4 +320,7 @@ Last updated: v0.4 shipped (native macOS) — 2026‑11‑08.
 | ST3 | Gradient editor UI | verified | 0.7 | Stops, angle, focal point, reset, one Undo per drag, contrast warning (`GradientEditTests`, `styling-shots`) |
 | ST4 | Text effects (accent, gradient, glow, shadow, outline, lift, emboss) | verified | 0.7 | ≥ 4.5:1 by construction, Increase Contrast fallback, export, MCP (`TextEffectTests`, `mcp-test.sh`) |
 | ST5 | Block effects (gradient, glass, glow, accent; accent heading underline) | verified | 0.7 | Ids and content unchanged, one Undo, export, MCP (`BlockEffectTests`, `mcp-test.sh`) |
-| ST6 | Dot textures on presets | verified | 0.7 | Six styles, distinct per preset, exported (`BackgroundTests`, 96 captures) |
+| ST6 | Dot textures on presets | verified | 0.7 | Scene-style halftone lattice, six styles, distinct per preset, in the visible margins, exported (`BackgroundTests`, captures compared with the original scenes) |
+| ST7 | Spectrum (moving gradient) text | verified | 0.7 | Five palettes, speed, direction; still for Reduce Motion, solid for Increase Contrast, ≥ 4.5:1, still gradient in exports (`SpectrumTests`) |
+| ST8 | Window chrome | verified | 0.7 | Window buttons inside the window and centred on the tab row in 13 states; empty title row drags and double-click zooms (`nav-test.sh` chrome check) |
+| AG15 | Richer agent actions (links to notes, tags, due dates, image text, folders, styles, daily note) | verified | 0.7 | `RicherAgentActionTests`, `mcp-test.sh` 123/123 |
