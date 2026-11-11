@@ -46,6 +46,7 @@ enum Automation {
             case "audit-shots": await auditShots()
             case "nav-test": await navTest()
             case "backgrounds-shots": await backgroundShots()
+            case "styling-shots": await stylingShots()
             case "audit-motion": await auditMotion()
             case "audit-frames": await auditFrames()
             case "ux-perf": await uxPerf()

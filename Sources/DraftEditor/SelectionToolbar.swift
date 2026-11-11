@@ -25,7 +25,7 @@ public enum DraftPalette {
 public final class SelectionToolbar: NSView {
     public override func resetCursorRects() { addCursorRect(bounds, cursor: .arrow) }
     public override func cursorUpdate(with event: NSEvent) { NSCursor.arrow.set() }
-    public enum Mode { case main, palette, link }
+    public enum Mode { case main, palette, effects, link }
     struct Item {
         var id: String
         var label: String
@@ -109,6 +109,7 @@ public final class SelectionToolbar: NSView {
                     if let last = DraftPalette.highlights.first?.1 { self?.controller.setHighlight(self?.controller.value(of: .draftHighlight) != nil ? nil : (self?.controller.lastColor?.kind == "highlight" ? self?.controller.lastColor?.hex : last)) }
                 }, isActive: hl != nil, isEnabled: !code),
                 Item(id: "palette", label: "Colors", symbol: "chevron.down", width: 20, action: { [weak self] in self?.setMode(.palette) }, isEnabled: !code),
+                Item(id: "effects", label: "Text effects", symbol: "sparkles", action: { [weak self] in self?.setMode(.effects) }, isActive: c.value(of: .draftEffect) != nil, isEnabled: !code),
                 Item(id: "sep1", label: "", symbol: nil, width: 9, isSeparator: true),
                 Item(id: "bold", label: "Bold (⌘B)", symbol: "bold", action: { c.toggleMark(.bold) }, isActive: c.isMarkActive(.bold), isEnabled: !code),
                 Item(id: "italic", label: "Italic (⌘I)", symbol: "italic", action: { c.toggleMark(.italic) }, isActive: c.isMarkActive(.italic), isEnabled: !code),
@@ -131,6 +132,13 @@ public final class SelectionToolbar: NSView {
             items.append(Item(id: "sepp", label: "", symbol: nil, width: 9, isSeparator: true))
             for (name, hex) in DraftPalette.textColors {
                 items.append(Item(id: "t" + hex, label: "Text \(name)", symbol: nil, swatch: hex, swatchIsText: true, width: 26, action: { [weak self] in self?.controller.setTextColor(hex); self?.setMode(.main) }, isActive: currentText == hex))
+            }
+        case .effects:
+            let current = c.value(of: .draftEffect)
+            let symbols = ["accent": "paintbrush.pointed", "gradient": "paintpalette", "glow": "sun.max", "shadow": "shadow", "outline": "character", "lift": "square.stack.3d.up", "emboss": "seal"]
+            items = [Item(id: "fxnone", label: "No effect", symbol: "nosign", width: 30, action: { [weak self] in self?.controller.setEffect(nil); self?.setMode(.main) }, isActive: current == nil)]
+            for e in TextEffects.all {
+                items.append(Item(id: "fx" + e.kind, label: e.name, symbol: symbols[e.kind] ?? "sparkles", action: { [weak self] in self?.controller.setEffect(e.kind); self?.setMode(.main) }, isActive: current == e.kind))
             }
         case .link:
             let has = c.value(of: .draftLink) != nil
@@ -189,7 +197,7 @@ public final class SelectionToolbar: NSView {
             hide(); return
         }
         if superview !== controller.overlayHost { controller.overlayHost?.addSubview(self) }
-        if !isVisible || mode != .main && (window?.firstResponder === controller.textView) && mode != .palette { mode = .main; linkField.isHidden = true }
+        if !isVisible || mode != .main && (window?.firstResponder === controller.textView) && mode != .palette && mode != .effects { mode = .main; linkField.isHidden = true }
         buildItems()
         position()
         if !isVisible {

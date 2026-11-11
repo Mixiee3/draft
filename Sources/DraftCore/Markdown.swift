@@ -43,6 +43,7 @@ public enum Markdown {
                     if m.attrs?["color"]?.string != nil { lossy.insert("Highlight colors are exported as plain ==highlight==.") }
                 case "textStyle":
                     if m.attrs?["color"]?.string != nil { lossy.insert("Text colors are not representable in Markdown.") }
+                case "effect": lossy.insert("Text effects are not representable in Markdown.")
                 default: break
                 }
             }

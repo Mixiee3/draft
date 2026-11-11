@@ -131,6 +131,7 @@ public enum Converter {
             case "code": attrs[.draftCode] = true
             case "highlight": attrs[.draftHighlight] = m.attrs?["color"]?.string ?? "#fff3a3"
             case "textStyle": if let c = m.attrs?["color"]?.string { attrs[.draftTextColor] = c }
+            case "effect": if let k = m.attrs?["kind"]?.string, TextEffects.kinds.contains(k) { attrs[.draftEffect] = k }
             case "link": if let h = m.attrs?["href"]?.string { attrs[.draftLink] = h }
             case "docLink": if let d = m.attrs?["docId"]?.string { attrs[.draftDocLink] = d + (m.attrs?["blockId"]?.string.map { "#" + $0 } ?? "") }
             case "date": if let d = m.attrs?["date"]?.string { attrs[.draftDate] = d }
@@ -180,6 +181,7 @@ public enum Converter {
             if attrs[.draftCode] != nil { marks.append(Mark("code")) }
             if let c = attrs[.draftHighlight] as? String { marks.append(Mark("highlight", attrs: ["color": .string(c)])) }
             if let c = attrs[.draftTextColor] as? String { marks.append(Mark("textStyle", attrs: ["color": .string(c)])) }
+            if let k = attrs[.draftEffect] as? String { marks.append(Mark("effect", attrs: ["kind": .string(k)])) }
             if let h = attrs[.draftLink] as? String { marks.append(Mark("link", attrs: ["href": .string(h)])) }
             if let v = attrs[.draftDocLink] as? String {
                 let parts = v.split(separator: "#", maxSplits: 1).map(String.init)

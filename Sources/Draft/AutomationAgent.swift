@@ -206,6 +206,8 @@ extension Automation {
             r[prefix + "Marks"] = marks.sorted().joined(separator: ",")
             r[prefix + "Tasks"] = doc.map { tasksOf($0.content).map { "\($0.checked)" }.joined(separator: ",") } ?? ""
             r[prefix + "Style"] = doc?.appearance.styleId ?? ""
+            r[prefix + "Backdrop"] = doc?.appearance.overrides.backdrop?.colorStops.map(\.color).joined(separator: ",") ?? ""
+            r[prefix + "Decorations"] = doc?.content.content?.compactMap { $0.attrs?["decoration"]?.string }.joined(separator: ",") ?? ""
             r[prefix + "Table"] = doc?.content.content?.first { $0.type == "table" }.map { Tables.text($0).map { $0.joined(separator: "|") }.joined(separator: " / ") } ?? ""
             r[prefix + "Collection"] = doc?.content.content?.first { $0.type == "collection" }.flatMap { CollectionData(node: $0) }.map { d in
                 d.items.map { it in ([m.docTitle(it.docId)] + d.fields.map { d.display(it, $0.id, title: { m.docTitle($0) }) }).joined(separator: "|") }.joined(separator: " / ")

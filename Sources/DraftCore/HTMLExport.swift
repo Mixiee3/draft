@@ -67,8 +67,21 @@ public enum HTMLExport {
             }
         }
         let line = "color-mix(in srgb, \(text) 14%, transparent)"
+        let fx = TextEffects.colors(accent: accent, text: text, page: page)
+        let dark = ColorMath.isDark(page)
         return """
-        :root{--page:\(page);--text:\(text);--accent:\(accent);--soft:color-mix(in srgb, \(text) 58%, transparent);--line:\(line)}
+        :root{--page:\(page);--text:\(text);--accent:\(accent);--soft:color-mix(in srgb, \(text) 58%, transparent);--line:\(line);--fx1:\(fx.start);--fx2:\(fx.end)}
+        .fx-accent,.fx-glow,.fx-lift{color:var(--fx1)}.fx-glow{text-shadow:0 0 5px color-mix(in srgb, var(--accent) \(dark ? 95 : 75)%, transparent)}
+        .fx-shadow{text-shadow:0 2px 2.5px rgba(0,0,0,\(dark ? ".7" : ".35"))}.fx-lift{text-shadow:1.5px 1.5px 0 color-mix(in srgb, var(--fx2) 35%, transparent)}
+        .fx-emboss{text-shadow:0 \(dark ? "1px 0 rgba(0,0,0,.7)" : "-1px 0 rgba(0,0,0,.4)")}.fx-outline{-webkit-text-stroke:1px color-mix(in srgb, var(--fx1) 55%, transparent);paint-order:stroke fill}
+        .fx-gradient{background:linear-gradient(90deg,var(--fx1),var(--fx2));-webkit-background-clip:text;background-clip:text;color:transparent}
+        [data-deco]{--t:var(--tint,var(--accent));border-radius:10px;padding:6px 12px;margin:.5em 0}[data-deco=focus]{border-radius:0;padding:0 0 0 14px;border-left:3px solid var(--t)}
+        [data-deco=block]{background:color-mix(in srgb, var(--tint,var(--text)) \(dark ? 28 : 12)%, transparent)}[data-deco=gradient]{background:linear-gradient(90deg,color-mix(in srgb, var(--t) \(dark ? 32 : 20)%, transparent),color-mix(in srgb, var(--t) \(dark ? 6 : 3)%, transparent))}
+        [data-deco=glass]{background:rgba(255,255,255,\(dark ? ".07" : ".6"));border:.5px solid \(dark ? "rgba(255,255,255,.18)" : "color-mix(in srgb, var(--text) 10%, transparent)");backdrop-filter:blur(12px)}
+        [data-deco=glow]{background:color-mix(in srgb, var(--t) \(dark ? 16 : 7)%, transparent);border:1px solid color-mix(in srgb, var(--t) 60%, transparent);box-shadow:0 0 10px color-mix(in srgb, var(--t) \(dark ? 70 : 45)%, transparent)}
+        [data-deco=accent]{background:color-mix(in srgb, var(--t) \(dark ? 8 : 4)%, transparent);border:1.5px solid var(--t)}h1[data-deco=accent],h2[data-deco=accent],h3[data-deco=accent],h4[data-deco=accent]{background:none;border:0;border-radius:0;padding:0 0 6px;background:linear-gradient(var(--t),var(--t)) left bottom/64px 3px no-repeat}
+        @media (prefers-contrast: more){[data-deco]{box-shadow:none!important;backdrop-filter:none!important}[data-deco=gradient]{background:color-mix(in srgb, var(--t) 12%, transparent)}}
+        @media (prefers-contrast: more){.fx{text-shadow:none!important;-webkit-text-stroke:0!important}}
         *{box-sizing:border-box}html{background:\(bg)}body{margin:0;padding:48px 16px;font:17px/1.6 \(fontStack(useStyle ? t.font : "system"));color:var(--text);-webkit-print-color-adjust:exact;print-color-adjust:exact}
         main{max-width:760px;margin:0 auto;background:var(--page);border-radius:\(useStyle ? 22 : 0)px;padding:56px 64px;\(useStyle && t.backdrop.kind != "none" ? "box-shadow:0 8px 40px rgba(0,0,0,.12);" : "")}
         h1.doc-title{font-size:38px;line-height:1.15;margin:0 0 8px}hr.title{border:0;border-top:1px solid var(--line);margin:18px 0 26px}
@@ -144,6 +157,7 @@ public enum HTMLExport {
                     case "code": s = "<code>\(s)</code>"
                     case "highlight": s = "<mark style='background:\(attr(m.attrs?["color"]?.string ?? "#fff3a3"))'>\(s)</mark>"
                     case "textStyle": if let c = m.attrs?["color"]?.string { s = "<span style='color:\(attr(c))'>\(s)</span>" }
+                    case "effect": if let k = m.attrs?["kind"]?.string, TextEffects.kinds.contains(k), !marks.contains(where: { $0.type == "highlight" }) { s = "<span class='fx fx-\(k)'>\(s)</span>" }
                     default: break
                     }
                 }
@@ -160,9 +174,10 @@ public enum HTMLExport {
             var css: [String] = []
             if let f = n.attrs?["font"]?.string { css.append("font-family:\(fontStack(f))") }
             if let a = n.attrs?["textAlign"]?.string, a != "left" { css.append("text-align:\(a)") }
-            if let c = n.attrs?["blockColor"]?.string { css.append("background:\(c)22;border-radius:8px;padding:4px 10px") }
+            let deco = n.attrs?["decoration"]?.string.flatMap { BlockEffects.kinds.contains($0) ? $0 : nil }
+            if let c = n.attrs?["blockColor"]?.string { css.append(deco.map { _ in "--tint:\(c)" } ?? "background:\(c)22;border-radius:8px;padding:4px 10px") }
             let id = n.id.map { " id='\(attr($0))'" } ?? ""
-            return id + (css.isEmpty ? "" : " style='\(css.joined(separator: ";"))'")
+            return id + (deco.map { " data-deco='\($0)'" } ?? "") + (css.isEmpty ? "" : " style='\(css.joined(separator: ";"))'")
         }
 
         func items(_ list: Node) -> String {

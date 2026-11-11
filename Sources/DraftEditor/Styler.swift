@@ -21,6 +21,10 @@ public struct EditorTheme: Equatable {
     public var tagColors: [String: String] = [:]
     /// Settings → Advanced → Dates: chips (true) or plain text.
     public var dateChips = true
+    /// Increase Contrast: effects keep their readable color but drop glow, shadow and outline.
+    public var plainEffects = false
+    /// Reduce Transparency: glass becomes a solid card.
+    public var solidGlass = false
 
     public init() {}
     public func tagColor(_ tag: String) -> NSColor { NSColor(hex: tagColors[tag.lowercased()] ?? Tags.defaultColor(tag)) }
@@ -99,7 +103,9 @@ public enum Styler {
         if b.kind == .callout { indent = 42; tail = -14; p.paragraphSpacingBefore = 6 }
         if b.kind == .code { indent = 16; tail = -16; p.paragraphSpacingBefore = 4; p.paragraphSpacing = 12 }
         if b.decoration == "focus" { indent += 16 }
-        if b.kind != .callout && (b.decoration == "block" || (b.blockColor != nil && b.kind != .code)) { indent += 12; tail = -12 }
+        if b.kind != .callout && (BlockEffects.isBoxed(b.decoration, heading: b.kind == .heading) || (b.blockColor != nil && b.kind != .code)) { indent += 12; tail = -12 }
+        // Outlined effects need room so stacked boxes never touch (Block merges on purpose).
+        if b.kind != .callout, b.decoration != "block", BlockEffects.isBoxed(b.decoration, heading: b.kind == .heading) { p.paragraphSpacingBefore += 6; p.paragraphSpacing += 6 }
         p.firstLineHeadIndent = indent
         p.headIndent = indent
         p.tailIndent = tail
@@ -160,8 +166,16 @@ public enum Styler {
                     if missing { attrs[.strikethroughStyle] = NSUnderlineStyle.single.rawValue }
                     attrs[.underlineStyle] = nil
                 }
+                if let k = a[.draftEffect] as? String, a[.draftHighlight] == nil { applyEffect(k, &attrs, &fg, theme: theme) }
                 attrs[.foregroundColor] = fg
                 s.setAttributes(attrs, range: r)
+                if a[.draftEffect] as? String == "gradient", a[.draftHighlight] == nil, r.length > 1 {
+                    let c = TextEffects.colors(accent: theme.accent, text: theme.textColor, page: theme.pageColor)
+                    // shortcut: per-character colors, not a true pattern gradient; fine for short phrases.
+                    for i in 0..<r.length {
+                        s.addAttribute(.foregroundColor, value: NSColor(hex: Backdrop.mix(c.start, c.end, Double(i) / Double(r.length - 1))), range: NSRange(location: r.location + i, length: 1))
+                    }
+                }
             }
             if b.kind != .code, ns.range(of: "#", options: .literal, range: pr).location != NSNotFound {
                 for t in Tags.find(in: ns.substring(with: pr), rules: theme.tagRules) {
@@ -175,6 +189,22 @@ public enum Styler {
             loc = NSMaxRange(pr)
             if pr.length == 0 { break }
         }
+    }
+
+    static func applyEffect(_ k: String, _ attrs: inout [NSAttributedString.Key: Any], _ fg: inout NSColor, theme: EditorTheme) {
+        let c = TextEffects.colors(accent: theme.accent, text: theme.textColor, page: theme.pageColor)
+        if k == "accent" || k == "glow" || k == "lift" { fg = NSColor(hex: c.start) }
+        guard !theme.plainEffects else { return }
+        let sh = NSShadow()
+        switch k {
+        case "glow": sh.shadowColor = theme.accentColor.withAlphaComponent(theme.isDarkPage ? 0.95 : 0.75); sh.shadowBlurRadius = 5
+        case "shadow": sh.shadowColor = NSColor.black.withAlphaComponent(theme.isDarkPage ? 0.7 : 0.35); sh.shadowBlurRadius = 2.5; sh.shadowOffset = NSSize(width: 0, height: -2)
+        case "lift": sh.shadowColor = NSColor(hex: c.end).withAlphaComponent(0.35); sh.shadowOffset = NSSize(width: 1.5, height: -1.5)
+        case "emboss": sh.shadowColor = theme.isDarkPage ? NSColor.black.withAlphaComponent(0.7) : NSColor.black.withAlphaComponent(0.4); sh.shadowOffset = NSSize(width: 0, height: theme.isDarkPage ? -1 : 1)
+        case "outline": attrs[.strokeWidth] = -4.0; attrs[.strokeColor] = NSColor(hex: c.start).withAlphaComponent(0.55); return
+        default: return
+        }
+        attrs[.shadow] = sh
     }
 
     /// Typing attributes for an empty paragraph / caret position.

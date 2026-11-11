@@ -97,9 +97,11 @@ struct FormatPanel: View {
                     }
                 }
                 PanelSection(title: "Decorations") {
-                    HStack(spacing: 6) {
-                        ChipButton(title: "Focus", symbol: "rectangle.lefthalf.inset.filled", isActive: block?.decoration == "focus") { c?.setDecoration("focus"); model.editorTick &+= 1 }
-                        ChipButton(title: "Block", symbol: "rectangle.fill", isActive: block?.decoration == "block") { c?.setDecoration("block"); model.editorTick &+= 1 }
+                    LazyVGrid(columns: [GridItem(.flexible(), spacing: 6), GridItem(.flexible(), spacing: 6)], spacing: 6) {
+                        ForEach([("focus", "rectangle.lefthalf.inset.filled"), ("block", "rectangle.fill"), ("gradient", "square.bottomhalf.filled"), ("glass", "rectangle.on.rectangle"), ("glow", "rays"), ("accent", "rectangle.dashed")], id: \.0) { k, sym in
+                            ChipButton(title: BlockEffects.all.first { $0.kind == k }?.name ?? k, symbol: sym, isActive: block?.decoration == k, isEnabled: !(block?.kind.isAttachment ?? true), height: 30) { c?.setDecoration(k); model.editorTick &+= 1 }
+                                .help(BlockEffects.all.first { $0.kind == k }?.use ?? "")
+                        }
                     }
                 }
                 PanelSection(title: "Color") {
@@ -303,7 +305,7 @@ struct BackdropPicker: View {
     var body: some View {
         let tok = model.docs[docId].map { Styles.resolve($0.appearance) } ?? Styles.builtIn[0].tokens
         let b = tok.backdrop
-        VStack(alignment: .leading, spacing: 12) {
+        ScrollView { VStack(alignment: .leading, spacing: 12) {
             Text("Backdrop").font(.system(size: DS.headline, weight: .semibold))
             DraftSegmented("Backdrop kind", selection: $tab, symbols: [("none", "None", "nosign"), ("solid", "Solid", "square.fill"), ("gradient", "Gradient", "square.bottomhalf.filled"), ("image", "Image", "photo")], stretch: true, iconOnly: true)
             switch tab {
@@ -312,17 +314,9 @@ struct BackdropPicker: View {
             case "solid":
                 grid(solidBackdrops.map { hex in AnyView(Color(hex: hex)) }, selected: solidBackdrops.firstIndex { b.kind == "solid" && b.color == $0 }) { i in set(Backdrop(kind: "solid", color: solidBackdrops[i])) }
             case "gradient":
-                if b.kind == "gradient" {
-                    HStack {
-                        ColorPicker("Start", selection: colorBinding(b.from ?? "#ffd36e") { v in var n = b; n.from = v; set(n) }, supportsOpacity: false)
-                        ColorPicker("End", selection: colorBinding(b.to ?? "#ff8a5c") { v in var n = b; n.to = v; set(n) }, supportsOpacity: false)
-                    }.font(.system(size: DS.footnote))
-                    HStack {
-                        Text("Direction").font(.system(size: DS.footnote))
-                        Slider(value: Binding(get: { b.angle ?? 135 }, set: { v in var n = b; n.angle = v.rounded(); set(n) }), in: 0...360, step: 5)
-                            .accessibilityLabel("Gradient direction").accessibilityValue("\(Int(b.angle ?? 135)) degrees")
-                        Text("\(Int(b.angle ?? 135))°").font(.system(size: DS.caption, design: .monospaced)).frame(width: 36, alignment: .trailing)
-                    }
+                if b.kind == "gradient" || b.kind == "field" {
+                    GradientEditor(backdrop: b, original: Styles.style(model.docs[docId]?.appearance.styleId ?? "paper").tokens.backdrop, set: set, reset: { model.updateAppearance(docId) { $0.overrides.backdrop = nil } })
+                    Divider()
                 }
                 grid(gradientBackdrops.map { g in AnyView(LinearGradient(colors: [Color(hex: g.0), Color(hex: g.1)], startPoint: .topLeading, endPoint: .bottomTrailing)) },
                      selected: gradientBackdrops.firstIndex { b.kind == "gradient" && b.from == $0.0 }) { i in set(Backdrop(kind: "gradient", from: gradientBackdrops[i].0, to: gradientBackdrops[i].1, angle: 135)) }
@@ -349,8 +343,8 @@ struct BackdropPicker: View {
                 DraftSegmented("Effect", selection: Binding(get: { b.effect ?? "immersive" }, set: { v in var n = b; n.effect = v; set(n) }), options: [("immersive", "Immersive"), ("faded", "Faded")], stretch: true)
             }
         }
-        .padding(16).frame(width: 270)
-        .onAppear { tab = b.kind == "none" ? "none" : b.kind }
+        .padding(16) }.frame(width: 290).frame(maxHeight: 640)
+        .onAppear { tab = b.kind == "field" ? "gradient" : b.kind }
     }
 
     func set(_ b: Backdrop) { model.updateAppearance(docId) { $0.overrides.backdrop = b } }
@@ -371,6 +365,82 @@ struct BackdropPicker: View {
                 }.buttonStyle(.plain).accessibilityLabel(names.map { "Backdrop \($0[i])" } ?? "Backdrop option \(i + 1)").help(names?[i] ?? "")
             }
         }
+    }
+}
+
+/// Stops, direction or focal point of a gradient or field backdrop. Every change goes through
+/// `updateAppearance`, which folds a drag into one Undo step.
+struct GradientEditor: View {
+    @Environment(\.tokens) var t
+    var backdrop: Backdrop
+    var original: Backdrop
+    var set: (Backdrop) -> Void
+    var reset: () -> Void
+
+    var body: some View {
+        let b = backdrop
+        let stops = b.editableStops
+        VStack(alignment: .leading, spacing: 10) {
+            BackdropView(backdrop: b).frame(height: 54).clipShape(RoundedRectangle(cornerRadius: DS.rControl, style: .continuous))
+                .overlay(RoundedRectangle(cornerRadius: DS.rControl, style: .continuous).strokeBorder(t.line, lineWidth: 1))
+                .accessibilityLabel("Gradient preview, \(stops.count) colors")
+            DraftSegmented("Gradient type", selection: Binding(get: { b.radial == true ? "radial" : "linear" }, set: { v in edit { $0.radial = v == "radial" ? true : nil } }), options: [("linear", "Linear"), ("radial", "Radial")], stretch: true)
+            if b.radial == true {
+                slider("Focus across", value: b.focusX ?? 0.5, in: 0...1, step: 0.05, shown: "\(Int((b.focusX ?? 0.5) * 100))%") { v in edit { $0.focusX = v } }
+                slider("Focus down", value: b.focusY ?? 0.5, in: 0...1, step: 0.05, shown: "\(Int((b.focusY ?? 0.5) * 100))%") { v in edit { $0.focusY = v } }
+            } else {
+                slider("Angle", value: b.angle ?? 135, in: 0...360, step: 5, shown: "\(Int(b.angle ?? 135))°") { v in edit { $0.angle = v.rounded() } }
+            }
+            Text("COLORS").font(.system(size: DS.caption, weight: .semibold)).foregroundStyle(.secondary)
+            ForEach(Array(stops.enumerated()), id: \.offset) { i, s in
+                VStack(alignment: .leading, spacing: 4) {
+                    HStack(spacing: 4) {
+                        ColorPicker("Color \(i + 1)", selection: colorBinding(s.color) { hex in edit { $0.updateStop(i) { $0.color = hex } } }, supportsOpacity: false)
+                            .labelsHidden().accessibilityLabel("Color \(i + 1) of \(stops.count)")
+                        Text("Color \(i + 1)").font(.system(size: DS.footnote))
+                        Spacer()
+                        IconButton(symbol: "chevron.up", label: "Move color \(i + 1) earlier", size: 22) { edit { $0.moveStop(i, by: -1) } }.disabled(i == 0)
+                        IconButton(symbol: "chevron.down", label: "Move color \(i + 1) later", size: 22) { edit { $0.moveStop(i, by: 1) } }.disabled(i == stops.count - 1)
+                        IconButton(symbol: "minus.circle", label: "Remove color \(i + 1)", size: 22) { edit { $0.removeStop(i) } }.disabled(stops.count <= 2)
+                    }
+                    slider("Position", value: s.at, in: 0...1, step: 0.01, shown: "\(Int(s.at * 100))%", label: "Color \(i + 1) position") { v in edit { $0.updateStop(i) { $0.at = v } } }
+                    slider("Opacity", value: s.opacity ?? 1, in: 0...1, step: 0.05, shown: "\(Int((s.opacity ?? 1) * 100))%", label: "Color \(i + 1) opacity") { v in edit { $0.updateStop(i) { $0.opacity = v } } }
+                }
+            }
+            HStack(spacing: 8) {
+                ChipButton(title: "Add Color", symbol: "plus", isEnabled: stops.count < 8, height: 28) { edit { $0.addStop() } }
+                ChipButton(title: "Reset", symbol: "arrow.counterclockwise", isEnabled: b != original, height: 28) { reset() }
+                    .help("Back to the style's own backdrop")
+            }
+            if b.stopContrast > 4.5 {
+                HStack(alignment: .top, spacing: 6) {
+                    Image(systemName: "exclamationmark.triangle.fill").foregroundStyle(.orange).accessibilityHidden(true)
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text(String(format: "Strong contrast across the backdrop (%.1f:1). Toolbar buttons can be hard to see on part of it.", b.stopContrast))
+                            .font(.system(size: DS.footnote)).fixedSize(horizontal: false, vertical: true)
+                        Button("Use Calmer Colors") { set(b.softened()) }.buttonStyle(.link).font(.system(size: DS.footnote))
+                    }
+                }
+            }
+        }
+    }
+
+    func edit(_ f: (inout Backdrop) -> Void) { var n = backdrop; n.stops = n.editableStops; n.from = nil; n.to = nil; f(&n); set(n) }
+
+    func slider(_ title: String, value: Double, in r: ClosedRange<Double>, step: Double, shown: String, label: String? = nil, _ write: @escaping (Double) -> Void) -> some View {
+        HStack(spacing: 6) {
+            Text(title).font(.system(size: DS.footnote)).frame(width: 78, alignment: .leading)
+            Slider(value: Binding(get: { value }, set: { write(($0 / step).rounded() * step) }), in: r).controlSize(.small)
+                .accessibilityLabel(label ?? title).accessibilityValue(shown)
+            Text(shown).font(.system(size: DS.caption, design: .monospaced)).frame(width: 38, alignment: .trailing)
+        }
+    }
+
+    func colorBinding(_ hex: String, _ write: @escaping (String) -> Void) -> Binding<Color> {
+        Binding(get: { Color(hex: hex) }, set: { c in
+            let n = NSColor(c).usingColorSpace(.sRGB) ?? .black
+            write(ColorMath.hex(Double(n.redComponent), Double(n.greenComponent), Double(n.blueComponent)))
+        })
     }
 }
 

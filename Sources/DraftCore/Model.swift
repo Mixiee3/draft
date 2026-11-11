@@ -330,12 +330,14 @@ public struct Backdrop: Codable, Hashable, Sendable {
     public var patternOpacity: Double?
     /// 0…0.2
     public var grain: Double?
+    /// A visible dot layer of its own (separate from `pattern`), like the dots of Draft's scenes.
+    public var dots: DotTexture?
     public init(kind: String, color: String? = nil, from: String? = nil, to: String? = nil, angle: Double? = nil, image: String? = nil, blur: Bool? = nil, effect: String? = nil,
                 stops: [ColorStop]? = nil, radial: Bool? = nil, focusX: Double? = nil, focusY: Double? = nil, glow: String? = nil, glowX: Double? = nil, glowY: Double? = nil,
-                pattern: String? = nil, patternColor: String? = nil, patternOpacity: Double? = nil, grain: Double? = nil) {
+                pattern: String? = nil, patternColor: String? = nil, patternOpacity: Double? = nil, grain: Double? = nil, dots: DotTexture? = nil) {
         self.kind = kind; self.color = color; self.from = from; self.to = to; self.angle = angle; self.image = image; self.blur = blur; self.effect = effect
         self.stops = stops; self.radial = radial; self.focusX = focusX; self.focusY = focusY; self.glow = glow; self.glowX = glowX; self.glowY = glowY
-        self.pattern = pattern; self.patternColor = patternColor; self.patternOpacity = patternOpacity; self.grain = grain
+        self.pattern = pattern; self.patternColor = patternColor; self.patternOpacity = patternOpacity; self.grain = grain; self.dots = dots
     }
 
     /// Stops to draw: `stops`, else from/to, else the solid colour.
@@ -347,6 +349,26 @@ public struct Backdrop: Codable, Hashable, Sendable {
     }
 
     public static let patterns = ["dots", "grid", "halftone", "waves", "hills", "stars", "blobs", "rings", "diagonal", "window"]
+}
+
+/// Dots over a background. `style`: grid (even rows), radial (rings around the focus), halftone
+/// (size falls off across the page), cluster (soft groups), scatter (random), fade (grid that fades
+/// away from the focus).
+public struct DotTexture: Codable, Hashable, Sendable {
+    public var style: String
+    public var spacing: Double
+    public var radius: Double
+    public var opacity: Double
+    public var color: String
+    /// 0 = even everywhere, 1 = strongest at the focus, gone at the far edge.
+    public var fade: Double?
+    /// Where the dots gather or fade from (0…1); defaults to the top right.
+    public var focusX: Double?
+    public var focusY: Double?
+    public init(_ style: String, spacing: Double, radius: Double, opacity: Double, color: String, fade: Double? = nil, focusX: Double? = nil, focusY: Double? = nil) {
+        self.style = style; self.spacing = spacing; self.radius = radius; self.opacity = opacity; self.color = color; self.fade = fade; self.focusX = focusX; self.focusY = focusY
+    }
+    public static let styles = ["grid", "radial", "halftone", "cluster", "scatter", "fade"]
 }
 
 public struct ColorStop: Codable, Hashable, Sendable {

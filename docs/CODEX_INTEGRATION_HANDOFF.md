@@ -1,5 +1,20 @@
 # Draft AI integration handoff
 
+## Styling through MCP (11 November 2026)
+
+- `draft_formatting_guide` now returns `text_effects` and `block_effects` (value, name, where it
+  fits) next to `background_styles`, plus restraint rules: at most one text effect per section, at
+  most two block effects per note, never a highlight and an effect on the same words.
+- New note-edit actions, all reviewed and undone in one step: `text_effect` on an exact phrase
+  (`accent`, `gradient`, `glow`, `shadow`, `outline`, `lift`, `emboss`, or `none`); `decoration` now
+  also takes `gradient`, `glass`, `glow`, `accent`; `document_backdrop` (standalone, `block_id` =
+  document id) takes a JSON gradient — 2–8 `#RRGGBB` stops, positions/opacity/focus 0…1, angle
+  0…360 — and is refused when its colours jump more than 4.5:1. It can never point at an image.
+- The review sheet shows the note's look before and after for `document_style` and
+  `document_backdrop`. Saved styles apply with `document_style` and their `u_…` id.
+- Effect colours come from the note's style and are always readable (≥ 4.5:1), so an agent can't
+  pick an unreadable effect colour; it can only pick the kind.
+
 ## Status on 8 November 2026 (v0.7 MCP operations)
 
 - Merged into `main`. Codex runs `~/Documents/Draft/scripts/draft-mcp.sh`; Claude Code has the same
