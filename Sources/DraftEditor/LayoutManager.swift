@@ -233,7 +233,7 @@ public final class DraftLayoutManager: NSLayoutManager {
 
     /// Whole runs of spectrum text being drawn (view coordinates), so one gradient spans each run
     /// even when it is drawn in pieces.
-    private var spectrumRuns: [(rect: NSRect, colors: [NSColor], spec: Spectrum)] = []
+    private var spectrumRuns: [(rect: NSRect, colors: [NSColor], spec: Spectrum, angle: Double)] = []
 
     /// Spectrum runs that intersect `visible`, as view rects (used by the editor's clock).
     public func spectrumRects(in visible: NSRect, origin: NSPoint) -> [NSRect] {
@@ -257,24 +257,24 @@ public final class DraftLayoutManager: NSLayoutManager {
             var full = NSRange()
             _ = s.attribute(.draftEffect, at: r.location, longestEffectiveRange: &full, in: NSRange(location: 0, length: s.length))
             let rect = boundingRect(forGlyphRange: glyphRange(forCharacterRange: full, actualCharacterRange: nil), in: tc).offsetBy(dx: origin.x, dy: origin.y)
-            spectrumRuns.append((rect, colors, sp))
+            spectrumRuns.append((rect, colors, sp, gradientAngle(v)))
         }
     }
 
     /// Effects drawn as one gradient across the run: Spectrum (moving) and Gradient (still, accent
     /// to a darker or lighter tone).
     func gradientRun(_ v: String) -> ([NSColor], Spectrum)? {
-        if let sp = Spectrum(v) { return (sp.colors(page: theme.pageColor).map { NSColor(hex: $0) }, sp) }
-        if v == "gradient" {
-            let c = TextEffects.colors(accent: theme.accent, text: theme.textColor, page: theme.pageColor)
-            return ([NSColor(hex: c.start), NSColor(hex: c.end)], Spectrum(palette: "aurora", speed: "still"))
-        }
-        return nil
+        guard let e = EffectSpec(v), ["gradient", "spectrum"].contains(e.kind) else { return nil }
+        let colors = e.fillColors(accent: theme.accent, text: theme.textColor, page: theme.pageColor).map { NSColor(hex: $0) }
+        return (colors, e.spectrum ?? Spectrum(palette: "aurora", speed: "still"))
     }
+
+    /// Gradient direction for a run: Spectrum runs left to right; Gradient follows its angle.
+    func gradientAngle(_ v: String) -> Double { EffectSpec(v)?.spectrum == nil ? (EffectSpec(v)?.angle ?? 0) : 0 }
 
     public override func showCGGlyphs(_ glyphs: UnsafePointer<CGGlyph>, positions: UnsafePointer<CGPoint>, count: Int, font: NSFont,
                                       textMatrix: CGAffineTransform, attributes: [NSAttributedString.Key: Any] = [:], in ctx: CGContext) {
-        guard count > 0, let v = attributes[.draftEffect] as? String, v == "gradient" || Spectrum(v) != nil,
+        guard count > 0, let v = attributes[.draftEffect] as? String, let ek = EffectSpec(v)?.kind, ek == "gradient" || ek == "spectrum",
               let run = spectrumRuns.first(where: { $0.rect.insetBy(dx: -4, dy: -4).contains(positions[0]) }) else {
             super.showCGGlyphs(glyphs, positions: positions, count: count, font: font, textMatrix: textMatrix, attributes: attributes, in: ctx)
             return
@@ -283,10 +283,16 @@ public final class DraftLayoutManager: NSLayoutManager {
         ctx.textMatrix = textMatrix
         ctx.setTextDrawingMode(.clip)
         CTFontDrawGlyphs(font, glyphs, positions, count, ctx)
-        // One gradient period spans the whole run; it slides by the phase, so the colours move
+        // One gradient period spans the whole run; it slides by the phase, so the colors move
         // without any layout or attribute change.
         let colors = run.colors.map(\.cgColor) as CFArray
-        if let g = CGGradient(colorsSpace: CGColorSpace(name: CGColorSpace.sRGB), colors: colors, locations: nil) {
+        if let g = CGGradient(colorsSpace: CGColorSpace(name: CGColorSpace.sRGB), colors: colors, locations: nil), run.spec.seconds == 0 {
+            // A still gradient: once across the run, along its angle (0° left to right, 90° top to bottom; flipped view).
+            let r = run.rect, a = run.angle * .pi / 180
+            let half = (abs(cos(a)) * r.width + abs(sin(a)) * r.height) / 2
+            let c = CGPoint(x: r.midX, y: r.midY), d = CGPoint(x: cos(a) * half, y: sin(a) * half)
+            ctx.drawLinearGradient(g, start: CGPoint(x: c.x - d.x, y: c.y - d.y), end: CGPoint(x: c.x + d.x, y: c.y + d.y), options: [.drawsBeforeStartLocation, .drawsAfterEndLocation])
+        } else if let g = CGGradient(colorsSpace: CGColorSpace(name: CGColorSpace.sRGB), colors: colors, locations: nil) {
             let w = max(run.rect.width, 40)
             var phase = run.spec.seconds > 0 && theme.animateEffects ? (CACurrentMediaTime() / run.spec.seconds).truncatingRemainder(dividingBy: 1) : 0
             if run.spec.direction == "backward" { phase = -phase }

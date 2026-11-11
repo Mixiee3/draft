@@ -157,3 +157,15 @@ final class SpectrumCoreTests: XCTestCase {
         XCTAssertThrowsError(try AgentEdit(action: "text_effect", blockId: "b_h", value: "spectrum:rainbow", text: "Title").validate())
     }
 }
+
+final class EffectExportTests: XCTestCase {
+    func testColorsAndStrengthExport() {
+        var doc = DocFile.empty(id: "d_ex", title: "E", styleId: "paper")
+        doc.content = Node("doc", content: [Node("paragraph", attrs: ["id": "b_p"], content: [
+            .text("Glow", marks: [EffectSpec("glow?color=#ff4fd8&intensity=0.80")!.mark]),
+            .text("Grad", marks: [EffectSpec("gradient?stops=#3a5bd9,#d6336c&angle=30")!.mark])])])
+        let html = HTMLExport.render(doc, tokens: Styles.builtIn[0].tokens, HTMLExport.Options(useStyle: true, today: "2026-11-11")).html
+        XCTAssertTrue(html.contains("class='fx fx-glow' style='--fxc:#ff4fd8;--fxi:0.80'"), html)
+        XCTAssertTrue(html.contains("linear-gradient(120deg,#3a5bd9,#d6336c)"), "stops and direction")
+    }
+}

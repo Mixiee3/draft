@@ -34,7 +34,7 @@ extension Automation {
             return hs.count >= 2 ? hs.sorted()[hs.count / 2] : nil
         }
     }
-    /// Mean absolute RGB change per pixel (0…255), any colour.
+    /// Mean absolute RGB change per pixel (0…255), any color.
     static func rgbDiff(_ a: CGImage, _ b: CGImage) -> Double {
         guard a.width == b.width, a.height == b.height else { return -1 }
         func px(_ img: CGImage) -> [UInt8] {
@@ -120,6 +120,12 @@ extension Automation {
             c.textView.setSelectedRange(NSRange(location: ns().length, length: 0)); await wait(0.5)
         }
         await probe("heading", "Northern lights")
+        // The palette chosen in the bar (Aurora: teal, blue, violet) is the one on screen.
+        if let img = grab(rect(of: "Northern lights"), in: c.textView) {
+            let hs = hueColumns(img).compactMap { $0 }
+            let inside = hs.filter { (0.40...0.80).contains($0) }.count
+            r["auroraHues"] = String(format: "%d of %d columns teal-to-violet", inside, hs.count)
+        }
         await probe("middle", "glowing phrase")
         await probe("long", "A longer phrase that keeps going across most of the line")
         await shot(read ? "spectrum-after-relaunch" : "spectrum-editor", w, settle: 0.2)

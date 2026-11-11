@@ -441,6 +441,7 @@ final class AppModel {
         let host = EditorHostAdapter(model: self, docId: id)
         hosts[id] = host
         view.controller.host = host
+        view.controller.onCustomizeEffect = { [weak self] in withAnimation(Motion.panel(self?.library.settings.reduceMotion ?? false)) { self?.panel = .format } }
         view.topInset = 58
         view.theme = theme(for: doc)
         view.controller.load(doc.content)

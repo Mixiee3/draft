@@ -12,7 +12,7 @@ public enum TextEffects {
         ("outline", "Outline", "large display words only; avoid in body text"),
         ("lift", "Lift", "a playful 3D offset for a title or label"),
         ("emboss", "Emboss", "a quiet pressed-in look for labels and captions"),
-        ("spectrum", "Spectrum", "a slowly moving multi-colour gradient for one title or decorative label (value spectrum:<aurora|prism|sunset|ocean|neon>:<still|slow|normal|fast>:<forward|backward>); never body text, at most one per note, 200 characters at most"),
+        ("spectrum", "Spectrum", "a slowly moving multi-color gradient for one title or decorative label (value spectrum:<aurora|prism|sunset|ocean|neon>:<still|slow|normal|fast>:<forward|backward>); never body text, at most one per note, 200 characters at most"),
     ]
     public static let kinds = all.map(\.kind)
 
@@ -81,7 +81,7 @@ public struct Spectrum: Hashable, Sendable {
     public var seconds: Double { Self.speeds.first { $0.id == speed }?.seconds ?? 0 }
     public var name: String { Self.palettes.first { $0.id == palette }?.name ?? "Spectrum" }
 
-    /// The palette with every colour pushed to 4.5:1 on the page (darker on light pages, lighter on
+    /// The palette with every color pushed to 4.5:1 on the page (darker on light pages, lighter on
     /// dark ones), so the text stays readable at every moment of the animation.
     public func colors(page: String) -> [String] {
         (Self.palettes.first { $0.id == palette }?.colors ?? Self.palettes[0].colors).map { ColorMath.readable($0, on: page).hex }
@@ -90,5 +90,101 @@ public struct Spectrum: Hashable, Sendable {
 
 public extension TextEffects {
     /// A stored effect value is a plain kind or a spectrum value.
-    static func isValid(_ value: String) -> Bool { kinds.contains(value) || Spectrum(value) != nil }
+    static func isValid(_ value: String) -> Bool { EffectSpec(value) != nil }
+}
+
+/// One text effect with its own colors, kept apart from the text color (the `textStyle` mark).
+/// Stored in the editor as `kind`, `kind?color=#rrggbb&stops=#a,#b&angle=30&intensity=0.6`, or a
+/// Spectrum value; stored in documents as the `effect` mark's attributes.
+public struct EffectSpec: Hashable, Sendable {
+    public var kind: String
+    /// Glow, shadow, outline, lift and emboss color; for accent, the letters' color.
+    public var color: String?
+    /// Gradient colors, 2–5, left to right along `angle`.
+    public var stops: [String]?
+    /// Gradient direction in degrees (0 = left to right, 90 = top to bottom).
+    public var angle: Double?
+    /// 0…1: how strong the glow, shadow, outline, lift or emboss is.
+    public var intensity: Double?
+    public var spectrum: Spectrum?
+
+    public init(kind: String, color: String? = nil, stops: [String]? = nil, angle: Double? = nil, intensity: Double? = nil) {
+        self.kind = kind; self.color = color; self.stops = stops; self.angle = angle; self.intensity = intensity
+    }
+
+    static func hex(_ s: String) -> Bool { s.range(of: "^#[0-9A-Fa-f]{6}$", options: .regularExpression) != nil }
+
+    public init?(_ value: String) {
+        if let sp = Spectrum(value) { kind = "spectrum"; spectrum = sp; return }
+        let parts = value.split(separator: "?", maxSplits: 1).map(String.init)
+        guard let k = parts.first, TextEffects.kinds.contains(k), k != "spectrum" else { return nil }
+        kind = k
+        guard parts.count == 2 else { return }
+        for pair in parts[1].split(separator: "&") {
+            let kv = pair.split(separator: "=", maxSplits: 1).map(String.init)
+            guard kv.count == 2 else { return nil }
+            switch kv[0] {
+            case "color": guard Self.hex(kv[1]) else { return nil }; color = kv[1].lowercased()
+            case "stops":
+                let s = kv[1].split(separator: ",").map { String($0).lowercased() }
+                guard (2...5).contains(s.count), s.allSatisfy(Self.hex) else { return nil }; stops = s
+            case "angle": guard let a = Double(kv[1]), (0...360).contains(a) else { return nil }; angle = a
+            case "intensity": guard let i = Double(kv[1]), (0...1).contains(i) else { return nil }; intensity = i
+            default: return nil
+            }
+        }
+    }
+
+    public var value: String {
+        if let sp = spectrum { return sp.value }
+        var q: [String] = []
+        if let c = color { q.append("color=\(c)") }
+        if let s = stops { q.append("stops=\(s.joined(separator: ","))") }
+        if let a = angle { q.append("angle=\(Int(a))") }
+        if let i = intensity { q.append("intensity=\(String(format: "%.2f", i))") }
+        return q.isEmpty ? kind : kind + "?" + q.joined(separator: "&")
+    }
+
+    /// The document mark for this effect.
+    public var mark: Mark {
+        if let sp = spectrum { return Mark("effect", attrs: ["kind": "spectrum", "palette": .string(sp.palette), "speed": .string(sp.speed), "direction": .string(sp.direction)]) }
+        var a: [String: JSONValue] = ["kind": .string(kind)]
+        if let c = color { a["color"] = .string(c) }
+        if let s = stops { a["stops"] = .string(s.joined(separator: ",")) }
+        if let x = angle { a["angle"] = .number(x) }
+        if let i = intensity { a["intensity"] = .number(i) }
+        return Mark("effect", attrs: a)
+    }
+
+    /// From a document mark; unknown or malformed parts are dropped, never trusted.
+    public init?(mark m: Mark) {
+        guard m.type == "effect", let k = m.attrs?["kind"]?.string else { return nil }
+        if k == "spectrum" {
+            guard let sp = Spectrum("spectrum:\(m.attrs?["palette"]?.string ?? "aurora"):\(m.attrs?["speed"]?.string ?? "slow"):\(m.attrs?["direction"]?.string ?? "forward")") ?? Spectrum("spectrum") else { return nil }
+            self.init(kind: "spectrum"); spectrum = sp; return
+        }
+        guard TextEffects.kinds.contains(k) else { return nil }
+        self.init(kind: k)
+        if let c = m.attrs?["color"]?.string, Self.hex(c) { color = c.lowercased() }
+        if let s = m.attrs?["stops"]?.string?.split(separator: ",").map({ String($0).lowercased() }), (2...5).contains(s.count), s.allSatisfy(Self.hex) { stops = s }
+        if let a = m.attrs?["angle"]?.double, (0...360).contains(a) { angle = a }
+        if let i = m.attrs?["intensity"]?.double, (0...1).contains(i) { intensity = i }
+    }
+
+    /// Colors that fill the letters (accent, gradient stops), each pushed to 4.5:1 on the page.
+    public func fillColors(accent: String, text: String, page: String) -> [String] {
+        let d = TextEffects.colors(accent: accent, text: text, page: page)
+        switch kind {
+        case "accent": return [ColorMath.readable(color ?? accent, on: page).hex]
+        case "gradient": return (stops ?? [d.start, d.end]).map { ColorMath.readable($0, on: page).hex }
+        case "spectrum": return spectrum?.colors(page: page) ?? []
+        default: return []
+        }
+    }
+
+    /// True when a chosen fill color had to be darkened or lightened to stay readable.
+    public func adjustedForContrast(page: String) -> Bool {
+        let chosen = kind == "accent" ? [color].compactMap { $0 } : kind == "gradient" ? (stops ?? []) : []
+        return chosen.contains { ColorMath.contrast($0, page) < 4.5 }
+    }
 }

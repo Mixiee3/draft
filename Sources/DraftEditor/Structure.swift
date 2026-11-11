@@ -55,7 +55,7 @@ final class TableCell: BlockCell {
         line.setFill()
         for c in 1..<max(1, Tables.columnCount(node)) { NSRect(x: cellRect(row: 0, column: c, in: f).minX, y: f.minY, width: 1, height: f.height).fill() }
         for (r, row) in rows.enumerated() {
-            // Drawing text resets the fill colour, so set it again for each line.
+            // Drawing text resets the fill color, so set it again for each line.
             if r > 0 { line.setFill(); NSRect(x: f.minX, y: f.minY + CGFloat(r) * Self.rowHeight + 0.5, width: f.width, height: 1).fill() }
             for c in row.indices {
                 let cr = cellRect(row: r, column: c, in: f)

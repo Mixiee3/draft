@@ -173,8 +173,10 @@ struct TitleBarArea: NSViewRepresentable {
                 case "None": break
                 default: w.performZoom(nil)
                 }
-            } else { w.performDrag(with: e) }
+            }
         }
+        // The drag starts once the mouse moves, so a double click is never swallowed by a drag loop.
+        override func mouseDragged(with e: NSEvent) { window?.performDrag(with: e) }
     }
     func makeNSView(context: Context) -> NSView { V() }
     func updateNSView(_ nsView: NSView, context: Context) {}

@@ -124,7 +124,7 @@ extension Automation {
         key(53, "\u{1b}"); await wait(0.3)
         r["escapeReturnsToText"] = w.firstResponder === c.textView ? "yes" : "no"
         r["selectionKeptAfterEscape"] = c.textView.selectedRange().length == 17 ? "yes" : "no"
-        // Colours keep the selection.
+        // Colors keep the selection.
         c.toolbar.setMode(.palette); await record("colors")
         if let wp = c.toolbar.center(ofItem: "h#") { post(.leftMouseDown, wp); post(.leftMouseUp, wp); await wait(0.4) }
         r["highlightApplied"] = c.value(of: .draftHighlight) != nil ? "yes" : "no"

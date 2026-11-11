@@ -340,7 +340,7 @@ public struct Backdrop: Codable, Hashable, Sendable {
         self.pattern = pattern; self.patternColor = patternColor; self.patternOpacity = patternOpacity; self.grain = grain; self.dots = dots
     }
 
-    /// Stops to draw: `stops`, else from/to, else the solid colour.
+    /// Stops to draw: `stops`, else from/to, else the solid color.
     public var colorStops: [ColorStop] {
         if let s = stops, s.count >= 2 { return s.sorted { $0.at < $1.at } }
         if kind == "gradient" || kind == "field" { return [ColorStop(from ?? "#ffd36e", at: 0), ColorStop(to ?? "#ff8a5c", at: 1)] }

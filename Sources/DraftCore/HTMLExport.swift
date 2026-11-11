@@ -71,9 +71,9 @@ public enum HTMLExport {
         let dark = ColorMath.isDark(page)
         return """
         :root{--page:\(page);--text:\(text);--accent:\(accent);--soft:color-mix(in srgb, \(text) 58%, transparent);--line:\(line);--fx1:\(fx.start);--fx2:\(fx.end)}
-        .fx-accent,.fx-glow,.fx-lift{color:var(--fx1)}.fx-glow{text-shadow:0 0 5px color-mix(in srgb, var(--accent) \(dark ? 95 : 75)%, transparent)}
-        .fx-shadow{text-shadow:0 2px 2.5px rgba(0,0,0,\(dark ? ".7" : ".35"))}.fx-lift{text-shadow:1.5px 1.5px 0 color-mix(in srgb, var(--fx2) 35%, transparent)}
-        .fx-emboss{text-shadow:0 \(dark ? "1px 0 rgba(0,0,0,.7)" : "-1px 0 rgba(0,0,0,.4)")}.fx-outline{-webkit-text-stroke:1px color-mix(in srgb, var(--fx1) 55%, transparent);paint-order:stroke fill}
+        .fx-accent,.fx-glow,.fx-lift{color:var(--fx1)}.fx-glow{text-shadow:0 0 calc(2px + 5px * var(--fxi,.6)) color-mix(in srgb, var(--fxc,var(--accent)) \(dark ? 95 : 75)%, transparent)}
+        .fx-shadow{text-shadow:0 calc(1px + 1.7px * var(--fxi,.6)) calc(1px + 2.5px * var(--fxi,.6)) color-mix(in srgb, var(--fxc,#000) \(dark ? 70 : 35)%, transparent)}.fx-lift{text-shadow:calc(.8px + 1.2px * var(--fxi,.6)) calc(.8px + 1.2px * var(--fxi,.6)) 0 color-mix(in srgb, var(--fxc,var(--fx2)) 35%, transparent)}
+        .fx-emboss{text-shadow:0 \(dark ? "1px" : "-1px") 0 color-mix(in srgb, var(--fxc,\(dark ? "#fff" : "#000")) \(dark ? 30 : 40)%, transparent)}.fx-outline{-webkit-text-stroke:calc(.5px + 1.5px * var(--fxi,.6)) color-mix(in srgb, var(--fxc,var(--accent)) 85%, transparent);paint-order:stroke fill}
         .fx-gradient{background:linear-gradient(90deg,var(--fx1),var(--fx2));-webkit-background-clip:text;background-clip:text;color:transparent}
         .fx-spectrum{-webkit-background-clip:text;background-clip:text;color:transparent}@media (prefers-contrast: more){.fx-spectrum{background:none!important;color:var(--fx1)}}
         [data-deco]{--t:var(--tint,var(--accent));border-radius:10px;padding:6px 12px;margin:.5em 0}[data-deco=focus]{border-radius:0;padding:0 0 0 14px;border-left:3px solid var(--t)}
@@ -159,13 +159,18 @@ public enum HTMLExport {
                     case "highlight": s = "<mark style='background:\(attr(m.attrs?["color"]?.string ?? "#fff3a3"))'>\(s)</mark>"
                     case "textStyle": if let c = m.attrs?["color"]?.string { s = "<span style='color:\(attr(c))'>\(s)</span>" }
                     case "effect":
-                        guard let k = m.attrs?["kind"]?.string, TextEffects.kinds.contains(k), !marks.contains(where: { $0.type == "highlight" }) else { break }
-                        if k == "spectrum" {
+                        guard let e = EffectSpec(mark: m), !marks.contains(where: { $0.type == "highlight" }) else { break }
+                        let page = o.useStyle ? tokens.pageColor : "#ffffff"
+                        var css: [String] = []
+                        if ["gradient", "spectrum"].contains(e.kind) {
                             // A still gradient: exports never animate.
-                            let sp = Spectrum(palette: m.attrs?["palette"]?.string ?? "aurora", speed: "still")
-                            let c = (Spectrum(sp.value) ?? Spectrum()).colors(page: o.useStyle ? tokens.pageColor : "#ffffff")
-                            s = "<span class='fx fx-spectrum' style='background-image:linear-gradient(90deg,\(c.joined(separator: ","))'>\(s)</span>"
-                        } else { s = "<span class='fx fx-\(k)'>\(s)</span>" }
+                            let c = e.fillColors(accent: o.useStyle ? tokens.accent : "#3a5bd9", text: o.useStyle ? tokens.textColor : "#1f1f1f", page: page)
+                            css.append("background-image:linear-gradient(\(Int((e.angle ?? 0) + 90))deg,\(c.joined(separator: ",")))")
+                        }
+                        if e.kind == "accent" { css.append("color:\(e.fillColors(accent: o.useStyle ? tokens.accent : "#3a5bd9", text: "", page: page)[0])") }
+                        if let c = e.color, e.kind != "accent" { css.append("--fxc:\(c)") }
+                        if let i = e.intensity { css.append("--fxi:\(String(format: "%.2f", i))") }
+                        s = "<span class='fx fx-\(e.kind)'\(css.isEmpty ? "" : " style='\(css.joined(separator: ";"))'")>\(s)</span>"
                     default: break
                     }
                 }

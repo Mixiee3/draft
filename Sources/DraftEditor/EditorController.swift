@@ -317,11 +317,26 @@ public final class EditorController: NSObject, NSTextStorageDelegate, NSTextView
 
     /// Keep the caret out of collapsed toggles.
     public func textView(_ textView: NSTextView, willChangeSelectionFromCharacterRange old: NSRange, toCharacterRange new: NSRange) -> NSRange {
+        if new.length > 0, let e = NSApp.currentEvent, [.leftMouseDown, .leftMouseDragged, .leftMouseUp].contains(e.type) { return trimmedMouseSelection(new) }
         guard new.length == 0, hiddenChars.contains(new.location) else { return new }
         if new.location > old.location, let after = (new.location..<storage.length).first(where: { !hiddenChars.contains($0) }) { return NSRange(location: after, length: 0) }
         var i = new.location
         while i > 0, hiddenChars.contains(i) { i -= 1 }
         return NSRange(location: contentRange(paragraphRange(at: i)).upperBound, length: 0)
+    }
+
+    /// A mouse selection (drag, double- or triple-click) that runs past the end of a line picks up
+    /// the paragraph break and any empty paragraphs after it, which TextKit then paints as a wide
+    /// band of selected "air". Those breaks are dropped so the selection, the highlight and any
+    /// format applied cover only the text. Keyboard extension is left alone (trimming it would stop
+    /// Shift-arrow from moving), and empty blocks are still selectable as blocks.
+    func trimmedMouseSelection(_ new: NSRange) -> NSRange {
+        guard !isBlockMode else { return new }
+        var r = new
+        let s = ns
+        while r.length > 1, NSMaxRange(r) <= s.length, s.character(at: NSMaxRange(r) - 1) == 10 { r.length -= 1 }
+        while r.length > 1, s.character(at: r.location) == 10 { r.location += 1; r.length -= 1 }
+        return r
     }
 
     public func textViewDidChangeSelection(_ notification: Notification) {
@@ -827,6 +842,36 @@ public final class EditorController: NSObject, NSTextStorageDelegate, NSTextView
     }
 
     /// A TextEffects kind on the selection (nil removes it). Color and contrast come from the theme.
+    /// Opens the effect editor (the app shows the Format panel's Text Effect section).
+    public var onCustomizeEffect: (() -> Void)?
+    private var lastEffectEdit: (key: NSAttributedString.Key, range: NSRange, at: Date)?
+    private var undoObservers: [NSObjectProtocol] = []
+    deinit { undoObservers.forEach(NotificationCenter.default.removeObserver) }
+
+    /// For live controls (sliders, color wells): repeated changes to the same range within a moment
+    /// are one Undo step. The first change registers the undo with the original look.
+    public func setEffect(_ value: String?, coalescing: Bool) { setLive(.draftEffect, value, coalescing: coalescing) { self.setEffect(value) } }
+    public func setTextColor(_ hex: String?, coalescing: Bool) { setLive(.draftTextColor, hex, coalescing: coalescing) { self.setTextColor(hex) } }
+
+    private func setLive(_ key: NSAttributedString.Key, _ value: String?, coalescing: Bool, first: () -> Void) {
+        let sel = textView.selectedRange()
+        if undoObservers.isEmpty, let um = textView.undoManager {
+            // After Undo or Redo the next change starts a new step.
+            undoObservers = [Notification.Name.NSUndoManagerDidUndoChange, .NSUndoManagerDidRedoChange].map {
+                NotificationCenter.default.addObserver(forName: $0, object: um, queue: .main) { [weak self] _ in self?.lastEffectEdit = nil }
+            }
+        }
+        if coalescing, let last = lastEffectEdit, last.key == key, last.range == sel, Date().timeIntervalSince(last.at) < 1.2, sel.length > 0, let um = textView.undoManager {
+            um.disableUndoRegistration()
+            storage.beginEditing(); if let value { storage.addAttribute(key, value: value, range: sel) } else { storage.removeAttribute(key, range: sel) }; storage.endEditing()
+            um.enableUndoRegistration()
+            host?.editorDidChange(); toolbar.update()
+        } else {
+            first()
+        }
+        lastEffectEdit = coalescing ? (key, sel, Date()) : nil
+    }
+
     public func setEffect(_ kind: String?) {
         if let kind, kind.hasPrefix("spectrum") {
             // Spectrum is for a title or a short label: one paragraph, 200 characters at most.

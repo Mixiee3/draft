@@ -8,7 +8,7 @@ final class DarkPaperTests: XCTestCase {
         XCTAssertEqual(Styles.forDisplay(a, dark: false), Styles.resolve(a))
     }
 
-    func testChosenColoursAndOtherStylesAreKept() {
+    func testChosenColorsAndOtherStylesAreKept() {
         var custom = DocumentAppearance(styleId: "paper")
         custom.overrides.pageColor = "#fff0f0"
         XCTAssertEqual(Styles.forDisplay(custom, dark: true), Styles.resolve(custom))

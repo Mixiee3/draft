@@ -227,7 +227,7 @@ extension Automation {
             await wait(1.2); await shot(p + "22-assistant-thinking", w, settle: 0)
             await untilIdle(a)
             await shot(p + "23-assistant-answer", w)
-            // Select answer text with a real drag, to see the selection colour.
+            // Select answer text with a real drag, to see the selection color.
             if let ans = find("Assistant answer", in: w.contentView!) ?? nil {
                 let r = ans.convert(ans.bounds, to: nil)
                 mouse(.leftMouseDown, NSPoint(x: r.minX + 4, y: r.maxY - 8), in: w)

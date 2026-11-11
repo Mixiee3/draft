@@ -168,7 +168,7 @@ public enum Styler {
                     if missing { attrs[.strikethroughStyle] = NSUnderlineStyle.single.rawValue }
                     attrs[.underlineStyle] = nil
                 }
-                if let k = a[.draftEffect] as? String, a[.draftHighlight] == nil { applyEffect(k, &attrs, &fg, theme: theme) }
+                if let k = a[.draftEffect] as? String, a[.draftHighlight] == nil { applyEffect(k, &attrs, &fg, hasTextColor: a[.draftTextColor] != nil, theme: theme) }
                 attrs[.foregroundColor] = fg
                 s.setAttributes(attrs, range: r)
             }
@@ -186,18 +186,40 @@ public enum Styler {
         }
     }
 
-    static func applyEffect(_ k: String, _ attrs: inout [NSAttributedString.Key: Any], _ fg: inout NSColor, theme: EditorTheme) {
-        let c = TextEffects.colors(accent: theme.accent, text: theme.textColor, page: theme.pageColor)
-        if k == "accent" || k == "glow" || k == "lift" || k == "gradient" { fg = NSColor(hex: c.start) } // gradient: drawn by the layout manager; this is the fallback
-        if let s = Spectrum(k) { fg = NSColor(hex: s.colors(page: theme.pageColor)[0]); return } // drawn by the layout manager; this colour is the fallback
-        guard !theme.plainEffects else { return }
+    /// Draws one effect. The letters keep the text color when one is set (`hasTextColor`); the
+    /// effect has its own color and strength. Without a text color the effect supplies a readable
+    /// default. Increase Contrast keeps the letters' color and drops the decoration.
+    static func applyEffect(_ value: String, _ attrs: inout [NSAttributedString.Key: Any], _ fg: inout NSColor, hasTextColor: Bool = false, theme: EditorTheme) {
+        guard let e = EffectSpec(value) else { return }
+        let d = TextEffects.colors(accent: theme.accent, text: theme.textColor, page: theme.pageColor)
+        let fills = e.fillColors(accent: theme.accent, text: theme.textColor, page: theme.pageColor)
+        switch e.kind {
+        case "accent", "gradient", "spectrum": fg = NSColor(hex: fills.first ?? d.start) // gradient and spectrum: drawn by the layout manager; this is the fallback
+        case "glow", "lift": if !hasTextColor { fg = NSColor(hex: d.start) }
+        default: break
+        }
+        guard !theme.plainEffects, !["accent", "gradient", "spectrum"].contains(e.kind) else { return }
+        let k = e.intensity ?? 0.6 // 0.6 is the look before effects had a strength
+        let own = e.color.map { NSColor(hex: $0) }
         let sh = NSShadow()
-        switch k {
-        case "glow": sh.shadowColor = theme.accentColor.withAlphaComponent(theme.isDarkPage ? 0.95 : 0.75); sh.shadowBlurRadius = 5
-        case "shadow": sh.shadowColor = NSColor.black.withAlphaComponent(theme.isDarkPage ? 0.7 : 0.35); sh.shadowBlurRadius = 2.5; sh.shadowOffset = NSSize(width: 0, height: -2)
-        case "lift": sh.shadowColor = NSColor(hex: c.end).withAlphaComponent(0.35); sh.shadowOffset = NSSize(width: 1.5, height: -1.5)
-        case "emboss": sh.shadowColor = theme.isDarkPage ? NSColor.black.withAlphaComponent(0.7) : NSColor.black.withAlphaComponent(0.4); sh.shadowOffset = NSSize(width: 0, height: theme.isDarkPage ? -1 : 1)
-        case "outline": attrs[.strokeWidth] = -4.0; attrs[.strokeColor] = NSColor(hex: c.start).withAlphaComponent(0.55); return
+        switch e.kind {
+        case "glow":
+            sh.shadowColor = (own ?? theme.accentColor).withAlphaComponent((theme.isDarkPage ? 0.95 : 0.75) * min(1, 0.4 + k))
+            sh.shadowBlurRadius = 2 + 5 * k
+        case "shadow":
+            sh.shadowColor = (own ?? .black).withAlphaComponent(min(1, (theme.isDarkPage ? 1.0 : 0.35) * (0.4 + k)))
+            sh.shadowBlurRadius = (theme.isDarkPage ? 2 : 1) + 2.5 * k; sh.shadowOffset = NSSize(width: 0, height: -(1 + (theme.isDarkPage ? 2.4 : 1.7) * k))
+        case "lift":
+            sh.shadowColor = (own ?? NSColor(hex: d.end)).withAlphaComponent(0.2 + 0.25 * k)
+            sh.shadowOffset = NSSize(width: 0.8 + 1.2 * k, height: -(0.8 + 1.2 * k))
+        case "emboss":
+            // Pressed in: a dark edge above on light pages, a faint light edge below on dark ones
+            // (a dark edge can't show on a dark page).
+            sh.shadowColor = (own ?? (theme.isDarkPage ? .white : .black)).withAlphaComponent((theme.isDarkPage ? 0.3 : 0.4) * (0.4 + k))
+            sh.shadowOffset = NSSize(width: 0, height: theme.isDarkPage ? -1 : 1)
+        case "outline":
+            // A colored rim around letters that keep the text color.
+            attrs[.strokeWidth] = -(1.5 + 4 * k); attrs[.strokeColor] = (own ?? theme.accentColor).withAlphaComponent(0.85); return
         default: return
         }
         attrs[.shadow] = sh
