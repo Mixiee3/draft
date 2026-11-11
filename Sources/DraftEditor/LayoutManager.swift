@@ -162,7 +162,7 @@ public final class DraftLayoutManager: NSLayoutManager {
                 theme.text.withAlphaComponent(theme.isDarkPage ? 0.09 : 0.055).setFill()
                 NSBezierPath(roundedRect: bg, xRadius: 10, yRadius: 10).fill()
             } else if let d = b.decoration, d != "block", d != "focus", BlockEffects.kinds.contains(d) {
-                drawEffect(d, b, rect: r, origin: origin, width: width)
+                drawEffect(d, b, pr: pr, rect: r, origin: origin, width: width)
             } else if b.decoration == "block" || b.blockColor != nil {
                 let bg = NSRect(x: origin.x, y: r.minY - 5, width: width, height: r.height + 10)
                 let color = b.blockColor.map { NSColor(hex: $0, alpha: theme.isDarkPage ? 0.28 : 0.22) } ?? theme.text.withAlphaComponent(0.06)
@@ -187,7 +187,7 @@ public final class DraftLayoutManager: NSLayoutManager {
     }
 
     /// Block effects. Plain fills and strokes only (no blur), so scrolling and typing stay cheap.
-    private func drawEffect(_ d: String, _ b: BlockInfo, rect r: NSRect, origin: NSPoint, width: CGFloat) {
+    private func drawEffect(_ d: String, _ b: BlockInfo, pr: NSRange, rect r: NSRect, origin: NSPoint, width: CGFloat) {
         let tint = b.blockColor.map { NSColor(hex: $0) } ?? theme.accentColor
         let dark = theme.isDarkPage
         if d == "accent" && b.kind == .heading {
@@ -195,9 +195,16 @@ public final class DraftLayoutManager: NSLayoutManager {
             tint.setFill(); NSBezierPath(roundedRect: line, xRadius: 1.5, yRadius: 1.5).fill()
             return
         }
-        // The line fragments include paragraph spacing; the box hugs the text instead.
-        let ps = Styler.paragraphStyle(b, theme: theme)
-        let top = r.minY + ps.paragraphSpacingBefore - 5, bottom = r.maxY - ps.paragraphSpacing + 5
+        // Line fragments carry paragraph spacing unevenly (none after the last paragraph), so the
+        // box is measured from the first and last baselines instead.
+        let font = theme.baseFont(b)
+        var top = r.minY - 5, bottom = r.maxY + 5
+        let gr = glyphRange(forCharacterRange: NSRange(location: pr.location, length: max(0, pr.length - (NSMaxRange(pr) > pr.location && (textStorage?.string as NSString?)?.character(at: NSMaxRange(pr) - 1) == 10 ? 1 : 0))), actualCharacterRange: nil)
+        if gr.length > 0 {
+            let first = lineFragmentRect(forGlyphAt: gr.location, effectiveRange: nil), last = lineFragmentRect(forGlyphAt: NSMaxRange(gr) - 1, effectiveRange: nil)
+            top = origin.y + first.minY + location(forGlyphAt: gr.location).y - font.ascender - 7
+            bottom = origin.y + last.minY + location(forGlyphAt: NSMaxRange(gr) - 1).y - font.descender + 7
+        }
         let bg = NSRect(x: origin.x, y: top, width: width, height: max(0, bottom - top))
         let path = NSBezierPath(roundedRect: bg, xRadius: 10, yRadius: 10)
         switch d {
