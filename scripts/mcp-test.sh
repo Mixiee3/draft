@@ -72,6 +72,23 @@ ok("12 index updated", "zebra-quartz" in r["afterIndex"], r["afterIndex"])
 ok("13 one Undo restores", "bold" not in r["undoneMarks"] and r["undoneText"] == r["afterText"] and m.tool("draft_read_document", document_id=note["id"]) == original, r)
 ok("backup made", int(r["backups"]) >= 1, r["backups"])
 
+# Styling through reviewed proposals: a text effect, a block effect, then a custom backdrop.
+st = m.tool("draft_read_structure", document_id=note["id"]); first = st["blocks"][0]; original = content(note["id"])
+ok("guide lists effects", [e["value"] for e in guide["text_effects"]][:2] == ["accent", "gradient"] and any(b["value"] == "glass" for b in guide["block_effects"]), guide.get("text_effects"))
+p = m.tool("draft_propose_note_edits", document_id=note["id"], expected_revision=st["revision"], instruction="Make the code word stand out",
+           edits=[{"action": "text_effect", "block_id": first["id"], "text": "zebra-quartz", "value": "gradient"}, {"action": "decoration", "block_id": first["id"], "value": "glass"}])
+r = review("accept", undo=True, shot="mcp-review-effects")
+ok("effects applied", r["status"] == "accepted" and "effect" in r["afterMarks"] and r["afterDecorations"] == "glass", r)
+ok("effects one Undo", "effect" not in r["undoneMarks"] and r["undoneDecorations"] == "" and content(note["id"]) == original, r)
+st = m.tool("draft_read_structure", document_id=note["id"])
+harsh = m.tool("draft_propose_note_edits", document_id=note["id"], expected_revision=st["revision"], instruction="Harsh", edits=[{"action": "document_backdrop", "block_id": note["id"], "value": json.dumps({"stops": [{"color": "#000000", "at": 0}, {"color": "#ffffff", "at": 1}]})}])
+ok("harsh backdrop refused", "4.5:1" in str(harsh.get("error", "")), harsh)
+p = m.tool("draft_propose_note_edits", document_id=note["id"], expected_revision=st["revision"], instruction="Soft blue backdrop",
+           edits=[{"action": "document_backdrop", "block_id": note["id"], "value": json.dumps({"stops": [{"color": "#e3ecfa", "at": 0}, {"color": "#c9d7f2", "at": 0.6}, {"color": "#b8c7ea", "at": 1}], "radial": True, "focusX": 0.2, "focusY": 0.1})}])
+r = review("accept", undo=True, shot="mcp-review-style")
+ok("backdrop applied", r["status"] == "accepted" and r["afterBackdrop"] == "#e3ecfa,#c9d7f2,#b8c7ea", r)
+ok("backdrop one Undo", r["undoneBackdrop"] == "" and content(note["id"]) == original, r)
+
 st = m.tool("draft_read_structure", document_id=note["id"]); before = filehash(note["id"])
 p = m.tool("draft_propose_note_edits", document_id=note["id"], expected_revision=st["revision"], instruction="Reword", edits=[{"action": "replace_text", "block_id": first["id"], "text": "Rejected words", "expected_text": first["text"]}])
 r = review("reject")

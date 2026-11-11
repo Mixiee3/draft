@@ -122,3 +122,18 @@ final class BlockEffectExportTests: XCTestCase {
         XCTAssertTrue(html.contains("h2[data-deco=accent]"))
     }
 }
+
+final class AgentBackdropTests: XCTestCase {
+    func testBackdropProposalValidation() throws {
+        let ok = try AgentEdit.backdrop(##"{"stops":[{"color":"#dfe8f5","at":0},{"color":"#b9c8e6","at":1,"opacity":0.8}],"radial":true,"focusX":0.2,"focusY":0.1}"##)
+        XCTAssertEqual(ok.kind, "gradient"); XCTAssertEqual(ok.radial, true); XCTAssertEqual(ok.colorStops.count, 2)
+        XCTAssertNoThrow(try AgentEdit(action: "document_backdrop", blockId: "d_a", value: ##"{"stops":[{"color":"#ffffff","at":0},{"color":"#eeeeee","at":1}]}"##).validate())
+        for bad in [##"{"stops":[{"color":"#000000","at":0},{"color":"#ffffff","at":1}]}"##,   // harsh
+                    ##"{"stops":[{"color":"#fff","at":0},{"color":"#eeeeee","at":1}]}"##,       // short hex
+                    ##"{"stops":[{"color":"#ffffff","at":0}]}"##,                               // one stop
+                    ##"{"stops":[{"color":"#ffffff","at":0},{"color":"#eeeeee","at":2}]}"##,    // out of range
+                    ##"{"image":"asset:x.png","stops":[]}"##, "not json", ""] {
+            XCTAssertThrowsError(try AgentEdit.backdrop(bad), bad)
+        }
+    }
+}

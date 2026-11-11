@@ -71,6 +71,10 @@ extension AppModel {
                         throw AgentEditError.invalid("This style is no longer available.")
                     }
                     updateAppearance(doc.id) { $0.styleId = styleId; $0.overrides = StyleOverrides() }
+                } else if proposal.edits[0].action == "document_backdrop" {
+                    guard proposal.edits.count == 1 else { throw AgentEditError.invalid("A backdrop change is its own proposal.") }
+                    let b = try AgentEdit.backdrop(proposal.edits[0].value)
+                    updateAppearance(doc.id) { $0.overrides.backdrop = b }
                 } else if proposal.edits.contains(where: { ["insert_image", "insert_file"].contains($0.action) }) {
                     try applyWithAssets(doc.id, editor.controller, proposal.edits)
                 } else {
@@ -593,6 +597,7 @@ struct AgentProposalReview: View {
                 return ("Move note to \(e.value != nil || e.target == nil ? folder(e.value) : "")\(space.map { " in \($0)" } ?? "")", nil, nil, nil, nil)
             case "replace_document": return ("Replace the whole note", nil, md(e.text), nil, nil)
             case "document_style": return ("Use the \(Styles.all.first { $0.id == e.value }?.name ?? e.value ?? "") style", nil, nil, nil, nil)
+            case "document_backdrop": return ("Use a custom gradient backdrop", nil, nil, nil, nil)
             case "replace_text": return ("Rewrite a paragraph", e.expectedText, md(e.text), nil, nil)
             case "append": return ("Add at the end", nil, md(e.text), nil, nil)
             case "insert_blocks": return ("Insert \(e.position ?? "after") \(quoted(block))", nil, md(e.text), nil, nil)
@@ -644,6 +649,24 @@ struct AgentProposalReview: View {
                     RoundedRectangle(cornerRadius: 4, style: .continuous).fill(Color(hex: swatch)).frame(width: 16, height: 12)
                         .overlay(RoundedRectangle(cornerRadius: 4, style: .continuous).strokeBorder(t.line, lineWidth: 0.5)).accessibilityHidden(true)
                 }
+            }
+            if ["document_style", "document_backdrop"].contains(e.action), let now = model.docs[proposal.documentId]?.appearance ?? model.vault.peekAppearance(proposal.documentId) {
+                let next: DocumentAppearance = {
+                    var a = now
+                    if e.action == "document_style" { a.styleId = e.value ?? a.styleId; a.overrides = StyleOverrides() }
+                    else if let b = try? AgentEdit.backdrop(e.value) { a.overrides.backdrop = b }
+                    return a
+                }()
+                HStack(spacing: DS.s2) {
+                    ForEach([("Before", now), ("After", next)], id: \.0) { label, a in
+                        VStack(alignment: .leading, spacing: 4) {
+                            Text(label.uppercased()).font(.system(size: DS.micro + 1, weight: .semibold)).tracking(0.5).foregroundStyle(label == "After" ? Color(hex: "#2f9a5a") : t.secondary)
+                            StylePreviewCard(tokens: Styles.resolve(a), name: proposal.documentTitle.isEmpty ? "Untitled" : proposal.documentTitle, height: 110)
+                        }
+                        .accessibilityElement(children: .ignore).accessibilityLabel("\(label): \(Styles.style(a.styleId).name)\(a.overrides.backdrop != nil ? " with a custom backdrop" : "")")
+                    }
+                }
+                .frame(maxWidth: 420)
             }
             if ["insert_image", "insert_file"].contains(e.action), let path = e.value {
                 AssetPreview(path: path, caption: e.action == "insert_image" ? e.text : nil)

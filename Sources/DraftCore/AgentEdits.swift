@@ -29,8 +29,25 @@ public struct AgentEdit: Codable, Sendable, Hashable {
     /// Actions that change the library (a new note, its title or place), applied by the app.
     public static let documentActions: Set<String> = ["create_document", "rename_document", "move_document", "create_folder", "delete_document"]
     /// Actions that stand alone in a proposal.
-    static let standalone: Set<String> = documentActions.union(["replace_document", "document_style"])
+    static let standalone: Set<String> = documentActions.union(["replace_document", "document_style", "document_backdrop"])
     static let idPattern = "^[A-Za-z0-9_-]{1,64}$"
+
+    /// A gradient backdrop proposed as JSON: `{"stops":[{"color":"#rrggbb","at":0…1,"opacity":0…1}],
+    /// "angle":0…360, "radial":bool, "focusX":0…1, "focusY":0…1}`. Never an image or file.
+    public static func backdrop(_ json: String?) throws -> Backdrop {
+        struct In: Decodable { var stops: [ColorStop]; var angle: Double?; var radial: Bool?; var focusX: Double?; var focusY: Double? }
+        guard let json, json.utf8.count <= 4_000, let v = try? JSONDecoder().decode(In.self, from: Data(json.utf8)) else {
+            throw AgentEditError.invalid("document_backdrop needs JSON with stops (and optional angle, radial, focusX, focusY).")
+        }
+        let unit: (Double?) -> Bool = { $0.map { (0...1).contains($0) } ?? true }
+        guard (2...8).contains(v.stops.count), v.stops.allSatisfy({ $0.color.range(of: "^#[0-9A-Fa-f]{6}$", options: .regularExpression) != nil && (0...1).contains($0.at) && unit($0.opacity) }),
+              v.angle.map({ (0...360).contains($0) }) ?? true, unit(v.focusX), unit(v.focusY) else {
+            throw AgentEditError.invalid("document_backdrop needs 2–8 stops with #RRGGBB colors and positions, opacity and focus between 0 and 1, angle 0–360.")
+        }
+        let b = Backdrop(kind: "gradient", angle: v.angle ?? 135, stops: v.stops, radial: v.radial == true ? true : nil, focusX: v.focusX, focusY: v.focusY)
+        guard b.stopContrast <= 4.5 else { throw AgentEditError.invalid(String(format: "These colors jump %.1f:1 across the backdrop; keep it at 4.5:1 or less so toolbar buttons stay visible.", b.stopContrast)) }
+        return b
+    }
 
     public func validate() throws {
         guard blockId.range(of: "^[A-Za-z0-9_-]{1,64}$", options: .regularExpression) != nil else { throw AgentEditError.invalid("Invalid block ID.") }
@@ -43,6 +60,7 @@ public struct AgentEdit: Codable, Sendable, Hashable {
             guard let value, value.range(of: "^[A-Za-z0-9_-]{1,64}$", options: .regularExpression) != nil else {
                 throw AgentEditError.invalid("document_style needs a style ID.")
             }
+        case "document_backdrop": _ = try Self.backdrop(value)
         case "replace_text":
             guard let text, let expectedText, !text.contains("\n"), text.utf16.count <= 20_000, expectedText.utf16.count <= 20_000 else {
                 throw AgentEditError.invalid("replace_text needs one line of Markdown and the exact current block text.")
