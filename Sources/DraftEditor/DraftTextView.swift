@@ -87,6 +87,12 @@ public final class DraftTextView: NSTextView {
 
     public override func mouseDown(with event: NSEvent) {
         guard let c = controller else { return super.mouseDown(with: event) }
+        if event.modifierFlags.contains(.control) { // Control-click opens the same context menu
+            c.toolbar.suspended = true; c.toolbar.update()
+            super.mouseDown(with: event)
+            c.toolbar.suspended = false; c.toolbar.update()
+            return
+        }
         let p = convert(event.locationInWindow, from: nil)
         let cp = NSPoint(x: p.x - textContainerOrigin.x, y: p.y - textContainerOrigin.y)
         let idx = c.layout.characterIndex(for: cp, in: c.container, fractionOfDistanceBetweenInsertionPoints: nil)
@@ -109,14 +115,49 @@ public final class DraftTextView: NSTextView {
     }
 
     /// The text's context menu starts with the Block menu.
+    /// The right-click menu is for the clipboard, look-up, block structure and system services;
+    /// inline formatting lives in the formatting bar, which steps aside while the menu is open.
+    /// AppKit's Font and Layout Orientation menus would bypass Draft's styles, so they are left out.
     public override func menu(for event: NSEvent) -> NSMenu? {
         let menu = super.menu(for: event) ?? NSMenu()
         guard let c = controller else { return menu }
+        let dropped: Set<String> = ["orderFrontFontPanel:", "changeLayoutOrientation:"]
+        for item in menu.items.reversed() {
+            let actions = ([item] + (item.submenu?.items ?? [])).compactMap { $0.action.map(NSStringFromSelector) }
+            if actions.contains(where: dropped.contains) || ["Font", "Layout Orientation", "AutoFill"].contains(item.title) { menu.removeItem(item) }
+        }
+        while let first = menu.items.first, first.isSeparatorItem { menu.removeItem(first) }
+        for (k, item) in menu.items.enumerated().reversed() where k > 0 && item.isSeparatorItem && menu.items[k - 1].isSeparatorItem { menu.removeItem(item) }
+        var i = 0
+        if selectedRange().length > 0, !c.isBlockMode {
+            let format = ClosureMenuItem(title: "Format Selection…") { [weak c] in
+                guard let c else { return }
+                c.toolbar.update(); c.toolbar.focusForKeyboard()
+            }
+            format.keyEquivalent = String(UnicodeScalar(NSF10FunctionKey)!); format.keyEquivalentModifierMask = [.option]
+            format.image = NSImage(systemSymbolName: "textformat", accessibilityDescription: nil)
+            menu.insertItem(format, at: i); i += 1
+        }
         let block = NSMenuItem(title: "Block", action: nil, keyEquivalent: "")
+        block.image = NSImage(systemSymbolName: "square.stack", accessibilityDescription: nil)
         block.submenu = c.blockMenu()
-        menu.insertItem(block, at: 0)
-        menu.insertItem(.separator(), at: 1)
+        menu.insertItem(block, at: i); i += 1
+        menu.insertItem(.separator(), at: i)
         return menu
+    }
+
+    /// The context menu runs modally inside these calls, so the formatting bar steps aside before it
+    /// opens and comes back (for the same selection) when it closes.
+    public override func rightMouseDown(with event: NSEvent) {
+        controller?.toolbar.suspended = true; controller?.toolbar.update()
+        super.rightMouseDown(with: event)
+        controller?.toolbar.suspended = false; controller?.toolbar.update()
+    }
+
+    /// No Continuity Camera or sketch insertion: images come in through Draft's own image block.
+    public override func validRequestor(forSendType sendType: NSPasteboard.PasteboardType?, returnType: NSPasteboard.PasteboardType?) -> Any? {
+        if let r = returnType, [.png, .tiff, NSPasteboard.PasteboardType("public.image"), NSPasteboard.PasteboardType("public.jpeg")].contains(r) { return nil }
+        return super.validRequestor(forSendType: sendType, returnType: returnType)
     }
 
     /// Printing / Save as PDF: start a new page at every page-break block.

@@ -236,7 +236,7 @@ public final class DraftLayoutManager: NSLayoutManager {
     private var spectrumRuns: [(rect: NSRect, colors: [NSColor], spec: Spectrum)] = []
 
     /// Spectrum runs that intersect `visible`, as view rects (used by the editor's clock).
-    func spectrumRects(in visible: NSRect, origin: NSPoint) -> [NSRect] {
+    public func spectrumRects(in visible: NSRect, origin: NSPoint) -> [NSRect] {
         guard let s = textStorage, let tc = textContainers.first, !theme.plainEffects, theme.animateEffects else { return [] }
         let gr = glyphRange(forBoundingRect: visible.offsetBy(dx: -origin.x, dy: -origin.y), in: tc)
         let cr = characterRange(forGlyphRange: gr, actualGlyphRange: nil)
@@ -253,17 +253,28 @@ public final class DraftLayoutManager: NSLayoutManager {
         guard !theme.plainEffects, let s = textStorage, let tc = textContainers.first else { return }
         let cr = characterRange(forGlyphRange: glyphsToShow, actualGlyphRange: nil)
         s.enumerateAttribute(.draftEffect, in: cr) { v, r, _ in
-            guard let v = v as? String, let sp = Spectrum(v) else { return }
+            guard let v = v as? String, let (colors, sp) = gradientRun(v) else { return }
             var full = NSRange()
             _ = s.attribute(.draftEffect, at: r.location, longestEffectiveRange: &full, in: NSRange(location: 0, length: s.length))
             let rect = boundingRect(forGlyphRange: glyphRange(forCharacterRange: full, actualCharacterRange: nil), in: tc).offsetBy(dx: origin.x, dy: origin.y)
-            spectrumRuns.append((rect, sp.colors(page: theme.pageColor).map { NSColor(hex: $0) }, sp))
+            spectrumRuns.append((rect, colors, sp))
         }
+    }
+
+    /// Effects drawn as one gradient across the run: Spectrum (moving) and Gradient (still, accent
+    /// to a darker or lighter tone).
+    func gradientRun(_ v: String) -> ([NSColor], Spectrum)? {
+        if let sp = Spectrum(v) { return (sp.colors(page: theme.pageColor).map { NSColor(hex: $0) }, sp) }
+        if v == "gradient" {
+            let c = TextEffects.colors(accent: theme.accent, text: theme.textColor, page: theme.pageColor)
+            return ([NSColor(hex: c.start), NSColor(hex: c.end)], Spectrum(palette: "aurora", speed: "still"))
+        }
+        return nil
     }
 
     public override func showCGGlyphs(_ glyphs: UnsafePointer<CGGlyph>, positions: UnsafePointer<CGPoint>, count: Int, font: NSFont,
                                       textMatrix: CGAffineTransform, attributes: [NSAttributedString.Key: Any] = [:], in ctx: CGContext) {
-        guard count > 0, let v = attributes[.draftEffect] as? String, Spectrum(v) != nil,
+        guard count > 0, let v = attributes[.draftEffect] as? String, v == "gradient" || Spectrum(v) != nil,
               let run = spectrumRuns.first(where: { $0.rect.insetBy(dx: -4, dy: -4).contains(positions[0]) }) else {
             super.showCGGlyphs(glyphs, positions: positions, count: count, font: font, textMatrix: textMatrix, attributes: attributes, in: ctx)
             return

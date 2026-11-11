@@ -37,6 +37,12 @@ public final class SelectionToolbar: NSView {
         var action: (() -> Void)?
         var isActive: Bool = false
         var isEnabled: Bool = true
+        /// Text shown on the control (chips), or the text of a section label.
+        var title: String? = nil
+        /// A section heading inside the bar (not a control).
+        var isLabel = false
+        /// Starts a new row.
+        var isBreak = false
     }
 
     unowned let controller: EditorController
@@ -53,6 +59,8 @@ public final class SelectionToolbar: NSView {
     static let height: CGFloat = 46
     static let radius: CGFloat = 23
     public private(set) var isVisible = false
+    /// True while a context menu is open over the selection.
+    public var suspended = false
 
     init(controller: EditorController) {
         self.controller = controller
@@ -101,62 +109,83 @@ public final class SelectionToolbar: NSView {
     func buildItems() {
         let c = controller
         let code = c.currentBlock.kind == .code
+        func back(_ to: Mode, _ title: String) -> Item {
+            Item(id: "back", label: "Back to \(title.lowercased())", symbol: "chevron.left", action: { [weak self] in self?.setMode(to) }, title: title)
+        }
+        func label(_ t: String) -> Item { Item(id: "label-" + t, label: t, symbol: nil, isEnabled: false, title: t, isLabel: true) }
+        let sep = { (n: Int) in Item(id: "sep\(n)", label: "", symbol: nil, width: 9, isSeparator: true) }
+        let rowBreak = Item(id: "break", label: "", symbol: nil, width: 0, isSeparator: true, isBreak: true)
         switch mode {
         case .main:
+            // Inline marks | link and code | colour | effects | more. The right-click menu keeps the
+            // clipboard, look-up and block actions, so the two never repeat each other.
             let hl = c.value(of: .draftHighlight)
+            let fx = c.value(of: .draftEffect)
             items = [
-                Item(id: "highlight", label: "Highlight", symbol: "highlighter", swatch: hl, action: { [weak self] in
-                    if let last = DraftPalette.highlights.first?.1 { self?.controller.setHighlight(self?.controller.value(of: .draftHighlight) != nil ? nil : (self?.controller.lastColor?.kind == "highlight" ? self?.controller.lastColor?.hex : last)) }
-                }, isActive: hl != nil, isEnabled: !code),
-                Item(id: "palette", label: "Colors", symbol: "chevron.down", width: 20, action: { [weak self] in self?.setMode(.palette) }, isEnabled: !code),
-                Item(id: "effects", label: "Text effects", symbol: "sparkles", action: { [weak self] in self?.setMode(.effects) }, isActive: c.value(of: .draftEffect) != nil, isEnabled: !code),
-                Item(id: "sep1", label: "", symbol: nil, width: 9, isSeparator: true),
                 Item(id: "bold", label: "Bold (⌘B)", symbol: "bold", action: { c.toggleMark(.bold) }, isActive: c.isMarkActive(.bold), isEnabled: !code),
                 Item(id: "italic", label: "Italic (⌘I)", symbol: "italic", action: { c.toggleMark(.italic) }, isActive: c.isMarkActive(.italic), isEnabled: !code),
                 Item(id: "underline", label: "Underline (⌘U)", symbol: "underline", action: { c.toggleMark(.underline) }, isActive: c.isMarkActive(.underline), isEnabled: !code),
                 Item(id: "strike", label: "Strikethrough (⌘⇧X)", symbol: "strikethrough", action: { c.toggleMark(.strike) }, isActive: c.isMarkActive(.strike), isEnabled: !code),
-                Item(id: "code", label: "Inline code (⌘E)", symbol: "chevron.left.forwardslash.chevron.right", action: { c.toggleMark(.code) }, isActive: c.isMarkActive(.code), isEnabled: !code),
+                sep(1),
                 Item(id: "link", label: "Link (⌘K)", symbol: "link", action: { [weak self] in self?.openLink() }, isActive: c.value(of: .draftLink) != nil, isEnabled: !code),
-                Item(id: "sep2", label: "", symbol: nil, width: 9, isSeparator: true),
-                Item(id: "clear", label: "Clear formatting", symbol: "eraser", action: { c.clearFormatting() }, isEnabled: !code),
+                Item(id: "code", label: "Inline code (⌘E)", symbol: "chevron.left.forwardslash.chevron.right", action: { c.toggleMark(.code) }, isActive: c.isMarkActive(.code), isEnabled: !code),
+                sep(2),
+                Item(id: "highlight", label: hl == nil ? "Highlight (⌥⌘H reapplies the last colour)" : "Remove highlight", symbol: "highlighter", swatch: hl, action: { [weak self] in
+                    guard let self else { return }
+                    let last = self.controller.lastColor?.kind == "highlight" ? self.controller.lastColor?.hex : DraftPalette.highlights.first?.1
+                    self.controller.setHighlight(self.controller.value(of: .draftHighlight) != nil ? nil : last)
+                }, isActive: hl != nil, isEnabled: !code),
+                Item(id: "palette", label: "Text colour and highlight colours", symbol: "chevron.down", width: 20, action: { [weak self] in self?.setMode(.palette) }, isEnabled: !code),
+                sep(3),
+                Item(id: "effects", label: "Text effects", symbol: "sparkles", action: { [weak self] in self?.setMode(.effects) }, isActive: fx != nil, isEnabled: !code, title: "Effects"),
+                sep(4),
+                Item(id: "more", label: "More: clear formatting and block options", symbol: "ellipsis", action: { [weak self] in self?.showMore() }),
             ]
         case .palette:
             let current = c.value(of: .draftHighlight)
             let currentText = c.value(of: .draftTextColor)
-            items = [Item(id: "none", label: "No color", symbol: "nosign", width: 30, action: { [weak self] in
-                self?.controller.setHighlight(nil); self?.controller.setTextColor(nil); self?.setMode(.main)
-            }, isActive: current == nil && currentText == nil)]
+            items = [back(.main, "Format"), label("Highlight")]
             for (name, hex) in DraftPalette.highlights {
                 items.append(Item(id: "h" + hex, label: "Highlight \(name)", symbol: nil, swatch: hex, width: 26, action: { [weak self] in self?.controller.setHighlight(hex); self?.setMode(.main) }, isActive: current == hex))
             }
-            items.append(Item(id: "sepp", label: "", symbol: nil, width: 9, isSeparator: true))
+            items.append(rowBreak)
+            items.append(label("Text"))
             for (name, hex) in DraftPalette.textColors {
-                items.append(Item(id: "t" + hex, label: "Text \(name)", symbol: nil, swatch: hex, swatchIsText: true, width: 26, action: { [weak self] in self?.controller.setTextColor(hex); self?.setMode(.main) }, isActive: currentText == hex))
+                items.append(Item(id: "t" + hex, label: "Text colour \(name)", symbol: nil, swatch: hex, swatchIsText: true, width: 26, action: { [weak self] in self?.controller.setTextColor(hex); self?.setMode(.main) }, isActive: currentText == hex))
             }
+            items.append(sep(1))
+            items.append(Item(id: "none", label: "Remove colours", symbol: "nosign", action: { [weak self] in
+                self?.controller.setHighlight(nil); self?.controller.setTextColor(nil); self?.setMode(.main)
+            }, isEnabled: current != nil || currentText != nil, title: "None"))
         case .effects:
             let current = c.value(of: .draftEffect)
-            let symbols = ["accent": "paintbrush.pointed", "gradient": "paintpalette", "glow": "sun.max", "shadow": "shadow", "outline": "character", "lift": "square.stack.3d.up", "emboss": "seal"]
-            items = [Item(id: "fxspectrum", label: "Spectrum (moving gradient)", symbol: "rainbow", action: { [weak self] in self?.setMode(.spectrum) }, isActive: current.flatMap(Spectrum.init) != nil),
-                     Item(id: "fxnone", label: "No effect", symbol: "nosign", width: 30, action: { [weak self] in self?.controller.setEffect(nil); self?.setMode(.main) }, isActive: current == nil)]
+            items = [back(.main, "Format"), label("Effects")]
             for e in TextEffects.all where e.kind != "spectrum" {
-                items.append(Item(id: "fx" + e.kind, label: e.name, symbol: symbols[e.kind] ?? "sparkles", action: { [weak self] in self?.controller.setEffect(e.kind); self?.setMode(.main) }, isActive: current == e.kind))
+                items.append(Item(id: "fx" + e.kind, label: "\(e.name) effect: \(e.use)", symbol: nil, action: { [weak self] in self?.controller.setEffect(e.kind); self?.setMode(.main) }, isActive: current == e.kind, title: e.name))
             }
+            items.append(Item(id: "fxspectrum", label: "Spectrum: a moving colour gradient for a title or label", symbol: "chevron.right", action: { [weak self] in self?.setMode(.spectrum) },
+                              isActive: current.flatMap(Spectrum.init) != nil, title: "Spectrum"))
+            items.append(sep(1))
+            items.append(Item(id: "fxnone", label: "Remove the effect", symbol: "nosign", action: { [weak self] in self?.controller.setEffect(nil); self?.setMode(.main) }, isEnabled: current != nil, title: "None"))
         case .spectrum:
-            let current = c.value(of: .draftEffect).flatMap(Spectrum.init) ?? Spectrum()
-            let on = c.value(of: .draftEffect).flatMap(Spectrum.init) != nil
-            items = [Item(id: "spback", label: "Back to effects", symbol: "chevron.left", width: 30, action: { [weak self] in self?.setMode(.effects) })]
+            let currentSpec = c.value(of: .draftEffect).flatMap(Spectrum.init)
+            let current = currentSpec ?? Spectrum()
+            let on = currentSpec != nil
+            items = [back(.effects, "Effects"), label("Spectrum")]
             for p in Spectrum.palettes {
                 var s = current; s.palette = p.id
-                items.append(Item(id: "sp" + p.id, label: "Spectrum \(p.name)", symbol: nil, swatch: p.colors[0], width: 26, action: { [weak self] in self?.controller.setEffect(s.value); self?.buildItems() }, isActive: on && current.palette == p.id))
+                items.append(Item(id: "sp" + p.id, label: "Spectrum \(p.name)", symbol: nil, swatch: p.colors[0], action: { [weak self] in self?.controller.setEffect(s.value); self?.buildItems(); self?.position() },
+                                  isActive: on && current.palette == p.id, title: p.name.components(separatedBy: " ").first))
             }
-            items.append(Item(id: "spsep", label: "", symbol: nil, width: 9, isSeparator: true))
+            items.append(rowBreak)
+            items.append(label("Speed"))
             for sp in Spectrum.speeds {
                 var s = current; s.speed = sp.id
-                let sym = ["still": "pause", "slow": "tortoise", "normal": "hare", "fast": "bolt"][sp.id] ?? "circle"
-                items.append(Item(id: "sps" + sp.id, label: "Speed \(sp.name)", symbol: sym, action: { [weak self] in self?.controller.setEffect(s.value); self?.buildItems() }, isActive: on && current.speed == sp.id, isEnabled: on))
+                items.append(Item(id: "sps" + sp.id, label: "Speed \(sp.name)", symbol: nil, action: { [weak self] in self?.controller.setEffect(s.value); self?.buildItems() }, isActive: on && current.speed == sp.id, isEnabled: on, title: sp.name))
             }
             var flipped = current; flipped.direction = current.direction == "forward" ? "backward" : "forward"
-            items.append(Item(id: "spdir", label: current.direction == "forward" ? "Direction: forward" : "Direction: backward", symbol: current.direction == "forward" ? "arrow.right" : "arrow.left",
+            items.append(sep(1))
+            items.append(Item(id: "spdir", label: "Direction: \(current.direction); press to reverse", symbol: current.direction == "forward" ? "arrow.right" : "arrow.left",
                               action: { [weak self] in self?.controller.setEffect(flipped.value); self?.buildItems() }, isEnabled: on))
         case .link:
             let has = c.value(of: .draftLink) != nil
@@ -168,21 +197,57 @@ public final class SelectionToolbar: NSView {
         layoutItems()
     }
 
+    static let chipFont = NSFont.systemFont(ofSize: 13, weight: .medium)
+    static let labelFont = NSFont.systemFont(ofSize: 11, weight: .semibold)
+
+    func width(of it: Item) -> CGFloat {
+        if it.isSeparator { return it.width }
+        if it.isLabel { return ceil((it.title!.uppercased() as NSString).size(withAttributes: [.font: Self.labelFont]).width) + 14 }
+        if let t = it.title {
+            let text = ceil((t as NSString).size(withAttributes: [.font: Self.chipFont]).width)
+            return text + 20 + (it.symbol != nil || it.swatch != nil ? 18 : 0)
+        }
+        return it.swatch != nil || it.id == "field" ? it.width : max(it.width, 34)
+    }
+
+    /// Lays controls out in rows no wider than the editor allows; a narrow window gets two rows
+    /// instead of a bar that runs off the side.
     func layoutItems() {
-        var x: CGFloat = 9
+        let rowH = Self.height - 10
+        let maxWidth = max(280, min(640, (controller.overlayHost?.visibleRect.width ?? 640) - 20))
+        var x: CGFloat = 9, row = 0, widest: CGFloat = 0
         frames = items.map { it in
-            let w = it.isSeparator || it.swatch != nil || it.id == "field" ? it.width : max(it.width, 34)
-            let r = NSRect(x: x, y: 5, width: w, height: Self.height - 10)
+            let w = width(of: it)
+            if it.isBreak || (x + w > maxWidth - 6 && x > 9 && !it.isSeparator) {
+                widest = max(widest, x); x = 9; row += 1
+                if it.isBreak { return NSRect(x: 0, y: 0, width: 0, height: 0) }
+            }
+            let r = NSRect(x: x, y: 5 + CGFloat(row) * (rowH + 2), width: w, height: rowH)
             x += w + (it.isSeparator ? 0 : 3)
             return r
         }
-        let width = x + 6
-        setFrameSize(NSSize(width: width, height: Self.height))
+        widest = max(widest, x)
+        let rows = CGFloat(row + 1)
+        setFrameSize(NSSize(width: widest + 6, height: rows * rowH + (rows - 1) * 2 + 10))
+        let radius = rows > 1 ? 16 : Self.radius
+        layer?.cornerRadius = radius; glass.layer?.cornerRadius = radius
         if mode == .link, let i = items.firstIndex(where: { $0.id == "field" }) {
             linkField.frame = frames[i].insetBy(dx: 2, dy: 7)
         }
         rebuildAccessibility()
         needsDisplay = true
+    }
+
+    /// Clear formatting and the block options, as a menu under the More button.
+    func showMore() {
+        let menu = NSMenu()
+        let clear = ClosureMenuItem(title: "Clear Formatting") { [weak self] in self?.controller.clearFormatting() }
+        clear.image = NSImage(systemSymbolName: "eraser", accessibilityDescription: nil)
+        menu.addItem(clear)
+        menu.addItem(.separator())
+        for item in controller.blockMenu().items { item.menu?.removeItem(item); menu.addItem(item) }
+        guard let i = items.firstIndex(where: { $0.id == "more" }) else { return }
+        menu.popUp(positioning: nil, at: NSPoint(x: frames[i].minX, y: frames[i].maxY + 6), in: self)
     }
 
     public func setMode(_ m: Mode) {
@@ -199,7 +264,7 @@ public final class SelectionToolbar: NSView {
     var shouldShow: Bool {
         let tv = controller.textView
         let sel = tv.selectedRange()
-        guard sel.length > 0, controller.overlayHost != nil, !controller.isBlockMode else { return false }
+        guard sel.length > 0, controller.overlayHost != nil, !controller.isBlockMode, !suspended else { return false }
         if let d = dismissedSelection, d == sel { return false }
         // Pure attachment selections (one image/card) have no text to format.
         if sel.length == 1, controller.storage.attribute(.attachment, at: sel.location, effectiveRange: nil) != nil { return false }
@@ -222,7 +287,7 @@ public final class SelectionToolbar: NSView {
             isVisible = true
             isHidden = false
             syncGlass()
-            if !(controller.host == nil) && !NSWorkspace.shared.accessibilityDisplayShouldReduceMotion {
+            if !(controller.host == nil) && !NSWorkspace.shared.accessibilityDisplayShouldReduceMotion && controller.theme.animateEffects {
                 alphaValue = 0; glass.alphaValue = 0
                 NSAnimationContext.runAnimationGroup { ctx in
                     ctx.duration = 0.14
@@ -240,6 +305,8 @@ public final class SelectionToolbar: NSView {
         mode = .main
         keyboardIndex = nil
         linkField.isHidden = true
+        hoverIndex = nil
+        window?.invalidateCursorRects(for: controller.textView)
     }
 
     public func dismissForCurrentSelection() {
@@ -269,6 +336,7 @@ public final class SelectionToolbar: NSView {
         let topSafe = visible.minY + 8 // the scroll area already starts below the document controls
         var y = first.minY - size.height - 12
         if y < topSafe { y = last.maxY + 12 } // flip below the selection
+        if y + size.height > visible.maxY - 8 { y = max(topSafe, min(first.minY - size.height - 12, visible.maxY - size.height - 8)) } // never off the bottom
         var x = first.midX - size.width / 2
         if first.width < 4 { x = first.minX - size.width / 2 }
         x = min(max(x, visible.minX + 10), visible.maxX - size.width - 10)
@@ -317,6 +385,13 @@ public final class SelectionToolbar: NSView {
                 }
                 continue
             }
+            if it.isLabel {
+                let a: [NSAttributedString.Key: Any] = [.font: Self.labelFont, .foregroundColor: fg.withAlphaComponent(0.55)]
+                let t = (it.title ?? "").uppercased() as NSString
+                let sz = t.size(withAttributes: a)
+                t.draw(at: NSPoint(x: r.minX + 4, y: r.midY - sz.height / 2), withAttributes: a)
+                continue
+            }
             let hovered = hoverIndex == i && it.isEnabled
             if it.isActive || hovered {
                 (it.isActive ? accent.withAlphaComponent(dark ? 0.35 : 0.16) : fg.withAlphaComponent(0.07)).setFill()
@@ -327,7 +402,44 @@ public final class SelectionToolbar: NSView {
                 let p = NSBezierPath(roundedRect: r.insetBy(dx: 1, dy: 2), xRadius: 11, yRadius: 11); p.lineWidth = 2; p.stroke()
             }
             let color = it.isEnabled ? (it.isActive ? (dark ? .white : accent) : fg) : fg.withAlphaComponent(0.3)
-            if mode == .palette, let hex = it.swatch {
+            if let t = it.title {
+                // A chip with words: a quiet fill (it's a button), an optional icon or colour dot, then
+                // the label; effect chips show their own effect.
+                if !it.isActive && !hovered && it.isEnabled {
+                    fg.withAlphaComponent(dark ? 0.08 : 0.045).setFill()
+                    NSBezierPath(roundedRect: r.insetBy(dx: 1, dy: 2), xRadius: 11, yRadius: 11).fill()
+                }
+                var x = r.minX + 10
+                if let hex = it.swatch {
+                    NSColor(hex: hex).setFill(); NSBezierPath(ovalIn: NSRect(x: x, y: r.midY - 6, width: 12, height: 12)).fill(); x += 18
+                } else if let s = it.symbol, let img = NSImage(systemSymbolName: s, accessibilityDescription: nil),
+                          let im = img.withSymbolConfiguration(NSImage.SymbolConfiguration(pointSize: 12, weight: .medium).applying(.init(paletteColors: [color]))) {
+                    let sz = im.size
+                    im.draw(in: NSRect(x: x + (14 - sz.width) / 2, y: r.midY - sz.height / 2, width: sz.width, height: sz.height), from: .zero, operation: .sourceOver, fraction: 1, respectFlipped: true, hints: nil)
+                    x += 18
+                }
+                var a: [NSAttributedString.Key: Any] = [.font: Self.chipFont, .foregroundColor: color]
+                var perChar: [NSColor]? = nil
+                if it.id.hasPrefix("fx"), it.isEnabled, let kind = Optional(String(it.id.dropFirst(2))), TextEffects.kinds.contains(kind) {
+                    var fgc = color
+                    if kind == "spectrum" { perChar = Spectrum().colors(page: controller.theme.pageColor).map { NSColor(hex: $0) } }
+                    else if kind == "gradient" { let c = TextEffects.colors(accent: controller.theme.accent, text: controller.theme.textColor, page: controller.theme.pageColor); perChar = [NSColor(hex: c.start), NSColor(hex: c.end)] }
+                    else { Styler.applyEffect(kind, &a, &fgc, theme: controller.theme) }
+                    a[.foregroundColor] = fgc
+                }
+                let s = NSMutableAttributedString(string: t, attributes: a)
+                if let cs = perChar, s.length > 1 {
+                    for i in 0..<s.length {
+                        let f = CGFloat(i) / CGFloat(s.length - 1) * CGFloat(cs.count - 1)
+                        let lo = cs[Int(f)], hi = cs[min(cs.count - 1, Int(f) + 1)]
+                        s.addAttribute(.foregroundColor, value: lo.blended(withFraction: f - floor(f), of: hi) ?? lo, range: NSRange(location: i, length: 1))
+                    }
+                }
+                let sz = s.size()
+                s.draw(at: NSPoint(x: x, y: r.midY - sz.height / 2))
+                continue
+            }
+            if it.symbol == nil, let hex = it.swatch {
                 let d: CGFloat = 18
                 let sr = NSRect(x: r.midX - d / 2, y: r.midY - d / 2, width: d, height: d)
                 if it.swatchIsText {
@@ -357,6 +469,18 @@ public final class SelectionToolbar: NSView {
         }
     }
 
+    // MARK: Probe (automation and tests)
+
+    public var modeName: String { "\(mode)" }
+    public var debugState: String { "suspended=\(suspended) dismissed=\(dismissedSelection.map { "\($0)" } ?? "nil") shouldShow=\(shouldShow) fr=\(String(describing: window?.firstResponder.map { Swift.type(of: $0) }))" }
+    public var buttonLabels: [String] { items.filter { !$0.isSeparator && $0.action != nil }.map(\.label) }
+    public var focusedLabel: String? { keyboardIndex.flatMap { items.indices.contains($0) ? items[$0].label : nil } }
+    /// Window coordinates of the first control whose id starts with `prefix`.
+    public func center(ofItem prefix: String) -> NSPoint? {
+        guard let i = items.firstIndex(where: { $0.id.hasPrefix(prefix) }) else { return nil }
+        return convert(NSPoint(x: frames[i].midX, y: frames[i].midY), to: nil)
+    }
+
     // MARK: Mouse
 
     func index(at p: NSPoint) -> Int? { frames.firstIndex { $0.contains(p) } }
@@ -383,9 +507,9 @@ public final class SelectionToolbar: NSView {
     public override func keyDown(with event: NSEvent) {
         guard var i = keyboardIndex else { return super.keyDown(with: event) }
         switch event.keyCode {
-        case 123: // left
+        case 48 where event.modifierFlags.contains(.shift), 123: // shift-tab, left
             repeat { i = (i - 1 + items.count) % items.count } while items[i].isSeparator || !items[i].isEnabled
-        case 124: // right
+        case 48, 124: // tab, right
             repeat { i = (i + 1) % items.count } while items[i].isSeparator || !items[i].isEnabled
         case 36, 49: // return, space
             items[i].action?()
@@ -444,7 +568,7 @@ public final class SelectionToolbar: NSView {
         var children: [NSAccessibilityElement] = []
         for (i, it) in items.enumerated() where !it.isSeparator {
             let el = NSAccessibilityElement()
-            el.setAccessibilityRole(.button)
+            el.setAccessibilityRole(it.isLabel ? .staticText : .button)
             el.setAccessibilityLabel(it.label)
             el.setAccessibilityParent(self)
             el.setAccessibilityEnabled(it.isEnabled)
