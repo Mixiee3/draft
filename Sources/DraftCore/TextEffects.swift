@@ -12,7 +12,7 @@ public enum TextEffects {
         ("outline", "Outline", "large display words only; avoid in body text"),
         ("lift", "Lift", "a playful 3D offset for a title or label"),
         ("emboss", "Emboss", "a quiet pressed-in look for labels and captions"),
-        ("spectrum", "Spectrum", "a slowly moving multi-colour gradient for one title or decorative label (value spectrum:<aurora|prism|sunset|ocean|neon>:<still|slow|normal|fast>:<forward|backward>); never body text, at most one per note, 200 characters at most"),
+        ("spectrum", "Spectrum", "a slowly moving multi-color gradient for one title or decorative label (value spectrum:<aurora|prism|sunset|ocean|neon>:<still|slow|normal|fast>:<forward|backward>); never body text, at most one per note, 200 characters at most"),
     ]
     public static let kinds = all.map(\.kind)
 
@@ -81,7 +81,7 @@ public struct Spectrum: Hashable, Sendable {
     public var seconds: Double { Self.speeds.first { $0.id == speed }?.seconds ?? 0 }
     public var name: String { Self.palettes.first { $0.id == palette }?.name ?? "Spectrum" }
 
-    /// The palette with every colour pushed to 4.5:1 on the page (darker on light pages, lighter on
+    /// The palette with every color pushed to 4.5:1 on the page (darker on light pages, lighter on
     /// dark ones), so the text stays readable at every moment of the animation.
     public func colors(page: String) -> [String] {
         (Self.palettes.first { $0.id == palette }?.colors ?? Self.palettes[0].colors).map { ColorMath.readable($0, on: page).hex }
@@ -93,14 +93,14 @@ public extension TextEffects {
     static func isValid(_ value: String) -> Bool { EffectSpec(value) != nil }
 }
 
-/// One text effect with its own colours, kept apart from the text colour (the `textStyle` mark).
+/// One text effect with its own colors, kept apart from the text color (the `textStyle` mark).
 /// Stored in the editor as `kind`, `kind?color=#rrggbb&stops=#a,#b&angle=30&intensity=0.6`, or a
 /// Spectrum value; stored in documents as the `effect` mark's attributes.
 public struct EffectSpec: Hashable, Sendable {
     public var kind: String
-    /// Glow, shadow, outline, lift and emboss colour; for accent, the letters' colour.
+    /// Glow, shadow, outline, lift and emboss color; for accent, the letters' color.
     public var color: String?
-    /// Gradient colours, 2–5, left to right along `angle`.
+    /// Gradient colors, 2–5, left to right along `angle`.
     public var stops: [String]?
     /// Gradient direction in degrees (0 = left to right, 90 = top to bottom).
     public var angle: Double?
@@ -171,7 +171,7 @@ public struct EffectSpec: Hashable, Sendable {
         if let i = m.attrs?["intensity"]?.double, (0...1).contains(i) { intensity = i }
     }
 
-    /// Colours that fill the letters (accent, gradient stops), each pushed to 4.5:1 on the page.
+    /// Colors that fill the letters (accent, gradient stops), each pushed to 4.5:1 on the page.
     public func fillColors(accent: String, text: String, page: String) -> [String] {
         let d = TextEffects.colors(accent: accent, text: text, page: page)
         switch kind {
@@ -182,7 +182,7 @@ public struct EffectSpec: Hashable, Sendable {
         }
     }
 
-    /// True when a chosen fill colour had to be darkened or lightened to stay readable.
+    /// True when a chosen fill color had to be darkened or lightened to stay readable.
     public func adjustedForContrast(page: String) -> Bool {
         let chosen = kind == "accent" ? [color].compactMap { $0 } : kind == "gradient" ? (stops ?? []) : []
         return chosen.contains { ColorMath.contrast($0, page) < 4.5 }

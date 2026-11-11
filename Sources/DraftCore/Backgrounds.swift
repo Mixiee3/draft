@@ -1,7 +1,7 @@
 import Foundation
 
 /// Draft's original layered backgrounds: procedural (gradient, light, pattern, grain), so they need
-/// no image files or network, and each pairs with a page and text colour that reads at 4.5:1 or more.
+/// no image files or network, and each pairs with a page and text color that reads at 4.5:1 or more.
 public enum Backgrounds {
     static func field(_ angle: Double, _ stops: [String], radial: (Double, Double)? = nil, glow: (String, Double, Double)? = nil,
                       pattern: (String, String, Double)? = nil, grain: Double? = nil, dots: DotTexture? = nil) -> Backdrop {
@@ -78,7 +78,7 @@ public extension Backdrop {
     /// Editable stops: always explicit, sorted, at least two.
     var editableStops: [ColorStop] { colorStops }
 
-    /// Adds a stop in the middle of the widest gap, coloured between its neighbours.
+    /// Adds a stop in the middle of the widest gap, colored between its neighbours.
     mutating func addStop() {
         var s = editableStops
         guard s.count < 8 else { return }
@@ -93,7 +93,7 @@ public extension Backdrop {
         s.remove(at: i); stops = s
     }
 
-    /// Reorders colours while every position stays where it was.
+    /// Reorders colors while every position stays where it was.
     mutating func moveStop(_ i: Int, by d: Int) {
         var s = editableStops
         let j = i + d

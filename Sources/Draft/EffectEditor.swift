@@ -2,8 +2,8 @@ import SwiftUI
 import DraftCore
 import DraftEditor
 
-/// The Format panel's Text Effect section: the text's own colour and the effect's colours and
-/// strength, edited separately. Live controls fold a drag into one Undo step; colours that fill the
+/// The Format panel's Text Effect section: the text's own color and the effect's colors and
+/// strength, edited separately. Live controls fold a drag into one Undo step; colors that fill the
 /// letters are kept readable (4.5:1) and the panel says when one was adjusted.
 struct TextEffectEditor: View {
     @Environment(AppModel.self) var model
@@ -28,11 +28,11 @@ struct TextEffectEditor: View {
                 textColorRow(spec)
                 if let s = spec { controls(s, page: page) }
                 if let s = spec, s.adjustedForContrast(page: page) {
-                    Label("A colour was darkened or lightened so the text stays readable (4.5:1).", systemImage: "eye")
+                    Label("A color was darkened or lightened so the text stays readable (4.5:1).", systemImage: "eye")
                         .font(.system(size: DS.caption)).foregroundStyle(t.secondary).fixedSize(horizontal: false, vertical: true)
                 }
                 if let s = spec, s != EffectSpec(kind: s.kind), s.spectrum == nil {
-                    Button("Reset effect colours") { apply(EffectSpec(kind: s.kind), live: false) }.buttonStyle(.link).font(.system(size: DS.footnote))
+                    Button("Reset effect colors") { apply(EffectSpec(kind: s.kind), live: false) }.buttonStyle(.link).font(.system(size: DS.footnote))
                 }
             }
         }
@@ -41,16 +41,16 @@ struct TextEffectEditor: View {
     @ViewBuilder func textColorRow(_ spec: EffectSpec?) -> some View {
         let current = c.value(of: .draftTextColor)
         let fillsLetters = ["accent", "gradient", "spectrum"].contains(spec?.kind ?? "")
-        row(fillsLetters ? "Text colour (fallback)" : "Text colour") {
+        row(fillsLetters ? "Text color (fallback)" : "Text color") {
             if current != nil { Button("Automatic") { c.setTextColor(nil); model.editorTick &+= 1 }.buttonStyle(.link).font(.system(size: DS.caption)) }
-            ColorPicker("Text colour", selection: colorBinding(current ?? c.theme.textColor) { hex in c.setTextColor(ColorMath.readable(hex, on: c.theme.pageColor).hex, coalescing: true); model.editorTick &+= 1 }, supportsOpacity: false)
-                .labelsHidden().accessibilityLabel("Text colour")
+            ColorPicker("Text color", selection: colorBinding(current ?? c.theme.textColor) { hex in c.setTextColor(ColorMath.readable(hex, on: c.theme.pageColor).hex, coalescing: true); model.editorTick &+= 1 }, supportsOpacity: false)
+                .labelsHidden().accessibilityLabel("Text color")
         }
-        .help(fillsLetters ? "Used when the effect can't be shown, for example with Increase Contrast" : "The letters' colour; the effect keeps its own colour")
+        .help(fillsLetters ? "Used when the effect can't be shown, for example with Increase Contrast" : "The letters' color; the effect keeps its own color")
     }
 
     @ViewBuilder func controls(_ s: EffectSpec, page: String) -> some View {
-        let names = ["glow": "Glow colour", "shadow": "Shadow colour", "outline": "Outline colour", "lift": "Offset colour", "emboss": "Emboss colour", "accent": "Accent colour"]
+        let names = ["glow": "Glow color", "shadow": "Shadow color", "outline": "Outline color", "lift": "Offset color", "emboss": "Emboss color", "accent": "Accent color"]
         if let name = names[s.kind] {
             row(name) {
                 if s.color != nil { Button("Automatic") { var n = s; n.color = nil; apply(n, live: false) }.buttonStyle(.link).font(.system(size: DS.caption)) }
@@ -64,14 +64,14 @@ struct TextEffectEditor: View {
         if s.kind == "gradient" {
             let stops = s.stops ?? EffectSpec(kind: "gradient").fillColors(accent: c.theme.accent, text: c.theme.textColor, page: page)
             ForEach(Array(stops.enumerated()), id: \.offset) { i, hex in
-                row("Colour \(i + 1)") {
-                    if stops.count > 2 { IconButton(symbol: "minus.circle", label: "Remove colour \(i + 1)", size: 22) { var n = s; var st = stops; st.remove(at: i); n.stops = st; apply(n, live: false) } }
-                    ColorPicker("Colour \(i + 1)", selection: colorBinding(hex) { v in var n = s; var st = stops; st[i] = v; n.stops = st; apply(n, live: true) }, supportsOpacity: false)
-                        .labelsHidden().accessibilityLabel("Gradient colour \(i + 1) of \(stops.count)")
+                row("Color \(i + 1)") {
+                    if stops.count > 2 { IconButton(symbol: "minus.circle", label: "Remove color \(i + 1)", size: 22) { var n = s; var st = stops; st.remove(at: i); n.stops = st; apply(n, live: false) } }
+                    ColorPicker("Color \(i + 1)", selection: colorBinding(hex) { v in var n = s; var st = stops; st[i] = v; n.stops = st; apply(n, live: true) }, supportsOpacity: false)
+                        .labelsHidden().accessibilityLabel("Gradient color \(i + 1) of \(stops.count)")
                 }
             }
             if stops.count < 5 {
-                Button("Add Colour") { var n = s; n.stops = stops + [Backdrop.mix(stops.last!, c.theme.accent, 0.5)]; apply(n, live: false) }.buttonStyle(.link).font(.system(size: DS.footnote))
+                Button("Add Color") { var n = s; n.stops = stops + [Backdrop.mix(stops.last!, c.theme.accent, 0.5)]; apply(n, live: false) }.buttonStyle(.link).font(.system(size: DS.footnote))
             }
             slider("Direction", value: s.angle ?? 0, range: 0...360, shown: "\(Int(s.angle ?? 0))°") { v in var n = s; n.angle = (v / 15).rounded() * 15; apply(n, live: true) }
         }

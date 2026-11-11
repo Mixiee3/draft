@@ -848,7 +848,7 @@ public final class EditorController: NSObject, NSTextStorageDelegate, NSTextView
     private var undoObservers: [NSObjectProtocol] = []
     deinit { undoObservers.forEach(NotificationCenter.default.removeObserver) }
 
-    /// For live controls (sliders, colour wells): repeated changes to the same range within a moment
+    /// For live controls (sliders, color wells): repeated changes to the same range within a moment
     /// are one Undo step. The first change registers the undo with the original look.
     public func setEffect(_ value: String?, coalescing: Bool) { setLive(.draftEffect, value, coalescing: coalescing) { self.setEffect(value) } }
     public func setTextColor(_ hex: String?, coalescing: Bool) { setLive(.draftTextColor, hex, coalescing: coalescing) { self.setTextColor(hex) } }

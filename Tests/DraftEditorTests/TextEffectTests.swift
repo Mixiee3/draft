@@ -106,7 +106,7 @@ final class SpectrumTests: XCTestCase {
         XCTAssertTrue(c.layout.spectrumRects(in: c.textView.bounds, origin: .zero).isEmpty, "Reduce Motion: still")
         th.animateEffects = true; th.plainEffects = true; c.theme = th
         let fg = (c.storage.attribute(.foregroundColor, at: 0, effectiveRange: nil) as! NSColor).usingColorSpace(.sRGB)!
-        XCTAssertGreaterThanOrEqual(ColorMath.contrast(ColorMath.hex(Double(fg.redComponent), Double(fg.greenComponent), Double(fg.blueComponent)), th.pageColor), 4.4, "Increase Contrast: a readable solid colour")
+        XCTAssertGreaterThanOrEqual(ColorMath.contrast(ColorMath.hex(Double(fg.redComponent), Double(fg.greenComponent), Double(fg.blueComponent)), th.pageColor), 4.4, "Increase Contrast: a readable solid color")
         // Too long or across paragraphs: refused.
         let ns = c.storage.string as NSString
         c.textView.setSelectedRange(NSRange(location: ns.range(of: "long").location, length: 250))
@@ -152,10 +152,10 @@ final class GradientRenderingTests: XCTestCase {
         let a = render(c, view)
         let scale = CGFloat(a.pixelsWide) / c.textView.bounds.width
         let h1 = hues(a, run, scale: scale)
-        XCTAssertGreaterThan(h1.count, 40, "the run is drawn in colour")
+        XCTAssertGreaterThan(h1.count, 40, "the run is drawn in color")
         let jumps = zip(h1, h1.dropFirst()).filter { min(abs($0 - $1), 1 - abs($0 - $1)) > 0.12 }.count
         XCTAssertLessThanOrEqual(jumps, 2, "one gradient across the phrase, not one per letter (\(jumps) jumps)")
-        XCTAssertGreaterThan((h1.max() ?? 0) - (h1.min() ?? 0), 0.3, "several colours across the run")
+        XCTAssertGreaterThan((h1.max() ?? 0) - (h1.min() ?? 0), 0.3, "several colors across the run")
         Thread.sleep(forTimeInterval: 0.6)
         let b = render(c, view)
         XCTAssertNotEqual(hues(b, run, scale: scale), h1, "it moves")

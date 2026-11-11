@@ -47,7 +47,7 @@ final class AgentCollectionTests: XCTestCase {
         let board = d.views.first { $0.type == "kanban" }!
         for bad in [e("collection_add_item", value: #"{"Status": "Someday"}"#), e("collection_add_item", value: #"{"Date": "next week"}"#),
                     e("collection_add_item", value: #"{"Nope": "x"}"#), e("collection_add_item", value: "not json"),
-                    e("collection_update_item", target: "i_missing", value: "{}"), e("collection_add_field", value: "colour", text: "Hue"),
+                    e("collection_update_item", target: "i_missing", value: "{}"), e("collection_add_field", value: "color", text: "Hue"),
                     e("collection_add_field", value: "text", text: "status"), e("collection_set_view", target: board.id, value: #"{"groupBy": "Date"}"#),
                     e("collection_set_view", target: board.id, value: #"{"filters": [{"field": "Status", "op": "near"}]}"#)] {
             XCTAssertThrowsError(try d.applying(bad, newPage: page), bad.action)

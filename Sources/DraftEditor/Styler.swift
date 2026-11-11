@@ -186,9 +186,9 @@ public enum Styler {
         }
     }
 
-    /// Draws one effect. The letters keep the text colour when one is set (`hasTextColor`); the
-    /// effect has its own colour and strength. Without a text colour the effect supplies a readable
-    /// default. Increase Contrast keeps the letters' colour and drops the decoration.
+    /// Draws one effect. The letters keep the text color when one is set (`hasTextColor`); the
+    /// effect has its own color and strength. Without a text color the effect supplies a readable
+    /// default. Increase Contrast keeps the letters' color and drops the decoration.
     static func applyEffect(_ value: String, _ attrs: inout [NSAttributedString.Key: Any], _ fg: inout NSColor, hasTextColor: Bool = false, theme: EditorTheme) {
         guard let e = EffectSpec(value) else { return }
         let d = TextEffects.colors(accent: theme.accent, text: theme.textColor, page: theme.pageColor)
@@ -216,7 +216,7 @@ public enum Styler {
             sh.shadowColor = (own ?? .black).withAlphaComponent((theme.isDarkPage ? 0.7 : 0.4) * (0.4 + k))
             sh.shadowOffset = NSSize(width: 0, height: theme.isDarkPage ? -1 : 1)
         case "outline":
-            // A coloured rim around letters that keep the text colour.
+            // A colored rim around letters that keep the text color.
             attrs[.strokeWidth] = -(1.5 + 4 * k); attrs[.strokeColor] = (own ?? theme.accentColor).withAlphaComponent(0.85); return
         default: return
         }

@@ -202,7 +202,7 @@ struct FieldView: View {
     }
 
     /// Dots in the language of Draft's scenes: a ~13 pt lattice whose dot size (not opacity) falls
-    /// off as 1 − d² inside soft discs anchored to the light, one palette colour, one fill. Styles
+    /// off as 1 − d² inside soft discs anchored to the light, one palette color, one fill. Styles
     /// only change where the discs are and how the size is modulated.
     static func drawDots(_ d: DotTexture, in ctx: inout GraphicsContext, size: CGSize) {
         let w = size.width, h = size.height, sp = max(8, CGFloat(d.spacing)), r0 = CGFloat(d.radius)

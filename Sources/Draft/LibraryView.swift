@@ -146,7 +146,7 @@ struct DocPreview: View {
     var height: CGFloat
     var titleSize: CGFloat = 17
     var body: some View {
-        // The same page colours as the open note (Paper follows dark mode when that's on).
+        // The same page colors as the open note (Paper follows dark mode when that's on).
         let style = model.displayTokens(DocumentAppearance(styleId: meta.styleId))
         let page = Color(hex: style.pageColor)
         let ink = Color(hex: style.textColor)

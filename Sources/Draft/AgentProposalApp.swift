@@ -777,7 +777,7 @@ struct AgentProposalReview: View {
         let folder = { (id: String?) -> String in id == nil || id == "unsorted" ? "Unsorted" : model.library.folders.first { $0.id == id }?.name ?? "a folder" }
         let names = ["title": "a title", "subtitle": "a subtitle", "heading": "a heading", "strong": "a strong heading", "caption": "a caption", "body": "body text",
                      "quote": "a quote", "callout": "a callout", "code": "a code block", "bullet": "a bulleted list", "numbered": "a numbered list", "task": "a task", "none": "plain text"]
-        // (title, removed/old text, new text, the unchanged block a format applies to, colour swatch)
+        // (title, removed/old text, new text, the unchanged block a format applies to, color swatch)
         let (title, before, after, context, swatch): (String, String?, AttributedString?, String?, String?) = {
             let md = { (t: String?) in t.map { (try? AttributedString(markdown: $0, options: .init(interpretedSyntax: .inlineOnlyPreservingWhitespace))) ?? AttributedString($0) } }
             switch e.action {
@@ -857,7 +857,7 @@ struct AgentProposalReview: View {
                 return (name.map { "Add a \($0) effect to \(quoted(e.text))" } ?? "Remove the effect from \(quoted(e.text))", nil, block.map { formatted($0, e) }, nil, nil)
             case "bold", "italic", "underline", "strike", "code", "highlight", "text_color", "link", "unlink":
                 let verb = ["bold": "Make bold", "italic": "Make italic", "underline": "Underline", "strike": "Strike through", "code": "Format as code",
-                            "highlight": "Highlight", "text_color": "Colour", "link": "Link", "unlink": "Remove the link from"][e.action]!
+                            "highlight": "Highlight", "text_color": "Color", "link": "Link", "unlink": "Remove the link from"][e.action]!
                 return ("\(verb) \(quoted(e.text))\(e.action == "link" ? " to \(e.value ?? "")" : "")", nil, block.map { formatted($0, e) },
                         nil, ["highlight", "text_color"].contains(e.action) ? e.value : nil)
             default: return (e.action.replacingOccurrences(of: "_", with: " ").capitalized, nil, nil, block, nil)

@@ -11,7 +11,7 @@ final class EffectColorTests: XCTestCase {
         view = DocumentEditorView(frame: NSRect(x: 0, y: 0, width: 900, height: 500))
         window = NSWindow(contentRect: view.frame, styleMask: [.titled], backing: .buffered, defer: false)
         window.contentView = view
-        c.load(Node("doc", content: [Node("heading", attrs: ["id": "b_h", "level": 1], content: [.text("Colourful heading")]), Node("paragraph", attrs: ["id": "b_p"], content: [.text("Plain neighbour text")])]))
+        c.load(Node("doc", content: [Node("heading", attrs: ["id": "b_h", "level": 1], content: [.text("Colorful heading")]), Node("paragraph", attrs: ["id": "b_p"], content: [.text("Plain neighbour text")])]))
         window.makeFirstResponder(c.textView)
     }
     func hex(_ any: Any?) -> String? { (any as? NSColor)?.usingColorSpace(.sRGB).map { ColorMath.hex(Double($0.redComponent), Double($0.greenComponent), Double($0.blueComponent)) } }
@@ -24,12 +24,12 @@ final class EffectColorTests: XCTestCase {
         XCTAssertEqual(EffectSpec(mark: g.mark), g)
         XCTAssertEqual(EffectSpec("spectrum:neon:fast:backward")?.spectrum?.palette, "neon")
         for bad in ["glow?color=red", "gradient?stops=#123456", "glow?intensity=3", "glow?evil=1", "sparkle", "outline?angle=999"] { XCTAssertNil(EffectSpec(bad), bad) }
-        XCTAssertNoThrow(try AgentEdit(action: "text_effect", blockId: "b_h", value: v, text: "Colourful").validate())
-        XCTAssertThrowsError(try AgentEdit(action: "text_effect", blockId: "b_h", value: "glow?color=#zzzzzz", text: "Colourful").validate())
+        XCTAssertNoThrow(try AgentEdit(action: "text_effect", blockId: "b_h", value: v, text: "Colorful").validate())
+        XCTAssertThrowsError(try AgentEdit(action: "text_effect", blockId: "b_h", value: "glow?color=#zzzzzz", text: "Colorful").validate())
     }
 
-    func testTextColourAndEffectColourAreIndependent() {
-        let r = (c.textView.string as NSString).range(of: "Colourful")
+    func testTextColorAndEffectColorAreIndependent() {
+        let r = (c.textView.string as NSString).range(of: "Colorful")
         c.textView.setSelectedRange(r)
         c.setTextColor("#2f5bd3")
         for (kind, check) in [("glow", { (a: [NSAttributedString.Key: Any]) in self.hex((a[.shadow] as? NSShadow)?.shadowColor?.withAlphaComponent(1)) }),
@@ -39,13 +39,13 @@ final class EffectColorTests: XCTestCase {
             c.textView.setSelectedRange(r)
             c.setEffect("\(kind)?color=#c2366b&intensity=0.9")
             let a = c.storage.attributes(at: r.location, effectiveRange: nil)
-            XCTAssertEqual(hex(a[.foregroundColor]), "#2f5bd3", "\(kind): the letters keep the text colour")
-            XCTAssertEqual(check(a), "#c2366b", "\(kind): the effect has its own colour")
+            XCTAssertEqual(hex(a[.foregroundColor]), "#2f5bd3", "\(kind): the letters keep the text color")
+            XCTAssertEqual(check(a), "#c2366b", "\(kind): the effect has its own color")
         }
         // Neighbouring text is untouched.
         let n = c.storage.attributes(at: (c.textView.string as NSString).range(of: "Plain").location, effectiveRange: nil)
         XCTAssertNil(n[.draftEffect]); XCTAssertNil(n[.shadow]); XCTAssertNil(n[.draftTextColor])
-        // Persisted with both colours, and back after a reload.
+        // Persisted with both colors, and back after a reload.
         let d = c.document()
         XCTAssertEqual(d.content?[0].content?.first?.marks?.first { $0.type == "effect" }?.attrs?["color"], "#c2366b")
         XCTAssertTrue(d.content?[0].content?.first?.marks?.contains(Mark("textStyle", attrs: ["color": "#2f5bd3"])) == true)
@@ -53,7 +53,7 @@ final class EffectColorTests: XCTestCase {
     }
 
     func testAccentAndGradientFillsStayReadable() {
-        let r = (c.textView.string as NSString).range(of: "Colourful")
+        let r = (c.textView.string as NSString).range(of: "Colorful")
         c.textView.setSelectedRange(r); c.setEffect("accent?color=#fff3a3")
         let fg = hex(c.storage.attribute(.foregroundColor, at: r.location, effectiveRange: nil))!
         XCTAssertGreaterThanOrEqual(ColorMath.contrast(fg, c.theme.pageColor), 4.4, "a pale accent is darkened")
@@ -62,7 +62,7 @@ final class EffectColorTests: XCTestCase {
     }
 
     func testLiveDragIsOneUndo() {
-        let r = (c.textView.string as NSString).range(of: "Colourful")
+        let r = (c.textView.string as NSString).range(of: "Colorful")
         c.textView.setSelectedRange(r)
         let before = c.document()
         for i in stride(from: 0.1, through: 1.0, by: 0.1) { c.setEffect("glow?intensity=\(String(format: "%.2f", i))", coalescing: true) }
@@ -71,7 +71,7 @@ final class EffectColorTests: XCTestCase {
         XCTAssertEqual(c.document(), before, "one Undo for the whole drag")
         for i in 1...4 { c.setTextColor(["#2f5bd3", "#7b4fd6", "#c2366b", "#c75a1d"][i - 1], coalescing: true) }
         c.textView.undoManager?.undo()
-        XCTAssertEqual(c.document(), before, "colour drags too")
+        XCTAssertEqual(c.document(), before, "color drags too")
     }
 
     func testGradientStopsAndAngleReachThePixels() {

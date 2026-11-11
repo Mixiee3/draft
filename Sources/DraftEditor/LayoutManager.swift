@@ -283,7 +283,7 @@ public final class DraftLayoutManager: NSLayoutManager {
         ctx.textMatrix = textMatrix
         ctx.setTextDrawingMode(.clip)
         CTFontDrawGlyphs(font, glyphs, positions, count, ctx)
-        // One gradient period spans the whole run; it slides by the phase, so the colours move
+        // One gradient period spans the whole run; it slides by the phase, so the colors move
         // without any layout or attribute change.
         let colors = run.colors.map(\.cgColor) as CFArray
         if let g = CGGradient(colorsSpace: CGColorSpace(name: CGColorSpace.sRGB), colors: colors, locations: nil), run.spec.seconds == 0 {

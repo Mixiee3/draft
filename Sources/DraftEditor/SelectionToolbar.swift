@@ -117,7 +117,7 @@ public final class SelectionToolbar: NSView {
         let rowBreak = Item(id: "break", label: "", symbol: nil, width: 0, isSeparator: true, isBreak: true)
         switch mode {
         case .main:
-            // Inline marks | link and code | colour | effects | more. The right-click menu keeps the
+            // Inline marks | link and code | color | effects | more. The right-click menu keeps the
             // clipboard, look-up and block actions, so the two never repeat each other.
             let hl = c.value(of: .draftHighlight)
             let fx = c.value(of: .draftEffect)
@@ -130,12 +130,12 @@ public final class SelectionToolbar: NSView {
                 Item(id: "link", label: "Link (⌘K)", symbol: "link", action: { [weak self] in self?.openLink() }, isActive: c.value(of: .draftLink) != nil, isEnabled: !code),
                 Item(id: "code", label: "Inline code (⌘E)", symbol: "chevron.left.forwardslash.chevron.right", action: { c.toggleMark(.code) }, isActive: c.isMarkActive(.code), isEnabled: !code),
                 sep(2),
-                Item(id: "highlight", label: hl == nil ? "Highlight (⌥⌘H reapplies the last colour)" : "Remove highlight", symbol: "highlighter", swatch: hl, action: { [weak self] in
+                Item(id: "highlight", label: hl == nil ? "Highlight (⌥⌘H reapplies the last color)" : "Remove highlight", symbol: "highlighter", swatch: hl, action: { [weak self] in
                     guard let self else { return }
                     let last = self.controller.lastColor?.kind == "highlight" ? self.controller.lastColor?.hex : DraftPalette.highlights.first?.1
                     self.controller.setHighlight(self.controller.value(of: .draftHighlight) != nil ? nil : last)
                 }, isActive: hl != nil, isEnabled: !code),
-                Item(id: "palette", label: "Text colour and highlight colours", symbol: "chevron.down", width: 20, action: { [weak self] in self?.setMode(.palette) }, isEnabled: !code),
+                Item(id: "palette", label: "Text color and highlight colors", symbol: "chevron.down", width: 20, action: { [weak self] in self?.setMode(.palette) }, isEnabled: !code),
                 sep(3),
                 Item(id: "effects", label: "Text effects", symbol: "sparkles", action: { [weak self] in self?.setMode(.effects) }, isActive: fx != nil, isEnabled: !code, title: "Effects"),
                 sep(4),
@@ -151,10 +151,10 @@ public final class SelectionToolbar: NSView {
             items.append(rowBreak)
             items.append(label("Text"))
             for (name, hex) in DraftPalette.textColors {
-                items.append(Item(id: "t" + hex, label: "Text colour \(name)", symbol: nil, swatch: hex, swatchIsText: true, width: 26, action: { [weak self] in self?.controller.setTextColor(hex); self?.setMode(.main) }, isActive: currentText == hex))
+                items.append(Item(id: "t" + hex, label: "Text color \(name)", symbol: nil, swatch: hex, swatchIsText: true, width: 26, action: { [weak self] in self?.controller.setTextColor(hex); self?.setMode(.main) }, isActive: currentText == hex))
             }
             items.append(sep(1))
-            items.append(Item(id: "none", label: "Remove colours", symbol: "nosign", action: { [weak self] in
+            items.append(Item(id: "none", label: "Remove colors", symbol: "nosign", action: { [weak self] in
                 self?.controller.setHighlight(nil); self?.controller.setTextColor(nil); self?.setMode(.main)
             }, isEnabled: current != nil || currentText != nil, title: "None"))
         case .effects:
@@ -162,15 +162,15 @@ public final class SelectionToolbar: NSView {
             let currentKind = current.flatMap(EffectSpec.init)?.kind
             items = [back(.main, "Format"), label("Effects")]
             for e in TextEffects.all where e.kind != "spectrum" {
-                // Picking the effect already on the text keeps its colours; another one starts fresh.
+                // Picking the effect already on the text keeps its colors; another one starts fresh.
                 items.append(Item(id: "fx" + e.kind, label: "\(e.name) effect: \(e.use)", symbol: nil, action: { [weak self] in
                     if currentKind != e.kind { self?.controller.setEffect(e.kind) }; self?.setMode(.main)
                 }, isActive: currentKind == e.kind, title: e.name))
             }
-            items.append(Item(id: "fxspectrum", label: "Spectrum: a moving colour gradient for a title or label", symbol: "chevron.right", action: { [weak self] in self?.setMode(.spectrum) },
+            items.append(Item(id: "fxspectrum", label: "Spectrum: a moving color gradient for a title or label", symbol: "chevron.right", action: { [weak self] in self?.setMode(.spectrum) },
                               isActive: current.flatMap(Spectrum.init) != nil, title: "Spectrum"))
             items.append(sep(1))
-            items.append(Item(id: "fxcustom", label: "Customize colours and strength in the Format panel", symbol: "slider.horizontal.3", action: { [weak self] in
+            items.append(Item(id: "fxcustom", label: "Customize colors and strength in the Format panel", symbol: "slider.horizontal.3", action: { [weak self] in
                 self?.controller.onCustomizeEffect?(); self?.setMode(.main)
             }, isEnabled: current != nil, title: "Customize…"))
             items.append(Item(id: "fxnone", label: "Remove the effect", symbol: "nosign", action: { [weak self] in self?.controller.setEffect(nil); self?.setMode(.main) }, isEnabled: current != nil, title: "None"))
@@ -410,7 +410,7 @@ public final class SelectionToolbar: NSView {
             }
             let color = it.isEnabled ? (it.isActive ? (dark ? .white : accent) : fg) : fg.withAlphaComponent(0.3)
             if let t = it.title {
-                // A chip with words: a quiet fill (it's a button), an optional icon or colour dot, then
+                // A chip with words: a quiet fill (it's a button), an optional icon or color dot, then
                 // the label; effect chips show their own effect.
                 if !it.isActive && !hovered && it.isEnabled {
                     fg.withAlphaComponent(dark ? 0.08 : 0.045).setFill()

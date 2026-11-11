@@ -87,6 +87,12 @@ extension Automation {
         if let a = neighbourBefore, let b = shotOf("Neighbour line above everything.") { r["neighbourAbove"] = String(format: "%.2f", rgbDiff(a, b)) }
         if let a = bottomBefore, let b = shotOf("Neighbour line below everything.") { r["neighbourBelow"] = String(format: "%.2f", rgbDiff(a, b)) }
         await shot("effects-live", w, settle: 0.1)
+        // The effect editor for a selected Glow line and a Gradient line.
+        for (kind, line) in [("glow", "Glow sample words"), ("gradient", "Gradient sample words")] {
+            c.textView.setSelectedRange(ns().range(of: line)); m.panel = .format; m.editorTick &+= 1; await wait(0.7)
+            await shot("effect-editor-\(kind)", w, settle: 0.1)
+        }
+        m.panel = nil; await wait(0.4)
         func stillThere(_ label: String) async {
             var worst = 0.0, worstKind = ""
             for e in effectLines where e.kind != "spectrum" {

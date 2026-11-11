@@ -159,7 +159,7 @@ final class SpectrumCoreTests: XCTestCase {
 }
 
 final class EffectExportTests: XCTestCase {
-    func testColoursAndStrengthExport() {
+    func testColorsAndStrengthExport() {
         var doc = DocFile.empty(id: "d_ex", title: "E", styleId: "paper")
         doc.content = Node("doc", content: [Node("paragraph", attrs: ["id": "b_p"], content: [
             .text("Glow", marks: [EffectSpec("glow?color=#ff4fd8&intensity=0.80")!.mark]),
