@@ -19,6 +19,58 @@ final class TableTests: XCTestCase {
     func pump() { let e = expectation(description: "q"); DispatchQueue.main.async { e.fulfill() }; wait(for: [e], timeout: 2) }
     var table: Node? { c.document().content?.first { $0.type == "table" } }
 
+    func testColumnAndRowReorderKeepsCellsAndIsOneUndo() throws {
+        func cell(_ id: String, _ inline: [Node]) -> Node { Node("tableCell", attrs: ["id": .string(id)], content: inline) }
+        let link = Mark("link", attrs: ["href": "https://example.com"])
+        let t = Node("table", attrs: ["id": "b_t"], content: [
+            Node("tableRow", attrs: ["id": "r_0"], content: [cell("c_00", [.text("Name")]), cell("c_01", [.text("Site")]), cell("c_02", [.text("Score")])]),
+            Node("tableRow", attrs: ["id": "r_1"], content: [cell("c_10", [.text("Ada", marks: [Mark("bold")])]), cell("c_11", [.text("home", marks: [link])]), cell("c_12", [.text("9")])]),
+        ])
+        c.load(Node("doc", content: [t, Node("paragraph", attrs: ["id": "b_after"])]))
+        c.tableEditor.begin(tableId: "b_t", row: 1, column: 0)
+        pump()
+        let before = try XCTUnwrap(table)
+        c.tableEditor.moveColumn(by: 1)
+        pump()
+        var after = try XCTUnwrap(table)
+        XCTAssertEqual(Tables.text(after)[0], ["Site", "Name", "Score"])
+        XCTAssertEqual(after.content?[1].content?.map { $0.id ?? "" }, ["c_11", "c_10", "c_12"], "cell ids move with their column")
+        XCTAssertEqual(after.content?[1].content?[1].content?.first?.marks?.first?.type, "bold", "rich text survives")
+        XCTAssertEqual(after.content?[1].content?[0].content?.first?.marks?.first?.attrs?["href"], "https://example.com", "links survive")
+        XCTAssertEqual(c.tableEditor.current.column, 1, "focus follows the column")
+        c.tableEditor.moveColumn(by: 5) // past the edge: nothing happens
+        XCTAssertEqual(Tables.text(try XCTUnwrap(table))[0], ["Site", "Name", "Score"])
+        pump()
+        c.tableEditor.moveRow(by: -1)
+        pump()
+        after = try XCTUnwrap(table)
+        XCTAssertEqual(after.content?.map { $0.id ?? "" }, ["r_1", "r_0"])
+        c.tableEditor.end(); pump()
+        c.undo.undo(); pump()
+        XCTAssertEqual(Tables.text(try XCTUnwrap(table)), [["Site", "Name", "Score"], ["home", "Ada", "9"]], "one Undo per move")
+        c.undo.undo(); pump()
+        XCTAssertEqual(table, before, "and the next Undo restores the original exactly")
+        var md = DocFile.empty(id: "d", title: "t")
+        c.tableEditor.begin(tableId: "b_t", row: 0, column: 2); pump(); c.tableEditor.moveColumn(by: -2); c.tableEditor.end(); pump()
+        md.content = c.document()
+        let out = Markdown.render(md, assetPath: { _ in "" }, pageLink: { _, _ in nil }).markdown
+        XCTAssertNotNil(out.range(of: #"\|\s*Score\s*\|\s*Name\s*\|\s*Site\s*\|"#, options: .regularExpression), "export keeps the new order: \(out)")
+    }
+
+    func testDeletingARowOrColumnNeverOverwritesItsNeighbour() throws {
+        func cell(_ id: String, _ t: String) -> Node { Node("tableCell", attrs: ["id": .string(id)], content: [.text(t)]) }
+        c.load(Node("doc", content: [Node("table", attrs: ["id": "b_t"], content: [
+            Node("tableRow", attrs: ["id": "r_0"], content: [cell("a", "A"), cell("b", "B")]),
+            Node("tableRow", attrs: ["id": "r_1"], content: [cell("c", "C"), cell("d", "D")]),
+            Node("tableRow", attrs: ["id": "r_2"], content: [cell("e", "E"), cell("f", "F")])]), Node("paragraph", attrs: ["id": "b_after"])]))
+        c.tableEditor.begin(tableId: "b_t", row: 1, column: 0); pump()
+        c.tableEditor.removeRow(); pump()
+        XCTAssertEqual(Tables.text(try XCTUnwrap(table)), [["A", "B"], ["E", "F"]])
+        c.tableEditor.removeColumn(); pump()
+        XCTAssertEqual(Tables.text(try XCTUnwrap(table)), [["B"], ["F"]])
+        c.tableEditor.end()
+    }
+
     func testInsertEditTabAddRowAndUndo() throws {
         EditorCommands.command("insert.table")!.run(c)
         let id = try XCTUnwrap(table?.id)

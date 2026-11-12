@@ -90,6 +90,20 @@ struct DraftCommands: Commands {
             Button("Style Panel") { model.panel = model.panel == .style ? nil : .style }
                 .keyboardShortcut("s", modifiers: [.command, .shift]).disabled(model.activeDocId == nil)
         }
+        CommandMenu("Table") {
+            let te = { () -> TableEditor? in model.activeController.map { $0.tableEditor }.flatMap { $0.isEditing ? $0 : nil } }
+            let run = { (f: (TableEditor) -> Void) in if let t = te() { f(t) } else { NSSound.beep() } }
+            Button("Move Column Left") { run { $0.moveColumn(by: -1) } }.keyboardShortcut(.leftArrow, modifiers: [.command, .option, .shift])
+            Button("Move Column Right") { run { $0.moveColumn(by: 1) } }.keyboardShortcut(.rightArrow, modifiers: [.command, .option, .shift])
+            Button("Move Row Up") { run { $0.moveRow(by: -1) } }.keyboardShortcut(.upArrow, modifiers: [.command, .option, .shift])
+            Button("Move Row Down") { run { $0.moveRow(by: 1) } }.keyboardShortcut(.downArrow, modifiers: [.command, .option, .shift])
+            Divider()
+            // ⌥⌘↓ / ⌥⌘→ inside a table cell; not bound here because ⌥⌘↓ moves blocks outside tables.
+            Button("Add Row Below (⌥⌘↓ in a table)") { run { $0.addRow() } }
+            Button("Add Column After (⌥⌘→ in a table)") { run { $0.addColumn() } }
+            Button("Delete Row") { run { $0.removeRow() } }
+            Button("Delete Column") { run { $0.removeColumn() } }
+        }
         CommandMenu("Insert") {
             ForEach(EditorCommands.all.filter { $0.group == "Insert" }) { cmd in
                 Button(cmd.plannedFor.map { "\(cmd.title) (planned \($0))" } ?? cmd.title) { run(cmd.id) }
