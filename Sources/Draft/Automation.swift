@@ -525,9 +525,10 @@ enum Automation {
         guard let w = NSApp.windows.first(where: { $0.isVisible }) else { return }
         w.setFrame(NSRect(x: 60, y: 60, width: 1440, height: 900), display: true)
         var r: [String: Any] = [:]
-        let content = bigDoc(10_000)
+        let blocks = Int(ProcessInfo.processInfo.environment["DRAFT_PERF_BLOCKS"] ?? "") ?? 10_000
+        let content = bigDoc(blocks)
         let id = newId("d_")
-        var doc = DocFile.empty(id: id, title: "Ten thousand blocks")
+        var doc = DocFile.empty(id: id, title: "\(blocks) blocks")
         doc.content = content
         if let style = ProcessInfo.processInfo.environment["DRAFT_PERF_STYLE"] { doc.appearance.styleId = style; r["style"] = style }
         try? m.vault.saveDoc(doc)
@@ -564,6 +565,24 @@ enum Automation {
         var moves: [Double] = []
         for _ in 0..<5 { t0 = CFAbsoluteTimeGetCurrent(); c.moveSelectedBlocks(by: 1); await settle(); moves.append(ms(t0)) }
         r["moveMs"] = stats(moves)
+        var ids: [String] = []; walk(c.document()) { if let i = $0.id { ids.append(i) } }
+        r["blockIdsUnique"] = Set(ids).count == ids.count
+        // Outline as the sidebar builds it (from the saved copy), and scrolling through the middle.
+        m.flushAll()
+        t0 = CFAbsoluteTimeGetCurrent(); let outline = m.outline(id); r["outlineMs"] = ms(t0); r["outlineItems"] = outline.count
+        t0 = CFAbsoluteTimeGetCurrent(); _ = m.outline(id); r["outlineCachedMs"] = ms(t0)
+        if let sv = m.editors[id]?.scrollView {
+            let start = sv.contentView.bounds.minY
+            var steps: [Double] = []
+            for k in 1...120 {
+                t0 = CFAbsoluteTimeGetCurrent()
+                sv.contentView.scroll(to: NSPoint(x: 0, y: start + CGFloat(k) * 40))
+                sv.reflectScrolledClipView(sv.contentView)
+                tv.setNeedsDisplay(tv.visibleRect); tv.displayIfNeeded()
+                steps.append(ms(t0))
+            }
+            r["scrollMs"] = stats(steps)
+        }
         if let tp = (0..<(tv.string as NSString).length).lazy.map({ c.paragraphRange(at: $0) }).first(where: { c.block(at: $0).kind == .toggle }) {
             t0 = CFAbsoluteTimeGetCurrent(); c.toggleOpen(at: tp); await settle(); r["toggleMs"] = ms(t0)
         }

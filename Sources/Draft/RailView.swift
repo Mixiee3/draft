@@ -330,7 +330,7 @@ struct OutlinePane: View {
     let docId: String
     let content: Node
     var body: some View {
-        let items = outlineOf(content)
+        let items = model.outline(docId)
         PaneTitle(title: "Table of Contents")
         if items.isEmpty { EmptyHint(text: "Headings and pages in this document will appear here.") }
         ScrollView {

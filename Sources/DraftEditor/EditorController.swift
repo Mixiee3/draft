@@ -741,7 +741,25 @@ public final class EditorController: NSObject, NSTextStorageDelegate, NSTextView
         let b = block(at: pr)
         guard b.kind == .toggle else { return }
         setBlock(pr, b.with(checked: !b.checked))
-        refreshHidden()
+        // Only this toggle's children can change; a toggle inside a collapsed one changes nothing visible.
+        if hiddenChars.contains(pr.location) { refreshHidden() } else { refreshHidden(toggleAt: pr) }
+    }
+
+    /// Recomputes hidden text for one toggle's children instead of the whole note (long notes).
+    func refreshHidden(toggleAt pr: NSRange) {
+        let t = block(at: pr)
+        var end = NSMaxRange(pr)
+        while end < storage.length {
+            let next = ns.paragraphRange(for: NSRange(location: end, length: 0))
+            let b = block(at: next)
+            guard b.kind.isList, b.indent > t.indent || (b.continuation && b.indent == t.indent) else { break }
+            end = NSMaxRange(next)
+        }
+        var new = hiddenChars
+        new.remove(integersIn: NSMaxRange(pr)..<max(NSMaxRange(pr), end))
+        new.formUnion(computeHidden(from: pr.location, to: end))
+        guard new != hiddenChars else { return }
+        apply(hidden: new)
     }
 
     public func toggleCurrentOpen() {
@@ -750,11 +768,11 @@ public final class EditorController: NSObject, NSTextStorageDelegate, NSTextView
     }
 
     /// Characters inside collapsed toggles.
-    func computeHidden() -> IndexSet {
+    func computeHidden(from start: Int = 0, to stop: Int? = nil) -> IndexSet {
         var hidden = IndexSet()
         var collapsedIndent: Int? = nil
-        var loc = 0
-        let len = storage.length
+        var loc = start
+        let len = stop ?? storage.length
         while loc < len {
             let pr = ns.paragraphRange(for: NSRange(location: loc, length: 0))
             let b = block(at: pr)
@@ -772,6 +790,10 @@ public final class EditorController: NSObject, NSTextStorageDelegate, NSTextView
     func refreshHidden() {
         let new = computeHidden()
         guard new != hiddenChars else { return }
+        apply(hidden: new)
+    }
+
+    private func apply(hidden new: IndexSet) {
         let changed = new.symmetricDifference(hiddenChars)
         hiddenChars = new
         if let lo = changed.first, let hi = changed.last {

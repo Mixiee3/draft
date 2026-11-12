@@ -47,6 +47,19 @@ final class BlockTypesTests: XCTestCase {
         XCTAssertTrue(md.markdown.contains("> 💡 Remember\n> \n> second line") || md.markdown.contains("> 💡 Remember"))
     }
 
+    func testIncrementalToggleHidingMatchesAFullRecompute() {
+        func toggle(_ id: String, _ text: String, _ kids: [Node], open: Bool = true) -> Node {
+            Node("toggleList", content: [Node("toggleItem", attrs: ["id": .string(id), "open": .bool(open)], content: [Node("paragraph", content: [.text(text)])] + kids)])
+        }
+        let inner = toggle("b_in", "inner", [Node("toggleList", content: [Node("toggleItem", attrs: ["id": "b_leaf"], content: [Node("paragraph", content: [.text("leaf")])])])])
+        c.load(Node("doc", content: [toggle("b_a", "A", [inner]), Node("paragraph", attrs: ["id": "b_mid"], content: [.text("between")]), toggle("b_b", "B", [], open: false)]))
+        for id in ["b_in", "b_a", "b_in", "b_a", "b_b", "b_a"] {
+            guard let pr = c.paragraph(withId: id) else { return XCTFail(id) }
+            c.toggleOpen(at: pr)
+            XCTAssertEqual(c.hiddenChars, c.computeHidden(), "after toggling \(id)")
+        }
+    }
+
     func testToggleCollapseHidesChildrenUndoAndPersistence() {
         type("+ Details\n")
         tv.insertTab(nil)

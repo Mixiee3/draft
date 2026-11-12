@@ -840,6 +840,12 @@ final class AppModel {
     // MARK: Backups
 
     /// Listing backups reads the disk; panels ask on every render.
+    /// Headings and page cards of the saved copy, rebuilt only when that copy changes (not per redraw).
+    func outline(_ id: String) -> [OutlineItem] {
+        let d = docs[id]
+        return memoized("outline.\(id)", [id, d?.updatedAt ?? 0, d?.content.content?.count ?? 0]) { outlineOf(d?.content ?? Node("doc")) }
+    }
+
     func snapshots(_ id: String) -> [Snapshot] {
         memoized("snapshots.\(id)", [id, saveState, docRevision[id] ?? 0]) { vault.snapshots(id) }
     }
