@@ -949,6 +949,39 @@ final class AppModel {
         }
     }
 
+    // MARK: Vault check
+
+    var vaultReport: VaultCheck.Report?
+    var vaultChecking = false
+    var vaultConfirmMove = false
+
+    /// Saves everything first so a just-inserted image counts as used, then reads the vault off the main thread.
+    func checkVault() async {
+        flushAll()
+        vaultChecking = true; vaultConfirmMove = false
+        let v = vault
+        vaultReport = await Task.detached(priority: .userInitiated) { VaultCheck.run(v) }.value
+        vaultChecking = false
+    }
+
+    /// Moves only files that are still unused on a fresh check; one Undo puts them back.
+    func moveUnusedFiles() async {
+        vaultConfirmMove = false
+        let shown = Set(vaultReport?.unusedAssets ?? [])
+        await checkVault()
+        let names = (vaultReport?.unusedAssets ?? []).filter(shown.contains)
+        guard !names.isEmpty else { return }
+        do {
+            let folder = try VaultCheck.moveUnused(names, in: vault)
+            await checkVault()
+            toast("Moved \(names.count) unused file\(names.count == 1 ? "" : "s") to backups/\(folder.lastPathComponent)", action: "Undo") { [weak self] in
+                guard let self else { return }
+                do { try VaultCheck.restore(from: folder, into: self.vault) } catch { self.toast("Could not put the files back: \(error.localizedDescription). They are in \(folder.path).") }
+                Task { await self.checkVault() }
+            }
+        } catch { toast("Could not move the files: \(error.localizedDescription)") }
+    }
+
     // MARK: Toasts
 
     func toast(_ message: String, action: String? = nil, run: (() -> Void)? = nil) {

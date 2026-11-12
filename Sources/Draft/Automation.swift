@@ -50,6 +50,7 @@ enum Automation {
             case "editor-audit": await editorAudit()
             case "text-audit": await textAudit()
             case "presets-shots": await presetsShots()
+            case "vault-check": await vaultCheckShots()
             case "effects-live": await effectsLive(read: false)
             case "effects-read": await effectsLive(read: true)
             case "spectrum-test": await spectrumTest(read: false)
