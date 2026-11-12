@@ -582,7 +582,7 @@ struct AgentProposalReview: View {
                 DraftSegmented("Group changes by", selection: $grouping, options: [("note", proposal.parts == nil ? "Block" : "Note"), ("operation", "Kind")])
                     .fixedSize()
                     .onChange(of: grouping) { _, _ in collapsed = [] }
-                Text(kinds.prefix(3).map { "\($0.1) \($0.0.lowercased())" }.joined(separator: " · "))
+                Text(kinds.prefix(3).map { k, n in "\(n) \(n == 1 && k.hasSuffix("s") ? String(k.dropLast()).lowercased() : k.lowercased())" }.joined(separator: " · "))
                     .font(.system(size: DS.footnote)).foregroundStyle(t.secondary).lineLimit(1).truncationMode(.tail)
             }
         }
