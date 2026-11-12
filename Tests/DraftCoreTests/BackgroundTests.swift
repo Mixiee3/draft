@@ -143,7 +143,10 @@ final class SpectrumCoreTests: XCTestCase {
         XCTAssertEqual(Spectrum("spectrum")?.value, "spectrum:aurora:slow:forward")
         XCTAssertEqual(Spectrum("spectrum:prism:still")?.seconds, 0)
         for bad in ["spectrum:rainbow", "spectrum:prism:warp", "spectrum:prism:slow:up", "glow", "spectrum:a:b:c:d"] { XCTAssertNil(Spectrum(bad), bad) }
-        XCTAssertEqual(Spectrum.palettes.map(\.name), ["Aurora", "Prism", "Sunset Spectrum", "Ocean Rainbow", "Neon Dusk"])
+        XCTAssertEqual(Array(Spectrum.palettes.map(\.name).prefix(5)), ["Aurora", "Prism", "Sunset Spectrum", "Ocean Rainbow", "Neon Dusk"])
+        XCTAssertEqual(Spectrum.palettes.count, 11)
+        XCTAssertEqual(Set(Spectrum.palettes.map(\.id)).count, 11, "unique ids")
+        for p in Spectrum.palettes { XCTAssertEqual(p.colors.first, p.colors.last, "\(p.name) loops without a seam"); XCTAssertGreaterThanOrEqual(Set(p.colors).count, 3, p.name) }
         for s in Styles.all { for p in Spectrum.palettes { for c in Spectrum(palette: p.id).colors(page: s.tokens.pageColor) {
             XCTAssertGreaterThanOrEqual(ColorMath.contrast(c, s.tokens.pageColor), 4.5, "\(p.name) on \(s.name)")
         } } }

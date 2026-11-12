@@ -200,3 +200,48 @@ final class SpectrumPaletteTests: XCTestCase {
         XCTAssertNotEqual(hueSets["ocean"], hueSets["neon"])
     }
 }
+
+final class SpectrumDirectionTests: XCTestCase {
+    /// Hue per pixel column across the phrase.
+    func profile(_ c: EditorController, _ run: NSRect) -> [CGFloat?] {
+        let rep = c.textView.bitmapImageRepForCachingDisplay(in: c.textView.bounds)!
+        c.textView.cacheDisplay(in: c.textView.bounds, to: rep)
+        let scale = CGFloat(rep.pixelsWide) / c.textView.bounds.width
+        return (Int(run.minX * scale)..<Int(run.maxX * scale)).map { x in
+            var hs: [CGFloat] = []
+            for y in Int(run.minY * scale)..<Int(run.maxY * scale) {
+                if let col = rep.colorAt(x: x, y: y)?.usingColorSpace(.sRGB), col.saturationComponent > 0.35, col.alphaComponent > 0.9 { hs.append(col.hueComponent) }
+            }
+            return hs.isEmpty ? nil : hs.sorted()[hs.count / 2]
+        }
+    }
+    /// The shift (pixels) that best lines the second profile up with the first: positive means the
+    /// colors moved to the right.
+    func shift(_ a: [CGFloat?], _ b: [CGFloat?]) -> Int {
+        var best = (0, Double.infinity)
+        for s in -60...60 {
+            var sum = 0.0, n = 0
+            for x in 0..<b.count { let y = x - s; guard y >= 0, y < a.count, let p = a[y], let q = b[x] else { continue }; let d = abs(Double(p - q)); sum += min(d, 1 - d); n += 1 }
+            if n > 40, sum / Double(n) < best.1 { best = (s, sum / Double(n)) }
+        }
+        return best.0
+    }
+
+    func testForwardMovesRightAndBackwardMovesLeft() {
+        for (direction, sign) in [("forward", 1), ("backward", -1)] {
+            let view = DocumentEditorView(frame: NSRect(x: 0, y: 0, width: 900, height: 400))
+            let window = NSWindow(contentRect: view.frame, styleMask: [.titled], backing: .buffered, defer: false)
+            window.contentView = view
+            let c = view.controller
+            c.load(Node("doc", content: [Node("heading", attrs: ["id": "b_h", "level": 1], content: [.text("Direction check heading text", marks: [Mark("effect", attrs: ["kind": "spectrum", "palette": "prism", "speed": "fast", "direction": .string(direction)])])])]))
+            view.layoutSubtreeIfNeeded()
+            let gr = c.layout.glyphRange(forCharacterRange: NSRange(location: 0, length: 28), actualCharacterRange: nil)
+            let o = c.textView.textContainerOrigin
+            let run = c.layout.boundingRect(forGlyphRange: gr, in: c.container).offsetBy(dx: o.x, dy: o.y)
+            let a = profile(c, run)
+            Thread.sleep(forTimeInterval: 0.08)
+            let s = shift(a, profile(c, run))
+            XCTAssertEqual(s.signum(), sign, "\(direction): colors moved \(s > 0 ? "right" : "left") by \(s) px")
+        }
+    }
+}

@@ -121,6 +121,24 @@ extension Automation {
             c.textView.setSelectedRange(NSRange(location: ns().length, length: 0)); await wait(0.5)
         }
         await probe("heading", "Northern lights")
+        // Which way the colors travel on screen: forward (→) must move them to the right.
+        for dir in ["forward", "backward"] {
+            let h = ns().range(of: "Northern lights")
+            c.textView.setSelectedRange(h); c.setEffect("spectrum:prism:slow:\(dir)"); c.textView.setSelectedRange(NSRange(location: ns().length, length: 0)); await wait(0.3)
+            guard let a = grab(rect(of: "Northern lights"), in: c.textView) else { continue }
+            try? await Task.sleep(nanoseconds: 120_000_000)
+            guard let b = grab(rect(of: "Northern lights"), in: c.textView) else { continue }
+            let pa = hueColumns(a), pb = hueColumns(b)
+            var best = (0, Double.infinity)
+            for sh in -40...40 {
+                var sum = 0.0, n = 0
+                for x in 0..<pb.count { let y = x - sh; guard y >= 0, y < pa.count, let p = pa[y], let q = pb[x] else { continue }; let d = abs(p - q); sum += min(d, 1 - d); n += 1 }
+                if n > 40, sum / Double(n) < best.1 { best = (sh, sum / Double(n)) }
+            }
+            r["direction.\(dir)"] = best.0 > 0 ? "right (\(best.0) px)" : best.0 < 0 ? "left (\(-best.0) px)" : "none"
+            c.textView.setSelectedRange(h); c.setEffect("spectrum:aurora:slow:forward"); c.textView.setSelectedRange(NSRange(location: ns().length, length: 0))
+        }
+        await wait(0.5) // let the heading redraw in Aurora before it is measured
         // The palette chosen in the bar (Aurora: teal, blue, violet) is the one on screen.
         if let img = grab(rect(of: "Northern lights"), in: c.textView) {
             let hs = hueColumns(img).compactMap { $0 }
