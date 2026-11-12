@@ -44,7 +44,7 @@ final class AppModel {
     private(set) var libraryRevision = 0
     @ObservationIgnored private var memo: [String: (key: [AnyHashable], value: Any)] = [:]
     /// Per-document edit counter, so cached reads of a document (collections) know when to refresh.
-    private(set) var docRevision: [String: Int] = [:]
+    var docRevision: [String: Int] = [:]
     @ObservationIgnored private var knownCovers: [String: Cover?] = [:]
     @ObservationIgnored private var coverLoads = Set<String>()
     @ObservationIgnored private var croppedCovers: [Cover: NSImage] = [:]
@@ -79,6 +79,8 @@ final class AppModel {
     var ready = false
     var fatal: String?
     var readOnly: String?
+    /// Vault check, repair, versions, backups and startup recovery (Recovery.swift).
+    let recovery = RecoveryState()
     var panel: Panel?
     var docRailTab: DocRailTab = .outline
     var railShowsFolders = false
@@ -124,18 +126,29 @@ final class AppModel {
     @ObservationIgnored private var hosts: [String: EditorHostAdapter] = [:]
     @ObservationIgnored var history: [String: [HistEntry]] = [:]
     @ObservationIgnored private var imageCache: [String: NSImage] = [:]
-    @ObservationIgnored private var dirtyDocs = Set<String>()
+    @ObservationIgnored var dirtyDocs = Set<String>()
     @ObservationIgnored private var libDirty = false
     @ObservationIgnored private var docTimer: Timer?
     @ObservationIgnored private var libTimer: Timer?
 
     // MARK: Boot
 
-    func boot() {
+    func boot(inMemoryLibrary: Library? = nil) {
+        if inMemoryLibrary == nil && !recovery.safeMode && Self.safeModeRequested {
+            recovery.safeMode = true
+            vault.openReadOnly("Safe Mode: Draft opened your notes read-only. Nothing is written until you quit and open Draft normally.")
+            readOnly = vault.readOnlyReason
+        }
+        if inMemoryLibrary == nil, !recovery.startupHandled, let problems = startupProblems(), !problems.isEmpty {
+            recovery.startup = problems
+            return
+        }
         do {
-            try vault.prepare()
+            if !vault.isReadOnly { try vault.prepare() }
             var lib: Library
-            if let l = try vault.loadLibrary() {
+            if let l = inMemoryLibrary {
+                lib = l
+            } else if let l = try vault.loadLibrary() {
                 lib = l
             } else {
                 let seed = Seed.firstRun()
@@ -151,7 +164,7 @@ final class AppModel {
             activeTabId = lib.activeTabId
             Styles.user = lib.userStyles
             let expired = lib.expiredTrash()
-            if !expired.isEmpty { deleteForever(expired) }
+            if !expired.isEmpty && !vault.isReadOnly { deleteForever(expired) }
             loadIndex()
             startDayWatch()
             startAgentProposalWatch()
@@ -248,7 +261,11 @@ final class AppModel {
         if let d = docs[id] { return d }
         do {
             if let d = try vault.loadDoc(id) { docs[id] = d; return d }
-        } catch { toast("Could not open document: \(error.localizedDescription)") }
+        } catch {
+            toast("“\(library.docs[id]?.title.nonEmptyTitle ?? id)” can't be opened: \(error.localizedDescription) The file is kept as it is.", action: "Recover…") { [weak self] in
+                self?.showSettings("recovery"); self?.recovery.tab = "check"; Task { await self?.checkVault() }
+            }
+        }
         return nil
     }
 
@@ -833,28 +850,6 @@ final class AppModel {
         return memoized("stats.\(id)", [id, docRevision[id] ?? 0]) { let s = docStats(c.document()); return (s.words, s.blocks) }
     }
 
-    func restoreSnapshot(_ id: String, _ s: Snapshot) {
-        saveDirtyDocs()
-        do {
-            if let cur = docs[id] { try vault.snapshotIfDue(cur, force: true) } // restoring is itself reversible
-            var old = try vault.loadSnapshot(s)
-            old.id = id
-            old.updatedAt = nowMs()
-            docs[id] = old
-            try vault.saveDoc(old)
-            if let e = editors[id] {
-                e.controller.load(old.content)
-                e.title = old.title
-                e.theme = theme(for: old)
-                e.coverImage = coverImage(old.appearance.cover)
-            }
-            if var m = library.docs[id] { m.applyDerived(from: old); m.updatedAt = old.updatedAt; library.docs[id] = m }
-            scheduleLibrarySave()
-            editorTick &+= 1
-            toast("Restored the version from \(relative(s.savedAt)). The previous version was backed up.")
-        } catch { toast("Could not restore backup: \(error.localizedDescription)") }
-    }
-
     func duplicate(_ id: String) {
         saveDirtyDocs()
         guard let src = ensureDoc(id), let meta = library.docs[id] else { return }
@@ -947,39 +942,6 @@ final class AppModel {
             if let i = library.spaces.firstIndex(where: { $0.id == library.space.id }) { library.spaces[i].name = t }
             scheduleLibrarySave()
         }
-    }
-
-    // MARK: Vault check
-
-    var vaultReport: VaultCheck.Report?
-    var vaultChecking = false
-    var vaultConfirmMove = false
-
-    /// Saves everything first so a just-inserted image counts as used, then reads the vault off the main thread.
-    func checkVault() async {
-        flushAll()
-        vaultChecking = true; vaultConfirmMove = false
-        let v = vault
-        vaultReport = await Task.detached(priority: .userInitiated) { VaultCheck.run(v) }.value
-        vaultChecking = false
-    }
-
-    /// Moves only files that are still unused on a fresh check; one Undo puts them back.
-    func moveUnusedFiles() async {
-        vaultConfirmMove = false
-        let shown = Set(vaultReport?.unusedAssets ?? [])
-        await checkVault()
-        let names = (vaultReport?.unusedAssets ?? []).filter(shown.contains)
-        guard !names.isEmpty else { return }
-        do {
-            let folder = try VaultCheck.moveUnused(names, in: vault)
-            await checkVault()
-            toast("Moved \(names.count) unused file\(names.count == 1 ? "" : "s") to backups/\(folder.lastPathComponent)", action: "Undo") { [weak self] in
-                guard let self else { return }
-                do { try VaultCheck.restore(from: folder, into: self.vault) } catch { self.toast("Could not put the files back: \(error.localizedDescription). They are in \(folder.path).") }
-                Task { await self.checkVault() }
-            }
-        } catch { toast("Could not move the files: \(error.localizedDescription)") }
     }
 
     // MARK: Toasts

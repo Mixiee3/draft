@@ -516,12 +516,10 @@ struct InfoPanel: View {
                             action("plus.square.on.square", "Duplicate") { model.duplicate(docId) }
                             action("doc.badge.gearshape", model.library.docs[docId]?.template != nil ? "This is a template" : "Save as Template…", enabled: model.library.docs[docId]?.template == nil) { templateCategory = "General"; savingTemplate = true }
                             action("square.and.arrow.up", "Export as Markdown…") { model.exportDoc(docId) }
-                            action("clock.arrow.circlepath", "View Backups (\(model.snapshots(docId).count))") { tab = "backups" }
+                            action("clock.arrow.circlepath", "Version History (\(model.snapshots(docId).count))…") { model.recovery.historyDoc = HistoryTarget(id: docId) }
                             action("trash", "Move to Recently Deleted", destructive: true) { model.requestDelete(docId) }
                         }
                     }
-                } else if tab == "backups" {
-                    BackupsList(docId: docId) { tab = "info" }
                 } else {
                     ActionsList(docId: docId)
                 }
@@ -641,38 +639,6 @@ struct SharePanel: View {
                 .font(.system(size: DS.body)).padding(.horizontal, 10).frame(height: 32)
                 .background(RoundedRectangle(cornerRadius: DS.rControl).fill(t.hover)).contentShape(Rectangle())
         }.buttonStyle(.plain).foregroundStyle(t.text).disabled(!enabled).opacity(enabled ? 1 : 0.4)
-    }
-}
-
-/// Automatic local backups of one document (taken at most every 10 minutes while editing).
-struct BackupsList: View {
-    @Environment(AppModel.self) var model
-    @Environment(\.tokens) var t
-    let docId: String
-    var back: () -> Void
-    var body: some View {
-        let _ = model.editorTick
-        let snaps = model.snapshots(docId)
-        VStack(alignment: .leading, spacing: 8) {
-            Button { back() } label: { Label("Page Info", systemImage: "chevron.left") }.buttonStyle(.link).font(.system(size: DS.footnote))
-            Text("Backups").font(.system(size: DS.body, weight: .semibold)).foregroundStyle(t.text)
-            Text("Draft keeps up to \(Vault.snapshotsKept) automatic backups per document on this Mac, one every 10 minutes while you edit.")
-                .font(.system(size: DS.footnote)).foregroundStyle(t.secondary).fixedSize(horizontal: false, vertical: true)
-            if snaps.isEmpty { Text("No backups yet. The first one is made the next time this document is saved.").font(.system(size: DS.footnote)).foregroundStyle(t.tertiary) }
-            ForEach(snaps) { s in
-                HStack {
-                    VStack(alignment: .leading, spacing: 1) {
-                        Text(Date(timeIntervalSince1970: s.savedAt / 1000).formatted(date: .abbreviated, time: .shortened)).font(.system(size: DS.body)).foregroundStyle(t.text)
-                        Text(relative(s.savedAt)).font(.system(size: DS.caption)).foregroundStyle(t.tertiary)
-                    }
-                    Spacer()
-                    Button("Restore") {
-                        model.confirm = ConfirmRequest(title: "Restore this backup?", detail: "The document returns to how it was \(relative(s.savedAt)). The current version is backed up first, so you can switch back.",
-                                                       confirmLabel: "Restore", destructive: false) { model.restoreSnapshot(docId, s) }
-                    }.controlSize(.small)
-                }.padding(8).background(RoundedRectangle(cornerRadius: DS.rControl).fill(t.hover))
-            }
-        }
     }
 }
 

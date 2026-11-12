@@ -43,6 +43,7 @@ final class VaultCheckTests: XCTestCase {
         let v = Vault(dir: dir); try v.prepare()
         let a = try v.putAsset(Data("x".utf8), ext: "png")
         try Vault.writeAtomic(Data("not json".utf8), to: dir.appendingPathComponent("library.json"))
+        _ = try? v.loadLibrary() // what Draft does at launch: an unreadable library makes the vault read-only
         let r = VaultCheck.run(v)
         XCTAssertFalse(r.libraryReadable)
         XCTAssertTrue(r.unusedAssets.isEmpty, "nothing is called unused without a readable library")

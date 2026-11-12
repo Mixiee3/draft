@@ -164,24 +164,27 @@ public extension Migrations {
         let from = raw["schemaVersion"]?.int ?? 0
         let (lib, _, _) = try migrateLibrary(libData)
         var diffs: [String] = []
-        let before = raw["docs"]?.object ?? [:]
+        // Schema 0 kept documents as an array; later schemas as a table keyed by id.
+        let before: [String: JSONValue] = raw["docs"]?.object
+            ?? Dictionary((raw["docs"]?.items ?? []).compactMap { v in v.object?["id"]?.string.map { ($0, v) } }, uniquingKeysWith: { a, _ in a })
         if Set(before.keys) != Set(lib.docs.keys) { diffs.append("Document list changed (\(before.count) → \(lib.docs.count))") }
         for (id, v) in before {
             guard let o = v.object, let m = lib.docs[id] else { continue }
             func same(_ k: String, _ now: String?) { if o[k]?.string != now { diffs.append("\(id): \(k) changed") } }
             same("title", m.title); same("styleId", m.styleId); same("folderId", m.folderId); same("parentDocId", m.parentDocId)
             if o["deletedAt"]?.double != m.deletedAt { diffs.append("\(id): trash state changed") }
-            if m.spaceId == nil { diffs.append("\(id): no Space") }
+            if from < 2 && m.spaceId == nil { diffs.append("\(id): no Space") } // current notes may leave it unset (= first Space)
         }
         let oldFolders = raw["folders"]?.items?.compactMap { $0.object.flatMap { o in o["id"]?.string.map { ($0, o["name"]?.string ?? "") } } } ?? []
         if oldFolders.map(\.0) != lib.folders.map(\.id) || oldFolders.map(\.1) != lib.folders.map(\.name) { diffs.append("Folders changed") }
         var n = 0
         for id in lib.docs.keys {
             let url = dir.appendingPathComponent("docs/\(id).json")
-            guard let data = try? Data(contentsOf: url), let rawDoc = try? JSONDecoder().decode(JSONValue.self, from: data).object else { continue }
+            // Foundation decoding: several times faster than Codable for large vaults.
+            guard let data = try? Data(contentsOf: url), let rawDoc = (try? JSONSerialization.jsonObject(with: data)) as? [String: Any] else { continue }
             n += 1
             let (doc, _, _) = try migrateDoc(data)
-            guard let content = rawDoc["content"], let oldNode = try? JSONDecoder().decode(Node.self, from: JSONEncoder().encode(content)) else { diffs.append("\(id): content unreadable"); continue }
+            guard let content = rawDoc["content"], let oldNode = Node(foundation: content) else { diffs.append("\(id): content unreadable"); continue }
             var oldIds: [String] = [], newIds: [String] = []
             walk(oldNode) { if let i = $0.id { oldIds.append(i) } }
             walk(doc.content) { if let i = $0.id { newIds.append(i) } }
@@ -189,7 +192,7 @@ public extension Migrations {
             if docPlainText(oldNode) != docPlainText(doc.content) { diffs.append("\(id): text changed") }
             func links(_ n: Node) -> [String] { var o: [String] = []; walk(n) { $0.marks?.forEach { m in if m.type == "docLink" || m.type == "link" { o.append(m.attrs?["docId"]?.string ?? m.attrs?["href"]?.string ?? "") } } }; return o }
             if links(oldNode) != links(doc.content) { diffs.append("\(id): links changed") }
-            if rawDoc["appearance"]?.object?["styleId"]?.string != doc.appearance.styleId { diffs.append("\(id): style changed") }
+            if (((rawDoc["appearance"] as? [String: Any])?["styleId"] as? String) ?? (rawDoc["styleId"] as? String) ?? "paper") != doc.appearance.styleId { diffs.append("\(id): style changed") }
         }
         return MigrationReport(from: from, to: librarySchemaVersion, documents: n, differences: diffs)
     }

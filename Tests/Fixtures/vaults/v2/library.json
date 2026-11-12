@@ -1,0 +1,2 @@
+{"schemaVersion": 2, "space": {"id": "s_home", "name": "Home"}, "spaces": [{"id": "s_home", "name": "Home"}], "folders": [{"id": "f_work", "name": "Work", "order": 0, "createdAt": 1762000000000, "spaceId": "s_home"}], "tabs": [], "expandedFolders": [],
+ "docs": {"d_now": {"id": "d_now", "title": "Current", "folderId": "f_work", "spaceId": "s_home", "styleId": "paper", "createdAt": 1762000000000, "updatedAt": 1762000000000, "viewedAt": 1762000000000, "starred": false, "excerpt": "", "searchText": "", "words": 0, "blocks": 0, "tint": "#d9d4ca"}}}

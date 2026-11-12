@@ -1,0 +1,3 @@
+{"schemaVersion": 1, "space": {"id": "s_home", "name": "Home"}, "folders": [{"id": "f_work", "name": "Work", "order": 0, "createdAt": 1700000000000}], "tabs": [], "expandedFolders": [],
+ "docs": {"d_parent": {"id": "d_parent", "title": "Project", "folderId": "f_work", "styleId": "paper", "createdAt": 1700000000000, "updatedAt": 1700000000000, "viewedAt": 1700000000000, "starred": true, "excerpt": "", "searchText": "", "words": 0, "blocks": 0, "tint": "#d9d4ca"},
+          "d_child": {"id": "d_child", "title": "Meeting", "parentDocId": "d_parent", "styleId": "paper", "createdAt": 1700000000000, "updatedAt": 1700000000000, "viewedAt": 1700000000000, "starred": false, "excerpt": "", "searchText": "", "words": 0, "blocks": 0, "tint": "#d9d4ca"}}}

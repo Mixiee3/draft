@@ -32,7 +32,9 @@ struct RootView: View {
             let showRail = !model.library.settings.railCollapsed && !narrow && !focus
             ZStack(alignment: .topLeading) {
                 t.shell.ignoresSafeArea()
-                if let f = model.fatal {
+                if let issues = model.recovery.startup {
+                    StartupRecoveryView(issues: issues)
+                } else if let f = model.fatal {
                     FatalView(message: f)
                 } else if model.ready {
                     HStack(spacing: 0) {
@@ -97,10 +99,13 @@ struct RootView: View {
         .tint(t.accent)
         .animation(Motion.standard(model.library.settings.reduceMotion), value: model.library.settings.railCollapsed)
         .animation(Motion.panel(model.library.settings.reduceMotion), value: pinnedAssistant)
-        .onAppear { if !model.ready && model.fatal == nil { model.boot() } }
+        .onAppear { if !model.ready && model.fatal == nil && model.recovery.startup == nil { model.boot() } }
         .onOpenURL { model.openLink($0) }
         .sheet(item: Binding(get: { model.agentProposal }, set: { model.agentProposal = $0 })) { proposal in
             AgentProposalReview(proposal: proposal).environment(model).environment(\.tokens, t)
+        }
+        .sheet(item: Binding(get: { model.recovery.historyDoc }, set: { model.recovery.historyDoc = $0 })) { h in
+            VersionHistoryView(docId: h.id).environment(model).environment(\.tokens, t)
         }
         .background(WindowChrome())
         .ignoresSafeArea()

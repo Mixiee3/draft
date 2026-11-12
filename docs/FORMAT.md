@@ -13,8 +13,9 @@ The reference implementation is `Sources/DraftCore`. All JSON is UTF‑8; timest
   library.json            index (schemaVersion, space, spaces, folders, docs, settings, tabs)
   docs/<docId>.json       one document
   assets/<sha256-32>.<ext> images, covers and attached files, content-addressed (extension: 1–10 lowercase letters/digits)
-  backups/                copies written before any migration (never read by the app)
-  history/<docId>/<ms>.json automatic local backups of a document (≤ 1 per 10 min, 30 kept)
+  backups/                copies made before a change (see Recovery below)
+  history/<docId>/<ms>[.<source>].json versions of a document; source omitted = automatic
+                          (≤ 1 per 10 min), or manual, before-restore, before-repair; 30 kept per source
   index/index.json        derived link/tag/task index (safe to delete; rebuilt on launch)
   assistant/<spaceId>.json local Assistant history; <spaceId>-openai.json optional cloud history
   agent-requests/<requestId>.json local MCP proposals (Codex, Claude Code) and their outcome
@@ -32,7 +33,23 @@ The reference implementation is `Sources/DraftCore`. All JSON is UTF‑8; timest
 4. **Block ids** are stable. On load, a block without an id or with a duplicate id gets a new one;
    the first occurrence of an id always keeps it.
 
-## library.json
+## Recovery (v0.8)
+
+`backups/` holds, by name:
+
+- `<time>-library.vN.json`, `<time>-doc-<id>.vN.json` — the file as it was before a migration from schema N.
+- `<time>-library.unreadable.json`, `<time>-index.unreadable.json` — copies of files Draft couldn't read.
+- `unused-<time>/<asset>` — attachments moved out of `assets/` as unused (put back by moving them back).
+- `<kind>-<time>/` (kind: `repair`, `restore`, `rollback`) — one approved change:
+  `files/<path>` is every file the change touched, copied before it wrote anything, and
+  `journal.json` is `{kind, summary, startedAt, state, touched, created, fixes}`. `state` is
+  `copying` (nothing written yet), `writing` (interrupted if found at launch: put `touched` back from
+  `files/` and delete `created`), `done`, `undone` or `rolledBack`.
+
+A checker must only read. A repair must copy the files it will touch, write the journal with state
+`writing`, write atomically, check the result, and put every file back if the check fails.
+
+
 
 ```json
 {
