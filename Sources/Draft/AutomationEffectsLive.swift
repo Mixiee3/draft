@@ -102,6 +102,13 @@ extension Automation {
         if let other = m.createDoc(title: "Other") { m.openView(.doc(other)); await wait(0.6) }
         m.openView(.doc(id)); await wait(0.8); c.textView.scrollRangeToVisible(NSRange(location: 0, length: 0)); await wait(0.4)
         await stillThere("afterTabSwitch")
+        // A style change re-colors the page but keeps every effect.
+        func stored() -> [String] { effectLines.enumerated().map { i, e in e.kind.hasPrefix("block:") ? (c.paragraph(withId: "b_\(i)").map { c.block(at: $0).decoration ?? "none" } ?? "?") : ((c.storage.attribute(e.kind == "highlight" ? .draftHighlight : .draftEffect, at: ns().range(of: e.line).location, effectiveRange: nil) as? String) ?? "none") } }
+        let beforeStyle = stored()
+        m.updateAppearance(id) { $0.styleId = "midnight-constellation" }; await wait(0.6)
+        await shot("effects-midnight", w, settle: 0.1)
+        m.updateAppearance(id) { $0.styleId = "paper" }; await wait(0.5)
+        r["styleChangeKeepsEffects"] = stored() == beforeStyle ? "yes" : "no: \(stored())"
         if let tab = m.tabs.first(where: { $0.view.docId == id }) { m.closeTab(tab.id) }
         m.flushAll(); m.dropEditor(id); await wait(0.3)
         m.openView(.doc(id)); await wait(0.9); c = m.editor(for: id).controller; c.textView.scrollRangeToVisible(NSRange(location: 0, length: 0)); await wait(0.5)

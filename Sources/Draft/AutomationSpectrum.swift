@@ -130,6 +130,24 @@ extension Automation {
         await probe("middle", "glowing phrase")
         await probe("long", "A longer phrase that keeps going across most of the line")
         await shot(read ? "spectrum-after-relaunch" : "spectrum-editor", w, settle: 0.2)
+        if !read {
+            // Each palette on the heading, and the heading at three moments.
+            let h = ns().range(of: "Northern lights")
+            for p in Spectrum.palettes {
+                c.textView.setSelectedRange(h); c.setEffect("spectrum:\(p.id):normal:forward")
+                c.textView.setSelectedRange(NSRange(location: ns().length, length: 0)); await wait(0.3)
+                if let img = grab(rect(of: "Northern lights").insetBy(dx: -30, dy: -12), in: c.textView), let png = NSBitmapImageRep(cgImage: img).representation(using: .png, properties: [:]) {
+                    try? png.write(to: out.appendingPathComponent("spectrum-palette-\(p.id).png"))
+                }
+            }
+            for k in 0..<3 {
+                if let img = grab(rect(of: "Northern lights").insetBy(dx: -30, dy: -12), in: c.textView), let png = NSBitmapImageRep(cgImage: img).representation(using: .png, properties: [:]) {
+                    try? png.write(to: out.appendingPathComponent("spectrum-moment-\(k + 1).png"))
+                }
+                await wait(1.0)
+            }
+            c.textView.setSelectedRange(h); c.setEffect("spectrum:aurora:slow:forward"); c.textView.setSelectedRange(NSRange(location: ns().length, length: 0))
+        }
         if read { m.flushAll(); return }
 
         // A selection inside the phrase keeps the effect drawn.
@@ -175,7 +193,8 @@ extension Automation {
             times.append((CACurrentMediaTime() - t0) * 1000); try? await Task.sleep(nanoseconds: 16_000_000)
         }
         times.sort(); r["typingP95ms"] = String(format: "%.1f", times[Int(Double(times.count) * 0.95)])
-        // A recording: three seconds of the heading.
+        // A recording: three seconds of the heading in Prism at fast speed (a whole cycle in 3.5 s).
+        c.textView.setSelectedRange(ns().range(of: "Northern lights")); c.setEffect("spectrum:prism:fast:forward"); c.textView.setSelectedRange(NSRange(location: ns().length, length: 0)); await wait(0.3)
         let gifURL = out.appendingPathComponent("spectrum-recording.gif")
         if let dest = CGImageDestinationCreateWithURL(gifURL as CFURL, UTType.gif.identifier as CFString, 45, nil) {
             CGImageDestinationSetProperties(dest, [kCGImagePropertyGIFDictionary: [kCGImagePropertyGIFLoopCount: 0]] as CFDictionary)
