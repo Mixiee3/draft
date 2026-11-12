@@ -436,7 +436,6 @@ struct AgentProposalReview: View {
     /// Groups whose full list of cards was asked for (long groups show their first 10).
     @State private var showAll: Set<String> = []
 
-    var structure: DraftTools.DocumentStructure? { ["new", "multi"].contains(proposal.documentId) ? nil : try? DraftTools(vaultURL: model.vault.dir).structure(proposal.documentId) }
 
     var allCards: [(index: Int, edit: AgentEdit, docId: String)] {
         if let parts = proposal.parts {
@@ -551,12 +550,22 @@ struct AgentProposalReview: View {
     func prepare() {
         guard !prepared else { return }
         prepared = true
-        let tools = try? DraftTools(vaultURL: model.vault.dir)
         let ids = proposal.parts?.map(\.documentId) ?? [proposal.documentId]
         for id in ids where !["new", "none"].contains(id) {
-            let st = try? tools?.structure(id)
-            blocksByDoc[id] = Dictionary((st?.blocks ?? []).map { ($0.id, $0.text) }, uniquingKeysWith: { a, _ in a })
-                .merging(tableLabels(st), uniquingKeysWith: { a, _ in a }).merging(collectionLabels(id), uniquingKeysWith: { a, _ in a })
+            // Block text and table labels straight from the note (no per-block Markdown rendering).
+            var texts: [String: String] = [:]
+            if let doc = model.ensureDoc(id) {
+                walk(doc.content) { n in
+                    if let b = n.id, texts[b] == nil, n.type != "tableRow", n.type != "tableCell" { texts[b] = docPlainText(n) }
+                    if n.type == "table", let header = n.content?.first?.content {
+                        for r in n.content ?? [] {
+                            if let rid = r.id { texts[rid] = "row “\(r.content?.first.map(nodeText) ?? "")”" }
+                            for (i, c) in (r.content ?? []).enumerated() { if let cid = c.id { texts[cid] = "the “\(i < header.count ? nodeText(header[i]) : "")” column" } }
+                        }
+                    }
+                }
+            }
+            blocksByDoc[id] = texts.merging(collectionLabels(id), uniquingKeysWith: { a, _ in a })
         }
         // Long proposals open with only the first section expanded.
         if allCards.count > 20 { collapsed = Set(groups.dropFirst().map(\.id)) }
@@ -659,22 +668,12 @@ struct AgentProposalReview: View {
     }
 
     /// Row ids named by their first cell, cell ids by their column's header, for readable titles.
-    func tableLabels(_ st: DraftTools.DocumentStructure?) -> [String: String] {
-        var out: [String: String] = [:]
-        for b in st?.blocks ?? [] {
-            guard let rows = b.rows, let header = rows.first else { continue }
-            for r in rows {
-                out[r.id] = "row “\(r.cells.first?.text ?? "")”"
-                for (i, c) in r.cells.enumerated() { out[c.id] = "the “\(i < header.cells.count ? header.cells[i].text : "")” column" }
-            }
-        }
-        return out
-    }
-
     /// Each table the proposal touches, as it is and as it will be after every edit; a collection
     /// is shown as a table of its items (title and fields), with new items titled from the proposal.
     func tablePreviews(_ docId: String, _ edits: [AgentEdit]) -> [(String, Node, Node)] {
-        guard let doc = try? DraftTools(vaultURL: model.vault.dir).document(docId) else { return [] }
+        // Only tables and collections get a preview; don't read the note for anything else.
+        guard edits.contains(where: { Tables.agentActions.contains($0.action) || CollectionData.agentActions.contains($0.action) }),
+              let doc = model.ensureDoc(docId) ?? (try? DraftTools(vaultURL: model.vault.dir).document(docId)) else { return [] }
         if edits.allSatisfy({ CollectionData.agentActions.contains($0.action) }) {
             var out: [(String, Node, Node)] = []
             for block in Array(NSOrderedSet(array: edits.map(\.blockId))) as? [String] ?? [] {

@@ -1,4 +1,5 @@
 import AppKit
+import SwiftUI
 import DraftCore
 import DraftEditor
 
@@ -61,12 +62,59 @@ extension Automation {
             r["docScrollMs"] = stats(steps)
         }
 
-        var panels: [String: Double] = [:]
-        for p in [Panel.format, .style, .info, .share] {
-            t0 = CFAbsoluteTimeGetCurrent(); m.panel = p; await drawn(w); panels[p.rawValue] = ms(t0)
-            m.panel = nil; await drawn(w)
+        // Panels and sheets: 5 opens each. The first is cold (first build of the view); the budget is
+        // checked on the warm median. Phases split our own state change and run-loop wait (automation
+        // overhead) from SwiftUI's update, layout and drawing.
+        var panels: [String: Double] = [:], cold: [String: Double] = [:], phasesBy: [String: [String: Double]] = [:]
+        let proposal = try? JSONDecoder().decode(AgentProposal.self, from: Data("""
+            {"id": "p_perf", "documentId": "\(ids[0])", "documentTitle": "Notes 0", "instruction": "Tidy the headings", "expectedRevision": "x",
+             "edits": [{"action": "heading", "blockId": "b_none", "value": "heading"}], "createdAt": 0, "status": "pending"}
+            """.utf8))
+        let surfaces: [(String, () -> Void, () -> Void)] = [
+            ("format", { m.panel = .format }, { m.panel = nil }), ("style", { m.panel = .style }, { m.panel = nil }),
+            ("info", { m.panel = .info }, { m.panel = nil }), ("share", { m.panel = .share }, { m.panel = nil }),
+            ("versionHistory", { m.recovery.historyDoc = HistoryTarget(id: ids[0]) }, { m.recovery.historyDoc = nil }),
+            ("assistant", { m.toggleAssistant() }, { m.toggleAssistant() }),
+            ("reviewSheet", { m.agentProposal = proposal }, { m.agentProposal = nil }),
+            ("recovery", { m.openView(ViewRef(kind: "settings", section: "recovery")) }, { m.openView(.doc(ids[0])) }),
+        ]
+        for (name, open, close) in surfaces {
+            var samples: [Double] = []
+            var ph: [String: [Double]] = ["model": [], "update": [], "layout": [], "draw": []]
+            for _ in 0..<5 {
+                var t = CFAbsoluteTimeGetCurrent(); let start = t
+                open(); ph["model"]!.append(ms(t))
+                t = CFAbsoluteTimeGetCurrent(); await settle(); ph["update"]!.append(ms(t))
+                t = CFAbsoluteTimeGetCurrent(); w.contentView?.layoutSubtreeIfNeeded(); for s in [w.attachedSheet].compactMap({ $0 }) { s.contentView?.layoutSubtreeIfNeeded() }; ph["layout"]!.append(ms(t))
+                t = CFAbsoluteTimeGetCurrent(); w.displayIfNeeded(); w.attachedSheet?.displayIfNeeded(); ph["draw"]!.append(ms(t))
+                samples.append(ms(start))
+                close(); await drawn(w); await wait(0.15)
+            }
+            cold[name] = samples[0]
+            let warm = Array(samples.dropFirst()).sorted()
+            panels[name] = warm[warm.count / 2]
+            phasesBy[name] = ph.mapValues { xs in xs.dropFirst().sorted()[xs.count / 2 - 1] }
         }
+        // The sheets' own SwiftUI cost without AppKit's slide-in animation: hosted offscreen, laid out and drawn.
+        let tokens = Tokens.make(dark: false, accent: m.library.settings.accent, tint: nil)
+        var sheetRender: [String: Double] = [:]
+        for (name, view) in [("versionHistory", AnyView(VersionHistoryView(docId: ids[0]))), ("reviewSheet", AnyView(proposal.map { AgentProposalReview(proposal: $0) }))] {
+            var xs: [Double] = []
+            for _ in 0..<5 {
+                let t = CFAbsoluteTimeGetCurrent()
+                let host = NSHostingView(rootView: view.environment(m).environment(\.tokens, tokens))
+                host.frame = NSRect(x: 0, y: 0, width: 960, height: 680)
+                host.layoutSubtreeIfNeeded()
+                let rep = host.bitmapImageRepForCachingDisplay(in: host.bounds)!
+                host.cacheDisplay(in: host.bounds, to: rep)
+                xs.append(ms(t))
+            }
+            sheetRender[name] = xs.sorted()[2]
+        }
+        r["sheetRenderMs"] = sheetRender
         r["panelOpenMs"] = panels
+        r["panelOpenColdMs"] = cold
+        r["panelPhasesMs"] = phasesBy
 
         let first = m.library.space.id
         m.createSpace("Second"); await drawn(w)
