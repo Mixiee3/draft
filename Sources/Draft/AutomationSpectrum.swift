@@ -64,6 +64,7 @@ extension Automation {
 
     static func spectrumTest(read: Bool) async {
         guard let w = NSApp.windows.first(where: { $0.isVisible }) else { return }
+        if ProcessInfo.processInfo.environment["DRAFT_FULL_EFFECTS"] != nil { m.setSettings { $0.fullEffectsWithIncreaseContrast = true } }
         w.setFrame(NSRect(x: 40, y: 40, width: 1280, height: 820), display: true)
         m.setSettings { $0.theme = "light"; $0.reduceMotion = false }
         var r: [String: String] = [:]

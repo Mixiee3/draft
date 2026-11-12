@@ -126,6 +126,9 @@ struct SettingsView: View {
                 SettingsSwitchRow(title: "Tint the app with the document's style", detail: "The sidebar and tab strip take the open document's colors.", isOn: bind(\.useDocStyleForApp))
                 SettingsSwitchRow(title: "Paper follows dark mode", detail: "Documents in the Paper style turn dark with the app. Exports keep the light page.", isOn: bind(\.paperFollowsAppearance))
                 SettingsSwitchRow(title: "Reduce animations", detail: "Panels and screens fade instead of moving. macOS Reduce Motion does the same.", isOn: bind(\.reduceMotion))
+                SettingsSwitchRow(title: "Full text effects with Increase Contrast", detail: NSWorkspace.shared.accessibilityDisplayShouldIncreaseContrast
+                    ? "Increase Contrast is on in System Settings, so effects are simplified to one still, readable color. Turn this on to see gradients, Spectrum, glow, shadow and outline anyway."
+                    : "Increase Contrast is off, so effects already show in full.", isOn: bind(\.fullEffectsWithIncreaseContrast))
             }
             SettingsSection(title: "Sidebar", footer: "Hidden items stay reachable from the menus and Quick Open.") {
                 ForEach(Self.sidebarItems, id: \.0) { key, title in

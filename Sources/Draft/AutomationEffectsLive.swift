@@ -17,6 +17,7 @@ extension Automation {
 
     static func effectsLive(read: Bool) async {
         guard let w = NSApp.windows.first(where: { $0.isVisible }) else { return }
+        if ProcessInfo.processInfo.environment["DRAFT_FULL_EFFECTS"] != nil { m.setSettings { $0.fullEffectsWithIncreaseContrast = true } }
         let env = ProcessInfo.processInfo.environment
         let dark = env["AUDIT_DARK"] != nil
         w.setFrame(NSRect(x: 40, y: 40, width: 1280, height: 900), display: true)
@@ -113,7 +114,7 @@ extension Automation {
         c.undo.redo(); r["redoReapplies"] = (c.storage.attribute(.draftEffect, at: ol.location, effectiveRange: nil) as? String)?.hasPrefix("glow?color=#ff4fd8") == true ? "yes" : "no"
         c.undo.undo()
         // The effect editor for a selected Glow line and a Gradient line.
-        for (kind, line) in [("glow", "Glow sample words"), ("gradient", "Gradient sample words")] {
+        for (kind, line) in [("glow", "Glow sample words"), ("gradient", "Gradient sample words"), ("spectrum", "Spectrum sample words")] {
             c.textView.setSelectedRange(ns().range(of: line)); m.panel = .format; m.editorTick &+= 1; await wait(0.7)
             await shot("effect-editor-\(kind)", w, settle: 0.1)
         }
