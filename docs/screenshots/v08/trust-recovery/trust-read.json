@@ -1,0 +1,12 @@
+{
+  "relaunch.check.critical" : 0,
+  "relaunch.repairs" : 1,
+  "relaunch.restoredText" : true,
+  "relaunch.undoRepair" : true,
+  "relaunch.versions" : [
+    "before-restore",
+    "auto",
+    "manual",
+    "auto"
+  ]
+}

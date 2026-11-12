@@ -1,0 +1,61 @@
+{
+  "backups.health.unreadable" : 0,
+  "backups.kinds" : [
+    "change",
+    "version"
+  ],
+  "check.critical" : 2,
+  "check.kinds" : [
+    "assetMissing",
+    "blockIdDuplicate",
+    "docMalformed",
+    "docMissing",
+    "docUnlisted",
+    "journalOpen",
+    "linkBroken",
+    "pageCardBroken",
+    "parentMissing",
+    "tempFile"
+  ],
+  "history.diff" : "1 edited, 1 removed, look",
+  "history.diffEdited" : 1,
+  "history.diffRemovedInVersion" : 1,
+  "history.versions" : [
+    "auto",
+    "manual",
+    "auto"
+  ],
+  "migration.ok" : true,
+  "migration.problems" : [
+
+  ],
+  "noteId" : "d_54675ba5530a4633",
+  "preview.steps" : [
+    "Roll back the interrupted change using backups\/restore-2026-11-12T09-00-00Z.",
+    "docs\/d_broken.json: replaced by the version of 12. 11. 2026 at 18:03; the damaged file goes to the backup.",
+    "“Half-restored” isn't in the library: handled by rolling back the interrupted change.",
+    "docs\/d_dup.json: 1 repeated block id renamed; first copies keep theirs.",
+    "library.json: “Meeting notes” becomes a top-level note.",
+    "library.json: remove the entry “Old draft” (no file, no earlier version).",
+    "library.json: add “Recipe found on disk”."
+  ],
+  "repair.again" : true,
+  "repair.brokenRestored" : true,
+  "repair.foundListed" : true,
+  "repair.left" : [
+
+  ],
+  "repair.partialRolledBack" : true,
+  "repair.result" : "Repaired 7 problems. The files from before are in backups\/repair-2026-11-12T18-03-53Z.",
+  "repair.undo" : true,
+  "restore.attachment" : true,
+  "restore.beforeRestoreSaved" : true,
+  "restore.idsKept" : true,
+  "restore.redo" : true,
+  "restore.style" : "paper",
+  "restore.text" : "matches the version",
+  "restore.undoOneStep" : true,
+  "startup.detected" : [
+    "journalOpen"
+  ]
+}
