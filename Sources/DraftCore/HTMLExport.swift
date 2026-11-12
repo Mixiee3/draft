@@ -71,9 +71,9 @@ public enum HTMLExport {
         let dark = ColorMath.isDark(page)
         return """
         :root{--page:\(page);--text:\(text);--accent:\(accent);--soft:color-mix(in srgb, \(text) 58%, transparent);--line:\(line);--fx1:\(fx.start);--fx2:\(fx.end)}
-        .fx-accent,.fx-glow,.fx-lift{color:var(--fx1)}.fx-glow{text-shadow:0 0 calc(2px + 5px * var(--fxi,.6)) color-mix(in srgb, var(--fxc,var(--accent)) \(dark ? 95 : 75)%, transparent)}
-        .fx-shadow{text-shadow:0 calc(1px + 1.7px * var(--fxi,.6)) calc(1px + 2.5px * var(--fxi,.6)) color-mix(in srgb, var(--fxc,#000) \(dark ? 70 : 35)%, transparent)}.fx-lift{text-shadow:calc(.8px + 1.2px * var(--fxi,.6)) calc(.8px + 1.2px * var(--fxi,.6)) 0 color-mix(in srgb, var(--fxc,var(--fx2)) 35%, transparent)}
-        .fx-emboss{text-shadow:0 \(dark ? "1px" : "-1px") 0 color-mix(in srgb, var(--fxc,\(dark ? "#fff" : "#000")) \(dark ? 30 : 40)%, transparent)}.fx-outline{-webkit-text-stroke:calc(.5px + 1.5px * var(--fxi,.6)) color-mix(in srgb, var(--fxc,var(--accent)) 85%, transparent);paint-order:stroke fill}
+        .fx-accent{color:var(--fx1)}.fx-glow{text-shadow:0 0 calc(2px + 5px * var(--fxi,.6)) color-mix(in srgb, var(--fxc,var(--accent)) \(dark ? 95 : 75)%, transparent)}
+        .fx-shadow{text-shadow:0 calc(.8px + 1.2px * var(--fxi,.6)) calc(.5px + 1.2px * var(--fxi,.6)) color-mix(in srgb, var(--fxc,#000) \(dark ? 70 : 35)%, transparent)}.fx-lift{text-shadow:calc(.5px + .8px * var(--fxi,.6)) calc(.5px + .8px * var(--fxi,.6)) 0 color-mix(in srgb, var(--fxc,var(--fx2)) 30%, transparent)}
+        .fx-emboss{text-shadow:0 \(dark ? "1px" : "-1px") 0 color-mix(in srgb, var(--fxc,\(dark ? "#fff" : "#000")) \(dark ? 30 : 40)%, transparent)}.fx-outline{-webkit-text-stroke:calc(.3px + .9px * var(--fxi,.6)) color-mix(in srgb, var(--fxc,var(--accent)) 85%, transparent);paint-order:stroke fill}
         .fx-gradient{background:linear-gradient(90deg,var(--fx1),var(--fx2));-webkit-background-clip:text;background-clip:text;color:transparent}
         .fx-spectrum{-webkit-background-clip:text;background-clip:text;color:transparent}@media (prefers-contrast: more){.fx-spectrum{background:none!important;color:var(--fx1)}}
         [data-deco]{--t:var(--tint,var(--accent));border-radius:10px;padding:6px 12px;margin:.5em 0}[data-deco=focus]{border-radius:0;padding:0 0 0 14px;border-left:3px solid var(--t)}
@@ -165,7 +165,9 @@ public enum HTMLExport {
                         if ["gradient", "spectrum"].contains(e.kind) {
                             // A still gradient: exports never animate.
                             let c = e.fillColors(accent: o.useStyle ? tokens.accent : "#3a5bd9", text: o.useStyle ? tokens.textColor : "#1f1f1f", page: page)
-                            css.append("background-image:linear-gradient(\(Int((e.angle ?? 0) + 90))deg,\(c.joined(separator: ",")))")
+                            let stops = zip(c.indices, c).map { i, col in e.stopLocations.map { "\(col) \(Int($0[i] * 100))%" } ?? col }.joined(separator: ",")
+                            css.append(e.isRadial ? "background-image:radial-gradient(circle at \(Int((e.focusX ?? 0.5) * 100))% \(Int((e.focusY ?? 0.5) * 100))%,\(stops))"
+                                                  : "background-image:linear-gradient(\(Int((e.angle ?? 0) + 90))deg,\(stops))")
                         }
                         if e.kind == "accent" { css.append("color:\(e.fillColors(accent: o.useStyle ? tokens.accent : "#3a5bd9", text: "", page: page)[0])") }
                         if let c = e.color, e.kind != "accent" { css.append("--fxc:\(c)") }

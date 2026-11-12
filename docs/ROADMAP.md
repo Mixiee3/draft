@@ -18,6 +18,7 @@ migration that backs up first; unknown fields and block types are preserved.
 Legend: ✅ done · 🟡 partial · ⬜ not started
 
 ### Change log of this plan
+- **2026‑11‑12 (night)** — Effect presets: 8 glow, 7 shadow, 6 outline, 6 lift, 5 emboss, 8 accent, 30 gradient (2–5 stops with positions, 4 radial), 16 Spectrum palettes (5 new), 19 block presets, three new highlights, grouped Calm/Warm/Cool/Editorial/Neon/Nature/Dark/Study/Decorative, in the effect editor, the Decorations panel and `draft_formatting_guide`. Text-rendering audit on native Retina captures: body text keeps full font smoothing; Shadow, Lift and Outline defaults were too soft or heavy and were tightened; Glow and Lift keep the text color. v0.8 started: vault check and unused-file cleanup (first slice).
 - **2026‑11‑12 (evening)** — Spectrum direction was reversed (forward moved the colors left): fixed and checked from pixels in a unit test and in the running app. Six more palettes: Ember, Citrus, Forest, Glacier, Berry, Candy (11 in all; each loops without a seam, reaches at least three hues across a phrase and stays readable on every style).
 - **2026‑11‑12 (later)** — Root cause of “Spectrum is one static color / effects are plain color changes”: macOS Increase Contrast is on on the development Mac, and Draft simplified every effect there (one still readable color; no glow, shadow, outline or emboss); earlier visual checks overrode Increase Contrast and so never showed it. Now a notice with **Show Full Effects** in the effect editor and the bar, an Appearance setting (Full text effects with Increase Contrast), palettes shown as their full gradients, an Animate switch; every effect re-verified on screen under the real system settings. Item 17 researched: blocked on eligibility (see below).
 - **2026‑11‑12** — Editor fixes found with mouse-driven probes: mouse selections no longer pick up paragraph breaks and the empty blocks after a heading (they were painted as a wide selected band and formats applied to them); side panels no longer narrow the page (that re-wrapped every paragraph and moved the text under the reader by up to 9 pt). Text color and effect colors are separate (`EffectSpec`: effect color, gradient stops and direction, strength), edited in the Format panel's Text Effect section; every effect verified on screen through the bar (`effects-live`/`effects-read`); Outline now draws a visible rim.
@@ -380,7 +381,21 @@ Return applies, Escape rejects, Tab reaches both buttons with a visible ring; li
 - ⬜ Layout scaling for very long documents: bounded relayout (e.g. TextKit 2 or chunked layout) so
   wrapping changes and toggles stay under 16 ms at 10,000 blocks; a separate search index.
 
-- ⬜ Version history UI with diffs; vault integrity checker; orphan-asset GC (with confirmation).
+- ✅ **Vault integrity checker and unused-file cleanup — first slice (12 Nov 2026).**
+  Scope: Settings › Data & Storage › **Check Vault** reads the vault without changing it and reports an
+  unreadable library, notes listed without a file, note files the library doesn't know, note files that
+  don't decode, attachments a note points to that are missing, and attachments no note uses (notes in
+  Recently Deleted and templates count as users). **Move Unused Files…** asks first (count and size),
+  moves them to `backups/unused-<time>/` (never deletes) and one Undo moves them back.
+  Acceptance: a throwaway vault with each kind of problem is reported exactly; moving and Undo restore
+  the same bytes; nothing outside `assets/` is touched; a read-only vault refuses the move.
+  Performance: check 2,000 notes and 1,000 attachments in < 2 s, off the main thread, UI responsive.
+  Accessibility: the report is a list VoiceOver reads row by row with counts; the move button names the
+  count; confirmation is inline in the same row (Cancel, Escape, or Move to Backups) so it is visible in captures.
+  Result: `VaultCheckTests` (each problem kind, same bytes after Undo, read-only refusal, 2,000 notes / 1,000
+  files in 0.4 s debug); `vault-check` probe in light and dark (`docs/screenshots/v08/vault-check/`).
+  Screenshots: Data & Storage with a clean report, with problems, and the confirmation (light and dark).
+- ⬜ Version history UI with diffs; orphan cleanup for backups older than 30 days.
 - ⬜ Optional encryption at rest; performance budgets enforced in CI.
 
 ## v1.0 — "A credible personal workspace" (macOS)

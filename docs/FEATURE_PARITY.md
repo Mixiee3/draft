@@ -321,6 +321,8 @@ Last updated: v0.4 shipped (native macOS) — 2026‑11‑08.
 | ST4 | Text effects (accent, gradient, glow, shadow, outline, lift, emboss) | verified | 0.7 | ≥ 4.5:1 by construction, Increase Contrast fallback, export, MCP (`TextEffectTests`, `mcp-test.sh`) |
 | ST5 | Block effects (gradient, glass, glow, accent; accent heading underline) | verified | 0.7 | Ids and content unchanged, one Undo, export, MCP (`BlockEffectTests`, `mcp-test.sh`) |
 | ST6 | Dot textures on presets | verified | 0.7 | Scene-style halftone lattice, six styles, distinct per preset, in the visible margins, exported (`BackgroundTests`, captures compared with the original scenes) |
+| ST12 | Effect presets (text, gradient, Spectrum, block, highlight) | verified | 0.7 | `EffectPresetTests` (all parse, no duplicate colorways, 30 gradients, 16 Spectrum palettes), `presets-shots` light/dark |
+| DS9 | Vault check and unused-file cleanup | verified | 0.8 | `VaultCheckTests`, `vault-check` probe light/dark; moves to backups/, one Undo |
 | ST11 | Effects in full with Increase Contrast by default (simplify is opt-in) | verified | 0.7 | Live probes under the real setting; `SpectrumPaletteTests` |
 | AG17 | Codex app-server mode | blocked | — | Needs OpenAI eligibility (open-source partner or issued client id); architecture documented |
 | ST10 | Separate text and effect colors (effect editor) | verified | 0.7 | `EffectColorTests`, `effects-live` |

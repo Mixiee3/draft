@@ -6,6 +6,7 @@ public enum DraftPalette {
     public static let highlights: [(String, String)] = [
         ("Butter", "#fff3a3"), ("Lime", "#e3f7a8"), ("Mint", "#c6f1d6"), ("Sky", "#c9ecf7"), ("Cornflower", "#cfdcfb"),
         ("Lilac", "#e2d6fb"), ("Rose", "#fbd3e9"), ("Peach", "#ffd9c7"), ("Stone", "#e4e2dd"),
+        ("Gold", "#ffe08a"), ("Coral", "#ffb8a8"), ("Teal", "#b2e5e0"),
     ]
     public static let textColors: [(String, String)] = [
         ("Ink blue", "#2f5bd3"), ("Violet", "#7b4fd6"), ("Berry", "#c2366b"), ("Rust", "#c75a1d"), ("Moss", "#4f7d33"),

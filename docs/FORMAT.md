@@ -126,10 +126,11 @@ document files at any time. `parentDocId` marks a nested page.
 | `hardBreak` | — | — |
 
 Marks: `bold`, `italic`, `underline`, `strike`, `code`, `highlight {color}`, `textStyle {color}`,
-`effect {kind, color?, stops?, angle?, intensity?}` (`color` #rrggbb is the effect's own color, apart
-from the text color mark; `stops` "#a,#b,…" (2–5) and `angle` (0–360°) for gradient; `intensity` 0–1;
+`effect {kind, color?, stops?, at?, angle?, focusX?, focusY?, intensity?}` (`color` #rrggbb is the effect's own color, apart
+from the text color mark; `stops` "#a,#b,…" (2–5) and `angle` (0–360°) for gradient; `at` "0,40,100" gives each stop's
+position in percent (ascending, one per stop; omitted = even); `focusX`/`focusY` (0–1) make the gradient radial from that point; `intensity` 0–1;
 kinds `accent`/`gradient` (one gradient across the phrase)/`glow`/`shadow`/`outline`/`lift`/`emboss`, or `spectrum` with
-`palette` (aurora/prism/sunset/ocean/neon/ember/citrus/forest/glacier/berry/candy), `speed` (still/slow/normal/fast) and `direction`
+`palette` (aurora/prism/sunset/ocean/neon/ember/citrus/forest/glacier/berry/candy/solar/rose/space/garden/mineral; ids are stable, colours may be retuned), `speed` (still/slow/normal/fast) and `direction`
 (forward/backward); colours come from the document style; readers that don't know it show plain text), `link {href}`, `docLink {docId, blockId?}`, `date {date}`.
 
 - **`docLink`** marks the text of a link chip. `docId` is the linked document; `blockId`, when

@@ -35,6 +35,7 @@ struct TextEffectEditor: View {
                     }
                     .padding(8).background(RoundedRectangle(cornerRadius: DS.rControl).fill(t.hover))
                 }
+                if let s = spec { presets(s, page: page) }
                 if spec?.kind != "spectrum" { textColorRow(spec) }
                 if let s = spec { controls(s, page: page) }
                 if spec?.kind == "spectrum" { textColorRow(spec) }
@@ -119,6 +120,52 @@ struct TextEffectEditor: View {
                 DraftSegmented("Direction", selection: Binding(get: { sp.direction }, set: { v in var n = sp; n.direction = v; apply(EffectSpec(n.value), live: false) }), options: [("forward", "→"), ("backward", "←")]).fixedSize()
             }
             if !c.theme.animateEffects { Text("Still while Reduce Motion is on.").font(.system(size: DS.caption)).foregroundStyle(t.secondary) }
+        }
+    }
+
+    /// Curated looks for the chosen effect, grouped by mood; each shows its own result.
+    @ViewBuilder func presets(_ s: EffectSpec, page: String) -> some View {
+        let list = EffectPresets.text(for: s.kind)
+        if !list.isEmpty {
+            Text("Presets").font(.system(size: DS.footnote)).foregroundStyle(t.text)
+            ForEach(EffectPresets.groups.filter { g in list.contains { $0.group == g } }, id: \.self) { group in
+                Text(group.uppercased()).font(.system(size: DS.micro + 1, weight: .semibold)).tracking(0.5).foregroundStyle(t.tertiary).padding(.top, 2)
+                LazyVGrid(columns: [GridItem(.flexible(), spacing: 6), GridItem(.flexible(), spacing: 6)], spacing: 6) {
+                    ForEach(list.filter { $0.group == group }, id: \.id) { p in
+                        let on = s.value == p.value
+                        Button { apply(EffectSpec(p.value), live: false) } label: {
+                            HStack(spacing: 6) { sample(p, page: page).frame(width: 34, height: 20); Text(p.name).font(.system(size: DS.caption)).foregroundStyle(t.text).lineLimit(1); Spacer(minLength: 0) }
+                                .padding(5)
+                                .background(RoundedRectangle(cornerRadius: DS.rControl).fill(on ? t.accent.opacity(0.14) : t.hover))
+                                .overlay(RoundedRectangle(cornerRadius: DS.rControl).strokeBorder(on ? t.accent : .clear, lineWidth: 1.5))
+                        }
+                        .buttonStyle(.plain)
+                        .accessibilityLabel("\(p.name), \(group) \(s.kind) preset")
+                        .accessibilityAddTraits(on ? .isSelected : [])
+                    }
+                }
+            }
+        }
+    }
+
+    /// A small preview drawn the way the editor draws the effect.
+    @ViewBuilder func sample(_ p: EffectPreset, page: String) -> some View {
+        let e = EffectSpec(p.value) ?? EffectSpec(kind: "accent")
+        let fills = e.fillColors(accent: c.theme.accent, text: c.theme.textColor, page: page)
+        let k = CGFloat(e.intensity ?? 0.6)
+        let col = Color(hex: e.color ?? c.theme.accent)
+        let text = Color(hex: c.theme.textColor)
+        let aa = Text("Aa").font(.system(size: 15, weight: .bold, design: .serif))
+        switch e.kind {
+        case "gradient", "spectrum":
+            Capsule().fill(LinearGradient(colors: fills.map { Color(hex: $0) }, startPoint: .leading, endPoint: .trailing)).frame(height: 10)
+        case "accent": aa.foregroundStyle(Color(hex: fills.first ?? c.theme.accent))
+        case "glow": aa.foregroundStyle(text).shadow(color: col.opacity(0.9), radius: 1 + 3 * k)
+        case "shadow": aa.foregroundStyle(text).shadow(color: col.opacity(0.35 + 0.5 * k), radius: 0.5 + 1.2 * k, y: 0.8 + 1.2 * k)
+        case "lift": aa.foregroundStyle(text).shadow(color: col.opacity(0.25 + 0.3 * k), radius: 0, x: 0.5 + 0.8 * k, y: 0.5 + 0.8 * k)
+        case "emboss": aa.foregroundStyle(text).shadow(color: col.opacity(0.3 + 0.5 * k), radius: 0, y: -1)
+        case "outline": aa.foregroundStyle(text).shadow(color: col, radius: 0, x: 0.8).shadow(color: col, radius: 0, x: -0.8).shadow(color: col, radius: 0, y: 0.8).shadow(color: col, radius: 0, y: -0.8)
+        default: aa.foregroundStyle(text)
         }
     }
 

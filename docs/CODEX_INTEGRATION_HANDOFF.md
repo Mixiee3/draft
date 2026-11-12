@@ -61,6 +61,11 @@ open-source registration for it would misrepresent the app, so Draft does not do
 
 ## Styling through MCP (11 November 2026)
 
+- 12 November: `draft_formatting_guide` also returns `effect_presets` (name, group, `text_effect_value`
+  ready to pass to a `text_effect` action, including gradient stop positions, radial focus and Spectrum
+  palette/speed/direction) and `block_presets` (decoration and tint). Agents should prefer a preset over
+  inventing colors.
+
 - `draft_formatting_guide` now returns `text_effects` and `block_effects` (value, name, where it
   fits) next to `background_styles`, plus restraint rules: at most one text effect per section, at
   most two block effects per note, never a highlight and an effect on the same words.

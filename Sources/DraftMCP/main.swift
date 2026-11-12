@@ -164,6 +164,11 @@ func call(_ name: String, _ args: [String: Any]) throws -> String {
             "text_effects": TextEffects.all.map { ["value": $0.kind, "name": $0.name, "use_for": $0.use] },
             "block_treatments": ["quote", "callout", "decoration", "block_color", "font", "align"],
             "block_effects": BlockEffects.all.map { ["value": $0.kind, "name": $0.name, "use_for": $0.use] },
+            "effect_presets": EffectPresets.allText.map { ["name": $0.name, "group": $0.group, "text_effect_value": $0.value] },
+            "block_presets": EffectPresets.blocks.map { p -> [String: String] in
+                let parts = p.value.split(separator: "|", omittingEmptySubsequences: false).map(String.init)
+                return ["name": p.name, "group": p.group, "decoration": parts[0], "block_color": parts[1]]
+            },
             "principles": [
                 "Start with structure: one clear title, short sections, and lists only where they help scanning.",
                 "Use one decorative separator at a meaningful transition. Wave is gentle; tape is playful; dots are quiet. Avoid repeating them between every section.",

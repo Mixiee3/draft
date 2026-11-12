@@ -104,6 +104,31 @@ struct FormatPanel: View {
                                 .help(BlockEffects.all.first { $0.kind == k }?.use ?? "")
                         }
                     }
+                    Text("PRESETS").font(.system(size: DS.micro + 1, weight: .semibold)).tracking(0.5).foregroundStyle(t.tertiary).padding(.top, 4)
+                    LazyVGrid(columns: [GridItem(.flexible(), spacing: 6), GridItem(.flexible(), spacing: 6)], spacing: 6) {
+                        ForEach(EffectPresets.blocks, id: \.id) { p in
+                            let parts = p.value.split(separator: "|", omittingEmptySubsequences: false).map(String.init)
+                            let deco = parts[0], tint = parts[1].isEmpty ? nil : parts[1]
+                            let on = block?.decoration == deco && block?.blockColor == tint
+                            Button {
+                                guard let c else { return }
+                                if c.currentBlock.decoration != deco { c.setDecoration(deco) }
+                                if c.currentBlock.blockColor != tint { c.setBlockColor(tint) }
+                                model.editorTick &+= 1
+                            } label: {
+                                HStack(spacing: 6) {
+                                    RoundedRectangle(cornerRadius: 4).fill(Color(hex: tint ?? (t.dark ? "#8a8aa0" : "#5b6cf0")).opacity(deco == "glass" ? 0.35 : 0.6)).frame(width: 18, height: 14)
+                                        .overlay(RoundedRectangle(cornerRadius: 4).strokeBorder(Color(hex: tint ?? "#5b6cf0"), lineWidth: deco == "accent" || deco == "glow" ? 1.5 : 0))
+                                    Text(p.name).font(.system(size: DS.caption)).foregroundStyle(t.text).lineLimit(1); Spacer(minLength: 0)
+                                }
+                                .padding(5)
+                                .background(RoundedRectangle(cornerRadius: DS.rControl).fill(on ? t.accent.opacity(0.14) : t.hover))
+                                .overlay(RoundedRectangle(cornerRadius: DS.rControl).strokeBorder(on ? t.accent : .clear, lineWidth: 1.5))
+                            }
+                            .buttonStyle(.plain).disabled(block?.kind.isAttachment ?? true)
+                            .accessibilityLabel("\(p.name), \(p.group) block preset")
+                        }
+                    }
                 }
                 PanelSection(title: "Color") {
                     LazyVGrid(columns: Array(repeating: GridItem(.fixed(34), spacing: 8), count: 6), spacing: 8) {

@@ -195,7 +195,6 @@ public enum Styler {
         let fills = e.fillColors(accent: theme.accent, text: theme.textColor, page: theme.pageColor)
         switch e.kind {
         case "accent", "gradient", "spectrum": fg = NSColor(hex: fills.first ?? d.start) // gradient and spectrum: drawn by the layout manager; this is the fallback
-        case "glow", "lift": if !hasTextColor { fg = NSColor(hex: d.start) }
         default: break
         }
         guard !theme.plainEffects, !["accent", "gradient", "spectrum"].contains(e.kind) else { return }
@@ -208,10 +207,12 @@ public enum Styler {
             sh.shadowBlurRadius = 2 + 5 * k
         case "shadow":
             sh.shadowColor = (own ?? .black).withAlphaComponent(min(1, (theme.isDarkPage ? 1.0 : 0.35) * (0.4 + k)))
-            sh.shadowBlurRadius = (theme.isDarkPage ? 2 : 1) + 2.5 * k; sh.shadowOffset = NSSize(width: 0, height: -(1 + (theme.isDarkPage ? 2.4 : 1.7) * k))
+            // Crisp and close: a soft, far shadow smudged the letters at reading sizes.
+            sh.shadowBlurRadius = (theme.isDarkPage ? 1 : 0.5) + 1.2 * k; sh.shadowOffset = NSSize(width: 0, height: -(0.8 + (theme.isDarkPage ? 1.6 : 1.2) * k))
         case "lift":
-            sh.shadowColor = (own ?? NSColor(hex: d.end)).withAlphaComponent(0.2 + 0.25 * k)
-            sh.shadowOffset = NSSize(width: 0.8 + 1.2 * k, height: -(0.8 + 1.2 * k))
+            // A short, quiet step: a long offset in another color read as a doubled, misprinted word.
+            sh.shadowColor = (own ?? NSColor(hex: d.end)).withAlphaComponent(0.18 + 0.22 * k)
+            sh.shadowOffset = NSSize(width: 0.5 + 0.8 * k, height: -(0.5 + 0.8 * k))
         case "emboss":
             // Pressed in: a dark edge above on light pages, a faint light edge below on dark ones
             // (a dark edge can't show on a dark page).
@@ -219,7 +220,7 @@ public enum Styler {
             sh.shadowOffset = NSSize(width: 0, height: theme.isDarkPage ? -1 : 1)
         case "outline":
             // A colored rim around letters that keep the text color.
-            attrs[.strokeWidth] = -(1.5 + 4 * k); attrs[.strokeColor] = (own ?? theme.accentColor).withAlphaComponent(0.85); return
+            attrs[.strokeWidth] = -(1 + 2.5 * k); attrs[.strokeColor] = (own ?? theme.accentColor).withAlphaComponent(0.85); return
         default: return
         }
         attrs[.shadow] = sh

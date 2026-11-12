@@ -303,8 +303,55 @@ struct SettingsView: View {
                     Button("Export…") { model.exportAll() }.buttonStyle(DraftButtonStyle(compact: true))
                 }
             }
+            vaultCheck
             if let r = model.readOnly { SettingsSection(title: "Read-only mode") { Text(r).font(.system(size: DS.body)).foregroundStyle(.orange).padding(DS.s3 + 2) } }
         }
+    }
+
+    var vaultCheck: some View {
+        SettingsSection(title: "Vault check", footer: "Checking only reads. Unused files are moved to backups/, never deleted, and Undo puts them back.") {
+            SettingsRow(title: "Check Vault", detail: model.vaultReport.map { "\($0.docsChecked) note\($0.docsChecked == 1 ? "" : "s") and \($0.assetsChecked) file\($0.assetsChecked == 1 ? "" : "s") checked" } ?? "Look for missing notes, missing images and files no note uses.") {
+                if model.vaultChecking { ProgressView().controlSize(.small).accessibilityLabel("Checking the vault") }
+                else { Button("Check Vault") { Task { await model.checkVault() } }.buttonStyle(DraftButtonStyle(compact: true)) }
+            }
+            if let r = model.vaultReport {
+                if r.isClean {
+                    checkLine("checkmark.circle", "Everything is in order.", color: .green)
+                }
+                if !r.libraryReadable { checkLine("exclamationmark.triangle", "library.json can't be read, so notes and unused files weren't compared.", color: .orange) }
+                problem(r.missingDocFiles, "listed note has no file", "listed notes have no file")
+                problem(r.strayDocFiles, "note file isn't in the library", "note files aren't in the library")
+                problem(r.unreadableDocs, "note file can't be read", "note files can't be read")
+                problem(r.missingAssets, "image or file a note uses is missing", "images or files notes use are missing")
+                if r.problemCount > 0 { checkLine("info.circle", "Draft doesn't change these automatically. Restore them from a backup or Time Machine if you need them.", color: t.secondary) }
+                if !r.unusedAssets.isEmpty {
+                    SettingsRow(title: "\(r.unusedAssets.count) unused file\(r.unusedAssets.count == 1 ? "" : "s")", detail: "\(ByteCountFormatter.string(fromByteCount: r.unusedBytes, countStyle: .file)) in assets/ that no note, template or deleted note uses") {
+                        if model.vaultConfirmMove {
+                            HStack(spacing: DS.s2) {
+                                Button("Cancel") { model.vaultConfirmMove = false }.buttonStyle(DraftButtonStyle(compact: true)).keyboardShortcut(.cancelAction)
+                                Button("Move to Backups") { Task { await model.moveUnusedFiles() } }.buttonStyle(DraftButtonStyle(role: .primary, compact: true))
+                            }
+                        } else {
+                            Button("Move Unused Files…") { model.vaultConfirmMove = true }.buttonStyle(DraftButtonStyle(compact: true)).disabled(model.readOnly != nil)
+                                .help(model.readOnly != nil ? "The vault is read-only." : "")
+                        }
+                    }
+                    if model.vaultConfirmMove { checkLine("questionmark.circle", "Move \(r.unusedAssets.count) file\(r.unusedAssets.count == 1 ? "" : "s") to backups/unused-…? You can undo this.", color: t.text) }
+                }
+            }
+        }
+    }
+
+    @ViewBuilder func problem(_ ids: [String], _ one: String, _ many: String) -> some View {
+        if !ids.isEmpty {
+            checkLine("exclamationmark.triangle", "\(ids.count) \(ids.count == 1 ? one : many): \(ids.prefix(3).joined(separator: ", "))\(ids.count > 3 ? " and \(ids.count - 3) more" : "")", color: .orange)
+        }
+    }
+
+    func checkLine(_ symbol: String, _ text: String, color: Color) -> some View {
+        Label { Text(text).foregroundStyle(t.text).textSelection(.enabled) } icon: { Image(systemName: symbol).foregroundStyle(color) }
+            .font(.system(size: DS.body)).frame(maxWidth: .infinity, alignment: .leading).padding(.horizontal, DS.s3 + 2).padding(.vertical, DS.s2)
+            .accessibilityElement(children: .combine)
     }
 
     var stats: some View {

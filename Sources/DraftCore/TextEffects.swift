@@ -12,7 +12,7 @@ public enum TextEffects {
         ("outline", "Outline", "large display words only; avoid in body text"),
         ("lift", "Lift", "a playful 3D offset for a title or label"),
         ("emboss", "Emboss", "a quiet pressed-in look for labels and captions"),
-        ("spectrum", "Spectrum", "a slowly moving multi-color gradient for one title or decorative label (value spectrum:<aurora|prism|sunset|ocean|neon|ember|citrus|forest|glacier|berry|candy>:<still|slow|normal|fast>:<forward|backward>; forward moves the colors to the right); never body text, at most one per note, 200 characters at most"),
+        ("spectrum", "Spectrum", "a slowly moving multi-color gradient for one title or decorative label (value spectrum:<palette id>:<still|slow|normal|fast>:<forward|backward>, palette ids in effect_presets; forward moves the colors to the right); never body text, at most one per note, 200 characters at most"),
     ]
     public static let kinds = all.map(\.kind)
 
@@ -51,18 +51,25 @@ public struct Spectrum: Hashable, Sendable {
     public var speed: String
     public var direction: String
 
+    /// Ids are stored in documents, so they never change; names may. Every palette loops (last stop =
+    /// first) and spans at least three hue bands that no other palette shares as a whole.
     public static let palettes: [(id: String, name: String, colors: [String])] = [
         ("aurora", "Aurora", ["#2fbf9a", "#3f8fd8", "#8b5cf6", "#2fbf9a"]),
         ("prism", "Prism", ["#e5484d", "#f5a524", "#3fb950", "#3a8ee6", "#8e4ec6", "#e5484d"]),
-        ("sunset", "Sunset Spectrum", ["#f2994a", "#eb5757", "#bb6bd9", "#f2994a"]),
-        ("ocean", "Ocean Rainbow", ["#0ea5b7", "#2f80ed", "#56ccf2", "#27ae60", "#0ea5b7"]),
+        ("sunset", "Sunset Spectrum", ["#f2994a", "#e91e63", "#8e24aa", "#f2994a"]),
+        ("ocean", "Ocean Current", ["#0ea5b7", "#2f80ed", "#56ccf2", "#27ae60", "#0ea5b7"]),
         ("neon", "Neon Dusk", ["#ff4fd8", "#7b61ff", "#00d4ff", "#ff4fd8"]),
-        ("ember", "Ember", ["#c2185b", "#e03e2d", "#ef6c00", "#b8860b", "#c2185b"]),
-        ("citrus", "Citrus", ["#43a047", "#f9a825", "#ef6c00", "#43a047"]),
-        ("forest", "Forest", ["#2e8b57", "#1f9e89", "#c9a227", "#2e8b57"]),
-        ("glacier", "Glacier", ["#29b6f6", "#00897b", "#7c4dff", "#29b6f6"]),
-        ("berry", "Berry", ["#c2185b", "#8e24aa", "#e0407a", "#c2185b"]),
+        ("ember", "Ember", ["#c2185b", "#e03e2d", "#c98a10", "#c2185b"]),
+        ("citrus", "Citrus Glass", ["#7cb342", "#fbc02d", "#26a69a", "#7cb342"]),
+        ("forest", "Forest Light", ["#2e8b57", "#1f9e89", "#c9a227", "#2e8b57"]),
+        ("glacier", "Arctic Bloom", ["#29b6f6", "#9575cd", "#f06292", "#29b6f6"]),
+        ("berry", "Berry", ["#ad1457", "#6a1b9a", "#3949ab", "#ad1457"]),
         ("candy", "Candy", ["#ff6fa8", "#ff9e6b", "#b38cff", "#ff6fa8"]),
+        ("solar", "Solar Flare", ["#ffb300", "#d32f2f", "#7e57c2", "#ffb300"]),
+        ("rose", "Rose Quartz", ["#d4708f", "#9c6ade", "#c9a46b", "#d4708f"]),
+        ("space", "Deep Space", ["#3f51b5", "#ab47bc", "#00897b", "#3f51b5"]),
+        ("garden", "Electric Garden", ["#76ff03", "#00e5ff", "#d500f9", "#76ff03"]),
+        ("mineral", "Mineral", ["#00838f", "#c0622a", "#5c6bc0", "#00838f"]),
     ]
     /// Seconds for one full cycle; 0 = still.
     public static let speeds: [(id: String, name: String, seconds: Double)] = [("still", "Still", 0), ("slow", "Slow", 9), ("normal", "Normal", 6), ("fast", "Fast", 3.5)]
@@ -112,7 +119,13 @@ public struct EffectSpec: Hashable, Sendable {
     public var angle: Double?
     /// 0…1: how strong the glow, shadow, outline, lift or emboss is.
     public var intensity: Double?
+    /// Gradient stop positions in percent (0…100, ascending), one per stop; evenly spaced if absent.
+    public var positions: [Double]?
+    /// A radial gradient around (focusX, focusY), 0…1 of the phrase's box; linear when absent.
+    public var focusX: Double?
+    public var focusY: Double?
     public var spectrum: Spectrum?
+    public var isRadial: Bool { focusX != nil && focusY != nil }
 
     public init(kind: String, color: String? = nil, stops: [String]? = nil, angle: Double? = nil, intensity: Double? = nil) {
         self.kind = kind; self.color = color; self.stops = stops; self.angle = angle; self.intensity = intensity
@@ -136,9 +149,21 @@ public struct EffectSpec: Hashable, Sendable {
                 guard (2...5).contains(s.count), s.allSatisfy(Self.hex) else { return nil }; stops = s
             case "angle": guard let a = Double(kv[1]), (0...360).contains(a) else { return nil }; angle = a
             case "intensity": guard let i = Double(kv[1]), (0...1).contains(i) else { return nil }; intensity = i
+            case "at":
+                let ps = kv[1].split(separator: ",").compactMap { Double($0) }
+                guard (2...5).contains(ps.count), ps.allSatisfy({ (0...100).contains($0) }), ps == ps.sorted() else { return nil }; positions = ps
+            case "focus":
+                let f = kv[1].split(separator: ",").compactMap { Double($0) }
+                guard f.count == 2, f.allSatisfy({ (0...1).contains($0) }) else { return nil }; focusX = f[0]; focusY = f[1]
             default: return nil
             }
         }
+    }
+
+    /// Stop positions (0…1) that match the stops, or nil to space them evenly.
+    public var stopLocations: [CGFloat]? {
+        guard let ps = positions, let st = stops, ps.count == st.count else { return nil }
+        return ps.map { CGFloat($0 / 100) }
     }
 
     public var value: String {
@@ -148,6 +173,8 @@ public struct EffectSpec: Hashable, Sendable {
         if let s = stops { q.append("stops=\(s.joined(separator: ","))") }
         if let a = angle { q.append("angle=\(Int(a))") }
         if let i = intensity { q.append("intensity=\(String(format: "%.2f", i))") }
+        if let ps = positions { q.append("at=" + ps.map { String(Int($0)) }.joined(separator: ",")) }
+        if let x = focusX, let y = focusY { q.append("focus=\(String(format: "%.2f", x)),\(String(format: "%.2f", y))") }
         return q.isEmpty ? kind : kind + "?" + q.joined(separator: "&")
     }
 
@@ -159,6 +186,8 @@ public struct EffectSpec: Hashable, Sendable {
         if let s = stops { a["stops"] = .string(s.joined(separator: ",")) }
         if let x = angle { a["angle"] = .number(x) }
         if let i = intensity { a["intensity"] = .number(i) }
+        if let ps = positions { a["at"] = .string(ps.map { String(Int($0)) }.joined(separator: ",")) }
+        if let x = focusX, let y = focusY { a["focusX"] = .number(x); a["focusY"] = .number(y) }
         return Mark("effect", attrs: a)
     }
 
@@ -175,6 +204,8 @@ public struct EffectSpec: Hashable, Sendable {
         if let s = m.attrs?["stops"]?.string?.split(separator: ",").map({ String($0).lowercased() }), (2...5).contains(s.count), s.allSatisfy(Self.hex) { stops = s }
         if let a = m.attrs?["angle"]?.double, (0...360).contains(a) { angle = a }
         if let i = m.attrs?["intensity"]?.double, (0...1).contains(i) { intensity = i }
+        if let ps = m.attrs?["at"]?.string?.split(separator: ",").compactMap({ Double($0) }), (2...5).contains(ps.count), ps.allSatisfy({ (0...100).contains($0) }), ps == ps.sorted() { positions = ps }
+        if let x = m.attrs?["focusX"]?.double, let y = m.attrs?["focusY"]?.double, (0...1).contains(x), (0...1).contains(y) { focusX = x; focusY = y }
     }
 
     /// Colors that fill the letters (accent, gradient stops), each pushed to 4.5:1 on the page.
