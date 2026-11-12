@@ -49,14 +49,24 @@ public extension Library {
     }
 }
 
-public struct Snapshot: Hashable, Identifiable {
+public struct Snapshot: Hashable, Identifiable, Sendable {
     public var id: String { url.lastPathComponent }
     public let url: URL
     public let savedAt: Double
+    /// auto, manual, before-restore or before-repair.
+    public var source: String = "auto"
+    public var sourceLabel: String {
+        switch source {
+        case "manual": return "Saved by you"
+        case "before-restore": return "Before a restore"
+        case "before-repair": return "Before a repair"
+        default: return "Automatic"
+        }
+    }
 }
 
-/// Automatic local backups: `history/<docId>/<ms>.json`, at most one per interval while a
-/// document is being edited, keeping the newest `keep`.
+/// Document versions: `history/<docId>/<ms>[.<source>].json`. Automatic ones at most one per
+/// interval while a document is being edited; each source keeps its newest `snapshotsKept`.
 public extension Vault {
     static let snapshotInterval: Double = 10 * 60_000
     static let snapshotsKept = 30
@@ -69,21 +79,26 @@ public extension Vault {
     func snapshots(_ id: String) -> [Snapshot] {
         drain()
         guard let d = try? historyDir(id), let names = try? FileManager.default.contentsOfDirectory(atPath: d.path) else { return [] }
-        return names.compactMap { n in Double(n.replacingOccurrences(of: ".json", with: "")).map { Snapshot(url: d.appendingPathComponent(n), savedAt: $0) } }
-            .sorted { $0.savedAt > $1.savedAt }
+        return names.compactMap { n -> Snapshot? in
+            let parts = n.split(separator: ".")
+            guard parts.last == "json", let ms = Double(parts[0]) else { return nil }
+            let source = parts.count == 3 ? String(parts[1]) : "auto"
+            return Snapshot(url: d.appendingPathComponent(n), savedAt: ms, source: source)
+        }.sorted { $0.savedAt > $1.savedAt }
     }
 
     /// Writes a snapshot when the newest one is older than the interval (or `force`) and the
     /// content differs. Returns true when one was written.
     @discardableResult
-    func snapshotIfDue(_ doc: DocFile, now: Double = nowMs(), force: Bool = false) throws -> Bool {
+    func snapshotIfDue(_ doc: DocFile, now: Double = nowMs(), force: Bool = false, source: String = "auto") throws -> Bool {
         if isReadOnly { return false }
         let existing = snapshots(doc.id)
         if !force, let last = existing.first, now - last.savedAt < Vault.snapshotInterval { return false }
         let data = try DraftJSON.encode(doc)
-        if let last = existing.first, let old = try? Data(contentsOf: last.url), old == data { return false }
-        try Vault.writeAtomic(data, to: try historyDir(doc.id).appendingPathComponent("\(Int64(now)).json"))
-        for s in snapshots(doc.id).dropFirst(Vault.snapshotsKept) { try? FileManager.default.removeItem(at: s.url) }
+        if source == "auto", let last = existing.first, let old = try? Data(contentsOf: last.url), old == data { return false }
+        let name = source == "auto" ? "\(Int64(now)).json" : "\(Int64(now)).\(source).json"
+        try Vault.writeAtomic(data, to: try historyDir(doc.id).appendingPathComponent(name))
+        for s in snapshots(doc.id).filter({ $0.source == source }).dropFirst(Vault.snapshotsKept) { try? FileManager.default.removeItem(at: s.url) }
         return true
     }
 
