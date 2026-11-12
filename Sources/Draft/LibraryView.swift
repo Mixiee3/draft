@@ -408,20 +408,34 @@ struct SearchResults: View {
                                     Text(model.folderName(h.meta.folderId) + (h.meta.parentDocId.flatMap { model.library.docs[$0]?.title }.map { " › \($0)" } ?? ""))
                                         .font(.system(size: DS.footnote)).foregroundStyle(t.tertiary)
                                 }
-                                snippet(h).font(.system(size: DS.body)).foregroundStyle(t.secondary).lineLimit(2)
+                                if h.blocks.count <= 1 { snippet(h).font(.system(size: DS.body)).foregroundStyle(t.secondary).lineLimit(2) }
                             }
                             Spacer()
                         }
                         .padding(10).contentShape(Rectangle())
                         .background(RoundedRectangle(cornerRadius: DS.rControl).fill(t.hover.opacity(0.5)))
                     }.buttonStyle(.plain)
+                    // Matching blocks: each one opens the note at that block.
+                    if h.blocks.count > 1 {
+                        ForEach(h.blocks.prefix(3)) { b in
+                            Button { model.openBlock(h.meta.id, b.id) } label: {
+                                HStack(spacing: 8) {
+                                    Image(systemName: "arrow.turn.down.right").font(.system(size: DS.caption)).foregroundStyle(t.tertiary).accessibilityHidden(true)
+                                    snippet(b.snippet, b.match).font(.system(size: DS.footnote)).foregroundStyle(t.secondary).lineLimit(1)
+                                    Spacer(minLength: 0)
+                                }.padding(.leading, 58).padding(.vertical, 3).contentShape(Rectangle())
+                            }.buttonStyle(.plain).accessibilityLabel("Match in \(h.meta.title.isEmpty ? "Untitled" : h.meta.title): \(b.snippet)")
+                        }
+                        if h.blocks.count > 3 { Text("and more in this note").font(.system(size: DS.caption)).foregroundStyle(t.tertiary).padding(.leading, 58) }
+                    }
                 }
             }.padding(.horizontal, 18).padding(.bottom, 24)
         }
     }
 
-    func snippet(_ h: SearchHit) -> Text {
-        guard let r = h.snippetMatch else { return Text(h.snippet) }
-        return Text(String(h.snippet[..<r.lowerBound])) + Text(String(h.snippet[r])).bold().foregroundColor(t.text) + Text(String(h.snippet[r.upperBound...]))
+    func snippet(_ h: SearchHit) -> Text { snippet(h.snippet, h.snippetMatch) }
+    func snippet(_ s: String, _ r: Range<String.Index>?) -> Text {
+        guard let r else { return Text(s) }
+        return Text(String(s[..<r.lowerBound])) + Text(String(s[r])).bold().foregroundColor(t.text) + Text(String(s[r.upperBound...]))
     }
 }

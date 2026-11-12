@@ -51,6 +51,8 @@ enum Automation {
             case "text-audit": await textAudit()
             case "presets-shots": await presetsShots()
             case "trust-shots": await trustShots()
+            case "search-perf": await searchPerf()
+            case "search-read": await searchRead()
             case "trust-read": await trustRead()
             case "safe-mode-check": await safeModeCheck()
             case "effects-live": await effectsLive(read: false)

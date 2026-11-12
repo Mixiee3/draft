@@ -108,6 +108,8 @@ final class AppModel {
     var collectionTick = 0
     var searchRegex = false
     var index = VaultIndex()
+    /// Full-text search over blocks (index/search.json), apart from rendering and library.json.
+    @ObservationIgnored var searchIndex = SearchIndex()
     @ObservationIgnored var blockDoc: [String: String] = [:]
     @ObservationIgnored var indexTimer: Timer?
     @ObservationIgnored var forward: [String: [HistEntry]] = [:]
@@ -1092,10 +1094,12 @@ final class AppModel {
     }
 
     var searchHits: [SearchHit] {
-        guard case .success(let q) = searchQuery else { return [] }
-        return Search.hits(q, in: library.liveDocs) { [self] m in
-            (editors[m.id]?.controller.document() ?? ensureDoc(m.id)?.content).map(docPlainText)
-        }
+        guard case .success(var q) = searchQuery else { return [] }
+        let _ = indexTick
+        // link:<note> matches a note id, or titles that start with the text.
+        q.links = q.linkTerms.compactMap { t in library.docs[t] != nil ? t : library.liveDocs.first { $0.title.range(of: t, options: [.caseInsensitive, .diacriticInsensitive, .anchored]) != nil }?.id }
+        if !q.linkTerms.isEmpty && q.links.isEmpty { return [] }
+        return searchIndex.search(q, in: library.liveDocs)
     }
 
     /// Open a search result and land on the first match: Find in Page is pre-filled, so every

@@ -281,10 +281,10 @@ public struct VaultIndex: Codable, Hashable, Sendable {
     public var entries: [String: DocIndexEntry] = [:]
     public init() {}
 
-    static let blockTextLimit = 1000
+    public static let blockTextLimit = 1000
 
     /// Index one document. Tasks without their own date are due on their daily note's day.
-    public static func entry(for doc: DocFile, daily: String?, rules: TagRules) -> DocIndexEntry {
+    public static func entry(for doc: DocFile, daily: String?, rules: TagRules, blockTextLimit: Int = VaultIndex.blockTextLimit) -> DocIndexEntry {
         var e = DocIndexEntry(updatedAt: doc.updatedAt, daily: daily)
         func visit(_ n: Node, item: Node?) {
             switch n.type {
