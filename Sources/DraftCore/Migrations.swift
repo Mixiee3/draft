@@ -173,7 +173,7 @@ public extension Migrations {
             func same(_ k: String, _ now: String?) { if o[k]?.string != now { diffs.append("\(id): \(k) changed") } }
             same("title", m.title); same("styleId", m.styleId); same("folderId", m.folderId); same("parentDocId", m.parentDocId)
             if o["deletedAt"]?.double != m.deletedAt { diffs.append("\(id): trash state changed") }
-            if m.spaceId == nil { diffs.append("\(id): no Space") }
+            if from < 2 && m.spaceId == nil { diffs.append("\(id): no Space") } // current notes may leave it unset (= first Space)
         }
         let oldFolders = raw["folders"]?.items?.compactMap { $0.object.flatMap { o in o["id"]?.string.map { ($0, o["name"]?.string ?? "") } } } ?? []
         if oldFolders.map(\.0) != lib.folders.map(\.id) || oldFolders.map(\.1) != lib.folders.map(\.name) { diffs.append("Folders changed") }

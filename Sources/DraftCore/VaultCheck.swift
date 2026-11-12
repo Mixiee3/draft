@@ -228,7 +228,9 @@ public enum VaultCheck {
         // Repairs or restores that never finished.
         for j in VaultRepair.openJournals(vault) {
             add(.journalOpen, .critical, j.folder.lastPathComponent, "A \(j.journal.kind) was interrupted", "“\(j.journal.summary)” started \(Date(timeIntervalSince1970: j.journal.startedAt / 1000).formatted(date: .abbreviated, time: .shortened)) and didn't finish. The files from before it are in backups/\(j.folder.lastPathComponent).",
-                repair: "Put back the \(j.journal.touched.count) file\(j.journal.touched.count == 1 ? "" : "s") from before it and remove the \(j.journal.created.count) it created.")
+                repair: [j.journal.touched.isEmpty ? nil : "put back the \(j.journal.touched.count) file\(j.journal.touched.count == 1 ? "" : "s") from before it",
+                         j.journal.created.isEmpty ? nil : "remove the \(j.journal.created.count) file\(j.journal.created.count == 1 ? "" : "s") it created"]
+                    .compactMap { $0 }.joined(separator: " and ").capitalizedFirst.nonEmpty.map { $0 + "." } ?? "Mark it as rolled back; it hadn't changed anything yet.")
         }
         r.issues = issues.sorted { ($0.severity, $1.title) > ($1.severity, $0.title) }
         return r
@@ -266,4 +268,5 @@ public enum VaultCheck {
 
 extension String {
     var nonEmpty: String? { isEmpty ? nil : self }
+    var capitalizedFirst: String { prefix(1).uppercased() + dropFirst() }
 }

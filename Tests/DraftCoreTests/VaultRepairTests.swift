@@ -152,3 +152,19 @@ final class VaultRepairTests: XCTestCase {
         XCTAssertTrue(VaultRepair.plan(r.issues, vault: v).isEmpty)
     }
 }
+
+extension VaultRepairTests {
+    func testRollbackOwnsTheFilesOfTheInterruptedChange() throws {
+        var lib = Library.empty(); lib.docs["d_k"] = DocMeta(id: "d_k", title: "Kept"); try v.saveLibrary(lib)
+        try v.saveDoc(doc("d_k", "Kept", [para("b_k", "k")]))
+        try Vault.writeAtomic(try DraftJSON.encode(doc("d_half", "Half", [para("b_h", "h")])), to: v.docURL("d_half"))
+        let folder = dir.appendingPathComponent("backups/restore-2026-01-01T00-00-00Z")
+        try VaultRepair.writeJournal(VaultRepair.Journal(kind: "restore", summary: "Restore", startedAt: 0, state: "writing", touched: [], created: ["docs/d_half.json"], fixes: []), folder)
+        let issues = VaultCheck.run(v).issues
+        XCTAssertTrue(issues.contains { $0.kind == .docUnlisted && $0.subject == "d_half" })
+        let plan = VaultRepair.plan(issues, vault: v)
+        XCTAssertNil(plan.writes["library.json"], "the half-written note is removed by the rollback, not added to the library")
+        _ = try VaultRepair.apply(plan, vault: v, summary: "Recover", fixes: [])
+        XCTAssertTrue(VaultCheck.run(v).issues.filter { $0.severity > .info }.isEmpty, "\(VaultCheck.run(v).issues.map(\.title))")
+    }
+}

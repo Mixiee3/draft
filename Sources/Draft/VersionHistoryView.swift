@@ -1,3 +1,4 @@
+import AppKit
 import SwiftUI
 import DraftCore
 
@@ -9,13 +10,14 @@ struct VersionHistoryView: View {
     @Environment(\.tokens) var t
     @Environment(\.dismiss) var dismiss
     let docId: String
-    @State private var selection: String?
-    @State private var confirming = false
+    private var selection: String? { model.recovery.historySelection }
+    private var confirming: Bool { model.recovery.historyConfirming }
     @State private var check: AppModel.RestoreCheck?
     @FocusState private var listFocused: Bool
 
     var body: some View {
         let _ = model.editorTick
+        @Bindable var r = model.recovery
         let snaps = model.snapshots(docId)
         GeometryReader { geo in
             let narrow = geo.size.width < 720
@@ -32,11 +34,17 @@ struct VersionHistoryView: View {
                 }
             }
         }
-        .frame(minWidth: 520, idealWidth: 960, minHeight: 480, idealHeight: 680)
+        .frame(width: Self.fit.width, height: Self.fit.height)
         .background(t.canvas)
-        .onAppear { if selection == nil { selection = snaps.first?.id }; listFocused = true; refresh() }
-        .onChange(of: selection) { confirming = false; refresh() }
-        .onExitCommand { if confirming { confirming = false } else { dismiss() } }
+        .onAppear { if selection == nil || !snaps.contains(where: { $0.id == selection }) { r.historySelection = snaps.first?.id }; r.historyConfirming = false; listFocused = true; refresh() }
+        .onChange(of: model.recovery.historySelection) { model.recovery.historyConfirming = false; refresh() }
+        .onExitCommand { if confirming { model.recovery.historyConfirming = false } else { dismiss() } }
+    }
+
+    /// Fits inside the window it is attached to, so narrow windows get the stacked layout.
+    static var fit: CGSize {
+        let w = NSApp.windows.first { $0.isVisible && $0.isMainWindow }?.frame.size ?? NSApp.windows.first { $0.isVisible }?.frame.size ?? CGSize(width: 1200, height: 800)
+        return CGSize(width: min(980, max(480, w.width - 48)), height: min(720, max(420, w.height - 90)))
     }
 
     func refresh() {
@@ -57,14 +65,15 @@ struct VersionHistoryView: View {
     }
 
     func list(_ snaps: [Snapshot]) -> some View {
-        List(selection: $selection) {
+        List(selection: Binding(get: { model.recovery.historySelection }, set: { model.recovery.historySelection = $0 })) {
             ForEach(snaps) { s in
                 VStack(alignment: .leading, spacing: 2) {
-                    Text(Date(timeIntervalSince1970: s.savedAt / 1000).formatted(date: .abbreviated, time: .shortened)).font(.system(size: DS.body)).foregroundStyle(t.text)
+                    // System styles, so the row inverts with the selection highlight.
+                    Text(Date(timeIntervalSince1970: s.savedAt / 1000).formatted(date: .abbreviated, time: .shortened)).font(.system(size: DS.body)).foregroundStyle(.primary)
                     HStack(spacing: 4) {
                         Image(systemName: s.source == "manual" ? "bookmark.fill" : s.source == "auto" ? "clock" : "arrow.uturn.backward").font(.system(size: 9))
                         Text("\(s.sourceLabel) · \(relative(s.savedAt))")
-                    }.font(.system(size: DS.caption)).foregroundStyle(t.secondary)
+                    }.font(.system(size: DS.caption)).foregroundStyle(.secondary)
                 }
                 .padding(.vertical, 2).tag(s.id)
                 .accessibilityElement(children: .combine)
@@ -88,15 +97,15 @@ struct VersionHistoryView: View {
                 }
                 Divider()
                 HStack(spacing: DS.s2) {
-                    Text(confirming ? "The note as it is now is saved as a version first. Command-Z undoes the restore." : "Current note on the left of each change, this version on the right.")
+                    Text(confirming ? "The note as it is now is saved as a version first. Command-Z undoes the restore." : "Struck-through text is in the note now; underlined text comes back with this version.")
                         .font(.system(size: DS.footnote)).foregroundStyle(t.secondary).fixedSize(horizontal: false, vertical: true)
                     Spacer()
                     if confirming {
-                        Button("Cancel") { confirming = false }.buttonStyle(DraftButtonStyle(compact: true)).keyboardShortcut(.cancelAction)
-                        Button("Restore This Version") { model.restoreVersion(docId, s); confirming = false; dismiss() }
+                        Button("Cancel") { model.recovery.historyConfirming = false }.buttonStyle(DraftButtonStyle(compact: true)).keyboardShortcut(.cancelAction)
+                        Button("Restore This Version") { model.restoreVersion(docId, s); model.recovery.historyConfirming = false; dismiss() }
                             .buttonStyle(DraftButtonStyle(role: .primary, compact: true)).keyboardShortcut(.defaultAction)
                     } else {
-                        Button("Restore…") { confirming = true }.buttonStyle(DraftButtonStyle(role: .primary, compact: true))
+                        Button("Restore…") { model.recovery.historyConfirming = true }.buttonStyle(DraftButtonStyle(role: .primary, compact: true))
                             .keyboardShortcut(.defaultAction).disabled(c.diff.isEmpty || model.readOnly != nil)
                     }
                 }.padding(DS.s3)

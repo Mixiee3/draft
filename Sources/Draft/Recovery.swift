@@ -27,6 +27,8 @@ final class RecoveryState {
     var rollbackPreview: VaultRepair.Plan?
     /// Version History sheet for this document.
     var historyDoc: HistoryTarget?
+    var historySelection: String?
+    var historyConfirming = false
     /// Problems found at launch that stop Draft from opening normally.
     var startup: [VaultIssue]?
     var safeMode = false

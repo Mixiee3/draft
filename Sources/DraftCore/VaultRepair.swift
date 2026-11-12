@@ -34,6 +34,9 @@ public enum VaultRepair {
         public var touched: [String]
         public var created: [String]
         public var fixes: [String]
+        public init(kind: String, summary: String, startedAt: Double, state: String, touched: [String], created: [String], fixes: [String]) {
+            self.kind = kind; self.summary = summary; self.startedAt = startedAt; self.state = state; self.touched = touched; self.created = created; self.fixes = fixes
+        }
     }
 
     public static func openJournals(_ vault: Vault) -> [(folder: URL, journal: Journal)] {
@@ -61,9 +64,18 @@ public enum VaultRepair {
             p.skipped = issues
             return p // a newer Draft owns this vault: change nothing
         }
+        // Files an interrupted change will put back or remove are left to that rollback.
+        let rolledBack: Set<String> = Set(issues.filter { $0.kind == .journalOpen }.flatMap { i -> [String] in
+            guard let d = try? Data(contentsOf: dir.appendingPathComponent("backups/\(i.subject)/journal.json")), let j = try? JSONDecoder().decode(Journal.self, from: d) else { return [] }
+            return j.touched + j.created
+        })
         func docData(_ id: String) -> Data? { try? Data(contentsOf: dir.appendingPathComponent("docs/\(id).json")) }
         func step(_ i: VaultIssue, _ text: String, _ files: [String]) { p.steps.append(Step(issueId: i.id, text: text, files: files)) }
         for i in issues.sorted(by: { $0.kind == .libraryUnreadable && $1.kind != .libraryUnreadable }) {
+            if i.kind != .journalOpen, rolledBack.contains("docs/\(i.subject).json") || rolledBack.contains("assets/\(i.subject)") || rolledBack.contains(i.subject) {
+                p.steps.append(Step(issueId: i.id, text: "\(i.title): handled by rolling back the interrupted change.", files: []))
+                continue
+            }
             switch i.kind {
             case .libraryUnreadable:
                 let rebuilt = rebuildLibrary(vault: vault, base: newestReadableLibraryBackup(vault))
@@ -285,7 +297,7 @@ public enum VaultRepair {
         for rel in j.created { let u = vault.dir.appendingPathComponent(rel); if fm.fileExists(atPath: u.path) { try fm.removeItem(at: u) } }
     }
 
-    static func writeJournal(_ j: Journal, _ folder: URL) throws {
+    public static func writeJournal(_ j: Journal, _ folder: URL) throws {
         try Vault.writeAtomic(try DraftJSON.encode(j, pretty: true), to: folder.appendingPathComponent("journal.json"))
     }
 }
