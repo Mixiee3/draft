@@ -18,6 +18,7 @@ migration that backs up first; unknown fields and block types are preserved.
 Legend: ✅ done · 🟡 partial · ⬜ not started
 
 ### Change log of this plan
+- **2026‑11‑12 (late)** — v0.8 Trust & Recovery batch done: Vault Check with 19 problem kinds and severities; repairs with an exact preview, a backup and journal first, validation after, all-or-nothing and one Undo (also after relaunch); rebuild library from notes and rebuild index with a dry run; Version History with readable diffs and restore as one Undo step; attachment and backup browsers; migration validator with fixtures for every schema; startup recovery and Safe Mode. Found and fixed: prototype (schema 0) vaults could never migrate (two false differences in the dry run); a damaged search index was overwritten without a copy. `scripts/trust-test.sh` (41 checks) and `RecoveryPerfTests`.
 - **2026‑11‑12 (night)** — Effect presets: 8 glow, 7 shadow, 6 outline, 6 lift, 5 emboss, 8 accent, 30 gradient (2–5 stops with positions, 4 radial), 16 Spectrum palettes (5 new), 19 block presets, three new highlights, grouped Calm/Warm/Cool/Editorial/Neon/Nature/Dark/Study/Decorative, in the effect editor, the Decorations panel and `draft_formatting_guide`. Text-rendering audit on native Retina captures: body text keeps full font smoothing; Shadow, Lift and Outline defaults were too soft or heavy and were tightened; Glow and Lift keep the text color. v0.8 started: vault check and unused-file cleanup (first slice).
 - **2026‑11‑12 (evening)** — Spectrum direction was reversed (forward moved the colors left): fixed and checked from pixels in a unit test and in the running app. Six more palettes: Ember, Citrus, Forest, Glacier, Berry, Candy (11 in all; each loops without a seam, reaches at least three hues across a phrase and stays readable on every style).
 - **2026‑11‑12 (later)** — Root cause of “Spectrum is one static color / effects are plain color changes”: macOS Increase Contrast is on on the development Mac, and Draft simplified every effect there (one still readable color; no glow, shadow, outline or emboss); earlier visual checks overrode Increase Contrast and so never showed it. Now a notice with **Show Full Effects** in the effect editor and the bar, an Appearance setting (Full text effects with Increase Contrast), palettes shown as their full gradients, an Animate switch; every effect re-verified on screen under the real system settings. Item 17 researched: blocked on eligibility (see below).
@@ -396,7 +397,7 @@ Return applies, Escape rejects, Tab reaches both buttons with a visible ring; li
   files in 0.4 s debug); `vault-check` probe in light and dark (`docs/screenshots/v08/vault-check/`).
   Screenshots: Data & Storage with a clean report, with problems, and the confirmation (light and dark).
 
-### v0.8 batch — Trust & Recovery (started 12 Nov 2026)
+### v0.8 batch — Trust & Recovery (12 Nov 2026, done)
 
 Ten connected features. Rule for all of them: **scans only read; nothing in the vault is written until
 the person approves an exact preview, a backup is made first, and the change is validated afterwards
@@ -404,16 +405,16 @@ the person approves an exact preview, a backup is made first, and the change is 
 
 | # | Feature | Depends on | Status |
 |---|---|---|---|
-| 1 | Complete Vault Check | first slice | ⬜ |
-| 2 | Vault repair (preview, backup, confirm, validate, Undo, journal) | 1 | ⬜ |
-| 3 | library.json and index repair (rebuild library from notes, restore metadata, rebuild index) | 1, 2 | ⬜ |
-| 4 | Version History UI (snapshots with source, readable diff) | — | ⬜ |
-| 5 | Document restore (backup first, ids/links/attachments checked, one Undo) | 4 | ⬜ |
-| 6 | Asset browser (used, unused, missing; type, size, last reference, documents) | 1 | ⬜ |
-| 7 | Crash recovery and Safe Mode | 2, 3 | ⬜ |
-| 8 | Backup browser (per-document, health, retention, preview, restore, delete) | 4, 5 | ⬜ |
-| 9 | Migration validator (dry run on a copy, fixtures for every schema, rollback) | 3 | ⬜ |
-| 10 | Performance and reliability checks | all | ⬜ |
+| 1 | Complete Vault Check | first slice | ✅ |
+| 2 | Vault repair (preview, backup, confirm, validate, Undo, journal) | 1 | ✅ |
+| 3 | library.json and index repair (rebuild library from notes, restore metadata, rebuild index) | 1, 2 | ✅ |
+| 4 | Version History UI (snapshots with source, readable diff) | — | ✅ |
+| 5 | Document restore (backup first, ids/links/attachments checked, one Undo) | 4 | ✅ |
+| 6 | Asset browser (used, unused, missing; type, size, last reference, documents) | 1 | ✅ |
+| 7 | Crash recovery and Safe Mode | 2, 3 | ✅ |
+| 8 | Backup browser (per-document, health, retention, preview, restore, delete) | 4, 5 | ✅ |
+| 9 | Migration validator (dry run on a copy, fixtures for every schema, rollback) | 3 | ✅ |
+| 10 | Performance and reliability checks | all | ✅ |
 
 **Implementation order.** 1 → 2 → 3 (one repair engine in DraftCore: `VaultCheck` finds issues,
 `VaultRepair` turns chosen issues into a plan of file changes, backs those files up to
@@ -488,6 +489,15 @@ progress (Reduce Motion respected); Increase Contrast uses the system's stronger
 **Screenshots** (`docs/screenshots/v08/`, light, dark and 720 px narrow): Vault Check with problems,
 repair preview, repair done with Undo, Asset browser, Backup browser, Migration validator report,
 Version History with a diff, restore preview, recovery screen after an interrupted repair, Safe Mode.
+
+**Result.** All ten done. Evidence: `VaultCheckTests`, `VaultRepairTests`, `MigrationFixtureTests`,
+`VersionDiffTests`, `BackupCatalogTests`, `RecoveryPerfTests`; `scripts/trust-test.sh` (light, dark,
+narrow, relaunch, Safe Mode); screens in `docs/screenshots/v08/trust-recovery/`. Measured (debug):
+vault check 2,000 notes / 1,000 assets 0.8 s; repair plan 0.7 s; asset list 0.1 s; library rebuild
+1.6 s; migration validation 1.0 s (current) / 3.3 s (schema 1 → 2); 5,100 backups listed 0.65 s;
+30-version history of a 2,000-block note listed, loaded and diffed in 38 ms. Not covered: a person
+using VoiceOver and Full Keyboard Access on these screens (labels and focus are set in code); an
+interrupted write caught at the exact byte (simulated through the journal state).
 
 - ⬜ Orphan cleanup for backups older than 30 days (manual, listed first — part of #8).
 - ⬜ Optional encryption at rest; performance budgets enforced in CI.
