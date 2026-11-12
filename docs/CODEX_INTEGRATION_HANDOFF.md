@@ -1,5 +1,39 @@
 # Draft AI integration handoff
 
+## Item 17: Codex app-server mode — research and architecture (12 November 2026)
+
+**Status: blocked on eligibility, not implemented.** OpenAI documents both pieces now:
+
+- *App-server* ([learn.chatgpt.com/docs/app-server](https://learn.chatgpt.com/docs/app-server)): JSON-RPC 2.0 over stdio
+  (newline-delimited), `initialize` → `initialized` → `thread/start` / `thread/resume` → `turn/start`;
+  progress as `item/started`, `item/agentMessage/delta`, `item/completed`, `turn/completed`;
+  `turn/interrupt` cancels; the server asks the client for permissions (`item/permissions/requestApproval`).
+  OpenAI asks new enterprise integrations to contact it to join a known-clients list.
+- *Sign in with ChatGPT for open-source apps* ([developers.openai.com/siwc](https://developers.openai.com/siwc/quickstart)):
+  authorize at `auth.openai.com` in the system browser with PKCE and a loopback redirect
+  (`http://127.0.0.1:<port>/auth/callback`); the first sign-in uses `client_id=dynamic_agent_client` and
+  returns an issued `oaiapp_…` client id; scopes `openid profile email offline_access resource.invoke
+  chatgpt.tokens.use.direct`; the access token is handed to `codex app-server` as an environment variable
+  (`ACCESS_TOKEN`, provider `openai_chatgpt_plan`, `wire_api = responses`). Plan usage is “available to all
+  open-source partners and selected private clients”; commercial sign-in is a limited trial.
+
+Draft is a private repository, so it is neither an open-source partner nor a selected client. Using the
+open-source registration for it would misrepresent the app, so Draft does not do it.
+
+**Architecture when eligible** (kept separate from the local model, the OpenAI API provider and MCP):
+
+1. Settings › Assistant gains a third provider, “Codex (ChatGPT plan)”, off by default and labelled as
+   sending notes to OpenAI.
+2. Sign-in: a loopback listener on `127.0.0.1` (random port, fixed path), PKCE + state + nonce, system
+   browser; tokens and the issued client id in the Keychain (never in the vault, never logged); refresh
+   rotates the access and refresh token together.
+3. A `CodexSession` actor starts `codex app-server --listen stdio://` as a child process with the token in its
+   environment only, speaks JSON-RPC, streams deltas into the Assistant panel, maps `turn/interrupt` to
+   Stop, and turns every server approval request into Draft's own review sheet (deny by default).
+4. Note edits still go only through Draft's reviewed proposals (the MCP bridge), never from the child process.
+5. Checks: sign-in cancelled, token expired and refreshed, child process crash, cancel < 500 ms, no
+   credentials in vault files or logs (a test greps the vault).
+
 ## Effect colors (12 November 2026)
 
 - `text_effect` values may carry the effect's own colors: `glow?color=#ff4fd8&intensity=0.7`,
