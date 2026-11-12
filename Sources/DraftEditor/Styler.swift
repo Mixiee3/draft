@@ -195,7 +195,6 @@ public enum Styler {
         let fills = e.fillColors(accent: theme.accent, text: theme.textColor, page: theme.pageColor)
         switch e.kind {
         case "accent", "gradient", "spectrum": fg = NSColor(hex: fills.first ?? d.start) // gradient and spectrum: drawn by the layout manager; this is the fallback
-        case "glow", "lift": if !hasTextColor { fg = NSColor(hex: d.start) }
         default: break
         }
         guard !theme.plainEffects, !["accent", "gradient", "spectrum"].contains(e.kind) else { return }
