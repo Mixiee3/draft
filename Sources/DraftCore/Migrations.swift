@@ -164,7 +164,9 @@ public extension Migrations {
         let from = raw["schemaVersion"]?.int ?? 0
         let (lib, _, _) = try migrateLibrary(libData)
         var diffs: [String] = []
-        let before = raw["docs"]?.object ?? [:]
+        // Schema 0 kept documents as an array; later schemas as a table keyed by id.
+        let before: [String: JSONValue] = raw["docs"]?.object
+            ?? Dictionary((raw["docs"]?.items ?? []).compactMap { v in v.object?["id"]?.string.map { ($0, v) } }, uniquingKeysWith: { a, _ in a })
         if Set(before.keys) != Set(lib.docs.keys) { diffs.append("Document list changed (\(before.count) → \(lib.docs.count))") }
         for (id, v) in before {
             guard let o = v.object, let m = lib.docs[id] else { continue }
@@ -189,7 +191,7 @@ public extension Migrations {
             if docPlainText(oldNode) != docPlainText(doc.content) { diffs.append("\(id): text changed") }
             func links(_ n: Node) -> [String] { var o: [String] = []; walk(n) { $0.marks?.forEach { m in if m.type == "docLink" || m.type == "link" { o.append(m.attrs?["docId"]?.string ?? m.attrs?["href"]?.string ?? "") } } }; return o }
             if links(oldNode) != links(doc.content) { diffs.append("\(id): links changed") }
-            if rawDoc["appearance"]?.object?["styleId"]?.string != doc.appearance.styleId { diffs.append("\(id): style changed") }
+            if (rawDoc["appearance"]?.object?["styleId"]?.string ?? rawDoc["styleId"]?.string ?? "paper") != doc.appearance.styleId { diffs.append("\(id): style changed") }
         }
         return MigrationReport(from: from, to: librarySchemaVersion, documents: n, differences: diffs)
     }

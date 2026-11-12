@@ -1,0 +1,2 @@
+{"schemaVersion": 1, "id": "d_now", "title": "Current", "createdAt": 1762000000000, "updatedAt": 1762000000000, "appearance": {"styleId": "paper", "overrides": {}},
+ "content": {"type": "doc", "content": [{"type": "paragraph", "attrs": {"id": "b_n1"}, "content": [{"type": "text", "text": "Today", "marks": [{"type": "bold"}]}]}]}}

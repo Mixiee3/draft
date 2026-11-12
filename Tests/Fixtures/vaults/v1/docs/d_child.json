@@ -1,0 +1,2 @@
+{"schemaVersion": 1, "id": "d_child", "title": "Meeting", "createdAt": 1700000000000, "updatedAt": 1700000000000, "appearance": {"styleId": "paper", "overrides": {}},
+ "content": {"type": "doc", "content": [{"type": "paragraph", "attrs": {"id": "b_c1"}, "content": [{"type": "text", "text": "We decided to ship."}]}]}}

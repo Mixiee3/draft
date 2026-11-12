@@ -1,0 +1,4 @@
+{"schemaVersion": 1, "id": "d_parent", "title": "Project", "createdAt": 1700000000000, "updatedAt": 1700000000000,
+ "appearance": {"styleId": "paper", "overrides": {}},
+ "content": {"type": "doc", "content": [{"type": "paragraph", "attrs": {"id": "b_p1"}, "content": [{"type": "text", "text": "Plan with "}, {"type": "text", "text": "the decision", "marks": [{"type": "docLink", "attrs": {"docId": "d_child", "blockId": "b_c1"}}]}]},
+   {"type": "pageCard", "attrs": {"id": "b_card", "docId": "d_child", "title": "Meeting"}}]}}
