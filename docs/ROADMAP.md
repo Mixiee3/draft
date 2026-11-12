@@ -395,7 +395,101 @@ Return applies, Escape rejects, Tab reaches both buttons with a visible ring; li
   Result: `VaultCheckTests` (each problem kind, same bytes after Undo, read-only refusal, 2,000 notes / 1,000
   files in 0.4 s debug); `vault-check` probe in light and dark (`docs/screenshots/v08/vault-check/`).
   Screenshots: Data & Storage with a clean report, with problems, and the confirmation (light and dark).
-- ⬜ Version history UI with diffs; orphan cleanup for backups older than 30 days.
+
+### v0.8 batch — Trust & Recovery (started 12 Nov 2026)
+
+Ten connected features. Rule for all of them: **scans only read; nothing in the vault is written until
+the person approves an exact preview, a backup is made first, and the change is validated afterwards
+(all or nothing).** Tests use throwaway vaults only.
+
+| # | Feature | Depends on | Status |
+|---|---|---|---|
+| 1 | Complete Vault Check | first slice | ⬜ |
+| 2 | Vault repair (preview, backup, confirm, validate, Undo, journal) | 1 | ⬜ |
+| 3 | library.json and index repair (rebuild library from notes, restore metadata, rebuild index) | 1, 2 | ⬜ |
+| 4 | Version History UI (snapshots with source, readable diff) | — | ⬜ |
+| 5 | Document restore (backup first, ids/links/attachments checked, one Undo) | 4 | ⬜ |
+| 6 | Asset browser (used, unused, missing; type, size, last reference, documents) | 1 | ⬜ |
+| 7 | Crash recovery and Safe Mode | 2, 3 | ⬜ |
+| 8 | Backup browser (per-document, health, retention, preview, restore, delete) | 4, 5 | ⬜ |
+| 9 | Migration validator (dry run on a copy, fixtures for every schema, rollback) | 3 | ⬜ |
+| 10 | Performance and reliability checks | all | ⬜ |
+
+**Implementation order.** 1 → 2 → 3 (one repair engine in DraftCore: `VaultCheck` finds issues,
+`VaultRepair` turns chosen issues into a plan of file changes, backs those files up to
+`backups/repair-<time>/` with a `journal.json`, writes atomically, re-checks, and rolls back on any
+failure) → 9 (validator reuses the same copy-and-check) → 4 → 5 (`VersionDiff` in DraftCore; restore goes
+through the editor as one Undo step) → 6 → 8 (catalogue of everything under `backups/` and `history/`)
+→ 7 (startup reads leftover journals, temp files and an unreadable library and offers recovery) → 10.
+
+**1. Vault Check — acceptance.** One problem of each kind in a throwaway vault is reported exactly, with a
+severity (Critical: data can't be read; Warning: something is missing or inconsistent; Info: tidy-up):
+missing note file, unreadable note file, malformed JSON, duplicate document id (file name ≠ id inside,
+or two files with one id), duplicate block ids in a note, library entry without a note, note file not in
+the library, missing image/file, unused asset, nested page whose parent is gone, link to a missing note
+or block, invalid index file, newer or unsupported schema, folder that no longer exists, leftover
+temporary files from an interrupted save, interrupted repair or restore. The scan writes nothing
+(test compares a hash of every file before and after).
+
+**2. Repair — acceptance.** Each repairable issue lists its exact effect ("library.json: add entry
+‘Trip notes’ from docs/d_x.json") before anything happens; Repair asks once more; the files it will
+touch are copied to `backups/repair-<time>/` first; after writing, the vault is checked again and
+every touched file must decode, otherwise every file is put back and the vault opens read-only with
+an explanation. One Undo (toast, and the Backups browser) puts the copies back; it survives relaunch.
+Issues without a safe repair (a missing image, a newer schema) say so and are never touched.
+
+**3. Library and index repair — acceptance.** Rebuilding library.json from note files keeps every
+known entry's folder, Space, star, nesting and unknown fields, adds entries for unlisted notes from
+their own titles, drops nothing, writes atomically after a backup; a dry run shows the difference first.
+Rebuilding the search/link index starts from nothing and gives the same results as before.
+
+**4–5. Version History and restore — acceptance.** Automatic snapshots (every 10 min while editing,
+30 kept) and manual ones (“Save Version”), each with time and source (automatic, manual, before
+restore, before repair). The diff lists title, text (word level), formatting, block type, style,
+backdrop and attachment changes, block by block. Restore shows the same diff as a preview, saves the
+current version first, keeps block ids, lists blocks other notes link to that the old version doesn't
+have, brings back attachments from `backups/unused-*` if needed, and is one Undo step in the editor.
+Nested pages, links, tables, collections, images and files survive the round trip (test).
+
+**6. Asset browser — acceptance.** Every file in `assets/` and every missing one: kind, size, used or
+unused or missing, last reference (newest note that uses it) and the notes that use it. Unused files
+move to `backups/unused-*` (Undo). Removing them for good is only possible from the Backups browser
+and moves them to the macOS Trash after a second confirmation.
+
+**7. Crash recovery and Safe Mode — acceptance.** At launch Draft notices a repair or restore journal
+that never finished, leftover temporary files, a corrupt index, a library it can't read, a failed
+migration or unreadable notes. It keeps the originals, explains what happened, offers recovery from a
+backup (or rebuilding the library from the notes) and offers to continue read-only. Holding Option at
+launch (or `DRAFT_SAFE_MODE=1`) opens the vault read-only.
+
+**8. Backup browser — acceptance.** Lists per-document versions, migration copies, repair backups,
+unused-file folders and unreadable copies with time, size, source and a preview; restores any of them
+through the same confirmed path; deletes by moving to the macOS Trash after a warning; shows retention
+(30 versions per note, 30 days in Recently Deleted) and health (unreadable backups, total size); an
+optional clean-up of backups older than 30 days lists exactly what goes first.
+
+**9. Migration validator — acceptance.** Copies the vault to a temporary folder (nothing written to the
+real vault), migrates the copy, reports expected changes and fields this Draft doesn't know (which are
+kept), verifies the migrated copy decodes and keeps titles, text, block ids and links. Fixtures for
+every schema Draft has written (library 0, 1, 2; document 0, 1). Real migrations already back up
+first; rollback puts the backed-up files back.
+
+**10. Performance budgets.** Kept: keystroke p95 < 40 ms, Return p95 < 33 ms, tab switch p95 < 50 ms,
+Space switch p95 < 100 ms, 2,000-block open < 250 ms where applicable, 1,000 collection items < 1 s,
+scrolling at 60 FPS. New (debug build, Apple silicon): vault check of 2,000 notes / 1,000 assets < 2 s;
+asset scan < 2 s; library rebuild from 2,000 notes < 3 s; migration dry run of 2,000 notes < 5 s;
+listing 5,000 backups < 1 s; loading a 30-version history and diffing a 2,000-block note < 500 ms.
+
+**Accessibility.** Every list row reads as one VoiceOver element (severity, title, detail); severity is
+never shown by color alone (icon + word); every action is a real button reachable with Tab and has a
+visible focus ring; Return confirms and Escape cancels in confirmations; no motion besides standard
+progress (Reduce Motion respected); Increase Contrast uses the system's stronger separators.
+
+**Screenshots** (`docs/screenshots/v08/`, light, dark and 720 px narrow): Vault Check with problems,
+repair preview, repair done with Undo, Asset browser, Backup browser, Migration validator report,
+Version History with a diff, restore preview, recovery screen after an interrupted repair, Safe Mode.
+
+- ⬜ Orphan cleanup for backups older than 30 days (manual, listed first — part of #8).
 - ⬜ Optional encryption at rest; performance budgets enforced in CI.
 
 ## v1.0 — "A credible personal workspace" (macOS)
