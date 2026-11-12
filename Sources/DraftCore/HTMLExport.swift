@@ -165,7 +165,9 @@ public enum HTMLExport {
                         if ["gradient", "spectrum"].contains(e.kind) {
                             // A still gradient: exports never animate.
                             let c = e.fillColors(accent: o.useStyle ? tokens.accent : "#3a5bd9", text: o.useStyle ? tokens.textColor : "#1f1f1f", page: page)
-                            css.append("background-image:linear-gradient(\(Int((e.angle ?? 0) + 90))deg,\(c.joined(separator: ",")))")
+                            let stops = zip(c.indices, c).map { i, col in e.stopLocations.map { "\(col) \(Int($0[i] * 100))%" } ?? col }.joined(separator: ",")
+                            css.append(e.isRadial ? "background-image:radial-gradient(circle at \(Int((e.focusX ?? 0.5) * 100))% \(Int((e.focusY ?? 0.5) * 100))%,\(stops))"
+                                                  : "background-image:linear-gradient(\(Int((e.angle ?? 0) + 90))deg,\(stops))")
                         }
                         if e.kind == "accent" { css.append("color:\(e.fillColors(accent: o.useStyle ? tokens.accent : "#3a5bd9", text: "", page: page)[0])") }
                         if let c = e.color, e.kind != "accent" { css.append("--fxc:\(c)") }

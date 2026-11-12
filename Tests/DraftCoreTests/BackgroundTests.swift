@@ -143,9 +143,8 @@ final class SpectrumCoreTests: XCTestCase {
         XCTAssertEqual(Spectrum("spectrum")?.value, "spectrum:aurora:slow:forward")
         XCTAssertEqual(Spectrum("spectrum:prism:still")?.seconds, 0)
         for bad in ["spectrum:rainbow", "spectrum:prism:warp", "spectrum:prism:slow:up", "glow", "spectrum:a:b:c:d"] { XCTAssertNil(Spectrum(bad), bad) }
-        XCTAssertEqual(Array(Spectrum.palettes.map(\.name).prefix(5)), ["Aurora", "Prism", "Sunset Spectrum", "Ocean Rainbow", "Neon Dusk"])
-        XCTAssertEqual(Spectrum.palettes.count, 11)
-        XCTAssertEqual(Set(Spectrum.palettes.map(\.id)).count, 11, "unique ids")
+        XCTAssertEqual(Array(Spectrum.palettes.map(\.id).prefix(11)), ["aurora", "prism", "sunset", "ocean", "neon", "ember", "citrus", "forest", "glacier", "berry", "candy"], "stored ids never change")
+        XCTAssertEqual(Set(Spectrum.palettes.map(\.id)).count, Spectrum.palettes.count, "unique ids")
         for p in Spectrum.palettes { XCTAssertEqual(p.colors.first, p.colors.last, "\(p.name) loops without a seam"); XCTAssertGreaterThanOrEqual(Set(p.colors).count, 3, p.name) }
         for s in Styles.all { for p in Spectrum.palettes { for c in Spectrum(palette: p.id).colors(page: s.tokens.pageColor) {
             XCTAssertGreaterThanOrEqual(ColorMath.contrast(c, s.tokens.pageColor), 4.5, "\(p.name) on \(s.name)")
@@ -181,5 +180,60 @@ final class EffectSettingTests: XCTestCase {
         let opted = try JSONDecoder().decode(Settings.self, from: Data(#"{"simplifyEffectsWithIncreaseContrast": true}"#.utf8))
         XCTAssertTrue(opted.simplifyEffectsWithIncreaseContrast)
         XCTAssertTrue(try JSONDecoder().decode(Settings.self, from: JSONEncoder().encode(opted)).simplifyEffectsWithIncreaseContrast)
+    }
+}
+
+final class EffectPresetTests: XCTestCase {
+    func testPresetsParseAreUniqueAndGrouped() {
+        let all = EffectPresets.allText
+        for p in all {
+            XCTAssertNotNil(EffectSpec(p.value), "\(p.id): \(p.value)")
+            XCTAssertTrue(EffectPresets.groups.contains(p.group), p.id)
+        }
+        XCTAssertEqual(Set(all.map(\.id)).count, all.count, "unique ids")
+        XCTAssertEqual(Set(all.map(\.value)).count, all.count, "no two presets are the same look")
+        for b in EffectPresets.blocks {
+            let parts = b.value.split(separator: "|", omittingEmptySubsequences: false).map(String.init)
+            XCTAssertTrue(BlockEffects.kinds.contains(parts[0]), b.id); XCTAssertTrue(parts[1].isEmpty || parts[1].hasPrefix("#"), b.id)
+        }
+        XCTAssertEqual(Set(EffectPresets.blocks.map(\.value)).count, EffectPresets.blocks.count)
+    }
+
+    func testThirtyDistinctGradients() {
+        let g = EffectPresets.gradient.compactMap { EffectSpec($0.value) }
+        XCTAssertEqual(g.count, 30)
+        XCTAssertEqual(Set(g.map { $0.stops! }).count, 30, "no two share a stop sequence")
+        for s in g {
+            XCTAssertTrue((2...5).contains(s.stops!.count))
+            if let ps = s.positions { XCTAssertEqual(ps.count, s.stops!.count) }
+            XCTAssertTrue(s.positions != nil || s.isRadial, "explicit positions or a radial focus")
+        }
+        XCTAssertGreaterThanOrEqual(g.filter(\.isRadial).count, 4)
+        XCTAssertGreaterThanOrEqual(Set(g.compactMap(\.angle)).count, 6, "several directions")
+        // Exported with positions and focus.
+        let r = EffectSpec("gradient?stops=#00796b,#4fc3f7&focus=0.20,0.50")!
+        var doc = DocFile.empty(id: "d_g", title: "G", styleId: "paper")
+        doc.content = Node("doc", content: [Node("paragraph", attrs: ["id": "b_p"], content: [.text("x", marks: [r.mark]), .text("y", marks: [EffectSpec("gradient?stops=#1f3b73,#6b7fa8&at=10,90&angle=0")!.mark])])])
+        let html = HTMLExport.render(doc, tokens: Styles.builtIn[0].tokens, HTMLExport.Options(useStyle: true, today: "2026-11-12")).html
+        XCTAssertTrue(html.contains("radial-gradient(circle at 20% 50%"), "radial focus exported")
+        XCTAssertTrue(html.contains(" 10%,") && html.contains(" 90%)"), "positions exported")
+        XCTAssertEqual(EffectSpec(mark: r.mark), r)
+    }
+
+    func testSpectrumPalettesAreDistinct() {
+        XCTAssertGreaterThanOrEqual(Spectrum.palettes.count, 16)
+        func bands(_ id: String) -> Set<Int> {
+            Set(Spectrum(palette: id).colors(page: "#fffdf8").map { hex -> Int in
+                let (r, g, b) = ColorMath.rgb(hex); let mx = max(r, g, b), mn = min(r, g, b), d = mx - mn
+                guard d > 0 else { return -1 }
+                var h = mx == r ? (g - b) / d : mx == g ? (b - r) / d + 2 : (r - g) / d + 4
+                h = (h / 6).truncatingRemainder(dividingBy: 1); if h < 0 { h += 1 }
+                return Int(h * 12)
+            })
+        }
+        let ids = Spectrum.palettes.map(\.id)
+        for id in ids { XCTAssertGreaterThanOrEqual(bands(id).count, 3, "\(id) spans several hue bands") }
+        for (i, a) in ids.enumerated() { for b in ids[(i + 1)...] { XCTAssertNotEqual(bands(a), bands(b), "\(a) and \(b) are the same colorway") } }
+        XCTAssertEqual(EffectPresets.spectrum.count, Spectrum.palettes.count)
     }
 }
