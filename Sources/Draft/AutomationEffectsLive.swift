@@ -17,7 +17,7 @@ extension Automation {
 
     static func effectsLive(read: Bool) async {
         guard let w = NSApp.windows.first(where: { $0.isVisible }) else { return }
-        if ProcessInfo.processInfo.environment["DRAFT_FULL_EFFECTS"] != nil { m.setSettings { $0.fullEffectsWithIncreaseContrast = true } }
+        if ProcessInfo.processInfo.environment["DRAFT_FULL_EFFECTS"] != nil { m.setSettings { $0.simplifyEffectsWithIncreaseContrast = false } }
         let env = ProcessInfo.processInfo.environment
         let dark = env["AUDIT_DARK"] != nil
         w.setFrame(NSRect(x: 40, y: 40, width: 1280, height: 900), display: true)

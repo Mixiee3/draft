@@ -29,9 +29,9 @@ struct TextEffectEditor: View {
                     VStack(alignment: .leading, spacing: 4) {
                         Label("Increase Contrast is on in System Settings, so effects show as one still, readable color.", systemImage: "circle.lefthalf.filled")
                             .font(.system(size: DS.caption)).foregroundStyle(t.text).fixedSize(horizontal: false, vertical: true)
-                        Button("Show Full Effects") { model.setSettings { $0.fullEffectsWithIncreaseContrast = true } }
+                        Button("Show Full Effects") { model.setSettings { $0.simplifyEffectsWithIncreaseContrast = false } }
                             .buttonStyle(.link).font(.system(size: DS.footnote))
-                            .accessibilityHint("Turns on Settings › Appearance › Full text effects with Increase Contrast")
+                            .accessibilityHint("Turns off Settings › Appearance › Simplify text effects with Increase Contrast")
                     }
                     .padding(8).background(RoundedRectangle(cornerRadius: DS.rControl).fill(t.hover))
                 }

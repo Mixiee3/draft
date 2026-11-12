@@ -169,3 +169,14 @@ final class EffectExportTests: XCTestCase {
         XCTAssertTrue(html.contains("linear-gradient(120deg,#3a5bd9,#d6336c)"), "stops and direction")
     }
 }
+
+final class EffectSettingTests: XCTestCase {
+    func testFullEffectsByDefaultAndOldOptInIgnored() throws {
+        XCTAssertFalse(Settings().simplifyEffectsWithIncreaseContrast, "effects show in full by default")
+        let old = try JSONDecoder().decode(Settings.self, from: Data(#"{"fullEffectsWithIncreaseContrast": false}"#.utf8))
+        XCTAssertFalse(old.simplifyEffectsWithIncreaseContrast, "a library saved with the old opt-in off still gets full effects")
+        let opted = try JSONDecoder().decode(Settings.self, from: Data(#"{"simplifyEffectsWithIncreaseContrast": true}"#.utf8))
+        XCTAssertTrue(opted.simplifyEffectsWithIncreaseContrast)
+        XCTAssertTrue(try JSONDecoder().decode(Settings.self, from: JSONEncoder().encode(opted)).simplifyEffectsWithIncreaseContrast)
+    }
+}

@@ -441,7 +441,7 @@ final class AppModel {
         let host = EditorHostAdapter(model: self, docId: id)
         hosts[id] = host
         view.controller.host = host
-        view.controller.onShowFullEffects = { [weak self] in self?.setSettings { $0.fullEffectsWithIncreaseContrast = true }; self?.retheme() }
+        view.controller.onShowFullEffects = { [weak self] in self?.setSettings { $0.simplifyEffectsWithIncreaseContrast = false }; self?.retheme() }
         view.controller.onCustomizeEffect = { [weak self] in withAnimation(Motion.panel(self?.library.settings.reduceMotion ?? false)) { self?.panel = .format } }
         view.topInset = 58
         view.theme = theme(for: doc)
@@ -489,7 +489,7 @@ final class AppModel {
         t.animateEffects = !library.settings.reduceMotion && !NSWorkspace.shared.accessibilityDisplayShouldReduceMotion
         t.solidGlass = NSWorkspace.shared.accessibilityDisplayShouldReduceTransparency
         t.plainEffects = NSWorkspace.shared.accessibilityDisplayShouldIncreaseContrast && ProcessInfo.processInfo.environment["DRAFT_CAPTURE_STANDARD_CONTRAST"] == nil
-            && !library.settings.fullEffectsWithIncreaseContrast
+            && library.settings.simplifyEffectsWithIncreaseContrast
         return t
     }
 

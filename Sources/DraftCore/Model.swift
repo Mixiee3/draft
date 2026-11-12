@@ -151,9 +151,10 @@ public struct Settings: Codable, Hashable, Sendable {
     public var accent: String = "#5b6cf0"
     public var useDocStyleForApp: Bool = true
     public var reduceMotion: Bool = false
-    /// Show text and block effects in full even when macOS Increase Contrast is on (by default they
-    /// are simplified to a still, readable color there).
-    public var fullEffectsWithIncreaseContrast: Bool = false
+    /// Simplify text and block effects to a still, readable color when macOS Increase Contrast is on.
+    /// Off by default: effect colors already reach 4.5:1, so effects show in full. (Replaces the
+    /// earlier opt-in `fullEffectsWithIncreaseContrast`, which is ignored so every library starts full.)
+    public var simplifyEffectsWithIncreaseContrast: Bool = false
     public var completedTasks: String = "strike" // strike | dim | none
     public var libraryView: LibraryLayout = .gallery
     public var sort = SortSpec(key: .updatedAt, dir: "desc")
@@ -206,7 +207,7 @@ public struct Settings: Codable, Hashable, Sendable {
         accent = try c.decodeIfPresent(String.self, forKey: .accent) ?? def.accent
         useDocStyleForApp = try c.decodeIfPresent(Bool.self, forKey: .useDocStyleForApp) ?? def.useDocStyleForApp
         reduceMotion = try c.decodeIfPresent(Bool.self, forKey: .reduceMotion) ?? def.reduceMotion
-        fullEffectsWithIncreaseContrast = try c.decodeIfPresent(Bool.self, forKey: .fullEffectsWithIncreaseContrast) ?? def.fullEffectsWithIncreaseContrast
+        simplifyEffectsWithIncreaseContrast = try c.decodeIfPresent(Bool.self, forKey: .simplifyEffectsWithIncreaseContrast) ?? def.simplifyEffectsWithIncreaseContrast
         completedTasks = try c.decodeIfPresent(String.self, forKey: .completedTasks) ?? def.completedTasks
         libraryView = (try? c.decodeIfPresent(LibraryLayout.self, forKey: .libraryView)) ?? def.libraryView
         sort = (try? c.decodeIfPresent(SortSpec.self, forKey: .sort)) ?? def.sort
