@@ -296,7 +296,8 @@ public final class DraftLayoutManager: NSLayoutManager {
             let w = max(run.rect.width, 40)
             var phase = run.spec.seconds > 0 && theme.animateEffects ? (CACurrentMediaTime() / run.spec.seconds).truncatingRemainder(dividingBy: 1) : 0
             if run.spec.direction == "backward" { phase = -phase }
-            let x0 = run.rect.minX - CGFloat(phase) * w - w
+            // Forward (→) slides the colors to the right; the three tiles cover the run for any phase in (-1, 1).
+            let x0 = run.rect.minX + CGFloat(phase) * w - w
             for k in 0..<3 {
                 let a = x0 + CGFloat(k) * w
                 ctx.drawLinearGradient(g, start: CGPoint(x: a, y: 0), end: CGPoint(x: a + w, y: 0), options: [])

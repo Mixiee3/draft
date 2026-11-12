@@ -12,7 +12,7 @@ public enum TextEffects {
         ("outline", "Outline", "large display words only; avoid in body text"),
         ("lift", "Lift", "a playful 3D offset for a title or label"),
         ("emboss", "Emboss", "a quiet pressed-in look for labels and captions"),
-        ("spectrum", "Spectrum", "a slowly moving multi-color gradient for one title or decorative label (value spectrum:<aurora|prism|sunset|ocean|neon>:<still|slow|normal|fast>:<forward|backward>); never body text, at most one per note, 200 characters at most"),
+        ("spectrum", "Spectrum", "a slowly moving multi-color gradient for one title or decorative label (value spectrum:<aurora|prism|sunset|ocean|neon|ember|citrus|forest|glacier|berry|candy>:<still|slow|normal|fast>:<forward|backward>; forward moves the colors to the right); never body text, at most one per note, 200 characters at most"),
     ]
     public static let kinds = all.map(\.kind)
 
@@ -57,6 +57,12 @@ public struct Spectrum: Hashable, Sendable {
         ("sunset", "Sunset Spectrum", ["#f2994a", "#eb5757", "#bb6bd9", "#f2994a"]),
         ("ocean", "Ocean Rainbow", ["#0ea5b7", "#2f80ed", "#56ccf2", "#27ae60", "#0ea5b7"]),
         ("neon", "Neon Dusk", ["#ff4fd8", "#7b61ff", "#00d4ff", "#ff4fd8"]),
+        ("ember", "Ember", ["#c2185b", "#e03e2d", "#ef6c00", "#b8860b", "#c2185b"]),
+        ("citrus", "Citrus", ["#43a047", "#f9a825", "#ef6c00", "#43a047"]),
+        ("forest", "Forest", ["#2e8b57", "#1f9e89", "#c9a227", "#2e8b57"]),
+        ("glacier", "Glacier", ["#29b6f6", "#00897b", "#7c4dff", "#29b6f6"]),
+        ("berry", "Berry", ["#c2185b", "#8e24aa", "#e0407a", "#c2185b"]),
+        ("candy", "Candy", ["#ff6fa8", "#ff9e6b", "#b38cff", "#ff6fa8"]),
     ]
     /// Seconds for one full cycle; 0 = still.
     public static let speeds: [(id: String, name: String, seconds: Double)] = [("still", "Still", 0), ("slow", "Slow", 9), ("normal", "Normal", 6), ("fast", "Fast", 3.5)]
