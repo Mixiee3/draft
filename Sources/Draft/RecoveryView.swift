@@ -61,6 +61,14 @@ struct RecoveryCheck: View {
                         .font(.system(size: DS.body)).foregroundStyle(t.text).padding(DS.s3 + 2).frame(maxWidth: .infinity, alignment: .leading)
                 }
             }
+            SettingsSection(title: "Rebuild", footer: "Both start with a dry run. Rebuilding the library keeps every note's folder, Space, star, nesting and unknown fields; it only adds notes the library is missing and refreshes titles and counts from the note files.") {
+                SettingsRow(title: "Rebuild library.json from notes", detail: "Shows the exact difference first; backed up and undoable.") {
+                    Button("Review…") { r.preview = VaultRepair.rebuildPlan(model.vault) }.buttonStyle(DraftButtonStyle(compact: true)).disabled(r.working)
+                }
+                SettingsRow(title: "Rebuild search and link index", detail: "Search, backlinks, tags and tasks are rebuilt from your notes. Nothing in a note changes.") {
+                    Button("Rebuild") { model.rebuildIndex(); model.toast("Rebuilt the search and link index from your notes.") }.buttonStyle(DraftButtonStyle(compact: true))
+                }
+            }
             if let plan = r.preview { RepairPreview(plan: plan) }
             else if let rep = r.report, !rep.isClean {
                 ForEach(IssueSeverity.allCases.reversed(), id: \.self) { sev in

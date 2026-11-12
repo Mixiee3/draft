@@ -69,6 +69,18 @@ public enum VaultRepair {
             guard let d = try? Data(contentsOf: dir.appendingPathComponent("backups/\(i.subject)/journal.json")), let j = try? JSONDecoder().decode(Journal.self, from: d) else { return [] }
             return j.touched + j.created
         })
+        var cardMap: [String: String]? = nil // child → note with its page card, built once on first need
+        func parent(_ id: String) -> String? {
+            if cardMap == nil {
+                var m: [String: String] = [:]
+                for f in ((try? FileManager.default.contentsOfDirectory(atPath: dir.appendingPathComponent("docs").path)) ?? []) where f.hasSuffix(".json") {
+                    guard let d = try? Data(contentsOf: dir.appendingPathComponent("docs/\(f)")), case .ok(let doc, _) = VaultCheck.readDoc(d) else { continue }
+                    walk(doc.content) { if $0.type == "pageCard", let c = $0.attrs?["docId"]?.string { m[c] = String(f.dropLast(5)) } }
+                }
+                cardMap = m
+            }
+            return cardMap?[id].flatMap { lib?.docs[$0] != nil ? $0 : nil }
+        }
         func docData(_ id: String) -> Data? { try? Data(contentsOf: dir.appendingPathComponent("docs/\(id).json")) }
         func step(_ i: VaultIssue, _ text: String, _ files: [String]) { p.steps.append(Step(issueId: i.id, text: text, files: files)) }
         for i in issues.sorted(by: { $0.kind == .libraryUnreadable && $1.kind != .libraryUnreadable }) {
@@ -87,7 +99,7 @@ public enum VaultRepair {
                 m.spaceId = lib!.space.id
                 m.applyDerived(from: d)
                 m.createdAt = d.createdAt; m.updatedAt = d.updatedAt
-                m.parentDocId = parentFromPageCards(i.subject, vault: vault, lib: lib!)
+                m.parentDocId = parent(i.subject)
                 lib!.docs[i.subject] = m
                 step(i, "library.json: add “\(m.title.nonEmpty ?? i.subject)”" + (m.parentDocId.map { " as a nested page of \(lib!.docs[$0]?.title.nonEmpty ?? $0)" } ?? "") + ".", ["library.json"])
             case .docMissing:
@@ -222,6 +234,29 @@ public enum VaultRepair {
         if !gone.isEmpty { changes.append("\(gone.count) without a readable file left out") }
         if base == nil { changes.append("folders and settings start empty (no readable backup)") }
         return (lib, changes)
+    }
+
+    /// Settings › Recovery › Rebuild Library: a dry run of rebuilding library.json from the note files,
+    /// keeping every known entry's place; shows exactly which entries change.
+    public static func rebuildPlan(_ vault: Vault) -> Plan {
+        var p = Plan()
+        let current = (try? Data(contentsOf: vault.dir.appendingPathComponent("library.json"))).flatMap { try? Migrations.migrateLibrary($0).library }
+        let rebuilt = rebuildLibrary(vault: vault, base: current ?? newestReadableLibraryBackup(vault)).library
+        let old = current?.docs ?? [:]
+        var lines: [String] = []
+        for id in rebuilt.docs.keys.sorted() where old[id] == nil { lines.append("add “\(rebuilt.docs[id]!.title.nonEmpty ?? id)”") }
+        for id in old.keys.sorted() where rebuilt.docs[id] == nil { lines.append("leave out “\(old[id]!.title.nonEmpty ?? id)” (no readable file)") }
+        for (id, m) in rebuilt.docs.sorted(by: { $0.key < $1.key }) {
+            guard let o = old[id] else { continue }
+            if o.title != m.title { lines.append("“\(o.title)” → “\(m.title)” (title from the note)") }
+            else if o.words != m.words || o.excerpt != m.excerpt || o.blocks != m.blocks { lines.append("“\(m.title.nonEmpty ?? id)”: counts and preview refreshed") }
+        }
+        guard rebuilt != current, let data = try? DraftJSON.encode(rebuilt, pretty: true) else { return p }
+        p.writes["library.json"] = data
+        for l in lines.prefix(60) { p.steps.append(Step(issueId: "rebuild:" + l, text: "library.json: " + l + ".", files: ["library.json"])) }
+        if lines.count > 60 { p.steps.append(Step(issueId: "rebuild:more", text: "library.json: and \(lines.count - 60) more.", files: ["library.json"])) }
+        if lines.isEmpty { p.steps.append(Step(issueId: "rebuild:fields", text: "library.json: derived fields refreshed; no entries change.", files: ["library.json"])) }
+        return p
     }
 
     // MARK: Applying

@@ -101,7 +101,7 @@ extension AppModel {
         defer { recovery.working = false }
         let fixes = plan.steps.map(\.issueId)
         do {
-            let folder = try VaultRepair.apply(plan, vault: vault, summary: "Repair: \(plan.steps.count) problem\(plan.steps.count == 1 ? "" : "s")", fixes: fixes)
+            let folder = try VaultRepair.apply(plan, vault: vault, summary: plan.steps.first?.issueId.hasPrefix("rebuild:") == true ? "Rebuild library.json from notes" : "Repair: \(plan.steps.count) problem\(plan.steps.count == 1 ? "" : "s")", fixes: fixes)
             reloadFromDisk(plan.files + plan.rollbacks.flatMap { _ in ["library.json"] })
             recovery.preview = nil
             recovery.lastResult = "Repaired \(plan.steps.count) problem\(plan.steps.count == 1 ? "" : "s"). The files from before are in backups/\(folder?.lastPathComponent ?? "")."

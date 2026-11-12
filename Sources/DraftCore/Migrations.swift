@@ -180,10 +180,11 @@ public extension Migrations {
         var n = 0
         for id in lib.docs.keys {
             let url = dir.appendingPathComponent("docs/\(id).json")
-            guard let data = try? Data(contentsOf: url), let rawDoc = try? JSONDecoder().decode(JSONValue.self, from: data).object else { continue }
+            // Foundation decoding: several times faster than Codable for large vaults.
+            guard let data = try? Data(contentsOf: url), let rawDoc = (try? JSONSerialization.jsonObject(with: data)) as? [String: Any] else { continue }
             n += 1
             let (doc, _, _) = try migrateDoc(data)
-            guard let content = rawDoc["content"], let oldNode = try? JSONDecoder().decode(Node.self, from: JSONEncoder().encode(content)) else { diffs.append("\(id): content unreadable"); continue }
+            guard let content = rawDoc["content"], let oldNode = Node(foundation: content) else { diffs.append("\(id): content unreadable"); continue }
             var oldIds: [String] = [], newIds: [String] = []
             walk(oldNode) { if let i = $0.id { oldIds.append(i) } }
             walk(doc.content) { if let i = $0.id { newIds.append(i) } }
@@ -191,7 +192,7 @@ public extension Migrations {
             if docPlainText(oldNode) != docPlainText(doc.content) { diffs.append("\(id): text changed") }
             func links(_ n: Node) -> [String] { var o: [String] = []; walk(n) { $0.marks?.forEach { m in if m.type == "docLink" || m.type == "link" { o.append(m.attrs?["docId"]?.string ?? m.attrs?["href"]?.string ?? "") } } }; return o }
             if links(oldNode) != links(doc.content) { diffs.append("\(id): links changed") }
-            if (rawDoc["appearance"]?.object?["styleId"]?.string ?? rawDoc["styleId"]?.string ?? "paper") != doc.appearance.styleId { diffs.append("\(id): style changed") }
+            if (((rawDoc["appearance"] as? [String: Any])?["styleId"] as? String) ?? (rawDoc["styleId"] as? String) ?? "paper") != doc.appearance.styleId { diffs.append("\(id): style changed") }
         }
         return MigrationReport(from: from, to: librarySchemaVersion, documents: n, differences: diffs)
     }

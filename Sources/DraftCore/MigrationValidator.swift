@@ -45,38 +45,60 @@ public enum MigrationValidator {
         }
         let docNames = ((try? fm.contentsOfDirectory(atPath: dir.appendingPathComponent("docs").path)) ?? []).filter { $0.hasSuffix(".json") && !$0.hasPrefix(".") }
         var docFrom = Set<Int>()
+        var copies: [(String, Data)] = []
         for n in docNames {
             let data = try Data(contentsOf: dir.appendingPathComponent("docs/\(n)"))
-            try data.write(to: tmp.appendingPathComponent("docs/\(n)"))
-            guard let raw = (try? JSONDecoder().decode(JSONValue.self, from: data))?.object else { r.problems.append("docs/\(n) is not a JSON object"); continue }
-            let s = raw["schemaVersion"]?.int ?? 0
+            copies.append((n, data))
+            guard let raw = (try? JSONSerialization.jsonObject(with: data)) as? [String: Any] else { r.problems.append("docs/\(n) is not a JSON object"); continue }
+            let s = (raw["schemaVersion"] as? NSNumber)?.intValue ?? 0
             r.docSchemas[s, default: 0] += 1
             docFrom.insert(s)
             if s > docSchemaVersion { r.problems.append("docs/\(n) is schema \(s); this Draft supports up to \(docSchemaVersion).") }
-            if let d = try? Migrations.migrateDoc(data).doc { for k in d.extra.keys.sorted() { r.unknownFields.append("docs/\(n): \(k)") } }
+            let docKnown: Set<String> = ["schemaVersion", "id", "title", "content", "appearance", "createdAt", "updatedAt", "styleId"]
+            for k in raw.keys.sorted() where !docKnown.contains(k) { r.unknownFields.append("docs/\(n): \(k)") }
         }
         for v in (docFrom.min() ?? docSchemaVersion)..<docSchemaVersion { if let n = docNotes[v] { r.expectedChanges.append(n + " (\(docFrom.filter { $0 <= v }.reduce(0) { $0 + (r.docSchemas[$1] ?? 0) }) notes)") } }
         guard r.problems.isEmpty else { return r }
+        if !r.needsMigration {
+            // Already current: nothing would be migrated, so check that every note decodes and stop.
+            r.documents = docNames.count
+            for n in docNames {
+                guard let d = try? Data(contentsOf: dir.appendingPathComponent("docs/\(n)")) else { continue }
+                if case .ok = VaultCheck.readDoc(d) {} else { r.problems.append("docs/\(n) can't be read") }
+            }
+            return r
+        }
+        for (n, data) in copies { try data.write(to: tmp.appendingPathComponent("docs/\(n)")) }
         // Dry run in memory, then a real migration of the copy, then a fresh read of the copy.
         let dry = try Migrations.dryRun(vault: tmp)
         r.documents = dry.documents
         r.problems += dry.differences.map { "Dry run: \($0)" }
-        let copy = Vault(dir: tmp)
-        guard let migrated = try copy.loadLibrary() else { r.problems.append("The migrated library is empty"); return r }
-        var titles: [String: String] = [:]
-        for id in migrated.docs.keys { titles[id] = (try? copy.loadDoc(id))??.title }
-        let reread = Vault(dir: tmp)
-        guard let again = try reread.loadLibrary() else { r.problems.append("The migrated library can't be read back"); return r }
+        // Migrate the copy the way Vault does (library, then each older note), write it, read it back.
+        let (migrated, _, _) = try Migrations.migrateLibrary(libData)
+        try Vault.writeAtomic(try DraftJSON.encode(migrated, pretty: true), to: tmp.appendingPathComponent("library.json"))
+        var olderDocs: [(String, Data)] = []
+        for (n, data) in copies {
+            guard let raw = (try? JSONSerialization.jsonObject(with: data)) as? [String: Any], ((raw["schemaVersion"] as? NSNumber)?.intValue ?? 0) < docSchemaVersion else { continue }
+            let (doc, _, _) = try Migrations.migrateDoc(data)
+            try Vault.writeAtomic(try DraftJSON.encode(doc), to: tmp.appendingPathComponent("docs/\(n)"))
+            olderDocs.append((n, data))
+        }
+        guard let again = try Vault(dir: tmp).loadLibrary() else { r.problems.append("The migrated library can't be read back"); return r }
         if again.docs.count != migrated.docs.count { r.problems.append("The migrated library lost entries (\(migrated.docs.count) → \(again.docs.count))") }
         let rawDocs: [String: JSONValue] = rawLib["docs"]?.object ?? Dictionary((rawLib["docs"]?.items ?? []).compactMap { v in v.object?["id"]?.string.map { ($0, v) } }, uniquingKeysWith: { a, _ in a })
         for (id, v) in rawDocs where again.docs[id]?.title != v.object?["title"]?.string ?? "" { r.problems.append("\(id): title changed in the library") }
-        for (id, t) in titles {
-            guard let d = try reread.loadDoc(id) else { continue }
-            if d.title != t { r.problems.append("\(id): title changed after writing") }
-            if d.schemaVersion != docSchemaVersion { r.problems.append("\(id): still schema \(d.schemaVersion) after migration") }
+        for (n, original) in olderDocs {
+            guard let back = try? Data(contentsOf: tmp.appendingPathComponent("docs/\(n)")), case .ok(let d, _) = VaultCheck.readDoc(back),
+                  let raw = (try? JSONSerialization.jsonObject(with: original)) as? [String: Any], let oldNode = raw["content"].flatMap({ Node(foundation: $0) }) else {
+                r.problems.append("docs/\(n) can't be read back after migration"); continue
+            }
+            if d.schemaVersion != docSchemaVersion { r.problems.append("docs/\(n): still schema \(d.schemaVersion) after migration") }
+            if d.title != (raw["title"] as? String ?? "") { r.problems.append("docs/\(n): title changed after writing") }
+            if docPlainText(oldNode) != docPlainText(d.content) { r.problems.append("docs/\(n): text changed after writing") }
+            var oldIds = Set<String>(); walk(oldNode) { if let i = $0.id { oldIds.insert(i) } }
+            var newIds = Set<String>(); walk(d.content) { if let i = $0.id { newIds.insert(i) } }
+            if !oldIds.isSubset(of: newIds) { r.problems.append("docs/\(n): block ids changed after writing") }
         }
-        let after = try Migrations.dryRun(vault: tmp)
-        r.problems += after.differences.map { "After writing: \($0)" }
         return r
     }
 
