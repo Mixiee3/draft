@@ -104,11 +104,14 @@ p = m.tool("draft_propose_note_edits", document_id=note["id"], expected_revision
     {"action": "task_due", "block_id": task["id"], "value": "2026-12-01"},
     {"action": "image_caption", "block_id": image["id"], "text": "Raised beds"},
     {"action": "image_alt", "block_id": image["id"], "text": "Sketch of four raised beds"},
-    {"action": "text_effect", "block_id": first["id"], "text": "zebra-quartz", "value": "spectrum:aurora:slow:forward"}])
+    {"action": "text_effect", "block_id": first["id"], "text": "zebra-quartz", "value": "spectrum:neon:fast:backward"},
+    {"action": "text_effect", "block_id": task["id"], "text": "water", "value": "glow?color=#ff4fd8&intensity=0.80"}])
 r = review("accept", undo=True, shot="mcp-review-item15")
 j = r["afterJson"]
 ok("item 15 applied", r["status"] == "accepted" and reading["id"] in j and "#plan" in r["afterText"] and "#garden" not in r["afterText"] and "2026-12-01" in j
-   and "Raised beds" in j and "Sketch of four raised beds" in j and "spectrum" in j and "aurora" in j, r)
+   and "Raised beds" in j and "Sketch of four raised beds" in j and "spectrum" in j, r)
+ok("spectrum palette, speed and direction kept", all(x in j for x in ('"neon"', '"fast"', '"backward"')), j[:400])
+ok("glow keeps its own color and strength", '"#ff4fd8"' in j and '"intensity"' in j, j[:400])
 ok("item 15 one Undo", content(note["id"]) == original and "#garden" in r["undoneText"] and "spectrum" not in r["undoneJson"], r)
 ok("image kept", "missing-asset" in r["afterJson"] and "missing-asset" in r["undoneJson"], r)
 folders = m.tool("draft_list_folders"); archive = next(f for f in folders if f["name"] == "Archive")

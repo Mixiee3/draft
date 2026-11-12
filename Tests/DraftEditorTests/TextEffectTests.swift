@@ -171,3 +171,32 @@ final class GradientRenderingTests: XCTestCase {
         XCTAssertEqual(hues(render(c, view), run, scale: scale), hues(g1, run, scale: scale), "Gradient is still")
     }
 }
+
+final class SpectrumPaletteTests: XCTestCase {
+    /// Each palette paints several of its own colors across one phrase, and palettes differ.
+    func testPalettesReachSeveralStopsAndDiffer() {
+        let view = DocumentEditorView(frame: NSRect(x: 0, y: 0, width: 900, height: 400))
+        let window = NSWindow(contentRect: view.frame, styleMask: [.titled], backing: .buffered, defer: false)
+        window.contentView = view
+        let c = view.controller
+        var th = c.theme; th.animateEffects = false; c.theme = th // still, so the comparison is exact
+        var hueSets: [String: Set<Int>] = [:]
+        for p in Spectrum.palettes {
+            c.load(Node("doc", content: [Node("heading", attrs: ["id": "b_h", "level": 1], content: [.text("Spectrum palette sample", marks: [Mark("effect", attrs: ["kind": "spectrum", "palette": .string(p.id), "speed": "still", "direction": "forward"])])])]))
+            view.layoutSubtreeIfNeeded()
+            let gr = c.layout.glyphRange(forCharacterRange: NSRange(location: 0, length: 23), actualCharacterRange: nil)
+            let o = c.textView.textContainerOrigin
+            let run = c.layout.boundingRect(forGlyphRange: gr, in: c.container).offsetBy(dx: o.x, dy: o.y)
+            let rep = c.textView.bitmapImageRepForCachingDisplay(in: c.textView.bounds)!
+            c.textView.cacheDisplay(in: c.textView.bounds, to: rep)
+            let scale = CGFloat(rep.pixelsWide) / c.textView.bounds.width
+            var hues = Set<Int>()
+            for x in stride(from: Int(run.minX * scale), to: Int(run.maxX * scale), by: 2) { for y in Int(run.minY * scale)..<Int(run.maxY * scale) {
+                if let col = rep.colorAt(x: x, y: y)?.usingColorSpace(.sRGB), col.saturationComponent > 0.35, col.alphaComponent > 0.9 { hues.insert(Int(col.hueComponent * 12)) } } }
+            hueSets[p.id] = hues
+            XCTAssertGreaterThanOrEqual(hues.count, 3, "\(p.name): several colors across the phrase, not one (\(hues.sorted()))")
+        }
+        XCTAssertNotEqual(hueSets["aurora"], hueSets["sunset"], "the palette changes what is drawn")
+        XCTAssertNotEqual(hueSets["ocean"], hueSets["neon"])
+    }
+}

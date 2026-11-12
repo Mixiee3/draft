@@ -853,8 +853,14 @@ struct AgentProposalReview: View {
                     let speed = Spectrum.speeds.first { $0.id == s.speed }?.name.lowercased() ?? s.speed
                     return ("Add a \(s.seconds > 0 ? "moving" : "still") \(s.name) gradient to \(quoted(e.text)) (\(speed)\(s.seconds > 0 ? ", \(s.direction)" : ""))", nil, block.map { formatted($0, e) }, nil, nil)
                 }
-                let name = TextEffects.all.first { $0.kind == e.value }?.name.lowercased()
-                return (name.map { "Add a \($0) effect to \(quoted(e.text))" } ?? "Remove the effect from \(quoted(e.text))", nil, block.map { formatted($0, e) }, nil, nil)
+                guard let spec = e.value.flatMap(EffectSpec.init), let name = TextEffects.all.first(where: { $0.kind == spec.kind })?.name.lowercased() else {
+                    return ("Remove the effect from \(quoted(e.text))", nil, block.map { formatted($0, e) }, nil, nil)
+                }
+                var detail: [String] = []
+                if let st = spec.stops { detail.append("\(st.count) colors") }
+                if let a = spec.angle { detail.append("\(Int(a))°") }
+                if let i = spec.intensity { detail.append("strength \(Int(i * 100))%") }
+                return ("Add a \(name) effect to \(quoted(e.text))\(detail.isEmpty ? "" : " (\(detail.joined(separator: ", ")))")", nil, block.map { formatted($0, e) }, nil, spec.color ?? spec.stops?.first)
             case "bold", "italic", "underline", "strike", "code", "highlight", "text_color", "link", "unlink":
                 let verb = ["bold": "Make bold", "italic": "Make italic", "underline": "Underline", "strike": "Strike through", "code": "Format as code",
                             "highlight": "Highlight", "text_color": "Color", "link": "Link", "unlink": "Remove the link from"][e.action]!

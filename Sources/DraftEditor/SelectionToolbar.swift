@@ -43,6 +43,8 @@ public final class SelectionToolbar: NSView {
         var isLabel = false
         /// Starts a new row.
         var isBreak = false
+        /// A multi-color swatch (a palette's stops) drawn before the title.
+        var gradient: [String]? = nil
     }
 
     unowned let controller: EditorController
@@ -170,6 +172,7 @@ public final class SelectionToolbar: NSView {
             items.append(Item(id: "fxspectrum", label: "Spectrum: a moving color gradient for a title or label", symbol: "chevron.right", action: { [weak self] in self?.setMode(.spectrum) },
                               isActive: current.flatMap(Spectrum.init) != nil, title: "Spectrum"))
             items.append(sep(1))
+            if c.theme.plainEffects { items += simplifiedNotice(rowBreak) }
             items.append(Item(id: "fxcustom", label: "Customize colors and strength in the Format panel", symbol: "slider.horizontal.3", action: { [weak self] in
                 self?.controller.onCustomizeEffect?(); self?.setMode(.main)
             }, isEnabled: current != nil, title: "Customize…"))
@@ -181,8 +184,8 @@ public final class SelectionToolbar: NSView {
             items = [back(.effects, "Effects"), label("Spectrum")]
             for p in Spectrum.palettes {
                 var s = current; s.palette = p.id
-                items.append(Item(id: "sp" + p.id, label: "Spectrum \(p.name)", symbol: nil, swatch: p.colors[0], action: { [weak self] in self?.controller.setEffect(s.value); self?.buildItems(); self?.position() },
-                                  isActive: on && current.palette == p.id, title: p.name.components(separatedBy: " ").first))
+                items.append(Item(id: "sp" + p.id, label: "Spectrum \(p.name)", symbol: nil, action: { [weak self] in self?.controller.setEffect(s.value); self?.buildItems(); self?.position() },
+                                  isActive: on && current.palette == p.id, title: p.name.components(separatedBy: " ").first, gradient: p.colors))
             }
             items.append(rowBreak)
             items.append(label("Speed"))
@@ -190,6 +193,7 @@ public final class SelectionToolbar: NSView {
                 var s = current; s.speed = sp.id
                 items.append(Item(id: "sps" + sp.id, label: "Speed \(sp.name)", symbol: nil, action: { [weak self] in self?.controller.setEffect(s.value); self?.buildItems() }, isActive: on && current.speed == sp.id, isEnabled: on, title: sp.name))
             }
+            if c.theme.plainEffects { items += simplifiedNotice(rowBreak) }
             var flipped = current; flipped.direction = current.direction == "forward" ? "backward" : "forward"
             items.append(sep(1))
             items.append(Item(id: "spdir", label: "Direction: \(current.direction); press to reverse", symbol: current.direction == "forward" ? "arrow.right" : "arrow.left",
@@ -204,6 +208,13 @@ public final class SelectionToolbar: NSView {
         layoutItems()
     }
 
+    /// Increase Contrast simplifies effects to a still, readable color; say so where effects are
+    /// picked, with a way to show them in full.
+    func simplifiedNotice(_ rowBreak: Item) -> [Item] {
+        [rowBreak, Item(id: "label-simplified", label: "Simplified: Increase Contrast is on", symbol: nil, isEnabled: false, title: "Simplified · Increase Contrast", isLabel: true),
+         Item(id: "fxfull", label: "Show full effects anyway (a Draft setting)", symbol: "eye", action: { [weak self] in self?.controller.onShowFullEffects?(); self?.buildItems() }, title: "Show Full Effects")]
+    }
+
     static let chipFont = NSFont.systemFont(ofSize: 13, weight: .medium)
     static let labelFont = NSFont.systemFont(ofSize: 11, weight: .semibold)
 
@@ -212,7 +223,7 @@ public final class SelectionToolbar: NSView {
         if it.isLabel { return ceil((it.title!.uppercased() as NSString).size(withAttributes: [.font: Self.labelFont]).width) + 14 }
         if let t = it.title {
             let text = ceil((t as NSString).size(withAttributes: [.font: Self.chipFont]).width)
-            return text + 20 + (it.symbol != nil || it.swatch != nil ? 18 : 0)
+            return text + 20 + (it.gradient != nil ? 30 : it.symbol != nil || it.swatch != nil ? 18 : 0)
         }
         return it.swatch != nil || it.id == "field" ? it.width : max(it.width, 34)
     }
@@ -417,7 +428,11 @@ public final class SelectionToolbar: NSView {
                     NSBezierPath(roundedRect: r.insetBy(dx: 1, dy: 2), xRadius: 11, yRadius: 11).fill()
                 }
                 var x = r.minX + 10
-                if let hex = it.swatch {
+                if let stops = it.gradient, let g = NSGradient(colors: stops.map { NSColor(hex: $0) }) {
+                    let sw = NSRect(x: x, y: r.midY - 6, width: 24, height: 12)
+                    g.draw(in: NSBezierPath(roundedRect: sw, xRadius: 6, yRadius: 6), angle: 0)
+                    x += 30
+                } else if let hex = it.swatch {
                     NSColor(hex: hex).setFill(); NSBezierPath(ovalIn: NSRect(x: x, y: r.midY - 6, width: 12, height: 12)).fill(); x += 18
                 } else if let s = it.symbol, let img = NSImage(systemSymbolName: s, accessibilityDescription: nil),
                           let im = img.withSymbolConfiguration(NSImage.SymbolConfiguration(pointSize: 12, weight: .medium).applying(.init(paletteColors: [color]))) {

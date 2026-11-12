@@ -25,8 +25,19 @@ struct TextEffectEditor: View {
                         ForEach(TextEffects.all, id: \.kind) { Text($0.name).tag($0.kind) }
                     }.labelsHidden().frame(maxWidth: 150)
                 }
-                textColorRow(spec)
+                if c.theme.plainEffects, spec != nil {
+                    VStack(alignment: .leading, spacing: 4) {
+                        Label("Increase Contrast is on in System Settings, so effects show as one still, readable color.", systemImage: "circle.lefthalf.filled")
+                            .font(.system(size: DS.caption)).foregroundStyle(t.text).fixedSize(horizontal: false, vertical: true)
+                        Button("Show Full Effects") { model.setSettings { $0.fullEffectsWithIncreaseContrast = true } }
+                            .buttonStyle(.link).font(.system(size: DS.footnote))
+                            .accessibilityHint("Turns on Settings › Appearance › Full text effects with Increase Contrast")
+                    }
+                    .padding(8).background(RoundedRectangle(cornerRadius: DS.rControl).fill(t.hover))
+                }
+                if spec?.kind != "spectrum" { textColorRow(spec) }
                 if let s = spec { controls(s, page: page) }
+                if spec?.kind == "spectrum" { textColorRow(spec) }
                 if let s = spec, s.adjustedForContrast(page: page) {
                     Label("A color was darkened or lightened so the text stays readable (4.5:1).", systemImage: "eye")
                         .font(.system(size: DS.caption)).foregroundStyle(t.secondary).fixedSize(horizontal: false, vertical: true)
@@ -41,7 +52,7 @@ struct TextEffectEditor: View {
     @ViewBuilder func textColorRow(_ spec: EffectSpec?) -> some View {
         let current = c.value(of: .draftTextColor)
         let fillsLetters = ["accent", "gradient", "spectrum"].contains(spec?.kind ?? "")
-        row(fillsLetters ? "Text color (fallback)" : "Text color") {
+        row(fillsLetters ? "Plain color (when simplified)" : "Text color") {
             if current != nil { Button("Automatic") { c.setTextColor(nil); model.editorTick &+= 1 }.buttonStyle(.link).font(.system(size: DS.caption)) }
             ColorPicker("Text color", selection: colorBinding(current ?? c.theme.textColor) { hex in c.setTextColor(ColorMath.readable(hex, on: c.theme.pageColor).hex, coalescing: true); model.editorTick &+= 1 }, supportsOpacity: false)
                 .labelsHidden().accessibilityLabel("Text color")
@@ -76,13 +87,33 @@ struct TextEffectEditor: View {
             slider("Direction", value: s.angle ?? 0, range: 0...360, shown: "\(Int(s.angle ?? 0))°") { v in var n = s; n.angle = (v / 15).rounded() * 15; apply(n, live: true) }
         }
         if let sp = s.spectrum {
-            row("Palette") {
-                Picker("Palette", selection: Binding(get: { sp.palette }, set: { p in var n = sp; n.palette = p; apply(EffectSpec(n.value), live: false) })) {
-                    ForEach(Spectrum.palettes, id: \.id) { Text($0.name).tag($0.id) }
-                }.labelsHidden().frame(maxWidth: 150)
+            // Palettes are shown as their colors, not as one color well: Spectrum is many colors.
+            Text("Palette").font(.system(size: DS.footnote)).foregroundStyle(t.text)
+            LazyVGrid(columns: [GridItem(.flexible(), spacing: 6), GridItem(.flexible(), spacing: 6)], spacing: 6) {
+                ForEach(Spectrum.palettes, id: \.id) { p in
+                    let on = sp.palette == p.id
+                    Button { var n = sp; n.palette = p.id; apply(EffectSpec(n.value), live: false) } label: {
+                        VStack(alignment: .leading, spacing: 4) {
+                            Capsule().fill(LinearGradient(colors: Spectrum(palette: p.id).colors(page: page).map { Color(hex: $0) }, startPoint: .leading, endPoint: .trailing)).frame(height: 12)
+                            Text(p.name).font(.system(size: DS.caption, weight: on ? .semibold : .regular)).foregroundStyle(t.text).lineLimit(1)
+                        }
+                        .padding(6)
+                        .background(RoundedRectangle(cornerRadius: DS.rControl).fill(on ? t.accent.opacity(0.14) : t.hover))
+                        .overlay(RoundedRectangle(cornerRadius: DS.rControl).strokeBorder(on ? t.accent : .clear, lineWidth: 1.5))
+                    }
+                    .buttonStyle(.plain)
+                    .accessibilityLabel("\(p.name) palette, \(p.colors.count) colors")
+                    .accessibilityAddTraits(on ? .isSelected : [])
+                }
             }
-            row("Speed") {
-                DraftSegmented("Speed", selection: Binding(get: { sp.speed }, set: { v in var n = sp; n.speed = v; apply(EffectSpec(n.value), live: false) }), options: Spectrum.speeds.map { ($0.id, $0.name) }).fixedSize()
+            row("Animate") {
+                Toggle("Animate", isOn: Binding(get: { sp.speed != "still" }, set: { on in var n = sp; n.speed = on ? "slow" : "still"; apply(EffectSpec(n.value), live: false) }))
+                    .labelsHidden().toggleStyle(.switch).controlSize(.small)
+            }
+            if sp.speed != "still" {
+                row("Speed") {
+                    DraftSegmented("Speed", selection: Binding(get: { sp.speed }, set: { v in var n = sp; n.speed = v; apply(EffectSpec(n.value), live: false) }), options: Spectrum.speeds.filter { $0.id != "still" }.map { ($0.id, $0.name) }).fixedSize()
+                }
             }
             row("Direction") {
                 DraftSegmented("Direction", selection: Binding(get: { sp.direction }, set: { v in var n = sp; n.direction = v; apply(EffectSpec(n.value), live: false) }), options: [("forward", "→"), ("backward", "←")]).fixedSize()

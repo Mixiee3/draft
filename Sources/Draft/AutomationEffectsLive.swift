@@ -17,6 +17,7 @@ extension Automation {
 
     static func effectsLive(read: Bool) async {
         guard let w = NSApp.windows.first(where: { $0.isVisible }) else { return }
+        if ProcessInfo.processInfo.environment["DRAFT_FULL_EFFECTS"] != nil { m.setSettings { $0.fullEffectsWithIncreaseContrast = true } }
         let env = ProcessInfo.processInfo.environment
         let dark = env["AUDIT_DARK"] != nil
         w.setFrame(NSRect(x: 40, y: 40, width: 1280, height: 900), display: true)
@@ -101,6 +102,13 @@ extension Automation {
         if let other = m.createDoc(title: "Other") { m.openView(.doc(other)); await wait(0.6) }
         m.openView(.doc(id)); await wait(0.8); c.textView.scrollRangeToVisible(NSRange(location: 0, length: 0)); await wait(0.4)
         await stillThere("afterTabSwitch")
+        // A style change re-colors the page but keeps every effect.
+        func stored() -> [String] { effectLines.enumerated().map { i, e in e.kind.hasPrefix("block:") ? (c.paragraph(withId: "b_\(i)").map { c.block(at: $0).decoration ?? "none" } ?? "?") : ((c.storage.attribute(e.kind == "highlight" ? .draftHighlight : .draftEffect, at: ns().range(of: e.line).location, effectiveRange: nil) as? String) ?? "none") } }
+        let beforeStyle = stored()
+        m.updateAppearance(id) { $0.styleId = "midnight-constellation" }; await wait(0.6)
+        await shot("effects-midnight", w, settle: 0.1)
+        m.updateAppearance(id) { $0.styleId = "paper" }; await wait(0.5)
+        r["styleChangeKeepsEffects"] = stored() == beforeStyle ? "yes" : "no: \(stored())"
         if let tab = m.tabs.first(where: { $0.view.docId == id }) { m.closeTab(tab.id) }
         m.flushAll(); m.dropEditor(id); await wait(0.3)
         m.openView(.doc(id)); await wait(0.9); c = m.editor(for: id).controller; c.textView.scrollRangeToVisible(NSRange(location: 0, length: 0)); await wait(0.5)
@@ -113,7 +121,7 @@ extension Automation {
         c.undo.redo(); r["redoReapplies"] = (c.storage.attribute(.draftEffect, at: ol.location, effectiveRange: nil) as? String)?.hasPrefix("glow?color=#ff4fd8") == true ? "yes" : "no"
         c.undo.undo()
         // The effect editor for a selected Glow line and a Gradient line.
-        for (kind, line) in [("glow", "Glow sample words"), ("gradient", "Gradient sample words")] {
+        for (kind, line) in [("glow", "Glow sample words"), ("gradient", "Gradient sample words"), ("spectrum", "Spectrum sample words")] {
             c.textView.setSelectedRange(ns().range(of: line)); m.panel = .format; m.editorTick &+= 1; await wait(0.7)
             await shot("effect-editor-\(kind)", w, settle: 0.1)
         }

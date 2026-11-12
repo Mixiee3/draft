@@ -844,6 +844,8 @@ public final class EditorController: NSObject, NSTextStorageDelegate, NSTextView
     /// A TextEffects kind on the selection (nil removes it). Color and contrast come from the theme.
     /// Opens the effect editor (the app shows the Format panel's Text Effect section).
     public var onCustomizeEffect: (() -> Void)?
+    /// Turns on full effects although macOS Increase Contrast is on (an app setting).
+    public var onShowFullEffects: (() -> Void)?
     private var lastEffectEdit: (key: NSAttributedString.Key, range: NSRange, at: Date)?
     private var undoObservers: [NSObjectProtocol] = []
     deinit { undoObservers.forEach(NotificationCenter.default.removeObserver) }
