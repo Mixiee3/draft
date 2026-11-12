@@ -8,6 +8,7 @@ public struct VersionDiff: Sendable, Hashable {
         public enum Op: Sendable, Hashable { case same, added, removed }
         public var op: Op
         public var text: String
+        public init(op: Op, text: String) { self.op = op; self.text = text }
     }
     public struct Block: Sendable, Hashable, Identifiable {
         public enum Kind: String, Sendable, Hashable { case added, removed, edited, formatted, moved }

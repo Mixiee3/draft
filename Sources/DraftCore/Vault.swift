@@ -68,6 +68,12 @@ public final class Vault: @unchecked Sendable {
         try Vault.writeAtomic(data, to: dir.appendingPathComponent("backups/\(stamp)-\(name)"))
     }
 
+    /// After an approved repair: writes are allowed again (a newer schema still blocks them on load).
+    public func reopen() { readOnlyReason = nil }
+
+    /// Safe Mode, or continuing after a problem: everything is read, nothing is written.
+    public func openReadOnly(_ reason: String) { readOnlyReason = reason }
+
     private func guardWritable() throws {
         if let r = readOnlyReason { throw MigrationError(message: r) }
     }

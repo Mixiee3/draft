@@ -255,3 +255,15 @@ extension EditorController {
         undo.endUndoGrouping()
     }
 }
+
+extension EditorController {
+    /// Replaces the whole note with `doc` as one undoable step (Restore Version). Block ids are kept
+    /// as they are in `doc`; attachments, tables, collections and page cards come through unchanged.
+    public func replaceDocument(_ doc: Node, actionName: String) {
+        let flat = Converter.flatten(ensureBlockIds(doc))
+        undo.beginUndoGrouping()
+        rebuild(flat, select: flat.first.map { [$0.info.id] } ?? [], blockMode: false)
+        undo.setActionName(actionName)
+        undo.endUndoGrouping()
+    }
+}

@@ -29,7 +29,16 @@ extension AppModel {
     /// Load `index/index.json` and bring it up to date; a missing or unreadable index is rebuilt.
     func loadIndex() {
         let t0 = Date()
-        index = vault.loadIndex() ?? VaultIndex()
+        let url = vault.dir.appendingPathComponent("index/index.json")
+        if let loaded = vault.loadIndex() { index = loaded } else {
+            index = VaultIndex()
+            // A damaged index is derived data, but keep the original before it is rebuilt.
+            if !vault.isReadOnly, let data = try? Data(contentsOf: url), !data.isEmpty {
+                let stamp = ISO8601DateFormatter().string(from: Date()).replacingOccurrences(of: ":", with: "-")
+                try? Vault.writeAtomic(data, to: vault.dir.appendingPathComponent("backups/\(stamp)-index.unreadable.json"))
+                DispatchQueue.main.async { self.toast("The search index was damaged, so Draft rebuilt it from your notes. A copy of the old one is in backups/.") }
+            }
+        }
         refreshIndex()
         lastIndexSeconds = Date().timeIntervalSince(t0)
     }

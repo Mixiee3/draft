@@ -60,6 +60,12 @@ struct DraftCommands: Commands {
             Button("Export All Documents…") { model.exportAll() }
             Button("Show Data Folder in Finder") { model.revealVault() }
             Divider()
+            Button("Version History…") { if let d = model.activeDocId { model.recovery.historyDoc = HistoryTarget(id: d) } }
+                .keyboardShortcut("y", modifiers: [.command, .option]).disabled(model.activeDocId == nil)
+            Button("Save Version Now") { if let d = model.activeDocId { model.saveVersionNow(d) } }
+                .keyboardShortcut("s", modifiers: [.command, .option]).disabled(model.activeDocId == nil || model.readOnly != nil)
+            Button("Check Vault…") { model.showSettings("recovery"); model.recovery.tab = "check"; Task { await model.checkVault() } }
+            Divider()
             Button("Print…") { model.activeEditor?.controller.textView.printView(nil) }.keyboardShortcut("p").disabled(model.activeDocId == nil)
         }
         CommandGroup(replacing: .textEditing) {

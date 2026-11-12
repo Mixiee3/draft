@@ -10,6 +10,7 @@ public enum VaultRepair {
         public var issueId: String
         public var text: String
         public var files: [String]
+        public init(issueId: String, text: String, files: [String]) { self.issueId = issueId; self.text = text; self.files = files }
     }
 
     public struct Plan: Sendable {
@@ -22,6 +23,7 @@ public enum VaultRepair {
         public var skipped: [VaultIssue] = []
         public var files: [String] { writes.keys.sorted() }
         public var isEmpty: Bool { writes.isEmpty && rollbacks.isEmpty }
+        public init() {}
     }
 
     public struct Journal: Codable, Sendable {
