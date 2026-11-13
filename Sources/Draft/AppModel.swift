@@ -242,7 +242,7 @@ final class AppModel {
         v.enqueue({
             try v.saveDoc(saved)
             _ = try? v.snapshotIfDue(saved) // automatic local backups; never block a save on them
-            onMain { self.lastSaveAt = Date(); self.writeSession(lastSave: self.lastSaveAt) }
+            DispatchQueue.main.async { onMain { self.lastSaveAt = Date(); self.writeSession(lastSave: self.lastSaveAt) } } // runs on the vault queue
         }, failed: { [weak self] e in onMain { self?.reportSaveError(e); DraftLog.write("save failed for \(saved.id): \((e as NSError).domain) \((e as NSError).code)") } })
         if var m = library.docs[id] {
             m.applyDerived(from: d)

@@ -75,6 +75,8 @@ enum Automation {
             case "update-e2e": await updateE2E()
             case "update-disabled": await updateDisabled()
             case "update-after": await updateAfter()
+            case "fault-write": await faultWrite()
+            case "fault-read": await faultRead()
             default: break
             }
             NSApp.terminate(nil)
