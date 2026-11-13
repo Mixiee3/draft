@@ -26,6 +26,7 @@ extension Automation {
     static func englishLooking(_ s: String) -> Bool {
         let t = s.trimmingCharacters(in: .whitespacesAndNewlines)
         guard t.count > 2, t.rangeOfCharacter(from: .letters) != nil else { return false }
+        if t.hasPrefix("# Draft problem report") { return false } // the report is English on purpose: it's for support
         // A catalog key with a different translation in this language: shown untranslated.
         let tr = Bundle.main.localizedString(forKey: t, value: "§§", table: nil)
         if tr != "§§" && tr != t { return true }
@@ -104,7 +105,7 @@ extension Automation {
             clipped[name] = lines.compactMap { l -> String? in
                 guard l.hasSuffix("…") || l.hasSuffix("..."), l.count > 3 else { return nil }
                 let head = String(l.dropLast(l.hasSuffix("…") ? 1 : 3)).trimmingCharacters(in: .whitespaces)
-                if table.contains(head + "…") { return nil } // the label itself ends with an ellipsis
+                if table.contains(head + "…") || table.contains(head + " …") { return nil } // the label itself ends with an ellipsis (German puts a space before it)
                 if lang == "en" { return nil } // shortcut: English has no table to compare against; English layouts are checked on screenshots
                 return table.contains { $0.hasPrefix(head) && $0.count > head.count + 1 && !$0.hasSuffix("…") } ? l : nil
             }

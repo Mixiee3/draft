@@ -104,8 +104,12 @@ struct UpdateSheet: View {
         }
     }
 
+    /// One row of buttons, or a right-aligned column when the translated labels don't fit.
     func footer<B: View>(@ViewBuilder _ b: () -> B) -> some View {
-        HStack(spacing: DS.s2) { Spacer(); b() }.buttonStyle(DraftButtonStyle(compact: true))
+        ViewThatFits(in: .horizontal) {
+            HStack(spacing: DS.s2) { Spacer(minLength: 0); b() }
+            VStack(alignment: .trailing, spacing: DS.s2) { b() }.frame(maxWidth: .infinity, alignment: .trailing)
+        }.buttonStyle(DraftButtonStyle(compact: true))
     }
 }
 
