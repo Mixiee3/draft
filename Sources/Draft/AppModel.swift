@@ -88,6 +88,7 @@ final class AppModel {
     @ObservationIgnored let sessionStart = Date()
     var whatsNew = false
     var reportProblem = false
+    var importPreview: ImportPreview?
     /// The last time a note reached the disk (shown after a crash and in Report a Problem).
     var lastSaveAt: Date?
     var panel: Panel?
