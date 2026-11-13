@@ -22,7 +22,7 @@ struct CoverCropSheet: View {
         let scale = min(box.width / image.size.width, box.height / image.size.height)
         let disp = CGSize(width: image.size.width * scale, height: image.size.height * scale)
         ZStack {
-            Color.black.opacity(0.35).ignoresSafeArea().onTapGesture { model.coverEditorDoc = nil }
+            Color.black.opacity(0.35).ignoresSafeArea().onTapGesture { model.coverEditorDoc = nil }.accessibilityHidden(true)
             VStack(alignment: .leading, spacing: 14) {
                 HStack {
                     Text("Crop Cover").font(.system(size: DS.headline, weight: .semibold))

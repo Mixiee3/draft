@@ -101,16 +101,16 @@ extension AppModel {
         defer { recovery.working = false }
         let fixes = plan.steps.map(\.issueId)
         do {
-            let folder = try VaultRepair.apply(plan, vault: vault, summary: plan.steps.first?.issueId.hasPrefix("rebuild:") == true ? "Rebuild library.json from notes" : "Repair: \(plan.steps.count) problem\(plan.steps.count == 1 ? "" : "s")", fixes: fixes)
+            let folder = try VaultRepair.apply(plan, vault: vault, summary: plan.steps.first?.issueId.hasPrefix("rebuild:") == true ? "Rebuild library.json from notes" : "Repair: \(plan.steps.count) problems", fixes: fixes)
             reloadFromDisk(plan.files + plan.rollbacks.flatMap { _ in ["library.json"] })
             recovery.preview = nil
-            recovery.lastResult = "Repaired \(plan.steps.count) problem\(plan.steps.count == 1 ? "" : "s"). The files from before are in backups/\(folder?.lastPathComponent ?? "")."
+            recovery.lastResult = "Repaired \(plan.steps.count) problems. The files from before are in backups/\(folder?.lastPathComponent ?? "")."
             await checkVault()
-            if let folder { toast("Repaired \(plan.steps.count) problem\(plan.steps.count == 1 ? "" : "s"). A backup was made first.", action: "Undo") { [weak self] in self?.undoVaultChange(folder) } }
+            if let folder { toast("Repaired \(plan.steps.count) problems. A backup was made first.", action: "Undo") { [weak self] in self?.undoVaultChange(folder) } }
         } catch {
             recovery.preview = nil
             recovery.lastResult = error.localizedDescription
-            toast(error.localizedDescription)
+            toast(String.LocalizationValue(stringLiteral: error.localizedDescription))
         }
     }
 
@@ -257,7 +257,7 @@ extension AppModel {
             case .unusedFiles:
                 let names = (try? FileManager.default.contentsOfDirectory(atPath: url.path)) ?? []
                 try VaultCheck.restore(from: url, into: vault)
-                toast("Put back \(names.count) file\(names.count == 1 ? "" : "s") into assets/.")
+                toast("Put back \(names.count) files into assets/.")
             case .migration:
                 guard let m = MigrationValidator.migrationBackups(vault).first(where: { $0.file.lastPathComponent == url.lastPathComponent }) else { return }
                 var plan = VaultRepair.Plan()
@@ -275,8 +275,8 @@ extension AppModel {
     func trashBackups(_ items: [BackupCatalog.Item]) {
         do {
             let n = try BackupCatalog.moveToTrash(items, vault: vault)
-            toast("Moved \(n) backup\(n == 1 ? "" : "s") to the Trash. You can put \(n == 1 ? "it" : "them") back from the Trash in Finder.")
-        } catch { toast(error.localizedDescription) }
+            toast("Moved \(n) backups to the Trash. You can put them back from the Trash in Finder.")
+        } catch { toast(String.LocalizationValue(stringLiteral: error.localizedDescription)) }
         recovery.backupSelection = nil
         refreshBackups()
     }
@@ -308,12 +308,12 @@ extension AppModel {
         do {
             let folder = try VaultRepair.apply(plan, vault: vault, kind: "rollback", summary: "Roll back the last migration", fixes: [])
             recovery.rollbackPreview = nil
-            toast("Put back \(plan.writes.count) file\(plan.writes.count == 1 ? "" : "s") from before the migration. Quit Draft and open the older version to keep using them.", action: "Undo") { [weak self] in
+            toast("Put back \(plan.writes.count) files from before the migration. Quit Draft and open the older version to keep using them.", action: "Undo") { [weak self] in
                 if let folder { self?.undoVaultChange(folder) }
             }
             vault.openReadOnly("This vault was rolled back to an older format. Draft opened it read-only so it isn't migrated again until you relaunch.")
             readOnly = vault.readOnlyReason
-        } catch { toast(error.localizedDescription) }
+        } catch { toast(String.LocalizationValue(stringLiteral: error.localizedDescription)) }
     }
 }
 

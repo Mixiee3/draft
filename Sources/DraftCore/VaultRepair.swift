@@ -82,7 +82,7 @@ public enum VaultRepair {
             return cardMap?[id].flatMap { lib?.docs[$0] != nil ? $0 : nil }
         }
         func docData(_ id: String) -> Data? { try? Data(contentsOf: dir.appendingPathComponent("docs/\(id).json")) }
-        func step(_ i: VaultIssue, _ text: String, _ files: [String]) { p.steps.append(Step(issueId: i.id, text: text, files: files)) }
+        func step(_ i: VaultIssue, _ text: String.LocalizationValue, _ files: [String]) { p.steps.append(Step(issueId: i.id, text: String(localized: text), files: files)) }
         for i in issues.sorted(by: { $0.kind == .libraryUnreadable && $1.kind != .libraryUnreadable }) {
             if i.kind != .journalOpen, rolledBack.contains("docs/\(i.subject).json") || rolledBack.contains("assets/\(i.subject)") || rolledBack.contains(i.subject) {
                 p.steps.append(Step(issueId: i.id, text: "\(i.title): handled by rolling back the interrupted change.", files: []))
@@ -92,7 +92,8 @@ public enum VaultRepair {
             case .libraryUnreadable:
                 let rebuilt = rebuildLibrary(vault: vault, base: newestReadableLibraryBackup(vault))
                 lib = rebuilt.library
-                step(i, "library.json: rebuilt from \(rebuilt.library.docs.count) note files (" + rebuilt.changes.prefix(3).joined(separator: "; ") + (rebuilt.changes.count > 3 ? "; …" : "") + ").", ["library.json"])
+                let summary = rebuilt.changes.prefix(3).joined(separator: "; ") + (rebuilt.changes.count > 3 ? "; …" : "")
+                step(i, "library.json: rebuilt from \(rebuilt.library.docs.count) note files (\(summary)).", ["library.json"])
             case .docUnlisted:
                 guard lib != nil, let data = docData(i.subject), case .ok(let d, _) = VaultCheck.readDoc(data) else { p.skipped.append(i); continue }
                 var m = DocMeta(id: i.subject)
@@ -101,7 +102,9 @@ public enum VaultRepair {
                 m.createdAt = d.createdAt; m.updatedAt = d.updatedAt
                 m.parentDocId = parent(i.subject)
                 lib!.docs[i.subject] = m
-                step(i, "library.json: add “\(m.title.nonEmpty ?? i.subject)”" + (m.parentDocId.map { " as a nested page of \(lib!.docs[$0]?.title.nonEmpty ?? $0)" } ?? "") + ".", ["library.json"])
+                let t = m.title.nonEmpty ?? i.subject
+                if let parent = m.parentDocId { step(i, "library.json: add “\(t)” as a nested page of \(lib!.docs[parent]?.title.nonEmpty ?? parent).", ["library.json"]) }
+                else { step(i, "library.json: add “\(t)”.", ["library.json"]) }
             case .docMissing:
                 guard lib != nil else { p.skipped.append(i); continue }
                 if let s = vault.snapshots(i.subject).first, var d = try? vault.loadSnapshot(s) {
@@ -143,7 +146,7 @@ public enum VaultRepair {
                 let changed = zip(before, after).filter { $0 != $1 }.count
                 guard let enc = try? DraftJSON.encode(d) else { p.skipped.append(i); continue }
                 p.writes["docs/\(i.subject).json"] = enc
-                step(i, "docs/\(i.subject).json: \(changed) repeated block id\(changed == 1 ? "" : "s") renamed; first copies keep theirs.", ["docs/\(i.subject).json"])
+                step(i, "docs/\(i.subject).json: \(changed) repeated block ids renamed; first copies keep theirs.", ["docs/\(i.subject).json"])
             case .tempFile:
                 p.writes[i.subject] = .some(nil)
                 step(i, "\(i.subject): moved to the backup.", [i.subject])
@@ -170,7 +173,7 @@ public enum VaultRepair {
         return p
     }
 
-    static func stamp(_ ms: Double) -> String { Date(timeIntervalSince1970: ms / 1000).formatted(date: .abbreviated, time: .shortened) }
+    static func stamp(_ ms: Double) -> String { Date(timeIntervalSince1970: ms / 1000).formatted(Date.FormatStyle(date: .abbreviated, time: .shortened, locale: appLocale)) }
 
     /// The page card that shows a note, if any other note has one.
     static func parentFromPageCards(_ id: String, vault: Vault, lib: Library) -> String? {

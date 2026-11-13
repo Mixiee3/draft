@@ -9,12 +9,12 @@ struct LibraryView: View {
 
     var title: String {
         switch view.kind {
-        case "unsorted": return "Unsorted"
-        case "starred": return "Starred"
-        case "shared": return "Shared with Me"
-        case "trash": return "Recently Deleted"
+        case "unsorted": return String(localized: "Unsorted")
+        case "starred": return String(localized: "Starred")
+        case "shared": return String(localized: "Shared with Me")
+        case "trash": return String(localized: "Recently Deleted")
         case "folder": return model.folderName(view.folderId)
-        default: return "All Docs"
+        default: return String(localized: "All Docs")
         }
     }
 
@@ -135,7 +135,7 @@ struct EmptyLibrary: View {
     var symbol = "doc.text"
     var title = "Nothing here yet"
     var message: String
-    var body: some View { EmptyState(symbol: symbol, title: title, message: message) }
+    var body: some View { EmptyState(symbol: symbol, title: LocalizedStringKey(title), message: LocalizedStringKey(message)) }
 }
 
 // MARK: - Cards
@@ -176,6 +176,8 @@ struct DocCardMenu: ViewModifier {
         content
             .contentShape(Rectangle())
             .onTapGesture { model.openView(.doc(meta.id)) }
+            .accessibilityAddTraits(.isButton)
+            .accessibilityAction { model.openView(.doc(meta.id)) }
             .contextMenu {
                 Button("Open") { model.openView(.doc(meta.id)) }
                 Button("Open in New Tab") { model.openView(.doc(meta.id), newTab: true) }
@@ -253,7 +255,7 @@ struct GridLayout: View {
     }
 }
 
-private let monthFormatter: DateFormatter = { let f = DateFormatter(); f.dateFormat = "LLLL"; return f }()
+private let monthFormatter: DateFormatter = { let f = DateFormatter(); f.locale = appLocale; f.dateFormat = "LLLL"; return f }()
 private let yearFormatter: DateFormatter = { let f = DateFormatter(); f.dateFormat = "yyyy"; return f }()
 
 func groupByDate(_ docs: [DocMeta], key: SortKey) -> [(String, [DocMeta])] {
@@ -274,7 +276,7 @@ struct ListLayout: View {
     let docs: [DocMeta]
     let width: CGFloat
 
-    func header(_ title: String, _ key: SortKey, width: CGFloat?) -> some View {
+    func header(_ title: LocalizedStringKey, _ key: SortKey, width: CGFloat?) -> some View {
         let s = model.library.settings.sort
         return Button {
             model.setSettings { st in if st.sort.key == key { st.sort.dir = st.sort.dir == "asc" ? "desc" : "asc" } else { st.sort = SortSpec(key: key, dir: key == .name ? "asc" : "desc") } }
@@ -392,7 +394,7 @@ struct SearchResults: View {
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 4) {
-                Text("\(hits.count) document\(hits.count == 1 ? "" : "s") match “\(model.librarySearch)”").font(.system(size: DS.body)).foregroundStyle(t.secondary).padding(.horizontal, 12).padding(.bottom, 6)
+                Text("\(hits.count) documents match “\(model.librarySearch)”").font(.system(size: DS.body)).foregroundStyle(t.secondary).padding(.horizontal, 12).padding(.bottom, 6)
                 ForEach(hits) { h in
                     Button { model.openSearchResult(h.meta.id) } label: {
                         HStack(alignment: .top, spacing: 12) {
@@ -408,20 +410,34 @@ struct SearchResults: View {
                                     Text(model.folderName(h.meta.folderId) + (h.meta.parentDocId.flatMap { model.library.docs[$0]?.title }.map { " › \($0)" } ?? ""))
                                         .font(.system(size: DS.footnote)).foregroundStyle(t.tertiary)
                                 }
-                                snippet(h).font(.system(size: DS.body)).foregroundStyle(t.secondary).lineLimit(2)
+                                if h.blocks.count <= 1 { snippet(h).font(.system(size: DS.body)).foregroundStyle(t.secondary).lineLimit(2) }
                             }
                             Spacer()
                         }
                         .padding(10).contentShape(Rectangle())
                         .background(RoundedRectangle(cornerRadius: DS.rControl).fill(t.hover.opacity(0.5)))
                     }.buttonStyle(.plain)
+                    // Matching blocks: each one opens the note at that block.
+                    if h.blocks.count > 1 {
+                        ForEach(h.blocks.prefix(3)) { b in
+                            Button { model.openBlock(h.meta.id, b.id) } label: {
+                                HStack(spacing: 8) {
+                                    Image(systemName: "arrow.turn.down.right").font(.system(size: DS.caption)).foregroundStyle(t.tertiary).accessibilityHidden(true)
+                                    snippet(b.snippet, b.match).font(.system(size: DS.footnote)).foregroundStyle(t.secondary).lineLimit(1)
+                                    Spacer(minLength: 0)
+                                }.padding(.leading, 58).padding(.vertical, 3).contentShape(Rectangle())
+                            }.buttonStyle(.plain).accessibilityLabel("Match in \(h.meta.title.isEmpty ? "Untitled" : h.meta.title): \(b.snippet)")
+                        }
+                        if h.blocks.count > 3 { Text("and more in this note").font(.system(size: DS.caption)).foregroundStyle(t.tertiary).padding(.leading, 58) }
+                    }
                 }
             }.padding(.horizontal, 18).padding(.bottom, 24)
         }
     }
 
-    func snippet(_ h: SearchHit) -> Text {
-        guard let r = h.snippetMatch else { return Text(h.snippet) }
-        return Text(String(h.snippet[..<r.lowerBound])) + Text(String(h.snippet[r])).bold().foregroundColor(t.text) + Text(String(h.snippet[r.upperBound...]))
+    func snippet(_ h: SearchHit) -> Text { snippet(h.snippet, h.snippetMatch) }
+    func snippet(_ s: String, _ r: Range<String.Index>?) -> Text {
+        guard let r else { return Text(s) }
+        return Text(String(s[..<r.lowerBound])) + Text(String(s[r])).bold().foregroundColor(t.text) + Text(String(s[r.upperBound...]))
     }
 }

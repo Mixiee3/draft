@@ -86,7 +86,7 @@ public final class SelectionToolbar: NSView {
         glass.isHidden = true
         isHidden = true
         setAccessibilityRole(.toolbar)
-        setAccessibilityLabel("Text formatting")
+        setAccessibilityLabel(loc("Text formatting"))
         linkField.placeholderString = "Paste or type a link, then press Return"
         linkField.isBordered = false
         linkField.drawsBackground = false

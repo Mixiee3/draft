@@ -117,7 +117,7 @@ extension AppModel {
         for d in all.docs { reindex(d) }
         scheduleLibrarySave()
         let n = all.docs.count
-        toast("Imported \(n) document\(n == 1 ? "" : "s")" + (all.warnings.first.map { ". \($0)" } ?? ""), action: "Open") { [weak self] in
+        toast(all.warnings.isEmpty ? "Imported \(n) documents" : "Imported \(n) documents. \(all.warnings[0])", action: "Open") { [weak self] in
             if let first = all.metas.first(where: { $0.parentDocId == nil }) ?? all.metas.first { self?.openView(.doc(first.id)) }
         }
         return all.docs.map(\.id)

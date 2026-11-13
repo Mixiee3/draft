@@ -78,7 +78,7 @@ struct RootView: View {
                         .panelTransition(reduce: model.library.settings.reduceMotion)
                     }
                     if narrow && railOverlay {
-                        Color.black.opacity(0.2).ignoresSafeArea().onTapGesture { railOverlay = false }
+                        Color.black.opacity(0.2).ignoresSafeArea().onTapGesture { railOverlay = false }.accessibilityHidden(true)
                         RailView(narrow: true).frame(width: 280).padding(8)
                             .shadow(color: .black.opacity(0.25), radius: 24)
                             .transition(.move(edge: .leading))
@@ -258,18 +258,18 @@ struct TabStrip: View {
 
     func title(_ v: ViewRef) -> String {
         switch v.kind {
-        case "all": return "All Docs"
-        case "unsorted": return "Unsorted"
-        case "starred": return "Starred"
-        case "shared": return "Shared with Me"
-        case "trash": return "Recently Deleted"
-        case "settings": return "Settings"
-        case "tasks": return "Tasks"
-        case "calendar": return "Calendar"
+        case "all": return String(localized: "All Docs")
+        case "unsorted": return String(localized: "Unsorted")
+        case "starred": return String(localized: "Starred")
+        case "shared": return String(localized: "Shared with Me")
+        case "trash": return String(localized: "Recently Deleted")
+        case "settings": return String(localized: "Settings")
+        case "tasks": return String(localized: "Tasks")
+        case "calendar": return String(localized: "Calendar")
         case "tag": return "#" + (v.section ?? "")
-        case "collection": return model.collectionData(v.docId ?? "", v.section ?? "")?.name ?? "Collection"
+        case "collection": return model.collectionData(v.docId ?? "", v.section ?? "")?.name ?? String(localized: "Collection")
         case "folder": return model.folderName(v.folderId)
-        case "doc": let s = model.library.docs[v.docId ?? ""]?.title ?? ""; return s.isEmpty ? "Untitled" : s
+        case "doc": let s = model.library.docs[v.docId ?? ""]?.title ?? ""; return s.isEmpty ? String(localized: "Untitled") : s
         default: return ""
         }
     }
@@ -422,7 +422,7 @@ struct PillButton: View {
         Button(action: action) {
             HStack(spacing: 5) {
                 Image(systemName: symbol).font(.system(size: DS.body, weight: .medium))
-                if let text { Text(text).font(.system(size: DS.body, weight: .medium)) }
+                if let text { Text(loc(text)).font(.system(size: DS.body, weight: .medium)) }
             }
             .padding(.horizontal, text == nil ? 0 : 10)
             .frame(minWidth: 32, minHeight: 30)
@@ -432,8 +432,8 @@ struct PillButton: View {
         .buttonStyle(.plain)
         .foregroundStyle(fg)
         .onHover { hover = $0 }
-        .help(label)
-        .accessibilityLabel(label)
+        .help(loc(label))
+        .accessibilityLabel(loc(label))
         .accessibilityAddTraits(isActive ? .isSelected : [])
     }
 }

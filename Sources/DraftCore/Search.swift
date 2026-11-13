@@ -10,6 +10,16 @@ public struct SearchHit: Identifiable {
     /// Snippet and the range of the match inside it (for highlighting).
     public let snippet: String
     public let snippetMatch: Range<String.Index>?
+    /// Matching blocks (search index only), for jumping straight to them.
+    public var blocks: [BlockHit] = []
+    public struct BlockHit: Hashable, Identifiable, Sendable {
+        public let id: String
+        public let snippet: String
+        public let match: Range<String.Index>?
+    }
+    public init(meta: DocMeta, count: Int, titleMatch: Bool, snippet: String, snippetMatch: Range<String.Index>?, blocks: [BlockHit] = []) {
+        self.meta = meta; self.count = count; self.titleMatch = titleMatch; self.snippet = snippet; self.snippetMatch = snippetMatch; self.blocks = blocks
+    }
 }
 
 public enum Search {
@@ -19,13 +29,24 @@ public enum Search {
         query.split(whereSeparator: { $0.isWhitespace }).map(String.init)
     }
 
-    /// A parsed query: words and `"exact phrases"` must all appear, `-words` must not; in regex
-    /// mode the whole query is one regular expression.
+    /// A parsed query: words and `"exact phrases"` must all appear, `-words` must not; `/regex/` (or
+    /// regex mode) matches a regular expression. Filters: `#tag` or `tag:x` (`-#tag` excludes),
+    /// `date:2026-11` (a day or a prefix), `before:` / `after:` (yyyy-MM-dd), `link:<note>` (notes that
+    /// link to it; resolved to an id by the caller), `in:title`.
     public struct Query {
         public var include: [String] = []
         public var exclude: [String] = []
         public var regex: NSRegularExpression?
-        public var isEmpty: Bool { include.isEmpty && regex == nil }
+        public var tags: [String] = []
+        public var excludeTags: [String] = []
+        public var dates: [String] = []
+        public var before: String?
+        public var after: String?
+        /// `link:` values as typed; `links` holds the note ids they resolve to.
+        public var linkTerms: [String] = []
+        public var links: [String] = []
+        public var titleOnly = false
+        public var isEmpty: Bool { include.isEmpty && regex == nil && tags.isEmpty && excludeTags.isEmpty && dates.isEmpty && before == nil && after == nil && linkTerms.isEmpty && links.isEmpty }
     }
 
     public struct QueryError: Error, Equatable { public let message: String; public init(message: String) { self.message = message } }
@@ -37,6 +58,15 @@ public enum Search {
             do { out.regex = try NSRegularExpression(pattern: q, options: [.caseInsensitive]) }
             catch { throw QueryError(message: "Invalid regular expression") }
             return out
+        }
+        var q = q
+        // `/regex/` anywhere: the part between the slashes is the expression.
+        if let open = q.firstIndex(of: "/"), (open == q.startIndex || q[q.index(before: open)].isWhitespace),
+           let close = q[q.index(after: open)...].lastIndex(of: "/"), close > q.index(after: open) {
+            let pattern = String(q[q.index(after: open)..<close])
+            do { out.regex = try NSRegularExpression(pattern: pattern, options: [.caseInsensitive]) }
+            catch { throw QueryError(message: "Invalid regular expression") }
+            q.removeSubrange(open...close)
         }
         var i = q.startIndex
         while i < q.endIndex {
@@ -52,6 +82,20 @@ public enum Search {
                 if word.hasPrefix("\"") { word.removeFirst() } // unclosed quote: treat as a word
             }
             guard !word.isEmpty else { continue }
+            let lower = word.lowercased()
+            if lower.hasPrefix("#"), lower.count > 1 { (negate ? { out.excludeTags.append(String(lower.dropFirst())) } : { out.tags.append(String(lower.dropFirst())) })(); continue }
+            if let colon = lower.firstIndex(of: ":"), colon > lower.startIndex, lower.index(after: colon) < lower.endIndex {
+                let key = String(lower[..<colon]), value = String(word[word.index(after: colon)...])
+                switch key {
+                case "tag": if negate { out.excludeTags.append(value.lowercased()) } else { out.tags.append(value.lowercased()) }; continue
+                case "date": out.dates.append(value); continue
+                case "before": out.before = value; continue
+                case "after": out.after = value; continue
+                case "link": out.linkTerms.append(value); continue
+                case "in" where value.lowercased() == "title": out.titleOnly = true; continue
+                default: break
+                }
+            }
             if negate { out.exclude.append(word) } else { out.include.append(word) }
         }
         return out

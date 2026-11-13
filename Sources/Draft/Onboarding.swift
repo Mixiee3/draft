@@ -222,6 +222,7 @@ struct TourOverlay: View {
                     }
                     .ignoresSafeArea()
                     .onTapGesture { }
+                    .accessibilityHidden(true) // only blocks clicks behind the tour
                 if let spot {
                     RoundedRectangle(cornerRadius: 14, style: .continuous).strokeBorder(Color.white.opacity(0.9), lineWidth: 2)
                         .frame(width: spot.width, height: spot.height).position(x: spot.midX, y: spot.midY)

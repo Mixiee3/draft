@@ -79,8 +79,9 @@ public enum VaultCheck {
         vault.drain()
         var r = Report()
         var issues: [VaultIssue] = []
-        func add(_ k: VaultIssue.Kind, _ s: IssueSeverity, _ subject: String, _ title: String, _ detail: String, repair: String? = nil, doc: String? = nil) {
-            issues.append(VaultIssue(kind: k, severity: s, subject: subject, title: title, detail: detail, repair: repair, docId: doc))
+        // Messages are localized here (String Catalog); subjects and file names stay as they are.
+        func add(_ k: VaultIssue.Kind, _ s: IssueSeverity, _ subject: String, _ title: String.LocalizationValue, _ detail: String.LocalizationValue, repair: String.LocalizationValue? = nil, doc: String? = nil) {
+            issues.append(VaultIssue(kind: k, severity: s, subject: subject, title: String(localized: title), detail: String(localized: detail), repair: repair.map { String(localized: $0) }, docId: doc))
         }
         let fm = FileManager.default
         let dir = vault.dir
@@ -90,7 +91,7 @@ public enum VaultCheck {
             do { lib = try Migrations.migrateLibrary(data).library }
             catch let e as NewerSchemaError {
                 r.libraryReadable = false
-                add(.libraryNewer, .critical, "library.json", "The library was written by a newer Draft", e.localizedDescription + " Nothing will be changed.")
+                add(.libraryNewer, .critical, "library.json", "The library was written by a newer Draft", "\(e.localizedDescription) Nothing will be changed.")
             } catch {
                 r.libraryReadable = false
                 let json = (try? JSONSerialization.jsonObject(with: data)) != nil
@@ -114,24 +115,24 @@ public enum VaultCheck {
             r.docsChecked += 1
             let title = lib?.docs[id]?.title.nonEmpty ?? id
             guard let data = try? Data(contentsOf: docsDir.appendingPathComponent(id + ".json")) else { r.unreadableDocs.append(id); continue }
-            let restore: () -> String? = { vault.snapshots(id).first.map { "Restore it from the version of \(Date(timeIntervalSince1970: $0.savedAt / 1000).formatted(date: .abbreviated, time: .shortened)); the damaged file is kept in the repair backup." } }
+            let restore: () -> String.LocalizationValue? = { vault.snapshots(id).first.map { "Restore it from the version of \(Date(timeIntervalSince1970: $0.savedAt / 1000).formatted(Date.FormatStyle(date: .abbreviated, time: .shortened, locale: appLocale))); the damaged file is kept in the repair backup." } }
             switch readDoc(data) {
             case .malformed(let why):
                 r.unreadableDocs.append(id)
-                add(.docMalformed, .critical, id, "“\(title)” is damaged", "docs/\(id).json: \(why)" + (restore() == nil ? " No earlier version exists; the file is left as it is." : ""), repair: restore(), doc: id)
+                add(.docMalformed, .critical, id, "“\(title)” is damaged", damaged(id, why, hasVersion: restore() != nil), repair: restore(), doc: id)
             case .unreadable(let why):
                 r.unreadableDocs.append(id)
-                add(.docUnreadable, .critical, id, "“\(title)” can't be read", "docs/\(id).json: \(why)" + (restore() == nil ? " No earlier version exists; the file is left as it is." : ""), repair: restore(), doc: id)
+                add(.docUnreadable, .critical, id, "“\(title)” can't be read", damaged(id, why, hasVersion: restore() != nil), repair: restore(), doc: id)
             case .newer(let why):
                 r.unreadableDocs.append(id)
-                add(.docNewer, .warning, id, "“\(title)” was written by a newer Draft", why, doc: id)
+                add(.docNewer, .warning, id, "“\(title)” was written by a newer Draft", "\(why)", doc: id)
             case .ok(let d, let raw):
                 decoded[id] = d
                 internalIds[d.id, default: []].append(id)
                 var seen = Set<String>(), dups = Set<String>()
                 walk(raw) { n in if blockTypes.contains(n.type), let b = n.id { if !seen.insert(b).inserted { dups.insert(b) } } }
                 if !dups.isEmpty {
-                    add(.blockIdDuplicate, .warning, id, "“\(d.title.nonEmpty ?? id)” has repeated block ids", "\(dups.count) block id\(dups.count == 1 ? " is" : "s are") used twice (\(dups.sorted().prefix(3).joined(separator: ", "))). Links to those blocks can land on the wrong one.",
+                    add(.blockIdDuplicate, .warning, id, "“\(d.title.nonEmpty ?? id)” has repeated block ids", "\(dups.count) block ids are used twice (\(dups.sorted().prefix(3).joined(separator: ", "))). Links to those blocks can land on the wrong one.",
                         repair: "Give the later copies new ids in docs/\(id).json; the first copy keeps its id, so existing links still work.", doc: id)
                 }
             }
@@ -151,7 +152,7 @@ public enum VaultCheck {
                     r.missingDocFiles.append(id)
                     let s = snapshotsFor(id).first
                     add(.docMissing, .warning, id, "“\(m.title.nonEmpty ?? id)” has no note file", "The library lists it but docs/\(id).json is missing.",
-                        repair: s.map { "Recreate docs/\(id).json from the version of \(Date(timeIntervalSince1970: $0.savedAt / 1000).formatted(date: .abbreviated, time: .shortened))." }
+                        repair: s.map { "Recreate docs/\(id).json from the version of \(Date(timeIntervalSince1970: $0.savedAt / 1000).formatted(Date.FormatStyle(date: .abbreviated, time: .shortened, locale: appLocale)))." }
                             ?? "Remove the entry from library.json (it stays in the repair backup).", doc: id)
                 }
                 if let p = m.parentDocId, lib.docs[p] == nil {
@@ -185,12 +186,12 @@ public enum VaultCheck {
                 }
             }
             if !cards.isEmpty {
-                add(.pageCardBroken, .warning, id, "“\(d.title.nonEmpty ?? id)” has a page card for a missing page", "\(cards.count) nested page\(cards.count == 1 ? "" : "s") (\(cards.sorted().prefix(2).joined(separator: ", "))) can't be found. The card is kept so it works again if the page comes back.", doc: id)
+                add(.pageCardBroken, .warning, id, "“\(d.title.nonEmpty ?? id)” has a page card for a missing page", "\(cards.count) nested pages (\(cards.sorted().prefix(2).joined(separator: ", "))) can't be found. The card is kept so it works again if the page comes back.", doc: id)
             }
             if !missingDocs.isEmpty || !missingBlocks.isEmpty {
                 let n = missingDocs.count + missingBlocks.count
-                add(.linkBroken, .info, id, "“\(d.title.nonEmpty ?? id)” links to \(n == 1 ? "something" : "\(n) things") that can't be found",
-                    "\(missingDocs.count) missing note\(missingDocs.count == 1 ? "" : "s"), \(missingBlocks.count) missing block\(missingBlocks.count == 1 ? "" : "s"). Links are kept so they work again if the target returns.", doc: id)
+                add(.linkBroken, .info, id, "“\(d.title.nonEmpty ?? id)” links to \(n) things that can't be found",
+                    "\(missingDocs.count) missing notes, \(missingBlocks.count) missing blocks. Links are kept so they work again if the target returns.", doc: id)
             }
         }
         // Assets.
@@ -203,7 +204,7 @@ public enum VaultCheck {
         r.missingAssets = Set(users.keys).subtracting(assets).sorted()
         for a in r.missingAssets {
             let inUnused = unusedBackups(vault).contains { fm.fileExists(atPath: $0.appendingPathComponent(a).path) }
-            add(.assetMissing, .warning, a, "An image or file is missing", "\(a) is used by \(users[a]?.count ?? 0) note\(users[a]?.count == 1 ? "" : "s") but isn't in assets/.",
+            add(.assetMissing, .warning, a, "An image or file is missing", "\(a) is used by \(users[a]?.count ?? 0) notes but isn't in assets/.",
                 repair: inUnused ? "Bring \(a) back from backups/." : nil, doc: users[a]?.first)
         }
         // Unused only when every note was readable: a note that can't be read might use any file.
@@ -227,13 +228,25 @@ public enum VaultCheck {
         }
         // Repairs or restores that never finished.
         for j in VaultRepair.openJournals(vault) {
-            add(.journalOpen, .critical, j.folder.lastPathComponent, "A \(j.journal.kind) was interrupted", "“\(j.journal.summary)” started \(Date(timeIntervalSince1970: j.journal.startedAt / 1000).formatted(date: .abbreviated, time: .shortened)) and didn't finish. The files from before it are in backups/\(j.folder.lastPathComponent).",
-                repair: [j.journal.touched.isEmpty ? nil : "put back the \(j.journal.touched.count) file\(j.journal.touched.count == 1 ? "" : "s") from before it",
-                         j.journal.created.isEmpty ? nil : "remove the \(j.journal.created.count) file\(j.journal.created.count == 1 ? "" : "s") it created"]
-                    .compactMap { $0 }.joined(separator: " and ").capitalizedFirst.nonEmpty.map { $0 + "." } ?? "Mark it as rolled back; it hadn't changed anything yet.")
+            add(.journalOpen, .critical, j.folder.lastPathComponent, "A \(j.journal.kind) was interrupted", "“\(j.journal.summary)” started \(Date(timeIntervalSince1970: j.journal.startedAt / 1000).formatted(Date.FormatStyle(date: .abbreviated, time: .shortened, locale: appLocale))) and didn't finish. The files from before it are in backups/\(j.folder.lastPathComponent).",
+                repair: journalRepair(j.journal))
         }
         r.issues = issues.sorted { ($0.severity, $1.title) > ($1.severity, $0.title) }
         return r
+    }
+
+    // Plain if/else: chained ternaries of localized interpolations are very slow to type-check.
+    static func damaged(_ id: String, _ why: String, hasVersion: Bool) -> String.LocalizationValue {
+        if hasVersion { return "docs/\(id).json: \(why)" }
+        return "docs/\(id).json: \(why) No earlier version exists; the file is left as it is."
+    }
+
+    static func journalRepair(_ j: VaultRepair.Journal) -> String.LocalizationValue {
+        let put = j.touched.count, removed = j.created.count
+        if put == 0 && removed == 0 { return "Mark it as rolled back; it hadn't changed anything yet." }
+        if removed == 0 { return "Put back the \(put) files from before it." }
+        if put == 0 { return "Remove the \(removed) files it created." }
+        return "Put back the \(put) files from before it and remove the \(removed) files it created."
     }
 
     static func unusedBackups(_ vault: Vault) -> [URL] {

@@ -189,7 +189,7 @@ extension AppModel {
             panel = nil
             scheduleLibrarySave()
             registerAgentUndo("Delete “\(doc.title.isEmpty ? "Untitled" : doc.title)”") { m in _ = m.library.restore(doc.id); m.scheduleLibrarySave(); m.flushAll() }
-            return "Moved \(ids.count) note\(ids.count == 1 ? "" : "s") to Recently Deleted (kept 30 days). Undo restores them."
+            return "Moved \(ids.count) notes to Recently Deleted (kept 30 days). Undo restores them."
         case "rename_document":
             guard let doc = ensureDoc(proposal.documentId), library.docs[doc.id]?.deletedAt == nil else { throw AgentEditError.invalid("This note is not available.") }
             try checkRevision(&proposal, doc)
@@ -389,7 +389,7 @@ extension AppModel {
             try c.applyAgentEdits(ready)
         } catch { cleanup(); throw error }
         let added = newAssets
-        registerAgentUndo("Insert \(edits.filter { ["insert_image", "insert_file"].contains($0.action) }.count == 1 ? "File" : "Files")") { m in
+        registerAgentUndo(loc(edits.filter { ["insert_image", "insert_file"].contains($0.action) }.count == 1 ? "Insert File" : "Insert Files")) { m in
             if c.undo.groupingLevel > 0 { c.undo.endUndoGrouping() }
             c.undo.undo()
             m.markDocDirty(docId); m.flushAll()
@@ -436,7 +436,6 @@ struct AgentProposalReview: View {
     /// Groups whose full list of cards was asked for (long groups show their first 10).
     @State private var showAll: Set<String> = []
 
-    var structure: DraftTools.DocumentStructure? { ["new", "multi"].contains(proposal.documentId) ? nil : try? DraftTools(vaultURL: model.vault.dir).structure(proposal.documentId) }
 
     var allCards: [(index: Int, edit: AgentEdit, docId: String)] {
         if let parts = proposal.parts {
@@ -519,7 +518,7 @@ struct AgentProposalReview: View {
                                     .accessibilityHint(AgentProposal.destructiveActions.contains(c.edit.action) ? "Removes or moves content" : "")
                             }
                             if shown.count < g.cards.count {
-                                Button("Show \(g.cards.count - shown.count) more change\(g.cards.count - shown.count == 1 ? "" : "s")") { showAll.insert(g.id) }
+                                Button("Show \(g.cards.count - shown.count) more changes") { showAll.insert(g.id) }
                                     .buttonStyle(.link).font(.system(size: DS.footnote)).padding(.leading, DS.s1)
                                     .accessibilityHint("Every change is applied either way; this only shows them")
                             }
@@ -551,12 +550,22 @@ struct AgentProposalReview: View {
     func prepare() {
         guard !prepared else { return }
         prepared = true
-        let tools = try? DraftTools(vaultURL: model.vault.dir)
         let ids = proposal.parts?.map(\.documentId) ?? [proposal.documentId]
         for id in ids where !["new", "none"].contains(id) {
-            let st = try? tools?.structure(id)
-            blocksByDoc[id] = Dictionary((st?.blocks ?? []).map { ($0.id, $0.text) }, uniquingKeysWith: { a, _ in a })
-                .merging(tableLabels(st), uniquingKeysWith: { a, _ in a }).merging(collectionLabels(id), uniquingKeysWith: { a, _ in a })
+            // Block text and table labels straight from the note (no per-block Markdown rendering).
+            var texts: [String: String] = [:]
+            if let doc = model.ensureDoc(id) {
+                walk(doc.content) { n in
+                    if let b = n.id, texts[b] == nil, n.type != "tableRow", n.type != "tableCell" { texts[b] = docPlainText(n) }
+                    if n.type == "table", let header = n.content?.first?.content {
+                        for r in n.content ?? [] {
+                            if let rid = r.id { texts[rid] = "row “\(r.content?.first.map(nodeText) ?? "")”" }
+                            for (i, c) in (r.content ?? []).enumerated() { if let cid = c.id { texts[cid] = "the “\(i < header.count ? nodeText(header[i]) : "")” column" } }
+                        }
+                    }
+                }
+            }
+            blocksByDoc[id] = texts.merging(collectionLabels(id), uniquingKeysWith: { a, _ in a })
         }
         // Long proposals open with only the first section expanded.
         if allCards.count > 20 { collapsed = Set(groups.dropFirst().map(\.id)) }
@@ -567,9 +576,9 @@ struct AgentProposalReview: View {
         let kinds = Dictionary(grouping: allCards, by: { Self.category($0.edit.action) }).map { ($0.key, $0.value.count) }.sorted { $0.1 > $1.1 }
         return VStack(alignment: .leading, spacing: DS.s2) {
             HStack(spacing: DS.s2) {
-                Text("\(total) change\(total == 1 ? "" : "s")\(notes > 1 ? " in \(notes) notes" : "")").font(.system(size: DS.body, weight: .semibold)).foregroundStyle(t.text)
+                Text("\(total) changes\(notes > 1 ? " in \(notes) notes" : "")").font(.system(size: DS.body, weight: .semibold)).foregroundStyle(t.text)
                 if destructive > 0 {
-                    Label("\(destructive) remove\(destructive == 1 ? "s" : "") or move\(destructive == 1 ? "s" : "") content", systemImage: "exclamationmark.triangle.fill")
+                    Label("\(destructive) changes remove or move content", systemImage: "exclamationmark.triangle.fill")
                         .font(.system(size: DS.footnote, weight: .semibold)).foregroundStyle(Color(hex: "#d4544c"))
                 }
                 Spacer()
@@ -609,7 +618,7 @@ struct AgentProposalReview: View {
         }
         .buttonStyle(.plain)
         .padding(.top, DS.s1)
-        .accessibilityLabel("\(g.subtitle.map { "\($0) " } ?? "")\(g.title), \(g.cards.count) change\(g.cards.count == 1 ? "" : "s")\(g.destructive > 0 ? ", \(g.destructive) remove or move content" : "")")
+        .accessibilityLabel("\(g.subtitle.map { "\($0) " } ?? "")\(g.title), \(g.cards.count) changes\(g.destructive > 0 ? ", \(g.destructive) remove or move content" : "")")
         .accessibilityValue(open ? "expanded" : "collapsed")
         .accessibilityAddTraits(.isHeader)
         .accessibilityHint(open ? "Collapses this section" : "Expands this section")
@@ -659,22 +668,12 @@ struct AgentProposalReview: View {
     }
 
     /// Row ids named by their first cell, cell ids by their column's header, for readable titles.
-    func tableLabels(_ st: DraftTools.DocumentStructure?) -> [String: String] {
-        var out: [String: String] = [:]
-        for b in st?.blocks ?? [] {
-            guard let rows = b.rows, let header = rows.first else { continue }
-            for r in rows {
-                out[r.id] = "row “\(r.cells.first?.text ?? "")”"
-                for (i, c) in r.cells.enumerated() { out[c.id] = "the “\(i < header.cells.count ? header.cells[i].text : "")” column" }
-            }
-        }
-        return out
-    }
-
     /// Each table the proposal touches, as it is and as it will be after every edit; a collection
     /// is shown as a table of its items (title and fields), with new items titled from the proposal.
     func tablePreviews(_ docId: String, _ edits: [AgentEdit]) -> [(String, Node, Node)] {
-        guard let doc = try? DraftTools(vaultURL: model.vault.dir).document(docId) else { return [] }
+        // Only tables and collections get a preview; don't read the note for anything else.
+        guard edits.contains(where: { Tables.agentActions.contains($0.action) || CollectionData.agentActions.contains($0.action) }),
+              let doc = model.ensureDoc(docId) ?? (try? DraftTools(vaultURL: model.vault.dir).document(docId)) else { return [] }
         if edits.allSatisfy({ CollectionData.agentActions.contains($0.action) }) {
             var out: [(String, Node, Node)] = []
             for block in Array(NSOrderedSet(array: edits.map(\.blockId))) as? [String] ?? [] {
@@ -711,9 +710,9 @@ struct AgentProposalReview: View {
 
     var destructive: Bool { proposal.requiredAccess == .destructive }
     var allowed: Bool { model.library.settings.agentPermission(proposal.client).allows(proposal.requiredAccess) }
-    var applyTitle: String {
+    var applyTitle: LocalizedStringKey {
         let deletes = proposal.allEdits.filter { $0.action == "delete_block" }.count
-        if deletes > 0 { return "Apply and Delete \(deletes) Block\(deletes == 1 ? "" : "s")" }
+        if deletes > 0 { return "Apply and Delete \(deletes) Blocks" }
         if proposal.edits.first?.action == "delete_document" { return "Move to Recently Deleted" }
         if let parts = proposal.parts { return "Apply to \(parts.count) Notes" }
         return proposal.edits.count == 1 ? "Apply Change" : "Apply \(proposal.edits.count) Changes"
@@ -735,7 +734,7 @@ struct AgentProposalReview: View {
             }
             Text(action == "create_folder"
                  ? "Creates \(model.library.folderPath(proposal.edits[0].value, space: proposal.edits[0].target ?? model.library.space.id)) › \(proposal.documentTitle)"
-                 : "Affects \(affected.count == 1 ? "1 note" : "\(affected.count) notes"): \(affected.prefix(8).joined(separator: ", "))\(affected.count > 8 ? " and \(affected.count - 8) more" : "")")
+                 : affected.count > 8 ? "Affects \(affected.count) notes: \(affected.prefix(8).joined(separator: ", ")) and \(affected.count - 8) more" : "Affects \(affected.count) notes: \(affected.joined(separator: ", "))")
                 .font(.system(size: DS.footnote)).foregroundStyle(t.secondary).fixedSize(horizontal: false, vertical: true)
             if !allowed {
                 Text("\(proposal.client ?? "This agent") doesn't have this permission, so it can't be applied. Allow it in Settings › Agents, or reject it.")
@@ -793,7 +792,7 @@ struct AgentProposalReview: View {
             case "add_tag": return ("Add \(e.value ?? "")", nil, nil, block, nil)
             case "remove_tag": return ("Remove \(e.value ?? "")", nil, nil, block, nil)
             case "task_due":
-                return (e.value == "none" ? "Clear the due date" : "Set the due date to \(Day.date(e.value ?? "").map { $0.formatted(date: .abbreviated, time: .omitted) } ?? e.value ?? "")", nil, nil, block, nil)
+                return (e.value == "none" ? "Clear the due date" : "Set the due date to \(Day.date(e.value ?? "").map { $0.formatted(Date.FormatStyle(date: .abbreviated, time: .omitted, locale: appLocale)) } ?? e.value ?? "")", nil, nil, block, nil)
             case "image_caption", "image_alt":
                 let key = e.action == "image_caption" ? "caption" : "alt"
                 let old = model.docs[proposal.documentId]?.content.block(e.blockId)?.attrs?[key]?.string

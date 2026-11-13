@@ -19,8 +19,8 @@ struct FormatPanel: View {
     func chip(_ id: String, _ title: String, font: Font = .system(size: DS.body, weight: .medium), symbol: String? = nil) -> some View {
         let c = cmd(id)
         let k = EditorCommands.command(id)
-        let spoken = k.map { $0.title + ($0.shortcut.map { ", \($0)" } ?? "") }
-        return ChipButton(title: title, symbol: symbol, font: font, isActive: c.active, isEnabled: c.enabled, label: title.isEmpty ? spoken : nil, action: c.run)
+        let spoken = k.map { loc($0.title) + ($0.shortcut.map { ", \($0)" } ?? "") }
+        return ChipButton(title: loc(title), symbol: symbol, font: font, isActive: c.active, isEnabled: c.enabled, label: title.isEmpty ? spoken : nil, action: c.run)
     }
 
     var body: some View {
@@ -100,8 +100,8 @@ struct FormatPanel: View {
                 PanelSection(title: "Decorations") {
                     LazyVGrid(columns: [GridItem(.flexible(), spacing: 6), GridItem(.flexible(), spacing: 6)], spacing: 6) {
                         ForEach([("focus", "rectangle.lefthalf.inset.filled"), ("block", "rectangle.fill"), ("gradient", "square.bottomhalf.filled"), ("glass", "rectangle.on.rectangle"), ("glow", "rays"), ("accent", "rectangle.dashed")], id: \.0) { k, sym in
-                            ChipButton(title: BlockEffects.all.first { $0.kind == k }?.name ?? k, symbol: sym, isActive: block?.decoration == k, isEnabled: !(block?.kind.isAttachment ?? true), height: 30) { c?.setDecoration(k); model.editorTick &+= 1 }
-                                .help(BlockEffects.all.first { $0.kind == k }?.use ?? "")
+                            ChipButton(title: loc(BlockEffects.all.first { $0.kind == k }?.name ?? k), symbol: sym, isActive: block?.decoration == k, isEnabled: !(block?.kind.isAttachment ?? true), height: 30) { c?.setDecoration(k); model.editorTick &+= 1 }
+                                .help(loc(BlockEffects.all.first { $0.kind == k }?.use ?? ""))
                         }
                     }
                     Text("PRESETS").font(.system(size: DS.micro + 1, weight: .semibold)).tracking(0.5).foregroundStyle(t.tertiary).padding(.top, 4)
@@ -275,7 +275,7 @@ struct StylePanel: View {
         }
     }
 
-    func row<C: View>(_ label: String, @ViewBuilder _ c: () -> C) -> some View {
+    func row<C: View>(_ label: LocalizedStringKey, @ViewBuilder _ c: () -> C) -> some View {
         HStack { Text(label).font(.system(size: DS.body)).foregroundStyle(t.text); Spacer(); c() }
     }
 }
@@ -527,11 +527,11 @@ struct InfoPanel: View {
         }.padding(16)
     }
 
-    func prop(_ icon: String, _ k: String, _ v: String) -> some View {
+    func prop(_ icon: String, _ k: LocalizedStringKey, _ v: String) -> some View {
         HStack { Image(systemName: icon).frame(width: 18).foregroundStyle(t.secondary); Text(k).foregroundStyle(t.secondary); Spacer(); Text(v).foregroundStyle(t.text) }.font(.system(size: DS.body))
     }
 
-    func action(_ icon: String, _ title: String, enabled: Bool = true, destructive: Bool = false, run: @escaping () -> Void) -> some View {
+    func action(_ icon: String, _ title: LocalizedStringKey, enabled: Bool = true, destructive: Bool = false, run: @escaping () -> Void) -> some View {
         Button(action: run) {
             HStack { Image(systemName: icon).frame(width: 18); Text(title); Spacer() }
                 .font(.system(size: DS.body)).padding(.horizontal, 10).frame(height: 30)
@@ -621,7 +621,7 @@ struct SharePanel: View {
                     exportRow("doc.text", "Word — later", enabled: false) {}
                     exportRow("envelope", "E-mail — v1.x", enabled: false) {}
                 }
-                Text("Exports include a lossless draft-export.json next to the Markdown.").font(.system(size: DS.caption)).foregroundStyle(t.tertiary)
+                Text("Exports include a lossless draft-export.json next to the Markdown.").font(.system(size: DS.caption)).foregroundStyle(t.tertiary).fixedSize(horizontal: false, vertical: true)
             }
         }.padding(16)
     }
@@ -633,7 +633,7 @@ struct SharePanel: View {
         }.padding(12).frame(maxWidth: .infinity, alignment: .leading).background(RoundedRectangle(cornerRadius: DS.rCard).fill(t.hover))
     }
 
-    func exportRow(_ icon: String, _ title: String, enabled: Bool = true, run: @escaping () -> Void) -> some View {
+    func exportRow(_ icon: String, _ title: LocalizedStringKey, enabled: Bool = true, run: @escaping () -> Void) -> some View {
         Button(action: run) {
             HStack { Image(systemName: icon).frame(width: 18); Text(title); Spacer() }
                 .font(.system(size: DS.body)).padding(.horizontal, 10).frame(height: 32)

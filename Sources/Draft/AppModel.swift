@@ -21,9 +21,9 @@ struct Toast: Identifiable, Equatable {
 
 struct ConfirmRequest: Identifiable {
     let id = UUID()
-    var title: String
-    var detail: String
-    var confirmLabel: String
+    var title: LocalizedStringKey
+    var detail: LocalizedStringKey
+    var confirmLabel: LocalizedStringKey
     var destructive: Bool
     var onConfirm: () -> Void
 }
@@ -108,6 +108,8 @@ final class AppModel {
     var collectionTick = 0
     var searchRegex = false
     var index = VaultIndex()
+    /// Full-text search over blocks (index/search.json), apart from rendering and library.json.
+    @ObservationIgnored var searchIndex = SearchIndex()
     @ObservationIgnored var blockDoc: [String: String] = [:]
     @ObservationIgnored var indexTimer: Timer?
     @ObservationIgnored var forward: [String: [HistEntry]] = [:]
@@ -163,6 +165,7 @@ final class AppModel {
             tabs = lib.tabs
             activeTabId = lib.activeTabId
             Styles.user = lib.userStyles
+            applySpellingLanguage()
             let expired = lib.expiredTrash()
             if !expired.isEmpty && !vault.isReadOnly { deleteForever(expired) }
             loadIndex()
@@ -840,6 +843,12 @@ final class AppModel {
     // MARK: Backups
 
     /// Listing backups reads the disk; panels ask on every render.
+    /// Headings and page cards of the saved copy, rebuilt only when that copy changes (not per redraw).
+    func outline(_ id: String) -> [OutlineItem] {
+        let d = docs[id]
+        return memoized("outline.\(id)", [id, d?.updatedAt ?? 0, d?.content.content?.count ?? 0]) { outlineOf(d?.content ?? Node("doc")) }
+    }
+
     func snapshots(_ id: String) -> [Snapshot] {
         memoized("snapshots.\(id)", [id, saveState, docRevision[id] ?? 0]) { vault.snapshots(id) }
     }
@@ -912,7 +921,7 @@ final class AppModel {
             self.toast("Folder “\(f.name)” removed")
         }
         if count == 0 { run(); return }
-        confirm = ConfirmRequest(title: "Remove folder “\(f.name)”?", detail: "Its \(count) document\(count > 1 ? "s" : "") will move to Unsorted. No documents are deleted.", confirmLabel: "Remove Folder", destructive: false, onConfirm: run)
+        confirm = ConfirmRequest(title: "Remove folder “\(f.name)”?", detail: "Its \(count) documents will move to Unsorted. No documents are deleted.", confirmLabel: "Remove Folder", destructive: false, onConfirm: run)
     }
 
     func toggleExpanded(_ id: String) {
@@ -922,6 +931,17 @@ final class AppModel {
 
     // MARK: Settings
 
+    /// The spell checker is shared by every text view: automatic, or one chosen language.
+    func applySpellingLanguage() {
+        let sc = NSSpellChecker.shared
+        if let l = library.settings.spellingLanguage, sc.availableLanguages.contains(l) {
+            sc.automaticallyIdentifiesLanguages = false
+            _ = sc.setLanguage(l)
+        } else {
+            sc.automaticallyIdentifiesLanguages = true
+        }
+    }
+
     func setSettings(_ f: (inout DraftCore.Settings) -> Void) {
         let before = library.settings
         f(&library.settings)
@@ -930,6 +950,7 @@ final class AppModel {
             retheme()
         }
         if before.tagRules != now.tagRules { saveDirtyDocs(); refreshIndex() }
+        if before.spellingLanguage != now.spellingLanguage { applySpellingLanguage() }
         if before.reminders != now.reminders || before.reminderHour != now.reminderHour { syncReminders(requestIfNeeded: now.reminders && !before.reminders) }
         if before.dayStartHour != now.dayStartHour || before.weekStart != now.weekStart { indexTick &+= 1 }
         scheduleLibrarySave()
@@ -946,8 +967,10 @@ final class AppModel {
 
     // MARK: Toasts
 
-    func toast(_ message: String, action: String? = nil, run: (() -> Void)? = nil) {
-        let t = Toast(message: message, actionLabel: action, action: run)
+    /// Literal messages are localized (and extracted into the String Catalog); pass user text by
+    /// interpolating it, e.g. toast("Opened “\(title)”").
+    func toast(_ message: String.LocalizationValue, action: String.LocalizationValue? = nil, run: (() -> Void)? = nil) {
+        let t = Toast(message: String(localized: message), actionLabel: action.map { String(localized: $0) }, action: run)
         // No withAnimation here: callers (a Space switch) change the whole window in the same turn,
         // and an animation transaction made SwiftUI render all of it synchronously. The toast
         // overlay animates itself.
@@ -1086,10 +1109,12 @@ final class AppModel {
     }
 
     var searchHits: [SearchHit] {
-        guard case .success(let q) = searchQuery else { return [] }
-        return Search.hits(q, in: library.liveDocs) { [self] m in
-            (editors[m.id]?.controller.document() ?? ensureDoc(m.id)?.content).map(docPlainText)
-        }
+        guard case .success(var q) = searchQuery else { return [] }
+        let _ = indexTick
+        // link:<note> matches a note id, or titles that start with the text.
+        q.links = q.linkTerms.compactMap { t in library.docs[t] != nil ? t : library.liveDocs.first { $0.title.range(of: t, options: [.caseInsensitive, .diacriticInsensitive, .anchored]) != nil }?.id }
+        if !q.linkTerms.isEmpty && q.links.isEmpty { return [] }
+        return searchIndex.search(q, in: library.liveDocs)
     }
 
     /// Open a search result and land on the first match: Find in Page is pre-filled, so every
@@ -1106,7 +1131,7 @@ final class AppModel {
         }
     }
 
-    func folderName(_ id: String?) -> String { id.flatMap { f in library.folders.first { $0.id == f }?.name } ?? "Unsorted" }
+    func folderName(_ id: String?) -> String { id.flatMap { f in library.folders.first { $0.id == f }?.name } ?? String(localized: "Unsorted") }
 
     func ancestors(_ id: String) -> [DocMeta] {
         var out: [DocMeta] = []
@@ -1160,7 +1185,7 @@ final class EditorHostAdapter: EditorHost {
             let ok = model.appendBlocks(content, to: target)
             if ok {
                 let n = content.content?.count ?? 0, t = model.library.docs[target]?.title ?? ""
-                model.toast("Moved \(n) block\(n == 1 ? "" : "s") to “\(t.isEmpty ? "Untitled" : t)”", action: "Open") { [model] in model.openView(.doc(target)) }
+                model.toast("Moved \(n) blocks to “\(t.isEmpty ? "Untitled" : t)”", action: "Open") { [model] in model.openView(.doc(target)) }
             }
             return ok
         }

@@ -9,7 +9,7 @@ enum SettingsSections {
         ("assistant", "Assistant", "sparkle"), ("agents", "Agents (MCP)", "person.badge.key"), ("advanced", "Advanced", "slider.horizontal.3"), ("data", "Data & Storage", "internaldrive"), ("recovery", "Recovery", "cross.case"),
         ("stats", "Stats", "chart.bar"), ("about", "About Draft", "info.circle"),
     ]
-    static func title(_ id: String) -> String { all.first { $0.id == id }?.title ?? "Settings" }
+    static func title(_ id: String) -> String { loc(all.first { $0.id == id }?.title ?? "Settings") }
 }
 
 struct RailVisibleKey: EnvironmentKey { static let defaultValue = true }
@@ -28,7 +28,7 @@ struct SettingsRail: View {
                     Text("Settings").font(.system(size: DS.headline, weight: .semibold)).foregroundStyle(t.text).accessibilityAddTraits(.isHeader)
                 }.padding(.horizontal, 6).padding(.bottom, DS.s2)
                 ForEach(SettingsSections.all, id: \.id) { s in
-                    RailRow(icon: s.icon, title: s.title, isSelected: section == s.id) { model.showSettings(s.id) }
+                    RailRow(icon: s.icon, title: LocalizedStringKey(s.title), isSelected: section == s.id) { model.showSettings(s.id) }
                 }
             }.padding(.horizontal, 8)
         }
@@ -50,7 +50,7 @@ struct SettingsView: View {
             if !railVisible {
                 ScrollView {
                     VStack(alignment: .leading, spacing: 1) {
-                        ForEach(SettingsSections.all, id: \.id) { s in RailRow(icon: s.icon, title: s.title, isSelected: section == s.id) { model.showSettings(s.id) } }
+                        ForEach(SettingsSections.all, id: \.id) { s in RailRow(icon: s.icon, title: LocalizedStringKey(s.title), isSelected: section == s.id) { model.showSettings(s.id) } }
                     }.padding(12)
                 }.frame(width: 210)
                 Divider().opacity(0.4)
@@ -132,7 +132,7 @@ struct SettingsView: View {
             SettingsSection(title: "Sidebar", footer: "Hidden items stay reachable from the menus and Quick Open.") {
                 ForEach(Self.sidebarItems, id: \.0) { key, title in
                     let order = model.library.settings.sidebarOrder
-                    SettingsRow(title: title) {
+                    SettingsRow(title: LocalizedStringKey(title)) {
                         HStack(spacing: DS.s2) {
                             if let i = order.firstIndex(of: key) {
                                 IconButton(symbol: "chevron.up", label: "Move \(title) up", size: 24) { moveSection(i, by: -1) }.disabled(i == 0)
@@ -165,6 +165,9 @@ struct SettingsView: View {
     var editor: some View {
         VStack(alignment: .leading, spacing: DS.s5) {
             SettingsSection(title: "Writing") {
+                SettingsMenuRow(title: "Spelling language", detail: "Automatic lets macOS pick the language of each paragraph.",
+                                selection: Binding(get: { model.library.settings.spellingLanguage ?? "" }, set: { v in model.setSettings { $0.spellingLanguage = v.isEmpty ? nil : v } }),
+                                options: [("", "Automatic")] + NSSpellChecker.shared.availableLanguages.map { ($0, Locale.current.localizedString(forIdentifier: $0) ?? $0) })
                 SettingsMenuRow(title: "Completed tasks", detail: "How checked items look in documents.", selection: bind(\.completedTasks), options: [("strike", "Strikethrough"), ("dim", "Dimmed"), ("none", "Unchanged")])
                 SettingsMenuRow(title: "Style for new documents", selection: bind(\.defaultStyleId), options: Styles.all.map { ($0.id, $0.name) })
                 SettingsMenuRow(title: "Dates in documents", detail: "Only the look changes; the dates stay the same.", selection: bind(\.dateStyle), options: [("chip", "Chips"), ("text", "Plain text")])
@@ -194,7 +197,7 @@ struct SettingsView: View {
                 ForEach(model.library.spaces, id: \.id) { s in
                     let current = s.id == model.library.space.id
                     let name = current ? model.library.space.name : s.name
-                    SettingsRow(title: name, detail: current ? "Current Space" : nil) {
+                    SettingsRow(title: LocalizedStringKey(name), detail: current ? "Current Space" : nil) {
                         if !current {
                             Button("Switch") { model.switchSpace(s.id) }.buttonStyle(DraftButtonStyle(compact: true))
                             Button("Delete") { model.deleteSpace(s.id) }.buttonStyle(DraftButtonStyle(role: .destructive, compact: true)).disabled(!model.spaceIsEmpty(s.id))
@@ -215,7 +218,7 @@ struct SettingsView: View {
                                 options: [(String?.none, "None (empty note)")] + model.library.liveDocs.filter { $0.dailyDate == nil }.sorted { $0.title < $1.title }.prefix(60).map { (Optional($0.id), model.docTitle($0.id)) })
             }
             SettingsSection(title: "Reminders", footer: model.reminders.available ? "Local notifications on this Mac only. Turning reminders off removes every pending one." : "Reminders need the Draft app bundle (scripts/build-app.sh).") {
-                SettingsSwitchRow(title: "Remind me when tasks are due", detail: pendingReminders.map { "\($0.count) reminder\($0.count == 1 ? "" : "s") scheduled" }, isOn: bind(\.reminders))
+                SettingsSwitchRow(title: "Remind me when tasks are due", detail: pendingReminders.map { "\($0.count) reminders scheduled" }, isOn: bind(\.reminders))
                 SettingsMenuRow(title: "Time for tasks with only a date", selection: bind(\.reminderHour), options: (5..<23).map { ($0, String(format: "%02d:00", $0)) }, disabled: !model.library.settings.reminders)
             }
             .onAppear { model.reminders.pending { pendingReminders = $0 } }
@@ -224,7 +227,7 @@ struct SettingsView: View {
                     guard on else { model.setSettings { $0.calendarEvents = false }; return }
                     CalendarEvents.shared.request { ok, msg in
                         model.setSettings { $0.calendarEvents = ok }
-                        if let msg { model.toast(msg) }
+                        if let msg { model.toast(String.LocalizationValue(stringLiteral: msg)) }
                     }
                 }))
                 SettingsMenuRow(title: "Week starts on", selection: bind(\.weekStart), options: [(0, "System setting"), (1, "Sunday"), (2, "Monday")])
@@ -249,7 +252,7 @@ struct SettingsView: View {
             SettingsSection(title: "Tags in this Space") {
                 if tags.isEmpty { Text("No tags yet. Type # and a word in any document.").font(.system(size: DS.body)).foregroundStyle(t.secondary).padding(DS.s3 + 2) }
                 ForEach(tags, id: \.tag) { tag in
-                    SettingsRow(title: "#" + tag.tag, detail: "\(tag.count) block\(tag.count == 1 ? "" : "s")") {
+                    SettingsRow(title: "#\(tag.tag)", detail: "\(tag.count) blocks") {
                         Circle().fill(Color(hex: model.tagColor(tag.tag))).frame(width: 10, height: 10).accessibilityHidden(true)
                         if model.library.settings.tagColors[tag.tag.lowercased()] != nil { Button("Default Color") { model.setTagColor(tag.tag, nil) }.buttonStyle(DraftButtonStyle(role: .quiet, compact: true)) }
                         Button("Show") { model.openView(ViewRef(kind: "tag", section: tag.tag)) }.buttonStyle(DraftButtonStyle(compact: true))
@@ -269,14 +272,14 @@ struct SettingsView: View {
             SettingsSection(title: "Your templates", footer: "Open a document, then Info → Actions → Save as Template.") {
                 if model.library.templates.isEmpty { Text("None yet.").font(.system(size: DS.body)).foregroundStyle(t.secondary).padding(DS.s3 + 2) }
                 ForEach(model.library.templates.sorted { $0.title < $1.title }) { m in
-                    SettingsRow(title: model.docTitle(m.id), detail: m.template) {
+                    SettingsRow(title: LocalizedStringKey(model.docTitle(m.id)), detail: m.template.map { LocalizedStringKey($0) }) {
                         Button("Edit") { model.openView(.doc(m.id)) }.buttonStyle(DraftButtonStyle(compact: true))
                         Button("Delete") { model.deleteTemplate(m.id) }.buttonStyle(DraftButtonStyle(role: .destructive, compact: true))
                     }
                 }
             }
             SettingsSection(title: "Built in") {
-                ForEach(BuiltInTemplates.all) { b in SettingsRow(title: b.title, detail: b.category) { EmptyView() } }
+                ForEach(BuiltInTemplates.all) { b in SettingsRow(title: LocalizedStringKey(b.title), detail: LocalizedStringKey(b.category)) { EmptyView() } }
                 SettingsRow(title: "Start from a template") { Button("New from Template…") { model.templatePicker = true }.buttonStyle(DraftButtonStyle(compact: true)) }
             }
         }
@@ -297,7 +300,7 @@ struct SettingsView: View {
     var data: some View {
         VStack(alignment: .leading, spacing: DS.s5) {
             SettingsSection(title: "Where your notes live", footer: "library.json is the index, docs/ holds one JSON file per document, assets/ holds images, backups/ holds copies made before any format change. The format is documented in docs/FORMAT.md.") {
-                SettingsRow(title: model.vault.dir.lastPathComponent, detail: model.vault.dir.path) {
+                SettingsRow(title: LocalizedStringKey(model.vault.dir.lastPathComponent), detail: LocalizedStringKey(model.vault.dir.path)) {
                     Button("Show in Finder") { model.revealVault() }.buttonStyle(DraftButtonStyle(compact: true))
                 }
                 SettingsRow(title: "Export everything", detail: "Markdown files with a lossless draft-export.json") {
@@ -404,7 +407,7 @@ struct ConfirmDialog: View {
     let req: ConfirmRequest
     var body: some View {
         ZStack {
-            Color.black.opacity(0.3).ignoresSafeArea().onTapGesture { model.confirm = nil }
+            Color.black.opacity(0.3).ignoresSafeArea().onTapGesture { model.confirm = nil }.accessibilityHidden(true)
             VStack(alignment: .leading, spacing: 12) {
                 Text(req.title).font(.system(size: DS.headline, weight: .semibold)).foregroundStyle(t.text)
                 Text(req.detail).font(.system(size: DS.body)).foregroundStyle(t.secondary).fixedSize(horizontal: false, vertical: true)
@@ -455,7 +458,7 @@ struct QuickOpen: View {
 
     var body: some View {
         ZStack(alignment: .top) {
-            Color.black.opacity(0.22).ignoresSafeArea().onTapGesture { model.quickOpen = false }
+            Color.black.opacity(0.22).ignoresSafeArea().onTapGesture { model.quickOpen = false }.accessibilityHidden(true)
             VStack(spacing: 0) {
                 HStack(spacing: 8) {
                     Image(systemName: "magnifyingglass").foregroundStyle(t.secondary)
@@ -472,16 +475,16 @@ struct QuickOpen: View {
                     VStack(spacing: 2) {
                         ForEach(Array(results.enumerated()), id: \.element.id) { i, m in
                             row(icon: m.parentDocId == nil ? "doc.text" : "doc.on.doc", title: m.title.isEmpty ? "Untitled" : m.title, sub: model.folderName(m.folderId), selected: i == index)
-                                .onTapGesture { index = i; choose() }
+                                .onTapGesture { index = i; choose() }.accessibilityAddTraits(index == i ? [.isButton, .isSelected] : .isButton)
                         }
                         let blocks = blockResults
                         ForEach(Array(blocks.enumerated()), id: \.element.block.id) { i, h in
                             row(icon: h.block.heading == true ? "number" : "text.alignleft", title: h.block.text, sub: model.docTitle(h.doc), selected: results.count + i == index)
-                                .onTapGesture { index = results.count + i; choose() }
+                                .onTapGesture { index = results.count + i; choose() }.accessibilityAddTraits(.isButton)
                         }
                         if !query.isEmpty {
                             row(icon: "plus", title: "Create “\(query)”", sub: "New document", selected: index == results.count + blocks.count)
-                                .onTapGesture { index = results.count + blocks.count; choose() }
+                                .onTapGesture { index = results.count + blocks.count; choose() }.accessibilityAddTraits(.isButton)
                         }
                     }.padding(6)
                 }.frame(maxHeight: 360)

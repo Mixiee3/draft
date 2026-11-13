@@ -18,8 +18,8 @@ final class BlockHandleView: NSView {
         indicator.layer?.cornerRadius = 1.5
         indicator.isHidden = true
         setAccessibilityRole(.button)
-        setAccessibilityLabel("Block handle: click to select, drag to move")
-        toolTip = "Click to select · drag to move"
+        setAccessibilityLabel(loc("Block handle: click to select, drag to move"))
+        toolTip = loc("Click to select · drag to move")
     }
     required init?(coder: NSCoder) { fatalError() }
     override var isFlipped: Bool { true }

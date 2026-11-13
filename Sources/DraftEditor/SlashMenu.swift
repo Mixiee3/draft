@@ -24,7 +24,7 @@ public final class SlashMenu: NSView {
         layer?.shadowRadius = 16
         layer?.masksToBounds = false
         setAccessibilityRole(.menu)
-        setAccessibilityLabel("Insert block")
+        setAccessibilityLabel(loc("Insert block"))
     }
     required init?(coder: NSCoder) { fatalError() }
     public override var isFlipped: Bool { true }
@@ -163,7 +163,7 @@ public final class SlashMenu: NSView {
             if let img = NSImage(systemSymbolName: cmd.symbol, accessibilityDescription: nil)?.withSymbolConfiguration(.init(pointSize: 13, weight: .regular).applying(.init(paletteColors: [color]))) {
                 img.draw(in: NSRect(x: r.minX + 8 + (18 - img.size.width) / 2, y: r.midY - img.size.height / 2, width: img.size.width, height: img.size.height), from: .zero, operation: .sourceOver, fraction: 1, respectFlipped: true, hints: nil)
             }
-            (cmd.title as NSString).draw(at: NSPoint(x: r.minX + 36, y: r.minY + 7), withAttributes: [.font: NSFont.systemFont(ofSize: 13), .foregroundColor: color])
+            (loc(cmd.title) as NSString).draw(at: NSPoint(x: r.minX + 36, y: r.minY + 7), withAttributes: [.font: NSFont.systemFont(ofSize: 13), .foregroundColor: color])
             let right = cmd.plannedFor.map { "Planned \($0)" } ?? cmd.shortcut
             if let right {
                 let a: [NSAttributedString.Key: Any] = [.font: NSFont.systemFont(ofSize: 11), .foregroundColor: fg.withAlphaComponent(0.4)]

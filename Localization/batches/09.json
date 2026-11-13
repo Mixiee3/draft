@@ -1,0 +1,22 @@
+{
+"Close tab": ["Zavřít panel", "Tab schließen"],
+"Created": ["Vytvořeno", "Erstellt"],
+"Doc": ["Dokument", "Dokument"],
+"Focus the formatting bar": ["Přejít na lištu formátování", "Formatierungsleiste fokussieren"],
+"Last Viewed": ["Naposledy zobrazeno", "Zuletzt angesehen"],
+"Looks for damaged or missing notes, repeated ids, broken links and pages, missing or unused attachments, a damaged index and interrupted changes.": ["Hledá poškozené nebo chybějící poznámky, opakovaná ID, nefunkční odkazy a stránky, chybějící či nepoužívané přílohy, poškozený index a přerušené změny.", "Sucht nach beschädigten oder fehlenden Notizen, doppelten IDs, defekten Links und Seiten, fehlenden oder unbenutzten Anhängen, einem beschädigten Index und unterbrochenen Änderungen."],
+"New document": ["Nový dokument", "Neues Dokument"],
+"New from template": ["Nový ze šablony", "Neu aus Vorlage"],
+"No problems": ["Žádné problémy", "Keine Probleme"],
+"Reapply last color": ["Znovu použít poslední barvu", "Letzte Farbe erneut anwenden"],
+"Rr": ["Rr", "Rr"],
+"Save as Template…": ["Uložit jako šablonu…", "Als Vorlage sichern…"],
+"Show or hide the sidebar": ["Zobrazit nebo skrýt boční panel", "Seitenleiste ein- oder ausblenden"],
+"Ss": ["Ss", "Ss"],
+"Star Document": ["Označit dokument hvězdičkou", "Dokument markieren"],
+"This is a template": ["Toto je šablona", "Dies ist eine Vorlage"],
+"Today's daily note": ["Dnešní denní poznámka", "Heutige Tagesnotiz"],
+"Unstar Document": ["Odebrat hvězdičku dokumentu", "Markierung des Dokuments entfernen"],
+"Updated": ["Upraveno", "Aktualisiert"],
+"Version History (%lld)…": ["Historie verzí (%lld)…", "Versionsverlauf (%lld)…"]
+}

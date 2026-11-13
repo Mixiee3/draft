@@ -52,7 +52,7 @@ struct RecoveryCheck: View {
         let r = model.recovery
         VStack(alignment: .leading, spacing: DS.s5) {
             SettingsSection(title: "Vault Check", footer: "Checking only reads your vault. Nothing changes until you review a repair and confirm it; the files it touches are copied to backups/ first, and Undo puts them back.") {
-                SettingsRow(title: "Check Vault", detail: summary(r.report)) {
+                SettingsRow(title: "Check Vault", detail: LocalizedStringKey(summary(r.report))) {
                     if r.checking { ProgressView().controlSize(.small).accessibilityLabel("Checking the vault") }
                     else { Button("Check Vault") { Task { await model.checkVault() } }.buttonStyle(DraftButtonStyle(compact: true)).keyboardShortcut("r", modifiers: [.command]) }
                 }
@@ -81,7 +81,7 @@ struct RecoveryCheck: View {
                     }
                 }
                 HStack {
-                    Text("\(r.selected.count) repair\(r.selected.count == 1 ? "" : "s") chosen").font(.system(size: DS.footnote)).foregroundStyle(t.secondary)
+                    Text("\(r.selected.count) repairs chosen").font(.system(size: DS.footnote)).foregroundStyle(t.secondary)
                     Spacer()
                     Button("Review Repair…") { model.reviewRepair() }.buttonStyle(DraftButtonStyle(role: .primary, compact: true))
                         .disabled(r.selected.isEmpty || r.working).keyboardShortcut(.defaultAction)
@@ -93,8 +93,8 @@ struct RecoveryCheck: View {
     }
 
     func summary(_ rep: VaultCheck.Report?) -> String {
-        guard let rep else { return "Looks for damaged or missing notes, repeated ids, broken links and pages, missing or unused attachments, a damaged index and interrupted changes." }
-        if rep.isClean { return "No problems" }
+        guard let rep else { return String(localized: "Looks for damaged or missing notes, repeated ids, broken links and pages, missing or unused attachments, a damaged index and interrupted changes.") }
+        if rep.isClean { return String(localized: "No problems") }
         return IssueSeverity.allCases.reversed().compactMap { s in rep.count(s) > 0 ? "\(rep.count(s)) \(s.label.lowercased())" : nil }.joined(separator: " · ")
     }
 }
@@ -140,7 +140,7 @@ struct RepairPreview: View {
     let plan: VaultRepair.Plan
     var body: some View {
         let r = model.recovery
-        SettingsSection(title: "Repair preview", footer: "Before writing, Draft copies these \(plan.files.count) file\(plan.files.count == 1 ? "" : "s") to backups/repair-<time>/. After writing it checks the vault again; if anything is wrong, every file is put back and nothing changes.") {
+        SettingsSection(title: "Repair preview", footer: "Before writing, Draft copies these \(plan.files.count) files to backups/repair-<time>/. After writing it checks the vault again; if anything is wrong, every file is put back and nothing changes.") {
             ForEach(plan.steps) { s in
                 Label { Text(s.text).font(.system(size: DS.body)).foregroundStyle(t.text).fixedSize(horizontal: false, vertical: true).textSelection(.enabled) }
                     icon: { Image(systemName: "wrench.and.screwdriver").foregroundStyle(t.accent) }
@@ -183,7 +183,7 @@ struct RecoveryAssets: View {
             }
             if !unused.isEmpty {
                 SettingsSection(title: nil) {
-                    SettingsRow(title: "\(unused.count) unused file\(unused.count == 1 ? "" : "s") · \(ByteCountFormatter.string(fromByteCount: unused.reduce(0) { $0 + $1.bytes }, countStyle: .file))",
+                    SettingsRow(title: "\(unused.count) unused files · \(ByteCountFormatter.string(fromByteCount: unused.reduce(0) { $0 + $1.bytes }, countStyle: .file))",
                                 detail: r.assetConfirmMove ? "Move them to backups/? Nothing is deleted; Undo puts them back. To remove them for good, use Backups › Move to Trash." : "No note, template or deleted note uses them.") {
                         if r.assetConfirmMove {
                             HStack(spacing: DS.s2) {
@@ -216,7 +216,7 @@ struct AssetRow: View {
             VStack(alignment: .leading, spacing: 2) {
                 Text(item.name).font(.system(size: DS.footnote, design: .monospaced)).foregroundStyle(t.text).lineLimit(1).truncationMode(.middle).textSelection(.enabled)
                 Text([item.kind, item.status == .missing ? nil : ByteCountFormatter.string(fromByteCount: item.bytes, countStyle: .file),
-                      item.lastReference.map { "last used " + $0.formatted(date: .abbreviated, time: .omitted) }].compactMap { $0 }.joined(separator: " · "))
+                      item.lastReference.map { "last used " + $0.formatted(Date.FormatStyle(date: .abbreviated, time: .omitted, locale: appLocale)) }].compactMap { $0 }.joined(separator: " · "))
                     .font(.system(size: DS.caption)).foregroundStyle(t.secondary)
                 if !item.users.isEmpty {
                     Text("In " + item.users.prefix(3).map { "“\(model.docTitle($0))”" }.joined(separator: ", ") + (item.users.count > 3 ? " and \(item.users.count - 3) more" : ""))
@@ -237,7 +237,7 @@ struct AssetThumb: View {
     let name: String
     let missing: Bool
     var body: some View {
-        let img: NSImage? = missing || !AssetCatalog.kind(name).hasPrefix("Image") ? nil : (try? model.vault.assetURL(name)).flatMap { NSImage(contentsOf: $0) }
+        let img: NSImage? = missing || !["png", "jpg", "jpeg", "gif", "webp", "heic", "tiff"].contains((name as NSString).pathExtension.lowercased()) ? nil : (try? model.vault.assetURL(name)).flatMap { NSImage(contentsOf: $0) }
         ZStack {
             RoundedRectangle(cornerRadius: 6, style: .continuous).fill(t.hover)
             if let img { Image(nsImage: img).resizable().aspectRatio(contentMode: .fill) }
@@ -256,12 +256,12 @@ struct RecoveryBackups: View {
             SettingsSection(title: "Backup health", footer: "Draft keeps the newest \(Vault.snapshotsKept) automatic versions of each note (one every 10 minutes while you edit) plus every version you save yourself; notes stay in Recently Deleted for \(Int(Library.trashRetentionDays)) days. Other backups stay until you remove them.") {
                 if let h = r.health {
                     SettingsRow(title: "\(h.items) backups · \(ByteCountFormatter.string(fromByteCount: h.bytes, countStyle: .file))",
-                                detail: "\(h.notesWithVersions) notes have versions" + (h.oldest.map { " · oldest \($0.formatted(date: .abbreviated, time: .omitted))" } ?? "")) {
+                                detail: h.oldest == nil ? "\(h.notesWithVersions) notes have versions" : "\(h.notesWithVersions) notes have versions · oldest \(h.oldest!.formatted(Date.FormatStyle(date: .abbreviated, time: .omitted, locale: appLocale)))") {
                         if h.unreadable.isEmpty { Label("All readable", systemImage: "checkmark.seal").font(.system(size: DS.footnote, weight: .medium)).foregroundStyle(.green) }
                         else { Label("\(h.unreadable.count) can't be read", systemImage: "exclamationmark.triangle.fill").font(.system(size: DS.footnote, weight: .medium)).foregroundStyle(.orange) }
                     }
                     let old = BackupCatalog.cleanupCandidates(r.backups)
-                    SettingsRow(title: "Clean up backups older than 30 days", detail: old.isEmpty ? "Nothing that old. The newest version of each note is always kept." : "\(old.count) backup\(old.count == 1 ? "" : "s"), \(ByteCountFormatter.string(fromByteCount: old.reduce(0) { $0 + $1.bytes }, countStyle: .file)). They go to the macOS Trash, so you can still put them back from Finder.") {
+                    SettingsRow(title: "Clean up backups older than 30 days", detail: old.isEmpty ? "Nothing that old. The newest version of each note is always kept." : "\(old.count) backups, \(ByteCountFormatter.string(fromByteCount: old.reduce(0) { $0 + $1.bytes }, countStyle: .file)). They go to the macOS Trash, so you can still put them back from Finder.") {
                         Button("Review…") { r.trashConfirm = old }.buttonStyle(DraftButtonStyle(compact: true)).disabled(old.isEmpty)
                     }
                 } else { ProgressView().controlSize(.small).padding(DS.s3) }
@@ -297,13 +297,13 @@ struct BackupRow: View {
                     Image(systemName: Self.symbol(item.kind)).foregroundStyle(t.secondary).frame(width: 18)
                     VStack(alignment: .leading, spacing: 2) {
                         Text(title).font(.system(size: DS.body)).foregroundStyle(t.text).lineLimit(1)
-                        Text("\(item.date.formatted(date: .abbreviated, time: .shortened)) · \(ByteCountFormatter.string(fromByteCount: item.bytes, countStyle: .file))" + (item.state == "writing" ? " · interrupted" : item.state == "undone" ? " · undone" : ""))
+                        Text("\(item.date.formatted(Date.FormatStyle(date: .abbreviated, time: .shortened, locale: appLocale))) · \(ByteCountFormatter.string(fromByteCount: item.bytes, countStyle: .file))" + (item.state == "writing" ? " · interrupted" : item.state == "undone" ? " · undone" : ""))
                             .font(.system(size: DS.caption)).foregroundStyle(item.state == "writing" ? .orange : t.secondary)
                     }
                     Spacer()
                     Image(systemName: "chevron.right").rotationEffect(.degrees(open ? 90 : 0)).foregroundStyle(t.tertiary).accessibilityHidden(true)
                 }.contentShape(Rectangle())
-            }.buttonStyle(.plain).accessibilityLabel("\(title), \(item.date.formatted(date: .abbreviated, time: .shortened))").accessibilityHint(open ? "Hides the preview" : "Shows a preview and actions")
+            }.buttonStyle(.plain).accessibilityLabel("\(title), \(item.date.formatted(Date.FormatStyle(date: .abbreviated, time: .shortened, locale: appLocale)))").accessibilityHint(open ? "Hides the preview" : "Shows a preview and actions")
             if open {
                 VStack(alignment: .leading, spacing: 3) {
                     ForEach(Array(BackupCatalog.preview(model.vault, item).enumerated()), id: \.offset) { i, line in
@@ -397,10 +397,10 @@ struct RecoveryMigration: View {
                 }
                 if let m = r.migration {
                     line(m.ok ? "checkmark.seal.fill" : "xmark.octagon.fill", m.ok ? .green : .red,
-                         m.ok ? "The copy migrated and read back with nothing lost (\(m.documents) notes)." : "\(m.problems.count) problem\(m.problems.count == 1 ? "" : "s"): " + m.problems.prefix(3).joined(separator: "; "))
-                    line("info.circle", t.secondary, "Found: library schema \(m.librarySchema.map(String.init) ?? "?"); notes " + m.docSchemas.sorted { $0.key < $1.key }.map { "schema \($0.key) × \($0.value)" }.joined(separator: ", "))
-                    line(m.needsMigration ? "arrow.up.circle" : "checkmark.circle", t.secondary, m.needsMigration ? "Expected changes: " + m.expectedChanges.joined(separator: "; ") : "Already in the current format; nothing would change.")
-                    line("questionmark.circle", t.secondary, m.unknownFields.isEmpty ? "No fields this Draft doesn't know." : "Kept as they are (unknown to this Draft): " + m.unknownFields.prefix(6).joined(separator: ", "))
+                         m.ok ? "The copy migrated and read back with nothing lost (\(m.documents) notes)." : "\(m.problems.count) problems: \(m.problems.prefix(3).joined(separator: "; "))")
+                    line("info.circle", t.secondary, "Found: library schema \(m.librarySchema.map(String.init) ?? "?"); notes \(m.docSchemas.sorted { $0.key < $1.key }.map { "\($0.key) × \($0.value)" }.joined(separator: ", "))")
+                    line(m.needsMigration ? "arrow.up.circle" : "checkmark.circle", t.secondary, m.needsMigration ? "Expected changes: \(m.expectedChanges.joined(separator: "; "))" : "Already in the current format; nothing would change.")
+                    line("questionmark.circle", t.secondary, m.unknownFields.isEmpty ? "No fields this Draft doesn't know." : "Kept as they are (unknown to this Draft): \(m.unknownFields.prefix(6).joined(separator: ", "))")
                 }
             }
             SettingsSection(title: "Roll back", footer: "Draft copies every file before it updates its format. Rolling back puts those copies back (after backing up the current files) and opens the vault read-only so it isn't updated again.") {
@@ -408,7 +408,7 @@ struct RecoveryMigration: View {
                     Button("Review…") { r.rollbackPreview = MigrationValidator.rollbackPlan(model.vault) }.buttonStyle(DraftButtonStyle(compact: true)).disabled(backups.isEmpty)
                 }
                 if let p = r.rollbackPreview {
-                    ForEach(p.steps) { s in line("arrow.uturn.backward", t.accent, s.text) }
+                    ForEach(p.steps) { s in line("arrow.uturn.backward", t.accent, LocalizedStringKey(s.text)) }
                     HStack {
                         Spacer()
                         Button("Cancel") { r.rollbackPreview = nil }.buttonStyle(DraftButtonStyle(compact: true)).keyboardShortcut(.cancelAction)
@@ -418,7 +418,7 @@ struct RecoveryMigration: View {
             }
         }
     }
-    func line(_ sym: String, _ c: Color, _ text: String) -> some View {
+    func line(_ sym: String, _ c: Color, _ text: LocalizedStringKey) -> some View {
         Label { Text(text).font(.system(size: DS.footnote)).foregroundStyle(t.text).fixedSize(horizontal: false, vertical: true).textSelection(.enabled) } icon: { Image(systemName: sym).foregroundStyle(c) }
             .padding(.horizontal, DS.s3 + 2).padding(.vertical, DS.s2).frame(maxWidth: .infinity, alignment: .leading)
     }

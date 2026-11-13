@@ -1,0 +1,18 @@
+{
+"Chips": ["Štítky", "Chips"],
+"Dimmed": ["Ztlumené", "Abgeblendet"],
+"Export": ["Export", "Export"],
+"Faded": ["Vybledlé", "Verblasst"],
+"Immersive": ["Pohlcující", "Immersiv"],
+"Linear": ["Lineární", "Linear"],
+"Notes": ["Poznámky", "Notizen"],
+"Plain text": ["Prostý text", "Reiner Text"],
+"Publish": ["Publikovat", "Veröffentlichen"],
+"Radial": ["Kruhový", "Radial"],
+"Share": ["Sdílet", "Teilen"],
+"Transfer": ["Přenos", "Übertragen"],
+"Unchanged": ["Beze změny", "Unverändert"],
+"all": ["všem", "allen"],
+"any": ["kterékoli", "einer"],
+"Strikethrough": ["Přeškrtnuté", "Durchgestrichen"]
+}

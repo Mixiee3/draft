@@ -73,12 +73,15 @@ public final class TableEditor: NSView, NSTextFieldDelegate {
     public private(set) var tableId: String?
     var fields: [[NSTextField]] = []
     public private(set) var current: (row: Int, column: Int) = (0, 0)
+    /// Set while the fields are replaced after a structural change: the old field ending its editing
+    /// must not write its text into the changed table (it would land in a neighbouring cell).
+    var rebuilding = false
 
     init(controller: EditorController) {
         self.controller = controller
         super.init(frame: .zero)
         setAccessibilityRole(.table)
-        setAccessibilityLabel("Table editor")
+        setAccessibilityLabel(loc("Table editor"))
     }
     required init?(coder: NSCoder) { fatalError() }
     public override var isFlipped: Bool { true }
@@ -164,6 +167,8 @@ public final class TableEditor: NSView, NSTextFieldDelegate {
     func change(_ f: (Node) -> Node, focusRow: Int, focusColumn: Int) {
         commitCurrent()
         guard let (t, pr) = table else { return }
+        rebuilding = true
+        defer { rebuilding = false }
         controller.updateAttachment(at: pr.location) { $0 = f(t) }
         rebuild()
         focus(row: min(focusRow, fields.count - 1), column: min(focusColumn, (fields.first?.count ?? 1) - 1))
@@ -173,6 +178,31 @@ public final class TableEditor: NSView, NSTextFieldDelegate {
     public func addColumn() { change({ Tables.insertingColumn($0, at: self.current.column + 1) }, focusRow: current.row, focusColumn: current.column + 1) }
     public func removeRow() { change({ Tables.removingRow($0, at: self.current.row) }, focusRow: max(0, current.row - 1), focusColumn: current.column) }
     public func removeColumn() { change({ Tables.removingColumn($0, at: self.current.column) }, focusRow: current.row, focusColumn: max(0, current.column - 1)) }
+
+    public var isEditing: Bool { tableId != nil }
+
+    /// Moves the current column (or row) one place; cells keep their ids, content and formatting,
+    /// and one Undo puts it back.
+    public func moveColumn(by d: Int) {
+        let to = current.column + d, n = fields.first?.count ?? 0
+        guard isEditing, to >= 0, to < n else { NSSound.beep(); return }
+        change({ Tables.movingColumn($0, from: self.current.column, to: to) }, focusRow: current.row, focusColumn: to)
+        controller.undo.setActionName("Move Column")
+        announce("Column moved to position \(to + 1) of \(n)")
+    }
+
+    public func moveRow(by d: Int) {
+        let to = current.row + d, n = fields.count
+        guard isEditing, to >= 0, to < n else { NSSound.beep(); return }
+        change({ Tables.movingRow($0, from: self.current.row, to: to) }, focusRow: to, focusColumn: current.column)
+        controller.undo.setActionName("Move Row")
+        announce("Row moved to position \(to + 1) of \(n)")
+    }
+
+    func announce(_ s: String) {
+        NSAccessibility.post(element: fields[safe: current.row]?[safe: current.column] ?? self, notification: .announcementRequested,
+                             userInfo: [.announcement: s, .priority: NSAccessibilityPriorityLevel.high.rawValue])
+    }
 
     public func move(by d: Int) {
         let n = fields.count, m = fields.first?.count ?? 1
@@ -186,7 +216,7 @@ public final class TableEditor: NSView, NSTextFieldDelegate {
         guard let f = obj.object as? NSTextField else { return }
         for (r, row) in fields.enumerated() { if let c = row.firstIndex(of: f) { current = (r, c) } }
     }
-    public func controlTextDidEndEditing(_ obj: Notification) { commitCurrent() }
+    public func controlTextDidEndEditing(_ obj: Notification) { if !rebuilding { commitCurrent() } }
 
     public func control(_ control: NSControl, textView: NSTextView, doCommandBy sel: Selector) -> Bool {
         switch sel {
@@ -205,6 +235,15 @@ public final class TableEditor: NSView, NSTextFieldDelegate {
 
     public override func performKeyEquivalent(with e: NSEvent) -> Bool {
         let mods = e.modifierFlags.intersection([.command, .option, .shift, .control])
+        if mods == [.command, .option, .shift] {
+            switch e.keyCode {
+            case 123: moveColumn(by: -1); return true // ←
+            case 124: moveColumn(by: 1); return true  // →
+            case 126: moveRow(by: -1); return true    // ↑
+            case 125: moveRow(by: 1); return true     // ↓
+            default: break
+            }
+        }
         guard mods == [.command, .option] else { return super.performKeyEquivalent(with: e) }
         switch e.keyCode {
         case 125: addRow(); return true          // ↓
@@ -238,7 +277,7 @@ final class CollectionCell: BlockCell {
         let symbol = c.view?.type == "kanban" ? "rectangle.split.3x1" : c.view?.type == "gallery" ? "square.grid.2x2" : "tablecells"
         NSImage(systemSymbolName: symbol, accessibilityDescription: nil)?.withSymbolConfiguration(.init(paletteColors: [theme.accentColor]))?.draw(in: NSRect(x: r.minX + 14, y: r.minY + 16, width: 18, height: 16))
         (c.name as NSString).draw(at: NSPoint(x: r.minX + 40, y: r.minY + 13), withAttributes: [.font: theme.font(size: 16, weight: .semibold), .foregroundColor: theme.text])
-        let meta = "\(c.items.count) item\(c.items.count == 1 ? "" : "s") · \(c.view?.name ?? "Table") · Open ›"
+        let meta = "\(c.items.count) items · \(c.view?.name ?? "Table") · Open ›"
         let ma: [NSAttributedString.Key: Any] = [.font: NSFont.systemFont(ofSize: 12), .foregroundColor: theme.secondary]
         let mw = (meta as NSString).size(withAttributes: ma).width
         (meta as NSString).draw(at: NSPoint(x: r.maxX - mw - 14, y: r.minY + 17), withAttributes: ma)

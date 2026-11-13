@@ -16,11 +16,11 @@ public enum MigrationValidator {
     }
 
     static let libraryNotes: [Int: String] = [
-        0: "library 0 → 1: the document list becomes a table keyed by id; a default Space, folders and tabs are added",
-        1: "library 1 → 2: every note and folder is placed in the Space that held it",
+        0: String(localized: "library 0 → 1: the document list becomes a table keyed by id; a default Space, folders and tabs are added"),
+        1: String(localized: "library 1 → 2: every note and folder is placed in the Space that held it"),
     ]
     static let docNotes: [Int: String] = [
-        0: "document 0 → 1: schema number, appearance (style) and created/updated times are added",
+        0: String(localized: "document 0 → 1: schema number, appearance (style) and created/updated times are added"),
     ]
 
     public static func validate(vault dir: URL) throws -> Report {
@@ -30,18 +30,18 @@ public enum MigrationValidator {
         defer { try? fm.removeItem(at: tmp) }
         try fm.createDirectory(at: tmp.appendingPathComponent("docs"), withIntermediateDirectories: true)
         let libURL = dir.appendingPathComponent("library.json")
-        guard let libData = try? Data(contentsOf: libURL) else { r.problems.append("library.json is missing"); return r }
+        guard let libData = try? Data(contentsOf: libURL) else { r.problems.append(String(localized: "library.json is missing")); return r }
         try libData.write(to: tmp.appendingPathComponent("library.json"))
         let rawLib = (try? JSONDecoder().decode(JSONValue.self, from: libData))?.object
-        guard let rawLib else { r.problems.append("library.json is not a JSON object"); return r }
+        guard let rawLib else { r.problems.append(String(localized: "library.json is not a JSON object")); return r }
         let libFrom = rawLib["schemaVersion"]?.int ?? 0
         r.librarySchema = libFrom
-        if libFrom > librarySchemaVersion { r.problems.append("library.json is schema \(libFrom); this Draft supports up to \(librarySchemaVersion). Update Draft; nothing was changed.") }
+        if libFrom > librarySchemaVersion { r.problems.append(String(localized: "library.json is schema \(libFrom); this Draft supports up to \(librarySchemaVersion). Update Draft; nothing was changed.")) }
         for v in libFrom..<max(libFrom, librarySchemaVersion) { if let n = libraryNotes[v] { r.expectedChanges.append(n) } }
         // Unknown fields (kept as they are).
         let libKnown = Set(["schemaVersion", "docs", "folders", "space", "spaces", "tabs", "activeTabId", "expandedFolders", "settings", "userStyles"])
         if let l = try? Migrations.migrateLibrary(libData).library {
-            for k in l.extra.keys.sorted() where !libKnown.contains(k) { r.unknownFields.append("library.json: \(k)") }
+            for k in l.extra.keys.sorted() where !libKnown.contains(k) { r.unknownFields.append(String(localized: "library.json: \(k)")) }
         }
         let docNames = ((try? fm.contentsOfDirectory(atPath: dir.appendingPathComponent("docs").path)) ?? []).filter { $0.hasSuffix(".json") && !$0.hasPrefix(".") }
         var docFrom = Set<Int>()
@@ -49,13 +49,13 @@ public enum MigrationValidator {
         for n in docNames {
             let data = try Data(contentsOf: dir.appendingPathComponent("docs/\(n)"))
             copies.append((n, data))
-            guard let raw = (try? JSONSerialization.jsonObject(with: data)) as? [String: Any] else { r.problems.append("docs/\(n) is not a JSON object"); continue }
+            guard let raw = (try? JSONSerialization.jsonObject(with: data)) as? [String: Any] else { r.problems.append(String(localized: "docs/\(n) is not a JSON object")); continue }
             let s = (raw["schemaVersion"] as? NSNumber)?.intValue ?? 0
             r.docSchemas[s, default: 0] += 1
             docFrom.insert(s)
-            if s > docSchemaVersion { r.problems.append("docs/\(n) is schema \(s); this Draft supports up to \(docSchemaVersion).") }
+            if s > docSchemaVersion { r.problems.append(String(localized: "docs/\(n) is schema \(s); this Draft supports up to \(docSchemaVersion).")) }
             let docKnown: Set<String> = ["schemaVersion", "id", "title", "content", "appearance", "createdAt", "updatedAt", "styleId"]
-            for k in raw.keys.sorted() where !docKnown.contains(k) { r.unknownFields.append("docs/\(n): \(k)") }
+            for k in raw.keys.sorted() where !docKnown.contains(k) { r.unknownFields.append(String(localized: "docs/\(n): \(k)")) }
         }
         for v in (docFrom.min() ?? docSchemaVersion)..<docSchemaVersion { if let n = docNotes[v] { r.expectedChanges.append(n + " (\(docFrom.filter { $0 <= v }.reduce(0) { $0 + (r.docSchemas[$1] ?? 0) }) notes)") } }
         guard r.problems.isEmpty else { return r }
@@ -64,7 +64,7 @@ public enum MigrationValidator {
             r.documents = docNames.count
             for n in docNames {
                 guard let d = try? Data(contentsOf: dir.appendingPathComponent("docs/\(n)")) else { continue }
-                if case .ok = VaultCheck.readDoc(d) {} else { r.problems.append("docs/\(n) can't be read") }
+                if case .ok = VaultCheck.readDoc(d) {} else { r.problems.append(String(localized: "docs/\(n) can't be read")) }
             }
             return r
         }
@@ -83,21 +83,21 @@ public enum MigrationValidator {
             try Vault.writeAtomic(try DraftJSON.encode(doc), to: tmp.appendingPathComponent("docs/\(n)"))
             olderDocs.append((n, data))
         }
-        guard let again = try Vault(dir: tmp).loadLibrary() else { r.problems.append("The migrated library can't be read back"); return r }
-        if again.docs.count != migrated.docs.count { r.problems.append("The migrated library lost entries (\(migrated.docs.count) → \(again.docs.count))") }
+        guard let again = try Vault(dir: tmp).loadLibrary() else { r.problems.append(String(localized: "The migrated library can't be read back")); return r }
+        if again.docs.count != migrated.docs.count { r.problems.append(String(localized: "The migrated library lost entries (\(migrated.docs.count) → \(again.docs.count))")) }
         let rawDocs: [String: JSONValue] = rawLib["docs"]?.object ?? Dictionary((rawLib["docs"]?.items ?? []).compactMap { v in v.object?["id"]?.string.map { ($0, v) } }, uniquingKeysWith: { a, _ in a })
-        for (id, v) in rawDocs where again.docs[id]?.title != v.object?["title"]?.string ?? "" { r.problems.append("\(id): title changed in the library") }
+        for (id, v) in rawDocs where again.docs[id]?.title != v.object?["title"]?.string ?? "" { r.problems.append(String(localized: "\(id): title changed in the library")) }
         for (n, original) in olderDocs {
             guard let back = try? Data(contentsOf: tmp.appendingPathComponent("docs/\(n)")), case .ok(let d, _) = VaultCheck.readDoc(back),
                   let raw = (try? JSONSerialization.jsonObject(with: original)) as? [String: Any], let oldNode = raw["content"].flatMap({ Node(foundation: $0) }) else {
-                r.problems.append("docs/\(n) can't be read back after migration"); continue
+                r.problems.append(String(localized: "docs/\(n) can't be read back after migration")); continue
             }
-            if d.schemaVersion != docSchemaVersion { r.problems.append("docs/\(n): still schema \(d.schemaVersion) after migration") }
-            if d.title != (raw["title"] as? String ?? "") { r.problems.append("docs/\(n): title changed after writing") }
-            if docPlainText(oldNode) != docPlainText(d.content) { r.problems.append("docs/\(n): text changed after writing") }
+            if d.schemaVersion != docSchemaVersion { r.problems.append(String(localized: "docs/\(n): still schema \(d.schemaVersion) after migration")) }
+            if d.title != (raw["title"] as? String ?? "") { r.problems.append(String(localized: "docs/\(n): title changed after writing")) }
+            if docPlainText(oldNode) != docPlainText(d.content) { r.problems.append(String(localized: "docs/\(n): text changed after writing")) }
             var oldIds = Set<String>(); walk(oldNode) { if let i = $0.id { oldIds.insert(i) } }
             var newIds = Set<String>(); walk(d.content) { if let i = $0.id { newIds.insert(i) } }
-            if !oldIds.isSubset(of: newIds) { r.problems.append("docs/\(n): block ids changed after writing") }
+            if !oldIds.isSubset(of: newIds) { r.problems.append(String(localized: "docs/\(n): block ids changed after writing")) }
         }
         return r
     }

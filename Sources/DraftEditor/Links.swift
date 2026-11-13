@@ -271,7 +271,7 @@ public final class MentionMenu: NSView {
         layer?.shadowRadius = 16
         layer?.masksToBounds = false
         setAccessibilityRole(.menu)
-        setAccessibilityLabel("Link to")
+        setAccessibilityLabel(loc("Link to"))
     }
     required init?(coder: NSCoder) { fatalError() }
     public override var isFlipped: Bool { true }

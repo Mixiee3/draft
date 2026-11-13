@@ -57,10 +57,10 @@ public struct Snapshot: Hashable, Identifiable, Sendable {
     public var source: String = "auto"
     public var sourceLabel: String {
         switch source {
-        case "manual": return "Saved by you"
-        case "before-restore": return "Before a restore"
-        case "before-repair": return "Before a repair"
-        default: return "Automatic"
+        case "manual": return String(localized: "Saved by you")
+        case "before-restore": return String(localized: "Before a restore")
+        case "before-repair": return String(localized: "Before a repair")
+        default: return String(localized: "Automatic")
         }
     }
 }

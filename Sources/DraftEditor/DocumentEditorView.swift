@@ -118,7 +118,7 @@ public final class DocumentEditorView: NSView, NSTextViewDelegate {
         coverView.layer?.masksToBounds = true
         coverView.layer?.contentsGravity = .resizeAspectFill
         coverView.isHidden = true
-        coverView.setAccessibilityLabel("Cover image")
+        coverView.setAccessibilityLabel(loc("Cover image"))
         paper.addSubview(coverView)
         // Hover controls on the cover: edit (crop) and remove.
         for (symbol, label, sel) in [("pencil", "Edit cover", #selector(editCover)), ("xmark", "Remove cover", #selector(removeCover))] {
@@ -138,7 +138,7 @@ public final class DocumentEditorView: NSView, NSTextViewDelegate {
         titleView.isVerticallyResizable = true
         titleView.textContainerInset = .zero
         titleView.delegate = self
-        titleView.setAccessibilityLabel("Document title")
+        titleView.setAccessibilityLabel(loc("Document title"))
         title_.onEnter = { [weak self] in self?.focusBody(atStart: true) }
         title_.onDown = { [weak self] in self?.focusBody(atStart: true) }
         paper.addSubview(titleView)

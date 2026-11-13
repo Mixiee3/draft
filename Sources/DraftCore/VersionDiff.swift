@@ -33,23 +33,23 @@ public struct VersionDiff: Sendable, Hashable {
     public func count(_ k: Block.Kind) -> Int { blocks.filter { $0.kind == k }.count }
     public var summary: String {
         var parts: [String] = []
-        if titleBefore != titleAfter { parts.append("title") }
-        for (k, w) in [(Block.Kind.edited, "edited"), (.added, "added"), (.removed, "removed"), (.formatted, "reformatted"), (.moved, "moved")] where count(k) > 0 {
-            parts.append("\(count(k)) \(w)")
+        if titleBefore != titleAfter { parts.append(String(localized: "title")) }
+        for (k, w) in [(Block.Kind.edited, String(localized: "edited")), (.added, String(localized: "added")), (.removed, String(localized: "removed")), (.formatted, String(localized: "reformatted")), (.moved, String(localized: "moved"))] where count(k) > 0 {
+            parts.append(String(localized: "\(count(k)) \(w)"))
         }
-        if !lookNotes.isEmpty { parts.append("look") }
-        if !assetsAdded.isEmpty || !assetsRemoved.isEmpty { parts.append("\(assetsAdded.count + assetsRemoved.count) attachment\(assetsAdded.count + assetsRemoved.count == 1 ? "" : "s")") }
-        return parts.isEmpty ? "No changes" : parts.joined(separator: ", ")
+        if !lookNotes.isEmpty { parts.append(String(localized: "look")) }
+        if !assetsAdded.isEmpty || !assetsRemoved.isEmpty { parts.append(String(localized: "\(assetsAdded.count + assetsRemoved.count) attachments")) }
+        return parts.isEmpty ? String(localized: "No changes") : parts.joined(separator: ", ")
     }
 
     static let expand: Set<String> = ["bulletList", "orderedList", "taskList", "toggleList"]
     static let names: [String: String] = [
-        "paragraph": "Text", "heading": "Heading", "blockquote": "Quote", "codeBlock": "Code", "horizontalRule": "Separator", "listItem": "List item",
-        "taskItem": "Task", "toggleItem": "Toggle", "callout": "Callout", "pageBreak": "Page break", "image": "Image", "file": "File", "pageCard": "Page",
-        "linkPreview": "Link preview", "table": "Table", "collection": "Collection",
+        "paragraph": String(localized: "Text"), "heading": String(localized: "Heading"), "blockquote": String(localized: "Quote"), "codeBlock": String(localized: "Code"), "horizontalRule": String(localized: "Separator"), "listItem": String(localized: "List item"),
+        "taskItem": String(localized: "Task"), "toggleItem": String(localized: "Toggle"), "callout": String(localized: "Callout"), "pageBreak": String(localized: "Page break"), "image": String(localized: "Image"), "file": String(localized: "File"), "pageCard": String(localized: "Page"),
+        "linkPreview": String(localized: "Link preview"), "table": String(localized: "Table"), "collection": String(localized: "Collection"),
     ]
     public static func typeName(_ n: Node) -> String {
-        if n.type == "heading" { return "Heading \(n.attrs?["level"]?.int ?? 1)" }
+        if n.type == "heading" { return String(localized: "Heading \(n.attrs?["level"]?.int ?? 1)") }
         return names[n.type] ?? n.type
     }
 
@@ -76,27 +76,27 @@ public struct VersionDiff: Sendable, Hashable {
         return out
     }
 
-    static let markNames: [String: String] = ["bold": "bold", "italic": "italic", "underline": "underline", "strike": "strikethrough", "code": "inline code",
-                                               "highlight": "highlight", "color": "text color", "effect": "text effect", "link": "link", "docLink": "note link", "date": "date"]
+    static let markNames: [String: String] = ["bold": String(localized: "bold"), "italic": String(localized: "italic"), "underline": String(localized: "underline"), "strike": String(localized: "strikethrough"), "code": String(localized: "inline code"),
+                                               "highlight": String(localized: "highlight"), "color": String(localized: "text color"), "effect": String(localized: "text effect"), "link": String(localized: "link"), "docLink": String(localized: "note link"), "date": String(localized: "date")]
 
     static func formatNotes(_ a: Node, _ b: Node) -> [String] {
         var notes: [String] = []
-        if typeName(a) != typeName(b) { notes.append("\(typeName(a)) → \(typeName(b))") }
+        if typeName(a) != typeName(b) { notes.append(String(localized: "\(typeName(a)) → \(typeName(b))")) }
         let ignore: Set<String> = ["id", "level"]
         let keys = Set((a.attrs ?? [:]).keys).union((b.attrs ?? [:]).keys).subtracting(ignore)
-        let attrNames = ["decoration": "block decoration", "blockColor": "block color", "align": "alignment", "font": "font", "checked": "done", "due": "due date",
-                         "width": "size", "caption": "caption", "alt": "alt text", "language": "code language", "collapsed": "folded"]
+        let attrNames: [String: String] = ["decoration": String(localized: "block decoration"), "blockColor": String(localized: "block color"), "align": String(localized: "alignment"), "font": String(localized: "font"), "checked": String(localized: "done"), "due": String(localized: "due date"),
+                         "width": String(localized: "size"), "caption": String(localized: "caption"), "alt": String(localized: "alt text"), "language": String(localized: "code language"), "collapsed": String(localized: "folded")]
         for k in keys.sorted() where a.attrs?[k] != b.attrs?[k] {
-            if k == "checked" { notes.append(b.attrs?[k]?.bool == true ? "marked done" : "marked not done"); continue }
+            if k == "checked" { notes.append(b.attrs?[k]?.bool == true ? String(localized: "marked done") : String(localized: "marked not done")); continue }
             notes.append((attrNames[k] ?? k) + " changed")
         }
         let ma = marks(a), mb = marks(b)
         for k in Set(ma.keys).union(mb.keys).sorted() {
             let name = markNames[k] ?? k
-            if ma[k] == nil { notes.append("\(name) added") } else if mb[k] == nil { notes.append("\(name) removed") }
-            else if ma[k] != mb[k] { notes.append("\(name) changed") }
+            if ma[k] == nil { notes.append(String(localized: "\(name) added")) } else if mb[k] == nil { notes.append(String(localized: "\(name) removed")) }
+            else if ma[k] != mb[k] { notes.append(String(localized: "\(name) changed")) }
         }
-        if notes.isEmpty, a != b { notes.append("formatting changed") }
+        if notes.isEmpty, a != b { notes.append(String(localized: "formatting changed")) }
         return notes
     }
 
@@ -181,17 +181,17 @@ public struct VersionDiff: Sendable, Hashable {
             } else if o != n {
                 d.blocks.append(Block(blockId: id, kind: .formatted, type: typeName(n), before: ta, after: tb, notes: formatNotes(o, n), words: [Word(op: .same, text: tb)]))
             } else if !inOrder.contains(id) {
-                d.blocks.append(Block(blockId: id, kind: .moved, type: typeName(n), before: ta, after: tb, notes: ["moved"], words: [Word(op: .same, text: tb)]))
+                d.blocks.append(Block(blockId: id, kind: .moved, type: typeName(n), before: ta, after: tb, notes: [String(localized: "moved")], words: [Word(op: .same, text: tb)]))
             }
         }
         for r in pending { d.blocks.append(removed(r)) }
         // Look.
         let la = old.appearance, lb = new.appearance
-        if la.styleId != lb.styleId { d.lookNotes.append("Style: \(Styles.all.first { $0.id == la.styleId }?.name ?? la.styleId) → \(Styles.all.first { $0.id == lb.styleId }?.name ?? lb.styleId)") }
-        if la.overrides.backdrop != lb.overrides.backdrop { d.lookNotes.append(lb.overrides.backdrop == nil ? "Backdrop removed" : la.overrides.backdrop == nil ? "Backdrop added" : "Backdrop changed") }
+        if la.styleId != lb.styleId { d.lookNotes.append(String(localized: "Style: \(Styles.all.first { $0.id == la.styleId }?.name ?? la.styleId) → \(Styles.all.first { $0.id == lb.styleId }?.name ?? lb.styleId)")) }
+        if la.overrides.backdrop != lb.overrides.backdrop { d.lookNotes.append(lb.overrides.backdrop == nil ? String(localized: "Backdrop removed") : la.overrides.backdrop == nil ? String(localized: "Backdrop added") : String(localized: "Backdrop changed")) }
         var o1 = la.overrides, o2 = lb.overrides; o1.backdrop = nil; o2.backdrop = nil
-        if o1 != o2 { d.lookNotes.append("Colors or fonts changed") }
-        if la.cover != lb.cover { d.lookNotes.append(lb.cover == nil ? "Cover removed" : la.cover == nil ? "Cover added" : "Cover changed") }
+        if o1 != o2 { d.lookNotes.append(String(localized: "Colors or fonts changed")) }
+        if la.cover != lb.cover { d.lookNotes.append(lb.cover == nil ? String(localized: "Cover removed") : la.cover == nil ? String(localized: "Cover added") : String(localized: "Cover changed")) }
         let xa = VaultCheck.assetIds(in: old), xb = VaultCheck.assetIds(in: new)
         d.assetsAdded = xb.subtracting(xa).sorted()
         d.assetsRemoved = xa.subtracting(xb).sorted()

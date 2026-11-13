@@ -377,10 +377,10 @@ Return applies, Escape rejects, Tab reaches both buttons with a visible ring; li
 
 ## v0.8 — "Trust" (macOS)
 
-- ⬜ From v0.6: String Catalog localization with two non-English locales and a spelling-language
-  setting; table column reordering in one undo; bold/links in table cells that survive Markdown.
-- ⬜ Layout scaling for very long documents: bounded relayout (e.g. TextKit 2 or chunked layout) so
-  wrapping changes and toggles stay under 16 ms at 10,000 blocks; a separate search index.
+- ➡️ Localization, table column reordering and long-document layout moved to v0.9 (below).
+- 🔎 **Open validation (not a reopened feature):** a person still has to try the Trust & Recovery
+  screens with VoiceOver and Full Keyboard Access (Check, Repair preview, Attachments, Backups,
+  Migration, Version History, startup recovery). Automated labels and focus checks are part of v0.9 #7.
 
 - ✅ **Vault integrity checker and unused-file cleanup — first slice (12 Nov 2026).**
   Scope: Settings › Data & Storage › **Check Vault** reads the vault without changing it and reports an
@@ -499,8 +499,71 @@ vault check 2,000 notes / 1,000 assets 0.8 s; repair plan 0.7 s; asset list 0.1 
 using VoiceOver and Full Keyboard Access on these screens (labels and focus are set in code); an
 interrupted write caught at the exact byte (simulated through the journal state).
 
-- ⬜ Orphan cleanup for backups older than 30 days (manual, listed first — part of #8).
-- ⬜ Optional encryption at rest; performance budgets enforced in CI.
+- ✅ Orphan cleanup for backups older than 30 days (manual, listed first — part of #8).
+- ⬜ Optional encryption at rest (later milestone).
+
+## v0.9 — "Scale & Reach" (macOS, started 12 Nov 2026)
+
+Nine connected features on branch `feature/v0.9-scale-reach`. Rules: measure before changing working
+code (repeat runs, separate rendering cost from automation overhead); every automated test uses a
+throwaway vault; the installed app is replaced only after the whole batch passes.
+
+| # | Feature | Depends on | Status |
+|---|---|---|---|
+| 6 | Performance budgets in every build (`scripts/budgets.sh`: repeated runs, median-of-runs, machine and display report, history in `perf-history/`) | — | ⬜ |
+| 8 | Panel and window performance (re-measure Style, Format, Info, Share, Version History, Recovery, Assistant, review sheet; fix only what is consistently slow) | 6 | ⬜ |
+| 1 | Very long documents (10,000 and 20,000 blocks: typing, Return, scrolling, selection, formatting, moves, outline, relaunch) | 6 | ⬜ |
+| 2 | Separate search index (`index/search.json`: blocks, phrases, regex, exclusions, tags, dates, links, versioned, stale detection, safe rebuild) | — | ⬜ |
+| 5 | Table column reordering (keyboard, menu, drag; one Undo; MCP before/after) | — | ⬜ |
+| 3 | Localization (String Catalog; English source; Czech and German; plurals; dates and numbers; spelling language) | 5 (new strings first) | ⬜ |
+| 4 | Keyboard layouts and IME (QWERTZ, AZERTY, Dvorak; Japanese and Chinese composition) | 3 | ⬜ |
+| 7 | Accessibility and keyboard reach (names, roles, values, focus order, focus rings, Reduce Motion, Increase Contrast) | 3 | ⬜ |
+| 9 | Display scaling and narrow layouts (720×640, 960×720, 1440×900; light, dark, Increase Contrast, Reduce Transparency, Reduce Motion) | 3, 7 | ⬜ |
+
+**Implementation order** is the table order: the measuring harness first (so later work is judged on
+repeated numbers), then the code-heavy features, then localization (after new strings exist), then the
+input, accessibility and layout passes over everything, then screenshots and the full test run.
+
+**Acceptance and budgets.**
+- *#6/#8:* each check runs N times (default 3); a budget fails only when the **median** is over it;
+  one slow run is reported as noise. Report: Mac model, macOS, display size and scale, Low Power and
+  accessibility display settings; results appended to `perf-history/<date>.json`. Budgets: keystroke
+  p95 < 33 ms, Return p95 < 33 ms, tab switch p95 < 50 ms, Space switch p95 < 100 ms, 10,000-block open
+  < 2.5 s, search < 500 ms, index rebuild (10,000 blocks) < 3 s, 1,000-item collection open < 1 s and
+  scroll p95 < 16.7 ms, panel open < 100 ms, Version History (30 versions, 2,000 blocks) < 500 ms,
+  Vault Check (2,000 notes) < 2 s, migration check (2,000 notes) < 5 s, 10,000-block scroll p95 < 16.7 ms.
+- *#1:* the same budgets at 10,000 and 20,000 blocks; block ids unchanged after typing, Return,
+  formatting and moves; outline updates without rebuilding the document; content identical after
+  relaunch.
+- *#2:* the index never writes a note; rebuild from disk equals incremental updates; damaged or older
+  index files are copied to `backups/` and rebuilt; results identical after relaunch; `"phrase"`,
+  `/regex/`, `-word`, `#tag`, `tag:`, `date:`/`before:`/`after:`, `link:`, `in:title` and block-level
+  results; rebuild of 10,000 blocks < 3 s and search < 500 ms.
+- *#5:* ⌥⌘⇧← / → and the table menu move a column, one Undo restores it, cell ids, rich text, links,
+  files and images survive, Markdown/HTML export keep the order, MCP review shows the table before and
+  after; works in a narrow window and is announced by VoiceOver.
+- *#3:* every string in menus, Settings, Assistant, review sheet, Trust & Recovery, tables,
+  collections, onboarding, errors and accessibility labels is in `Localizable.xcstrings`; a check renders
+  the main screens in Czech and German and fails on any English source string still visible; Czech
+  plurals (one/few/other); dates and numbers through the system formatters; a spelling-language setting.
+- *#4:* a test matrix (`docs/INPUT_MATRIX.md`) checks every shortcut on QWERTZ, AZERTY and Dvorak key
+  maps and composition (marked text) in the editor: no early commit, Return/Enter commit the
+  composition instead of splitting the block, slash menu and Markdown shortcuts wait for the commit,
+  effects don't disturb marked text.
+- *#7:* in-process accessibility audit of every v0.8/v0.9 screen: every control has a name, role and
+  value; Tab order follows reading order; focus rings visible; animations off with Reduce Motion;
+  stronger separators with Increase Contrast.
+- *#9:* captures at the three sizes in light, dark and with Increase Contrast / Reduce Transparency /
+  Reduce Motion; no clipped labels (checked on the German layout, the longest).
+
+**Screenshots** (`docs/screenshots/v09/`): localized UI (Czech, German), narrow layouts, a
+20,000-block note being edited, search results with block hits, table column reorder before/after,
+Version History, Trust screens with keyboard focus, accessibility audit output.
+
+**Manual checks still needed from you** (cannot be automated here): VoiceOver speech on the Trust and
+v0.9 screens; Full Keyboard Access with real Tab presses; typing with a physical QWERTZ/AZERTY/Dvorak
+keyboard and the real Japanese and Chinese input methods; reading the Czech and German text as a
+native speaker.
 
 ## v1.0 — "A credible personal workspace" (macOS)
 

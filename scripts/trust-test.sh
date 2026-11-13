@@ -9,8 +9,8 @@ W=${TRUST_OUT:-$(mktemp -d)}
 mkdir -p "$W"
 run() { DRAFT_DATA_DIR="$1" DRAFT_OUT="$W" DRAFT_AUTOMATION="$2" "$APP" >/dev/null 2>&1; }
 V=$(mktemp -d); run "$V/vault" trust-shots; run "$V/vault" trust-read
-AUDIT_DARK=1 run "$(mktemp -d)/vault" trust-shots
-AUDIT_NARROW=1 run "$(mktemp -d)/vault" trust-shots
+D=$(mktemp -d); AUDIT_DARK=1 run "$D/vault" trust-shots
+N=$(mktemp -d); AUDIT_NARROW=1 run "$N/vault" trust-shots
 S=$(mktemp -d); cp -R "$V/vault" "$S/vault"
 DRAFT_SAFE_MODE=1 run "$S/vault" safe-mode-check
 python3 -I - "$W" <<'PY'
@@ -46,4 +46,5 @@ need(sm["safeMode"] and sm["unchanged"], "Safe Mode writes nothing")
 assert not fail, fail
 print("TRUST TEST PASSED")
 PY
+rm -rf "$V" "$S" "$D" "$N" # throwaway vaults; the screens and results in $W are kept
 echo "screens: $W"

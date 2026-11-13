@@ -1,0 +1,3 @@
+{
+"Its %lld documents will move to Unsorted. No documents are deleted.": {"cs": {"one": "Jeho %lld dokument se přesune do Nezařazených. Nic se nesmaže.", "few": "Jeho %lld dokumenty se přesunou do Nezařazených. Nic se nesmaže.", "other": "Jeho %lld dokumentů se přesune do Nezařazených. Nic se nesmaže."}, "de": {"one": "Sein %lld Dokument kommt nach „Nicht einsortiert“. Nichts wird gelöscht.", "other": "Seine %lld Dokumente kommen nach „Nicht einsortiert“. Nichts wird gelöscht."}, "en": {"one": "Its %lld document will move to Unsorted. No documents are deleted.", "other": "Its %lld documents will move to Unsorted. No documents are deleted."}}
+}

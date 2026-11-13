@@ -60,7 +60,7 @@ extension ButtonStyle where Self == DraftButtonStyle {
 struct DraftIconMenu<Content: View>: View {
     @Environment(\.tokens) var t
     var symbol: String
-    var label: String
+    var label: LocalizedStringKey
     var size: CGFloat = DS.control
     var onPill = true
     var color: Color? = nil
@@ -112,8 +112,8 @@ struct DraftTextField: View {
 /// A grouped card of rows separated by hairlines (Settings, Info).
 struct SettingsSection<Content: View>: View {
     @Environment(\.tokens) var t
-    var title: String?
-    var footer: String? = nil
+    var title: LocalizedStringKey?
+    var footer: LocalizedStringKey? = nil
     @ViewBuilder var content: Content
 
     var body: some View {
@@ -143,8 +143,8 @@ struct DividedLayout: _VariadicView_MultiViewRoot {
 /// One Settings row: a title (and optional explanation) with its control on the trailing side.
 struct SettingsRow<Trailing: View>: View {
     @Environment(\.tokens) var t
-    var title: String
-    var detail: String? = nil
+    var title: LocalizedStringKey
+    var detail: LocalizedStringKey? = nil
     @ViewBuilder var trailing: Trailing
 
     var body: some View {
@@ -164,8 +164,8 @@ struct SettingsRow<Trailing: View>: View {
 
 struct SettingsSwitchRow: View {
     @Environment(\.tokens) var t
-    var title: String
-    var detail: String? = nil
+    var title: LocalizedStringKey
+    var detail: LocalizedStringKey? = nil
     @Binding var isOn: Bool
     var body: some View {
         SettingsRow(title: title, detail: detail) {
@@ -177,8 +177,8 @@ struct SettingsSwitchRow: View {
 /// A row whose value is chosen from a menu: shows the current choice with a quiet chevron.
 struct SettingsMenuRow<V: Hashable>: View {
     @Environment(\.tokens) var t
-    var title: String
-    var detail: String? = nil
+    var title: LocalizedStringKey
+    var detail: LocalizedStringKey? = nil
     @Binding var selection: V
     var options: [(V, String)]
     var disabled = false
@@ -187,11 +187,11 @@ struct SettingsMenuRow<V: Hashable>: View {
         SettingsRow(title: title, detail: detail) {
             Menu {
                 ForEach(Array(options.enumerated()), id: \.offset) { _, o in
-                    Button { selection = o.0 } label: { if o.0 == selection { Label(o.1, systemImage: "checkmark") } else { Text(o.1) } }
+                    Button { selection = o.0 } label: { if o.0 == selection { Label(loc(o.1), systemImage: "checkmark") } else { Text(loc(o.1)) } }
                 }
             } label: {
                 HStack(spacing: 6) {
-                    Text(options.first { $0.0 == selection }?.1 ?? "—").font(.system(size: DS.body)).foregroundStyle(t.text).lineLimit(1)
+                    Text(loc(options.first { $0.0 == selection }?.1 ?? "—")).font(.system(size: DS.body)).foregroundStyle(t.text).lineLimit(1)
                     Image(systemName: "chevron.up.chevron.down").font(.system(size: DS.micro, weight: .semibold)).foregroundStyle(t.tertiary)
                 }
                 .padding(.horizontal, DS.s3).frame(height: DS.controlSmall + 4)
@@ -214,7 +214,7 @@ struct ShortcutList: View {
         VStack(spacing: 0) {
             ForEach(Array(items.enumerated()), id: \.offset) { i, item in
                 HStack {
-                    Text(item.1).font(.system(size: DS.body)).foregroundStyle(t.text)
+                    Text(LocalizedStringKey(item.1)).font(.system(size: DS.body)).foregroundStyle(t.text)
                     Spacer()
                     Text(item.0).font(.system(size: DS.body, design: .rounded).weight(.medium)).foregroundStyle(t.secondary)
                         .padding(.horizontal, DS.s2).frame(height: DS.controlSmall)
@@ -233,8 +233,8 @@ struct ShortcutList: View {
 struct EmptyState<Action: View>: View {
     @Environment(\.tokens) var t
     var symbol: String
-    var title: String
-    var message: String
+    var title: LocalizedStringKey
+    var message: LocalizedStringKey
     @ViewBuilder var action: Action
 
     var body: some View {
@@ -252,7 +252,7 @@ struct EmptyState<Action: View>: View {
 }
 
 extension EmptyState where Action == EmptyView {
-    init(symbol: String, title: String, message: String) { self.init(symbol: symbol, title: title, message: message) { EmptyView() } }
+    init(symbol: String, title: LocalizedStringKey, message: LocalizedStringKey) { self.init(symbol: symbol, title: title, message: message) { EmptyView() } }
 }
 
 // MARK: - Surfaces

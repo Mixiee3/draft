@@ -29,6 +29,7 @@ extension AppModel {
     /// Load `index/index.json` and bring it up to date; a missing or unreadable index is rebuilt.
     func loadIndex() {
         let t0 = Date()
+        searchIndex = vault.loadSearchIndex() ?? SearchIndex() // separate file; damaged copies are kept in backups/
         let url = vault.dir.appendingPathComponent("index/index.json")
         if let loaded = vault.loadIndex() { index = loaded } else {
             index = VaultIndex()
@@ -44,9 +45,12 @@ extension AppModel {
     }
 
     func refreshIndex() {
-        let n = index.refresh(docs: library.docs, rules: settings.tagRules) { [vault] id in (try? vault.loadDoc(id)) ?? nil }
+        var loaded: [String: DocFile] = [:] // each changed note is read once for both indexes
+        let load: (String) -> DocFile? = { [vault] id in if let d = loaded[id] { return d }; let d = (try? vault.loadDoc(id)) ?? nil; loaded[id] = d; return d }
+        let n = index.refresh(docs: library.docs, rules: settings.tagRules, load: load)
+        let s = searchIndex.refresh(docs: library.docs, rules: settings.tagRules, load: load)
         blockDoc = index.blockLocations()
-        if n > 0 { saveIndexNow() }
+        if n + s > 0 { saveIndexNow() }
         indexTick &+= 1
     }
 
@@ -55,6 +59,7 @@ extension AppModel {
         saveDirtyDocs()
         let t0 = Date()
         index = VaultIndex()
+        searchIndex = SearchIndex()
         refreshIndex()
         lastIndexSeconds = Date().timeIntervalSince(t0)
         toast("Index rebuilt from \(library.docs.count) documents in \(String(format: "%.1f", lastIndexSeconds)) s")
@@ -68,6 +73,9 @@ extension AppModel {
         e.updatedAt = m.updatedAt
         index.entries[d.id] = e
         for b in e.blocks { blockDoc[b.id] = d.id }
+        var se = SearchIndex.entry(for: d, daily: m.dailyDate, rules: settings.tagRules)
+        se.updatedAt = m.updatedAt; se.title = m.title
+        searchIndex.entries[d.id] = se
         indexChanged()
     }
 
@@ -79,8 +87,8 @@ extension AppModel {
 
     func saveIndexNow() {
         indexTimer?.invalidate()
-        let idx = index, v = vault
-        v.enqueue({ try v.saveIndex(idx) }, failed: { _ in }) // derived data: a failed write only means a rebuild next launch
+        let idx = index, sidx = searchIndex, v = vault
+        v.enqueue({ try v.saveIndex(idx); try v.saveSearchIndex(sidx) }, failed: { _ in }) // derived data: a failed write only means a rebuild next launch
     }
 
     // MARK: Links
@@ -129,7 +137,7 @@ extension AppModel {
         switch trigger {
         case "#":
             let tags = index.tagCounts(live: live).filter { ql.isEmpty || $0.tag.lowercased().hasPrefix(ql) }
-            var out = tags.prefix(8).map { MentionItem(kind: .tag, title: "#" + $0.tag, subtitle: "Used \($0.count) time\($0.count == 1 ? "" : "s")", symbol: "number", value: $0.tag) }
+            var out = tags.prefix(8).map { MentionItem(kind: .tag, title: "#" + $0.tag, subtitle: String(localized: "Used \($0.count) times"), symbol: "number", value: $0.tag) }
             if !q.isEmpty, !tags.contains(where: { $0.tag.lowercased() == ql }), Tags.find(in: "#" + q, rules: settings.tagRules).first?.name == q {
                 out.append(MentionItem(kind: .tag, title: "#" + q, subtitle: "New tag", symbol: "plus", value: q))
             }
@@ -275,7 +283,7 @@ extension AppModel {
             guard let self else { return }
             self.library.settings.reminders = false
             self.scheduleLibrarySave()
-            self.toast(message)
+            self.toast(String.LocalizationValue(stringLiteral: message))
         }
     }
 }

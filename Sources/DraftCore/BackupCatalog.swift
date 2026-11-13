@@ -55,16 +55,16 @@ public enum BackupCatalog {
             var isDir: ObjCBool = false
             fm.fileExists(atPath: u.path, isDirectory: &isDir)
             let mtime = (try? fm.attributesOfItem(atPath: u.path)[.modificationDate] as? Date) ?? Date.distantPast
-            var item = Item(path: "backups/\(n)", kind: .other, source: "Backup", date: mtime, bytes: size(u), docId: nil, isFolder: isDir.boolValue)
+            var item = Item(path: "backups/\(n)", kind: .other, source: String(localized: "Backup"), date: mtime, bytes: size(u), docId: nil, isFolder: isDir.boolValue)
             if let j = journals[n] {
                 item.kind = .change; item.source = j.summary; item.state = j.state
                 item.date = Date(timeIntervalSince1970: j.startedAt / 1000)
             } else if n.hasPrefix("unused-") {
-                item.kind = .unusedFiles; item.source = "Unused files moved out of assets/"
+                item.kind = .unusedFiles; item.source = String(localized: "Unused files moved out of assets/")
             } else if n.contains(".unreadable.") {
-                item.kind = .unreadableCopy; item.source = "Copy of a file Draft couldn't read"
+                item.kind = .unreadableCopy; item.source = String(localized: "Copy of a file Draft couldn't read")
             } else if let m = MigrationValidator.migrationBackups(vault).first(where: { $0.file.lastPathComponent == n }) {
-                item.kind = .migration; item.source = "Before updating \(m.target) from schema \(m.schema)"
+                item.kind = .migration; item.source = String(localized: "Before updating \(m.target) from schema \(m.schema)")
                 if m.target.hasPrefix("docs/") { item.docId = String(m.target.dropFirst(5).dropLast(5)) }
             }
             out.append(item)
@@ -93,21 +93,21 @@ public enum BackupCatalog {
         let fm = FileManager.default
         switch item.kind {
         case .version, .migration where item.docId != nil:
-            guard let d = try? Data(contentsOf: url), case .ok(let doc, _) = VaultCheck.readDoc(d) else { return ["This copy can't be read."] }
+            guard let d = try? Data(contentsOf: url), case .ok(let doc, _) = VaultCheck.readDoc(d) else { return [String(localized: "This copy can't be read.")] }
             let s = docStats(doc.content)
             let lines = docPlainText(doc.content).split(separator: "\n").prefix(4).map { String($0.prefix(140)) }
-            return ["“\(doc.title.isEmpty ? "Untitled" : doc.title)” · \(s.words) words · \(s.blocks) blocks"] + lines
+            return [String(localized: "“\(doc.title.isEmpty ? String(localized: "Untitled") : doc.title)” · \(s.words) words · \(s.blocks) blocks")] + lines
         case .change:
             guard let j = VaultRepair.allJournals(vault).first(where: { $0.folder.lastPathComponent == url.lastPathComponent })?.journal else { return [] }
             let state = ["done": "Applied", "undone": "Undone", "rolledBack": "Rolled back (nothing changed)", "writing": "Interrupted"][j.state] ?? j.state
-            return ["\(state) · \(j.touched.count) file\(j.touched.count == 1 ? "" : "s") saved, \(j.created.count) created"] + j.touched.prefix(6).map { "• " + $0 }
+            return [String(localized: "\(state) · \(j.touched.count) files saved, \(j.created.count) created")] + j.touched.prefix(6).map { "• " + $0 }
         case .unusedFiles:
             let names = (try? fm.contentsOfDirectory(atPath: url.path)) ?? []
-            return ["\(names.count) file\(names.count == 1 ? "" : "s")"] + names.prefix(6).map { "• " + $0 }
+            return [String(localized: "\(names.count) files")] + names.prefix(6).map { "• " + $0 }
         default:
             if item.path.contains("library"), let d = try? Data(contentsOf: url) {
-                if let l = try? Migrations.migrateLibrary(d).library { return ["Library with \(l.docs.count) notes and \(l.folders.count) folders"] }
-                return ["\(ByteCountFormatter.string(fromByteCount: Int64(d.count), countStyle: .file)), not readable as a library"]
+                if let l = try? Migrations.migrateLibrary(d).library { return [String(localized: "Library with \(l.docs.count) notes and \(l.folders.count) folders")] }
+                return [String(localized: "\(ByteCountFormatter.string(fromByteCount: Int64(d.count), countStyle: .file)), not readable as a library")]
             }
             return [ByteCountFormatter.string(fromByteCount: item.bytes, countStyle: .file)]
         }
@@ -155,12 +155,12 @@ public enum AssetCatalog {
     public static func kind(_ name: String) -> String {
         let ext = (name as NSString).pathExtension.lowercased()
         switch ext {
-        case "png", "jpg", "jpeg", "gif", "webp", "heic", "tiff": return "Image (\(ext.uppercased()))"
-        case "pdf": return "PDF"
-        case "mp4", "mov", "m4v": return "Video"
-        case "mp3", "m4a", "wav", "aac": return "Audio"
-        case "zip": return "Archive"
-        default: return ext.isEmpty ? "File" : ext.uppercased() + " file"
+        case "png", "jpg", "jpeg", "gif", "webp", "heic", "tiff": return String(localized: "Image (\(ext.uppercased()))")
+        case "pdf": return String(localized: "PDF")
+        case "mp4", "mov", "m4v": return String(localized: "Video")
+        case "mp3", "m4a", "wav", "aac": return String(localized: "Audio")
+        case "zip": return String(localized: "Archive")
+        default: return ext.isEmpty ? String(localized: "File") : String(localized: "\(ext.uppercased()) file")
         }
     }
 
