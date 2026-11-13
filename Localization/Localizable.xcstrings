@@ -4,6 +4,7 @@
     "": {},
     " ": {},
     "#%@": {},
+    "%@": {},
     "%@ %@": {
       "localizations": {
         "en": {
@@ -14,8 +15,32 @@
         }
       }
     },
+    "%@ (%@) isn't used by any note, template or deleted note.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "new",
+            "value": "%1$@ (%2$@) isn't used by any note, template or deleted note."
+          }
+        }
+      }
+    },
+    "%@ Nothing will be changed.": {},
     "%@ accent": {},
+    "%@ added": {},
+    "%@ changed": {},
     "%@ doesn't have this permission, so it can't be applied. Allow it in Settings › Agents, or reject it.": {},
+    "%@ file": {},
+    "%@ is used by %lld notes but isn't in assets/.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "new",
+            "value": "%1$@ is used by %2$lld notes but isn't in assets/."
+          }
+        }
+      }
+    },
     "%@ of %@": {
       "localizations": {
         "en": {
@@ -36,6 +61,7 @@
         }
       }
     },
+    "%@ removed": {},
     "%@ theme": {},
     "%@ version, %@": {
       "localizations": {
@@ -67,12 +93,32 @@
         }
       }
     },
-    "%@%@, %lld change%@%@": {
+    "%@ · %lld files saved, %lld created": {
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "new",
-            "value": "%1$@%2$@, %3$lld change%4$@%5$@"
+            "value": "%1$@ · %2$lld files saved, %3$lld created"
+          }
+        }
+      }
+    },
+    "%@ → %@": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "new",
+            "value": "%1$@ → %2$@"
+          }
+        }
+      }
+    },
+    "%@%@, %lld changes%@": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "new",
+            "value": "%1$@%2$@, %3$lld changes%4$@"
           }
         }
       }
@@ -117,6 +163,7 @@
         }
       }
     },
+    "%@, not readable as a library": {},
     "%@: %@": {
       "localizations": {
         "en": {
@@ -137,7 +184,19 @@
         }
       }
     },
+    "%@: moved to the backup.": {},
+    "%@: title changed in the library": {},
     "%lld": {},
+    "%lld %@": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "new",
+            "value": "%1$lld %2$@"
+          }
+        }
+      }
+    },
     "%lld / %lld": {
       "localizations": {
         "en": {
@@ -148,16 +207,9 @@
         }
       }
     },
-    "%lld backup%@, %@. They go to the macOS Trash, so you can still put them back from Finder.": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "new",
-            "value": "%1$lld backup%2$@, %3$@. They go to the macOS Trash, so you can still put them back from Finder."
-          }
-        }
-      }
-    },
+    "%lld attachments": {},
+    "%lld attachments this version uses are no longer on this Mac and will show as missing.": {},
+    "%lld attachments were moved out as unused; Draft puts them back.": {},
     "%lld backups · %@": {
       "localizations": {
         "en": {
@@ -168,61 +220,87 @@
         }
       }
     },
-    "%lld block%@": {
+    "%lld backups, %@. They go to the macOS Trash, so you can still put them back from Finder.": {
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "new",
-            "value": "%1$lld block%2$@"
+            "value": "%1$lld backups, %2$@. They go to the macOS Trash, so you can still put them back from Finder."
           }
         }
       }
     },
-    "%lld block%@ in %lld document%@": {
+    "%lld block ids are used twice (%@). Links to those blocks can land on the wrong one.": {
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "new",
-            "value": "%1$lld block%2$@ in %3$lld document%4$@"
+            "value": "%1$lld block ids are used twice (%2$@). Links to those blocks can land on the wrong one."
           }
         }
       }
     },
+    "%lld blocks": {},
+    "%lld blocks in %lld documents": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "new",
+            "value": "%1$lld blocks in %2$lld documents"
+          }
+        }
+      }
+    },
+    "%lld blocks that other notes link to don't exist in this version. Those links are kept and work again if you undo.": {},
     "%lld can't be read": {},
-    "%lld change%@%@": {
+    "%lld changes remove or move content": {},
+    "%lld changes%@": {
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "new",
-            "value": "%1$lld change%2$@%3$@"
+            "value": "%1$lld changes%2$@"
           }
         }
       }
     },
     "%lld copies from earlier migrations": {},
-    "%lld document%@ match “%@”": {
+    "%lld documents match “%@”": {
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "new",
-            "value": "%1$lld document%2$@ match “%3$@”"
+            "value": "%1$lld documents match “%2$@”"
           }
         }
       }
     },
     "%lld documents · plain files you own. No account, no cloud.": {},
-    "%lld item%@": {
+    "%lld files": {},
+    "%lld items": {},
+    "%lld links point to notes that no longer exist.": {},
+    "%lld matches": {},
+    "%lld min": {},
+    "%lld missing notes, %lld missing blocks. Links are kept so they work again if the target returns.": {
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "new",
-            "value": "%1$lld item%2$@"
+            "value": "%1$lld missing notes, %2$lld missing blocks. Links are kept so they work again if the target returns."
           }
         }
       }
     },
-    "%lld matches": {},
-    "%lld min": {},
+    "%lld nested pages (%@) can't be found. The card is kept so it works again if the page comes back.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "new",
+            "value": "%1$lld nested pages (%2$@) can't be found. The card is kept so it works again if the page comes back."
+          }
+        }
+      }
+    },
     "%lld notes have versions": {},
     "%lld notes have versions · oldest %@": {
       "localizations": {
@@ -254,42 +332,24 @@
         }
       }
     },
-    "%lld reminder%@ scheduled": {
+    "%lld problems: %@": {
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "new",
-            "value": "%1$lld reminder%2$@ scheduled"
+            "value": "%1$lld problems: %2$@"
           }
         }
       }
     },
-    "%lld remove%@ or move%@ content": {
+    "%lld reminders scheduled": {},
+    "%lld repairs chosen": {},
+    "%lld unused files · %@": {
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "new",
-            "value": "%1$lld remove%2$@ or move%3$@ content"
-          }
-        }
-      }
-    },
-    "%lld repair%@ chosen": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "new",
-            "value": "%1$lld repair%2$@ chosen"
-          }
-        }
-      }
-    },
-    "%lld unused file%@ · %@": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "new",
-            "value": "%1$lld unused file%2$@ · %3$@"
+            "value": "%1$lld unused files · %2$@"
           }
         }
       }
@@ -305,11 +365,13 @@
       }
     },
     ".*": {},
+    "A %@ was interrupted": {},
     "A Space has its own folders, documents, tags and tasks.": {},
     "A color was darkened or lightened so the text stays readable (4.5:1).": {},
     "A copy becomes a template in New → From Template. Later edits to either don't change the other.": {},
     "A free, open-source, local-first notes app. No account and no telemetry; nothing goes online unless you turn on image search, link previews, the Assistant's model download, or the optional OpenAI Assistant (after you review what it will send).": {},
     "A new day starts at": {},
+    "A note's id doesn't match its file name": {},
     "A private assistant for your notes": {},
     "A quiet place to write. Your notes live on this Mac.": {
       "localizations": {
@@ -339,6 +401,7 @@
     "Add Row Below (⌥⌘↓ in a table)": {},
     "Add Task": {},
     "Add a task for %@": {},
+    "Add an entry for “%@” to library.json from the note file.": {},
     "Add condition": {},
     "Add date": {},
     "Add field": {},
@@ -347,12 +410,22 @@
     "Advanced": {
       "extractionState": "manual"
     },
-    "Affects %@: %@%@": {
+    "Affects %lld notes: %@": {
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "new",
-            "value": "Affects %1$@: %2$@%3$@"
+            "value": "Affects %1$lld notes: %2$@"
+          }
+        }
+      }
+    },
+    "Affects %lld notes: %@ and %lld more": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "new",
+            "value": "Affects %1$lld notes: %2$@ and %3$lld more"
           }
         }
       }
@@ -366,6 +439,8 @@
     "All Docs": {},
     "All Spaces": {},
     "All readable": {},
+    "Already in the current format; nothing would change.": {},
+    "An image or file is missing": {},
     "Animate": {},
     "Answers come only from the notes you choose and can be wrong. Nothing leaves this Mac.": {},
     "Appearance": {
@@ -373,8 +448,13 @@
     },
     "Applied: %@": {},
     "Apply": {},
+    "Apply %lld Changes": {},
     "Apply Agent Edits": {},
+    "Apply Change": {},
+    "Apply and Delete %lld Blocks": {},
+    "Apply to %lld Notes": {},
     "Apply to This Document": {},
+    "Archive": {},
     "Ask about the notes in this Space…": {},
     "Ask about this text…": {},
     "Ask about your notes, or pick an action below.": {},
@@ -384,27 +464,35 @@
     "Assistant answer": {},
     "Assistant provider": {},
     "Attachments": {},
+    "Audio": {},
     "Automatic": {},
     "BACKGROUNDS": {},
     "Back": {},
     "Back to the style's own backdrop": {},
     "Backdrop": {},
     "Backdrop %@": {},
+    "Backdrop added": {},
+    "Backdrop changed": {},
     "Backdrop option %lld": {},
+    "Backdrop removed": {},
     "Backlinks": {},
+    "Backup": {},
     "Backup health": {},
     "Backups": {},
+    "Before a repair": {},
+    "Before a restore": {},
     "Before this hour, Today still means the previous day.": {},
-    "Before writing, Draft copies these %lld file%@ to backups/repair-<time>/. After writing it checks the vault again; if anything is wrong, every file is put back and nothing changes.": {
+    "Before updating %@ from schema %lld": {
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "new",
-            "value": "Before writing, Draft copies these %1$lld file%2$@ to backups/repair-<time>/. After writing it checks the vault again; if anything is wrong, every file is put back and nothing changes."
+            "value": "Before updating %1$@ from schema %2$lld"
           }
         }
       }
     },
+    "Before writing, Draft copies these %lld files to backups/repair-<time>/. After writing it checks the vault again; if anything is wrong, every file is put back and nothing changes.": {},
     "Block": {
       "extractionState": "manual"
     },
@@ -412,6 +500,7 @@
     "Block handle: click to select, drag to move": {
       "extractionState": "manual"
     },
+    "Block ids are kept as they were in this version, so links into unchanged blocks keep working.": {},
     "Blocks": {},
     "Blur": {},
     "Body": {
@@ -421,6 +510,7 @@
       "extractionState": "manual"
     },
     "Both start with a dry run. Rebuilding the library keeps every note's folder, Space, star, nesting and unknown fields; it only adds notes the library is missing and refreshes titles and counts from the note files.": {},
+    "Bring %@ back from backups/.": {},
     "Built in": {},
     "Bulleted List": {
       "extractionState": "manual"
@@ -476,6 +566,7 @@
     "Closed": {},
     "Closes this without deciding; review it from Edit › Review Agent Proposals": {},
     "Cloud requests use the OpenAI Responses API. Draft shows the context before each request and never stores the key in the vault.": {},
+    "Code": {},
     "Code Block": {
       "extractionState": "manual"
     },
@@ -498,6 +589,7 @@
         }
       }
     },
+    "Colors or fonts changed": {},
     "Complete Task": {},
     "Completed tasks": {},
     "Condition": {},
@@ -516,6 +608,7 @@
     "Copy Link to Block": {
       "extractionState": "manual"
     },
+    "Copy of a file Draft couldn't read": {},
     "Could not add image: %@": {},
     "Could not add “%@”: %@": {
       "localizations": {
@@ -542,9 +635,12 @@
     "Could not save a version: %@": {},
     "Could not save: %@. Your text is still open; export it to be safe.": {},
     "Could not undo: %@": {},
+    "Cover added": {},
+    "Cover changed": {},
     "Cover image": {
       "extractionState": "manual"
     },
+    "Cover removed": {},
     "Create": {},
     "Create Daily Note": {},
     "Create Link": {},
@@ -595,12 +691,12 @@
     "Delete “%@”": {},
     "Deleted documents stay here for %lld days, then are removed with their backups.": {},
     "Deleted style “%@”": {},
-    "Deleted style “%@”. %lld document%@ now use%@ %@.": {
+    "Deleted style “%@”. %lld documents now use %@.": {
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "new",
-            "value": "Deleted style “%1$@”. %2$lld document%3$@ now use%4$@ %5$@."
+            "value": "Deleted style “%1$@”. %2$lld documents now use %3$@."
           }
         }
       }
@@ -690,6 +786,7 @@
     },
     "Expand All": {},
     "Expands this section": {},
+    "Expected changes: %@": {},
     "Export All Documents…": {},
     "Export All as Markdown…": {},
     "Export CSV…": {},
@@ -724,6 +821,7 @@
     "Find in Page": {},
     "Find in page": {},
     "Focus Mode": {},
+    "Folder %@ is missing.": {},
     "Folder name": {},
     "Folder “%@” removed": {},
     "Folders": {},
@@ -733,6 +831,16 @@
       "extractionState": "manual"
     },
     "Forward": {},
+    "Found: library schema %@; notes %@": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "new",
+            "value": "Found: library schema %1$@; notes %2$@"
+          }
+        }
+      }
+    },
     "From %@ · needs “%@”": {
       "localizations": {
         "en": {
@@ -745,6 +853,7 @@
     },
     "Gallery": {},
     "Getting started": {},
+    "Give the later copies new ids in docs/%@.json; the first copy keeps its id, so existing links still work.": {},
     "Go": {},
     "Gradient color %lld of %lld": {
       "localizations": {
@@ -765,6 +874,7 @@
     "Heading": {
       "extractionState": "manual"
     },
+    "Heading %lld": {},
     "Headings and pages in this document will appear here.": {},
     "Hidden items stay reachable from the menus and Quick Open.": {},
     "Hide Sidebar": {},
@@ -777,6 +887,7 @@
       "extractionState": "manual"
     },
     "Image %@": {},
+    "Image (%@)": {},
     "Image options": {
       "extractionState": "manual"
     },
@@ -797,36 +908,18 @@
     },
     "Import failed: %@": {},
     "Import notes…": {},
-    "Imported %lld document%@": {
+    "Imported %lld documents": {},
+    "Imported %lld documents. %@": {
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "new",
-            "value": "Imported %1$lld document%2$@"
+            "value": "Imported %1$lld documents. %2$@"
           }
         }
       }
     },
-    "Imported %lld document%@. %@": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "new",
-            "value": "Imported %1$lld document%2$@. %3$@"
-          }
-        }
-      }
-    },
-    "Imported %lld item%@": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "new",
-            "value": "Imported %1$lld item%2$@"
-          }
-        }
-      }
-    },
+    "Imported %lld items": {},
     "Import…": {},
     "In Use": {},
     "Increase Contrast is on in System Settings, so effects show as one still, readable color.": {},
@@ -852,6 +945,16 @@
     "Insert Below": {},
     "Insert block": {},
     "It may have been deleted permanently or its file can't be read.": {},
+    "It was built by format %lld; this Draft uses %lld.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "new",
+            "value": "It was built by format %1$lld; this Draft uses %2$lld."
+          }
+        }
+      }
+    },
     "Italic": {
       "extractionState": "manual"
     },
@@ -865,6 +968,8 @@
         }
       }
     },
+    "Its parent %@ is not in the library, so it can't be reached from a page card.": {},
+    "Kept as they are (unknown to this Draft): %@": {},
     "Kept on this Mac: tool, note and time only, never note text. The last 1,000 entries are kept.": {},
     "Keyboard Shortcuts": {},
     "Keyboard shortcuts": {},
@@ -875,8 +980,20 @@
     "Leave Focus Mode": {},
     "Leaves the note unchanged and tells the agent": {},
     "Left as it is: %@": {},
+    "Leftover file from an interrupted save": {},
+    "Library with %lld notes and %lld folders": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "new",
+            "value": "Library with %1$lld notes and %2$lld folders"
+          }
+        }
+      }
+    },
     "License": {},
     "Limits": {},
+    "Link preview": {},
     "Link to": {
       "extractionState": "manual"
     },
@@ -885,11 +1002,14 @@
       "extractionState": "manual"
     },
     "List": {},
+    "List item": {},
     "Local model": {},
     "Local notifications on this Mac only. Turning reminders off removes every pending one.": {},
     "Location": {},
     "MY STYLES": {},
+    "Make it a top-level note in library.json.": {},
     "Mark done": {},
+    "Mark it as rolled back; it hadn't changed anything yet.": {},
     "Mark not done": {},
     "Mark “%@” done": {},
     "Mark “%@” not done": {},
@@ -946,6 +1066,9 @@
     "Move Row Down": {},
     "Move Row Up": {},
     "Move Unused Files…": {},
+    "Move assets/%@ to the repair backup.": {},
+    "Move docs/%@ to the repair backup.": {},
+    "Move it to Unsorted in library.json.": {},
     "Move or delete its documents first": {},
     "Move them to backups/? Nothing is deleted; Undo puts them back. To remove them for good, use Backups › Move to Trash.": {},
     "Move to": {},
@@ -961,22 +1084,13 @@
     "Move to Trash?": {},
     "Move to Trash…": {},
     "Move to…": {},
-    "Moved %lld backup%@ to the Trash. You can put %@ back from the Trash in Finder.": {
+    "Moved %lld backups to the Trash. You can put them back from the Trash in Finder.": {},
+    "Moved %lld blocks to “%@”": {
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "new",
-            "value": "Moved %1$lld backup%2$@ to the Trash. You can put %3$@ back from the Trash in Finder."
-          }
-        }
-      }
-    },
-    "Moved %lld block%@ to “%@”": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "new",
-            "value": "Moved %1$lld block%2$@ to “%3$@”"
+            "value": "Moved %1$lld blocks to “%2$@”"
           }
         }
       }
@@ -1010,7 +1124,9 @@
     "No API key saved": {},
     "No agent has connected yet.": {},
     "No backups of this kind yet.": {},
+    "No changes": {},
     "No document matches “%@”.": {},
+    "No fields this Draft doesn't know.": {},
     "No migration copies": {},
     "No note, template or deleted note uses them.": {},
     "No results on page": {},
@@ -1064,6 +1180,7 @@
       "extractionState": "manual"
     },
     "Overrides the document font for the selected blocks.": {},
+    "PDF": {},
     "PRESETS": {},
     "PREVIEW": {},
     "Page": {
@@ -1072,6 +1189,7 @@
     "Page Break": {
       "extractionState": "manual"
     },
+    "Page break": {},
     "Palette": {},
     "Panels and screens fade instead of moving. macOS Reduce Motion does the same.": {},
     "Paper follows dark mode": {},
@@ -1090,26 +1208,19 @@
     "Propose changes": {},
     "Provider": {},
     "Put Files Back": {},
-    "Put back %lld file%@ from before the migration. Quit Draft and open the older version to keep using them.": {
+    "Put back %lld files from before the migration. Quit Draft and open the older version to keep using them.": {},
+    "Put back %lld files into assets/.": {},
+    "Put back the %lld files from before it and remove the %lld files it created.": {
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "new",
-            "value": "Put back %1$lld file%2$@ from before the migration. Quit Draft and open the older version to keep using them."
+            "value": "Put back the %1$lld files from before it and remove the %2$lld files it created."
           }
         }
       }
     },
-    "Put back %lld file%@ into assets/.": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "new",
-            "value": "Put back %1$lld file%2$@ into assets/."
-          }
-        }
-      }
-    },
+    "Put back the %lld files from before it.": {},
     "Put back the files from before the change.": {},
     "Quick Open": {},
     "Quick Open…": {},
@@ -1125,8 +1236,10 @@
     },
     "Rebuild": {},
     "Rebuild library.json from notes": {},
+    "Rebuild library.json from the note files, keeping folders and settings from the newest readable library backup.": {},
     "Rebuild search and link index": {},
     "Rebuild the index": {},
+    "Rebuild the search and link index from the notes.": {},
     "Rebuilt the search and link index from your notes.": {},
     "Recent activity": {},
     "Recently Deleted": {},
@@ -1136,6 +1249,16 @@
     "Recovery preview": {},
     "Recovery section": {},
     "Recover…": {},
+    "Recreate docs/%@.json from the version of %@.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "new",
+            "value": "Recreate docs/%1$@.json from the version of %2$@."
+          }
+        }
+      }
+    },
     "Reduce animations": {},
     "Regular expression": {},
     "Reject": {},
@@ -1151,6 +1274,8 @@
     "Remove block color": {},
     "Remove condition": {},
     "Remove folder “%@”?": {},
+    "Remove the %lld files it created.": {},
+    "Remove the entry from library.json (it stays in the repair backup).": {},
     "Removes or moves content": {},
     "Rename": {},
     "Rename Style": {},
@@ -1159,30 +1284,12 @@
     "Repair %lld Problems": {},
     "Repair preview": {},
     "Repair: %@": {},
-    "Repaired %lld problem%@. A backup was made first.": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "new",
-            "value": "Repaired %1$lld problem%2$@. A backup was made first."
-          }
-        }
-      }
-    },
+    "Repaired %lld problems. A backup was made first.": {},
     "Replace": {},
     "Replace All": {},
     "Replace Note with Codex Draft": {},
     "Replace with": {},
-    "Replaced %lld match%@": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "new",
-            "value": "Replaced %1$lld match%2$@"
-          }
-        }
-      }
-    },
+    "Replaced %lld matches": {},
     "Replay Tour": {},
     "Reset": {},
     "Reset effect colors": {},
@@ -1190,6 +1297,7 @@
     "Restore": {},
     "Restore This Version": {},
     "Restore Version": {},
+    "Restore it from the version of %@; the damaged file is kept in the repair backup.": {},
     "Restore it to keep working, or close this tab.": {},
     "Restore this backup?": {},
     "Restored %@. The version before it was backed up.": {},
@@ -1209,6 +1317,7 @@
     "Roll Back": {},
     "Roll Back…": {},
     "Roll back": {},
+    "Roll back the interrupted change using backups/%@.": {},
     "Rounded Font": {
       "extractionState": "manual"
     },
@@ -1224,6 +1333,7 @@
     "Save as style": {},
     "Save this look as a style": {},
     "Saved a version of “%@”.": {},
+    "Saved by you": {},
     "Saved style “%@”": {},
     "Saved “%@” as a template": {},
     "Saves the backdrop, colors, font and separator so you can use them in other documents.": {},
@@ -1257,21 +1367,22 @@
     },
     "Set": {},
     "Set due date for “%@”": {},
+    "Set the id inside docs/%@.json to %@, matching its file name.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "new",
+            "value": "Set the id inside docs/%1$@.json to %2$@, matching its file name."
+          }
+        }
+      }
+    },
     "Settings": {},
     "Settings…": {},
     "Shared with Me": {},
     "Show": {},
     "Show %@": {},
-    "Show %lld more change%@": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "new",
-            "value": "Show %1$lld more change%2$@"
-          }
-        }
-      }
-    },
+    "Show %lld more changes": {},
     "Show Data Folder": {},
     "Show Data Folder in Finder": {},
     "Show Full Effects": {},
@@ -1354,6 +1465,16 @@
     "Style Panel": {},
     "Style for new documents": {},
     "Style preview: %@": {},
+    "Style: %@ → %@": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "new",
+            "value": "Style: %1$@ → %2$@"
+          }
+        }
+      }
+    },
     "Subtitle": {
       "extractionState": "manual"
     },
@@ -1386,12 +1507,14 @@
     "Tags in this Space": {},
     "Take the 1-minute Tour": {},
     "Take the Tour": {},
+    "Task": {},
     "Task list": {},
     "Tasks": {},
     "Template for new daily notes": {},
     "Templates": {
       "extractionState": "manual"
     },
+    "Text": {},
     "Text color": {},
     "Text formatting": {
       "extractionState": "manual"
@@ -1400,16 +1523,34 @@
     "That document is no longer available.": {},
     "That task is no longer in “%@”.": {},
     "The Format and Insert menus list every editor shortcut.": {},
+    "The copy migrated and read back with nothing lost (%lld notes).": {},
     "The current version of the note is saved first, so you can switch back.": {},
     "The download comes from Liquid AI's page on Hugging Face and is checked against its published checksum. After that, the Assistant works with networking turned off. You can remove the model any time in Settings → Assistant.": {},
     "The files it replaces are copied to backups/ first; Undo puts them back.": {},
     "The files this touches are copied to backups/ first. If the result doesn't check out, everything is put back.": {},
     "The letters' color; the effect keeps its own color": {},
+    "The library can't be read": {},
+    "The library is not valid JSON": {},
+    "The library lists it but docs/%@.json is missing.": {},
+    "The library was written by a newer Draft": {},
     "The linked block was removed from “%@”. Undo there or restore a backup to bring it back.": {},
     "The linked document was deleted permanently.": {},
     "The local model runs inside Draft on this Mac and does not send note content online. If you choose OpenAI API, Draft shows the exact context and conversation before every request. Chat history is saved separately by provider and Space in your vault (assistant/), and Clear History removes the selected conversation.": {},
+    "The migrated library can't be read back": {},
+    "The migrated library lost entries (%lld → %lld)": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "new",
+            "value": "The migrated library lost entries (%1$lld → %2$lld)"
+          }
+        }
+      }
+    },
     "The note as it is now is saved as a version first. Command-Z undoes the restore.": {},
     "The original text changed or isn't selected, so the result can only be inserted after the selection or cursor.": {},
+    "The search index is damaged": {},
+    "The search index is out of date": {},
     "The search index was damaged, so Draft rebuilt it from your notes. A copy of the old one is in backups/.": {},
     "The sidebar and tab strip take the open document's colors.": {},
     "Their files and automatic backups are removed from this Mac. This cannot be undone.": {},
@@ -1429,6 +1570,7 @@
     },
     "This Space": {},
     "This backup can't be restored automatically. Use Show in Finder.": {},
+    "This copy can't be read.": {},
     "This note isn't available": {},
     "This removes or moves content. Draft keeps a backup and one Undo reverses it.": {},
     "This section doesn't exist.": {},
@@ -1442,6 +1584,7 @@
     },
     "Today": {},
     "Today’s Daily Note": {},
+    "Toggle": {},
     "Toggle List": {
       "extractionState": "manual"
     },
@@ -1459,6 +1602,7 @@
       "extractionState": "manual"
     },
     "Turns off Settings › Appearance › Simplify text effects with Increase Contrast": {},
+    "Two note files claim the id %@": {},
     "Type # and a word in any document": {},
     "Underline": {
       "extractionState": "manual"
@@ -1476,7 +1620,9 @@
     "Unstar": {},
     "Untitled": {},
     "Unused %lld": {},
+    "Unused file": {},
     "Unused files": {},
+    "Unused files moved out of assets/": {},
     "Use Calmer Colors": {},
     "Use document style": {},
     "Use document style in PDF, HTML and image export": {},
@@ -1484,6 +1630,7 @@
     "Use no backdrop": {},
     "Use “%@” for new documents": {},
     "Used %lld": {},
+    "Used %lld times": {},
     "Used when the effect can't be shown, for example with Increase Contrast": {},
     "Validate": {},
     "Validate Migration": {},
@@ -1493,6 +1640,7 @@
     "Version History": {},
     "Version History…": {},
     "Versions": {},
+    "Video": {},
     "Week starts on": {},
     "Welcome and tour": {},
     "Welcome to Draft": {},
@@ -1507,19 +1655,222 @@
     "You can undo the change with ⌘Z.": {},
     "Your documents are portable JSON with Markdown export.": {},
     "Your templates": {},
+    "added": {},
+    "alignment": {},
+    "alt text": {},
     "and %lld more": {},
     "and %lld more changes": {},
     "and more in this note": {},
+    "assets/%@: copied back from %@.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "new",
+            "value": "assets/%1$@: copied back from %2$@."
+          }
+        }
+      }
+    },
+    "assets/%@: moved to the backup.": {},
+    "block color": {},
+    "block decoration": {},
+    "bold": {},
+    "caption": {},
     "checked": {},
+    "code language": {},
     "collapsed": {},
+    "date": {},
+    "docs/%@ can't be read": {},
+    "docs/%@ can't be read back after migration": {},
+    "docs/%@ is not a JSON object": {},
+    "docs/%@ is not a note. It is usually left behind when a save was interrupted.": {},
+    "docs/%@ is schema %lld; this Draft supports up to %lld.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "new",
+            "value": "docs/%1$@ is schema %2$lld; this Draft supports up to %3$lld."
+          }
+        }
+      }
+    },
+    "docs/%@.json exists but the library doesn't list it, so it doesn't appear anywhere.": {},
+    "docs/%@.json says its id is %@.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "new",
+            "value": "docs/%1$@.json says its id is %2$@."
+          }
+        }
+      }
+    },
+    "docs/%@.json: %@": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "new",
+            "value": "docs/%1$@.json: %2$@"
+          }
+        }
+      }
+    },
+    "docs/%@.json: %@ No earlier version exists; the file is left as it is.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "new",
+            "value": "docs/%1$@.json: %2$@ No earlier version exists; the file is left as it is."
+          }
+        }
+      }
+    },
+    "docs/%@.json: %lld repeated block ids renamed; first copies keep theirs.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "new",
+            "value": "docs/%1$@.json: %2$lld repeated block ids renamed; first copies keep theirs."
+          }
+        }
+      }
+    },
+    "docs/%@.json: id %@ → %@.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "new",
+            "value": "docs/%1$@.json: id %2$@ → %3$@."
+          }
+        }
+      }
+    },
+    "docs/%@.json: recreated from the version of %@.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "new",
+            "value": "docs/%1$@.json: recreated from the version of %2$@."
+          }
+        }
+      }
+    },
+    "docs/%@.json: replaced by the version of %@; the damaged file goes to the backup.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "new",
+            "value": "docs/%1$@.json: replaced by the version of %2$@; the damaged file goes to the backup."
+          }
+        }
+      }
+    },
+    "docs/%@: %@": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "new",
+            "value": "docs/%1$@: %2$@"
+          }
+        }
+      }
+    },
+    "docs/%@: block ids changed after writing": {},
+    "docs/%@: still schema %lld after migration": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "new",
+            "value": "docs/%1$@: still schema %2$lld after migration"
+          }
+        }
+      }
+    },
+    "docs/%@: text changed after writing": {},
+    "docs/%@: title changed after writing": {},
+    "document 0 → 1: schema number, appearance (style) and created/updated times are added": {},
+    "done": {},
+    "due date": {},
+    "edited": {},
     "expanded": {},
+    "folded": {},
+    "font": {},
+    "formatting changed": {},
+    "highlight": {},
+    "index/index.json can't be read. Search, backlinks and tasks rebuild from your notes; nothing in them is lost.": {},
+    "index/index.json: moved to the backup; Draft rebuilds search, backlinks and tasks from the notes.": {},
+    "inline code": {},
+    "italic": {},
+    "library 0 → 1: the document list becomes a table keyed by id; a default Space, folders and tabs are added": {},
+    "library 1 → 2: every note and folder is placed in the Space that held it": {},
+    "library.json (%lld bytes) doesn't decode: %@. Your notes are separate files and are not affected.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "new",
+            "value": "library.json (%1$lld bytes) doesn't decode: %2$@. Your notes are separate files and are not affected."
+          }
+        }
+      }
+    },
+    "library.json is missing": {},
+    "library.json is not a JSON object": {},
+    "library.json is schema %lld; this Draft supports up to %lld. Update Draft; nothing was changed.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "new",
+            "value": "library.json is schema %1$lld; this Draft supports up to %2$lld. Update Draft; nothing was changed."
+          }
+        }
+      }
+    },
     "library.json is the index, docs/ holds one JSON file per document, assets/ holds images, backups/ holds copies made before any format change. The format is documented in docs/FORMAT.md.": {},
+    "library.json: %@": {},
+    "library.json: add “%@” as a nested page of %@.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "new",
+            "value": "library.json: add “%1$@” as a nested page of %2$@."
+          }
+        }
+      }
+    },
+    "library.json: add “%@”.": {},
+    "library.json: rebuilt from %lld note files (%@).": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "new",
+            "value": "library.json: rebuilt from %1$lld note files (%2$@)."
+          }
+        }
+      }
+    },
+    "library.json: remove the entry “%@” (no file, no earlier version).": {},
+    "library.json: “%@” becomes a top-level note.": {},
+    "library.json: “%@” moves to Unsorted.": {},
+    "link": {},
     "llama.cpp, Libraries.dev, Paper Shaders, Liquid AI models": {},
+    "look": {},
+    "marked done": {},
+    "marked not done": {},
+    "moved": {},
+    "note link": {},
     "of these:": {},
     "planned": {
       "extractionState": "manual"
     },
+    "reformatted": {},
+    "removed": {},
+    "size": {},
+    "strikethrough": {},
+    "text color": {},
+    "text effect": {},
+    "title": {},
     "unchecked": {},
+    "underline": {},
     "·": {},
     "· Not saved": {},
     "· Saved": {},
@@ -1534,16 +1885,55 @@
         }
       }
     },
+    "“%@” can't be read": {},
+    "“%@” has a page card for a missing page": {},
+    "“%@” has no note file": {},
+    "“%@” has repeated block ids": {},
+    "“%@” is a nested page whose parent is gone": {},
+    "“%@” is damaged": {},
     "“%@” is in Recently Deleted": {},
     "“%@” is in Recently Deleted.": {},
+    "“%@” is in a folder that no longer exists": {},
     "“%@” is larger than 512 MB and was not added.": {},
     "“%@” isn't empty any more, so it was kept.": {},
-    "“%@” · %lld version%@ on this Mac": {
+    "“%@” isn't in the library": {},
+    "“%@” links to %lld things that can't be found": {
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "new",
-            "value": "“%1$@” · %2$lld version%3$@ on this Mac"
+            "value": "“%1$@” links to %2$lld things that can't be found"
+          }
+        }
+      }
+    },
+    "“%@” started %@ and didn't finish. The files from before it are in backups/%@.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "new",
+            "value": "“%1$@” started %2$@ and didn't finish. The files from before it are in backups/%3$@."
+          }
+        }
+      }
+    },
+    "“%@” was written by a newer Draft": {},
+    "“%@” · %lld versions on this Mac": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "new",
+            "value": "“%1$@” · %2$lld versions on this Mac"
+          }
+        }
+      }
+    },
+    "“%@” · %lld words · %lld blocks": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "new",
+            "value": "“%1$@” · %2$lld words · %3$lld blocks"
           }
         }
       }

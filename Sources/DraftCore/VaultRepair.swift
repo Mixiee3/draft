@@ -92,7 +92,8 @@ public enum VaultRepair {
             case .libraryUnreadable:
                 let rebuilt = rebuildLibrary(vault: vault, base: newestReadableLibraryBackup(vault))
                 lib = rebuilt.library
-                step(i, "library.json: rebuilt from \(rebuilt.library.docs.count) note files (\(rebuilt.changes.prefix(3).joined(separator: "; "))\(rebuilt.changes.count > 3 ? "; …" : "")).", ["library.json"])
+                let summary = rebuilt.changes.prefix(3).joined(separator: "; ") + (rebuilt.changes.count > 3 ? "; …" : "")
+                step(i, "library.json: rebuilt from \(rebuilt.library.docs.count) note files (\(summary)).", ["library.json"])
             case .docUnlisted:
                 guard lib != nil, let data = docData(i.subject), case .ok(let d, _) = VaultCheck.readDoc(data) else { p.skipped.append(i); continue }
                 var m = DocMeta(id: i.subject)

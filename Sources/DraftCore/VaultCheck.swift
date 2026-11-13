@@ -119,10 +119,10 @@ public enum VaultCheck {
             switch readDoc(data) {
             case .malformed(let why):
                 r.unreadableDocs.append(id)
-                add(.docMalformed, .critical, id, "“\(title)” is damaged", restore() == nil ? "docs/\(id).json: \(why) No earlier version exists; the file is left as it is." : "docs/\(id).json: \(why)", repair: restore(), doc: id)
+                add(.docMalformed, .critical, id, "“\(title)” is damaged", damaged(id, why, hasVersion: restore() != nil), repair: restore(), doc: id)
             case .unreadable(let why):
                 r.unreadableDocs.append(id)
-                add(.docUnreadable, .critical, id, "“\(title)” can't be read", restore() == nil ? "docs/\(id).json: \(why) No earlier version exists; the file is left as it is." : "docs/\(id).json: \(why)", repair: restore(), doc: id)
+                add(.docUnreadable, .critical, id, "“\(title)” can't be read", damaged(id, why, hasVersion: restore() != nil), repair: restore(), doc: id)
             case .newer(let why):
                 r.unreadableDocs.append(id)
                 add(.docNewer, .warning, id, "“\(title)” was written by a newer Draft", "\(why)", doc: id)
@@ -132,7 +132,7 @@ public enum VaultCheck {
                 var seen = Set<String>(), dups = Set<String>()
                 walk(raw) { n in if blockTypes.contains(n.type), let b = n.id { if !seen.insert(b).inserted { dups.insert(b) } } }
                 if !dups.isEmpty {
-                    add(.blockIdDuplicate, .warning, id, "“\(d.title.nonEmpty ?? id)” has repeated block ids", "\(dups.count) block id\(dups.count == 1 ? " is" : "s are") used twice (\(dups.sorted().prefix(3).joined(separator: ", "))). Links to those blocks can land on the wrong one.",
+                    add(.blockIdDuplicate, .warning, id, "“\(d.title.nonEmpty ?? id)” has repeated block ids", "\(dups.count) block ids are used twice (\(dups.sorted().prefix(3).joined(separator: ", "))). Links to those blocks can land on the wrong one.",
                         repair: "Give the later copies new ids in docs/\(id).json; the first copy keeps its id, so existing links still work.", doc: id)
                 }
             }
@@ -190,7 +190,7 @@ public enum VaultCheck {
             }
             if !missingDocs.isEmpty || !missingBlocks.isEmpty {
                 let n = missingDocs.count + missingBlocks.count
-                add(.linkBroken, .info, id, "“\(d.title.nonEmpty ?? id)” links to \(n == 1 ? "something" : "\(n) things") that can't be found",
+                add(.linkBroken, .info, id, "“\(d.title.nonEmpty ?? id)” links to \(n) things that can't be found",
                     "\(missingDocs.count) missing notes, \(missingBlocks.count) missing blocks. Links are kept so they work again if the target returns.", doc: id)
             }
         }
@@ -204,7 +204,7 @@ public enum VaultCheck {
         r.missingAssets = Set(users.keys).subtracting(assets).sorted()
         for a in r.missingAssets {
             let inUnused = unusedBackups(vault).contains { fm.fileExists(atPath: $0.appendingPathComponent(a).path) }
-            add(.assetMissing, .warning, a, "An image or file is missing", "\(a) is used by \(users[a]?.count ?? 0) note\(users[a]?.count == 1 ? "" : "s") but isn't in assets/.",
+            add(.assetMissing, .warning, a, "An image or file is missing", "\(a) is used by \(users[a]?.count ?? 0) notes but isn't in assets/.",
                 repair: inUnused ? "Bring \(a) back from backups/." : nil, doc: users[a]?.first)
         }
         // Unused only when every note was readable: a note that can't be read might use any file.
@@ -229,13 +229,24 @@ public enum VaultCheck {
         // Repairs or restores that never finished.
         for j in VaultRepair.openJournals(vault) {
             add(.journalOpen, .critical, j.folder.lastPathComponent, "A \(j.journal.kind) was interrupted", "“\(j.journal.summary)” started \(Date(timeIntervalSince1970: j.journal.startedAt / 1000).formatted(date: .abbreviated, time: .shortened)) and didn't finish. The files from before it are in backups/\(j.folder.lastPathComponent).",
-                repair: j.journal.touched.isEmpty && j.journal.created.isEmpty ? "Mark it as rolled back; it hadn't changed anything yet."
-                    : j.journal.created.isEmpty ? "Put back the \(j.journal.touched.count) files from before it."
-                    : j.journal.touched.isEmpty ? "Remove the \(j.journal.created.count) files it created."
-                    : "Put back the \(j.journal.touched.count) files from before it and remove the \(j.journal.created.count) files it created.")
+                repair: journalRepair(j.journal))
         }
         r.issues = issues.sorted { ($0.severity, $1.title) > ($1.severity, $0.title) }
         return r
+    }
+
+    // Plain if/else: chained ternaries of localized interpolations are very slow to type-check.
+    static func damaged(_ id: String, _ why: String, hasVersion: Bool) -> String.LocalizationValue {
+        if hasVersion { return "docs/\(id).json: \(why)" }
+        return "docs/\(id).json: \(why) No earlier version exists; the file is left as it is."
+    }
+
+    static func journalRepair(_ j: VaultRepair.Journal) -> String.LocalizationValue {
+        let put = j.touched.count, removed = j.created.count
+        if put == 0 && removed == 0 { return "Mark it as rolled back; it hadn't changed anything yet." }
+        if removed == 0 { return "Put back the \(put) files from before it." }
+        if put == 0 { return "Remove the \(removed) files it created." }
+        return "Put back the \(put) files from before it and remove the \(removed) files it created."
     }
 
     static func unusedBackups(_ vault: Vault) -> [URL] {
