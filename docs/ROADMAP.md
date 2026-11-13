@@ -18,6 +18,7 @@ migration that backs up first; unknown fields and block types are preserved.
 Legend: ✅ done · 🟡 partial · ⬜ not started
 
 ### Change log of this plan
+- **2026‑11‑13** — v0.9 Scale & Reach: long notes, separate search index, Czech and German, keyboard/IME matrix, table column reordering, performance budgets on every build, accessibility static audit, panel timing, display sizes. Six features done; keyboard/IME, accessibility and display scaling need a person for the last part (physical keyboards, VoiceOver, system Reduce Motion).
 - **2026‑11‑12 (late)** — v0.8 Trust & Recovery batch done: Vault Check with 19 problem kinds and severities; repairs with an exact preview, a backup and journal first, validation after, all-or-nothing and one Undo (also after relaunch); rebuild library from notes and rebuild index with a dry run; Version History with readable diffs and restore as one Undo step; attachment and backup browsers; migration validator with fixtures for every schema; startup recovery and Safe Mode. Found and fixed: prototype (schema 0) vaults could never migrate (two false differences in the dry run); a damaged search index was overwritten without a copy. `scripts/trust-test.sh` (41 checks) and `RecoveryPerfTests`.
 - **2026‑11‑12 (night)** — Effect presets: 8 glow, 7 shadow, 6 outline, 6 lift, 5 emboss, 8 accent, 30 gradient (2–5 stops with positions, 4 radial), 16 Spectrum palettes (5 new), 19 block presets, three new highlights, grouped Calm/Warm/Cool/Editorial/Neon/Nature/Dark/Study/Decorative, in the effect editor, the Decorations panel and `draft_formatting_guide`. Text-rendering audit on native Retina captures: body text keeps full font smoothing; Shadow, Lift and Outline defaults were too soft or heavy and were tightened; Glow and Lift keep the text color. v0.8 started: vault check and unused-file cleanup (first slice).
 - **2026‑11‑12 (evening)** — Spectrum direction was reversed (forward moved the colors left): fixed and checked from pixels in a unit test and in the running app. Six more palettes: Ember, Citrus, Forest, Glacier, Berry, Candy (11 in all; each loops without a seam, reaches at least three hues across a phrase and stays readable on every style).
@@ -502,7 +503,7 @@ interrupted write caught at the exact byte (simulated through the journal state)
 - ✅ Orphan cleanup for backups older than 30 days (manual, listed first — part of #8).
 - ⬜ Optional encryption at rest (later milestone).
 
-## v0.9 — "Scale & Reach" (macOS, started 12 Nov 2026)
+## v0.9 — "Scale & Reach" (macOS, 12–13 Nov 2026)
 
 Nine connected features on branch `feature/v0.9-scale-reach`. Rules: measure before changing working
 code (repeat runs, separate rendering cost from automation overhead); every automated test uses a
@@ -510,15 +511,15 @@ throwaway vault; the installed app is replaced only after the whole batch passes
 
 | # | Feature | Depends on | Status |
 |---|---|---|---|
-| 6 | Performance budgets in every build (`scripts/budgets.sh`: repeated runs, median-of-runs, machine and display report, history in `perf-history/`) | — | ⬜ |
-| 8 | Panel and window performance (re-measure Style, Format, Info, Share, Version History, Recovery, Assistant, review sheet; fix only what is consistently slow) | 6 | ⬜ |
-| 1 | Very long documents (10,000 and 20,000 blocks: typing, Return, scrolling, selection, formatting, moves, outline, relaunch) | 6 | ⬜ |
-| 2 | Separate search index (`index/search.json`: blocks, phrases, regex, exclusions, tags, dates, links, versioned, stale detection, safe rebuild) | — | ⬜ |
-| 5 | Table column reordering (keyboard, menu, drag; one Undo; MCP before/after) | — | ⬜ |
-| 3 | Localization (String Catalog; English source; Czech and German; plurals; dates and numbers; spelling language) | 5 (new strings first) | ⬜ |
-| 4 | Keyboard layouts and IME (QWERTZ, AZERTY, Dvorak; Japanese and Chinese composition) | 3 | ⬜ |
-| 7 | Accessibility and keyboard reach (names, roles, values, focus order, focus rings, Reduce Motion, Increase Contrast) | 3 | ⬜ |
-| 9 | Display scaling and narrow layouts (720×640, 960×720, 1440×900; light, dark, Increase Contrast, Reduce Transparency, Reduce Motion) | 3, 7 | ⬜ |
+| 6 | Performance budgets in every build (`scripts/budgets.sh`: repeated runs, median-of-runs, machine and display report, history in `perf-history/`) | — | ✅ |
+| 8 | Panel and window performance (re-measure Style, Format, Info, Share, Version History, Recovery, Assistant, review sheet; fix only what is consistently slow) | 6 | ✅ |
+| 1 | Very long documents (10,000 and 20,000 blocks: typing, Return, scrolling, selection, formatting, moves, outline, relaunch) | 6 | ✅ |
+| 2 | Separate search index (`index/search.json`: blocks, phrases, regex, exclusions, tags, dates, links, versioned, stale detection, safe rebuild) | — | ✅ |
+| 5 | Table column reordering (keyboard, menu, drag; one Undo; MCP before/after) | — | ✅ |
+| 3 | Localization (String Catalog; English source; Czech and German; plurals; dates and numbers; spelling language) | 5 (new strings first) | ✅ |
+| 4 | Keyboard layouts and IME (QWERTZ, AZERTY, Dvorak; Japanese and Chinese composition) | 3 | 🟡 automated parts done; physical keyboards and real IMEs need a person |
+| 7 | Accessibility and keyboard reach (names, roles, values, focus order, focus rings, Reduce Motion, Increase Contrast) | 3 | 🟡 static audit and fixes; full VoiceOver/AX audit needs a person or Accessibility permission |
+| 9 | Display scaling and narrow layouts (720×640, 960×720, 1440×900; light, dark, Increase Contrast, Reduce Transparency, Reduce Motion) | 3, 7 | 🟡 three sizes, light and dark verified; Increase Contrast and Reduce Transparency are on on this Mac; system Reduce Motion not toggled |
 
 **Implementation order** is the table order: the measuring harness first (so later work is judged on
 repeated numbers), then the code-heavy features, then localization (after new strings exist), then the
@@ -559,6 +560,38 @@ input, accessibility and layout passes over everything, then screenshots and the
 **Screenshots** (`docs/screenshots/v09/`): localized UI (Czech, German), narrow layouts, a
 20,000-block note being edited, search results with block hits, table column reorder before/after,
 Version History, Trust screens with keyboard focus, accessibility audit output.
+
+**Result.**
+- *#1:* 10,000 and 20,000-block notes (15,000 and 30,000 real blocks): keystroke p95 17 ms, Return p95 15 ms,
+  scroll step p95 0.6 ms, open 0.5 s / 1.1 s, block ids unique after editing, outline memoized per saved
+  revision (4 ms at 30,000 blocks, 0 ms cached). Folding a toggle recomputes only its children
+  (tested against a full recompute). Known limit: a toggle at 30,000 blocks takes 250 ms (TextKit 1
+  relays out everything below; non-contiguous layout was tried and rejected — it broke hidden-text
+  heights).
+- *#2:* `index/search.json` with full block text, tags, dates and links; query forms tested
+  (`SearchIndexTests`, `search-perf`/`search-read` identical after relaunch); 10,000-block rebuild
+  107 ms, query p95 87 ms; damaged copies kept in backups/; versioned; never writes a note.
+- *#3:* String Catalog (`Localization/Localizable.xcstrings`, ~1,060 strings, Czech and German, plural
+  forms cs one/few/other, de/en one/other), compiled into the app by `build-app.sh`; `l10n-sync.sh`
+  extracts strings with the compiler; `l10n-check.sh` runs the app in en/cs/de at three sizes plus
+  dark, reads the screens with on-device text recognition and fails on visible English or cut-off
+  labels. Dates use the app's language with the person's region. Spelling-language setting in Editor.
+  The sample notes created on first launch stay English (content, not interface).
+- *#4:* `docs/INPUT_MATRIX.md` (47 shortcuts × US/QWERTZ/AZERTY/Dvorak from macOS's own layouts; only
+  ⌘[ and ⌘] need Option on QWERTZ/AZERTY, which macOS remaps automatically); `IMETests` (Japanese,
+  Chinese, Korean composition in Spectrum text, slash/Markdown triggers, a bold heading).
+- *#5:* ⌥⌘⇧←/→/↑/↓ and the Table menu move columns and rows with one Undo, cell ids, rich text and
+  links kept, Markdown export keeps the order, VoiceOver announces the new position. Fixed on the way:
+  deleting a row or column could overwrite the neighbouring cell with the old field's text.
+- *#6:* `scripts/budgets.sh` (3 runs, median judged, machine/display/accessibility report,
+  `perf-history/`); all budgets pass.
+- *#7:* `scripts/a11y-static.py` (no unnamed icon buttons, tap targets announced as buttons, motion
+  through Motion) — 10 findings fixed; review sheet, Version History and Recovery labels localized.
+- *#8:* repeated panel timing (cold, warm median, phases). Style/Format were never consistently slow
+  (old single cold samples); the review sheet was (174 → 36 ms render: it re-read the note and rendered
+  Markdown per block); Version History renders in 4 ms, its ~0.3 s on screen is AppKit's sheet animation.
+- *#9:* captures at 720×640, 960×720, 1440×900, light and dark, in three languages; clipped Czech and
+  German labels shortened; the History sheet fits its window.
 
 **Manual checks still needed from you** (cannot be automated here): VoiceOver speech on the Trust and
 v0.9 screens; Full Keyboard Access with real Tab presses; typing with a physical QWERTZ/AZERTY/Dvorak
