@@ -2,7 +2,9 @@
 # Builds a release of Draft. See docs/RELEASE.md for the secrets and the full procedure.
 #
 #   DRAFT_CHANNEL=stable|beta            (default stable)
-#   SIGN_IDENTITY="Developer ID Application: Name (TEAMID)"   (unset → ad-hoc signature, NOT for distribution)
+#   SIGN_IDENTITY="Developer ID Application: Name (TEAMID)"   (required; an "Apple Development" identity works for local
+#                 test releases but is not distributable. Ad hoc is refused: the hardened runtime won't load
+#                 llama.framework without a Team ID.)
 #   NOTARY_PROFILE=<keychain profile from `xcrun notarytool store-credentials`>   (unset → not notarized)
 #   UPDATE_KEY=<path to the Ed25519 private key file from scripts/update-tool.swift keygen>   (unset → no update signature)
 #   UPDATE_FEED_URL=https://…/feed.json  UPDATE_BASE_URL=https://…/downloads   (written into the app / the feed item)
@@ -21,14 +23,14 @@ APP=$OUT/Draft.app; ditto build/Draft.app "$APP"
 PL="$APP/Contents/Info.plist"
 [ -n "$PUBKEY" ] && /usr/libexec/PlistBuddy -c "Add :DraftUpdatePublicKey string $PUBKEY" "$PL"
 [ -n "${UPDATE_FEED_URL:-}" ] && /usr/libexec/PlistBuddy -c "Add :DraftUpdateFeedURL string $UPDATE_FEED_URL" "$PL"
-IDENT=${SIGN_IDENTITY:--}
+IDENT=${SIGN_IDENTITY:?set SIGN_IDENTITY (see docs/RELEASE.md); security find-identity -v -p codesigning lists yours}
 # Inside out: frameworks, then the app, with the hardened runtime and a secure timestamp.
-TS=--timestamp; [ "$IDENT" = - ] && TS=--timestamp=none
+TS=--timestamp
 for f in "$APP"/Contents/Frameworks/*; do codesign --force --options runtime $TS --sign "$IDENT" "$f"; done
 codesign --force --options runtime $TS --entitlements Release/Draft.entitlements --sign "$IDENT" "$APP"
 ZIP=$OUT/Draft-$VERSION.zip
 ditto -c -k --keepParent "$APP" "$ZIP"
-if [ -n "${NOTARY_PROFILE:-}" ] && [ "$IDENT" != - ]; then
+if [ -n "${NOTARY_PROFILE:-}" ]; then
   xcrun notarytool submit "$ZIP" --keychain-profile "$NOTARY_PROFILE" --wait
   xcrun stapler staple "$APP"
   rm "$ZIP"; ditto -c -k --keepParent "$APP" "$ZIP"   # the archive now carries the stapled ticket
