@@ -55,7 +55,7 @@ extension AppModel {
         library.userStyles.removeAll { $0.id == id }
         saveDirtyDocs()
         scheduleLibrarySave()
-        toast("Deleted style “\(u.name)”" + (n > 0 ? ". \(n) document\(n == 1 ? "" : "s") now use\(n == 1 ? "s" : "") \(Styles.style(u.base).name)." : ""))
+        toast(n > 0 ? "Deleted style “\(u.name)”. \(n) documents now use \(Styles.style(u.base).name)." : "Deleted style “\(u.name)”")
     }
 }
 

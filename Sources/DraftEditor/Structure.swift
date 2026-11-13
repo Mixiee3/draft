@@ -81,7 +81,7 @@ public final class TableEditor: NSView, NSTextFieldDelegate {
         self.controller = controller
         super.init(frame: .zero)
         setAccessibilityRole(.table)
-        setAccessibilityLabel("Table editor")
+        setAccessibilityLabel(loc("Table editor"))
     }
     required init?(coder: NSCoder) { fatalError() }
     public override var isFlipped: Bool { true }
@@ -277,7 +277,7 @@ final class CollectionCell: BlockCell {
         let symbol = c.view?.type == "kanban" ? "rectangle.split.3x1" : c.view?.type == "gallery" ? "square.grid.2x2" : "tablecells"
         NSImage(systemSymbolName: symbol, accessibilityDescription: nil)?.withSymbolConfiguration(.init(paletteColors: [theme.accentColor]))?.draw(in: NSRect(x: r.minX + 14, y: r.minY + 16, width: 18, height: 16))
         (c.name as NSString).draw(at: NSPoint(x: r.minX + 40, y: r.minY + 13), withAttributes: [.font: theme.font(size: 16, weight: .semibold), .foregroundColor: theme.text])
-        let meta = "\(c.items.count) item\(c.items.count == 1 ? "" : "s") · \(c.view?.name ?? "Table") · Open ›"
+        let meta = "\(c.items.count) items · \(c.view?.name ?? "Table") · Open ›"
         let ma: [NSAttributedString.Key: Any] = [.font: NSFont.systemFont(ofSize: 12), .foregroundColor: theme.secondary]
         let mw = (meta as NSString).size(withAttributes: ma).width
         (meta as NSString).draw(at: NSPoint(x: r.maxX - mw - 14, y: r.minY + 17), withAttributes: ma)

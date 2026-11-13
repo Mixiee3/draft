@@ -24,10 +24,10 @@ public final class ImageBar: NSView, NSTextFieldDelegate {
         layer?.masksToBounds = false
         isHidden = true
         setAccessibilityRole(.toolbar)
-        setAccessibilityLabel("Image options")
+        setAccessibilityLabel(loc("Image options"))
         size.target = self; size.action = #selector(sizeChanged)
         size.segmentStyle = .rounded
-        size.setAccessibilityLabel("Image size")
+        size.setAccessibilityLabel(loc("Image size"))
         for (i, l) in ["Small", "Medium", "Large", "Full width"].enumerated() { size.setToolTip(l, forSegment: i) }
         for (f, ph, label) in [(caption, "Caption", "Image caption"), (alt, "Alt text for VoiceOver", "Image description for VoiceOver")] {
             f.placeholderString = ph

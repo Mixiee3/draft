@@ -1,0 +1,1556 @@
+{
+  "sourceLanguage": "en",
+  "strings": {
+    "": {},
+    " ": {},
+    "#%@": {},
+    "%@ %@": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "new",
+            "value": "%1$@ %2$@"
+          }
+        }
+      }
+    },
+    "%@ accent": {},
+    "%@ doesn't have this permission, so it can't be applied. Allow it in Settings › Agents, or reject it.": {},
+    "%@ of %@": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "new",
+            "value": "%1$@ of %2$@"
+          }
+        }
+      }
+    },
+    "%@ palette, %lld colors": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "new",
+            "value": "%1$@ palette, %2$lld colors"
+          }
+        }
+      }
+    },
+    "%@ theme": {},
+    "%@ version, %@": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "new",
+            "value": "%1$@ version, %2$@"
+          }
+        }
+      }
+    },
+    "%@ · %@": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "new",
+            "value": "%1$@ · %2$@"
+          }
+        }
+      }
+    },
+    "%@ · %lld": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "new",
+            "value": "%1$@ · %2$lld"
+          }
+        }
+      }
+    },
+    "%@%@, %lld change%@%@": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "new",
+            "value": "%1$@%2$@, %3$lld change%4$@%5$@"
+          }
+        }
+      }
+    },
+    "%@, %@": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "new",
+            "value": "%1$@, %2$@"
+          }
+        }
+      }
+    },
+    "%@, %@ %@ preset": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "new",
+            "value": "%1$@, %2$@ %3$@ preset"
+          }
+        }
+      }
+    },
+    "%@, %@ block preset": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "new",
+            "value": "%1$@, %2$@ block preset"
+          }
+        }
+      }
+    },
+    "%@, in %@": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "new",
+            "value": "%1$@, in %2$@"
+          }
+        }
+      }
+    },
+    "%@: %@": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "new",
+            "value": "%1$@: %2$@"
+          }
+        }
+      }
+    },
+    "%@: %@. %@. %@": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "new",
+            "value": "%1$@: %2$@. %3$@. %4$@"
+          }
+        }
+      }
+    },
+    "%lld": {},
+    "%lld / %lld": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "new",
+            "value": "%1$lld / %2$lld"
+          }
+        }
+      }
+    },
+    "%lld backup%@, %@. They go to the macOS Trash, so you can still put them back from Finder.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "new",
+            "value": "%1$lld backup%2$@, %3$@. They go to the macOS Trash, so you can still put them back from Finder."
+          }
+        }
+      }
+    },
+    "%lld backups · %@": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "new",
+            "value": "%1$lld backups · %2$@"
+          }
+        }
+      }
+    },
+    "%lld block%@": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "new",
+            "value": "%1$lld block%2$@"
+          }
+        }
+      }
+    },
+    "%lld block%@ in %lld document%@": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "new",
+            "value": "%1$lld block%2$@ in %3$lld document%4$@"
+          }
+        }
+      }
+    },
+    "%lld can't be read": {},
+    "%lld change%@%@": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "new",
+            "value": "%1$lld change%2$@%3$@"
+          }
+        }
+      }
+    },
+    "%lld copies from earlier migrations": {},
+    "%lld document%@ match “%@”": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "new",
+            "value": "%1$lld document%2$@ match “%3$@”"
+          }
+        }
+      }
+    },
+    "%lld documents · plain files you own. No account, no cloud.": {},
+    "%lld item%@": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "new",
+            "value": "%1$lld item%2$@"
+          }
+        }
+      }
+    },
+    "%lld matches": {},
+    "%lld min": {},
+    "%lld notes have versions": {},
+    "%lld notes have versions · oldest %@": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "new",
+            "value": "%1$lld notes have versions · oldest %2$@"
+          }
+        }
+      }
+    },
+    "%lld of %lld": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "new",
+            "value": "%1$lld of %2$lld"
+          }
+        }
+      }
+    },
+    "%lld of %lld done": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "new",
+            "value": "%1$lld of %2$lld done"
+          }
+        }
+      }
+    },
+    "%lld reminder%@ scheduled": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "new",
+            "value": "%1$lld reminder%2$@ scheduled"
+          }
+        }
+      }
+    },
+    "%lld remove%@ or move%@ content": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "new",
+            "value": "%1$lld remove%2$@ or move%3$@ content"
+          }
+        }
+      }
+    },
+    "%lld repair%@ chosen": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "new",
+            "value": "%1$lld repair%2$@ chosen"
+          }
+        }
+      }
+    },
+    "%lld unused file%@ · %@": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "new",
+            "value": "%1$lld unused file%2$@ · %3$@"
+          }
+        }
+      }
+    },
+    "%lld. %@": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "new",
+            "value": "%1$lld. %2$@"
+          }
+        }
+      }
+    },
+    ".*": {},
+    "A Space has its own folders, documents, tags and tasks.": {},
+    "A color was darkened or lightened so the text stays readable (4.5:1).": {},
+    "A copy becomes a template in New → From Template. Later edits to either don't change the other.": {},
+    "A free, open-source, local-first notes app. No account and no telemetry; nothing goes online unless you turn on image search, link previews, the Assistant's model download, or the optional OpenAI Assistant (after you review what it will send).": {},
+    "A new day starts at": {},
+    "A private assistant for your notes": {},
+    "A quiet place to write. Your notes live on this Mac.": {
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Klidné místo k psaní. Vaše poznámky zůstávají v tomto Macu."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ein ruhiger Ort zum Schreiben. Deine Notizen bleiben auf diesem Mac."
+          }
+        }
+      }
+    },
+    "A small local model reads only the context you choose: a selection, the open document (very long ones are cut to what fits), or the most relevant blocks of this Space. It can misread notes or be wrong; check answers against the sources it shows.": {},
+    "API key saved in this Mac's Keychain": {},
+    "Aa": {},
+    "About Draft": {
+      "extractionState": "manual"
+    },
+    "Accent color": {},
+    "Add Color": {},
+    "Add Column After (⌥⌘→ in a table)": {},
+    "Add Row Below (⌥⌘↓ in a table)": {},
+    "Add Task": {},
+    "Add a task for %@": {},
+    "Add condition": {},
+    "Add date": {},
+    "Add field": {},
+    "Add or delete views": {},
+    "Add your own OpenAI API key in Settings → Assistant. Draft will ask you to review the exact note context before each request. Your local Assistant remains available offline.": {},
+    "Advanced": {
+      "extractionState": "manual"
+    },
+    "Affects %@: %@%@": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "new",
+            "value": "Affects %1$@: %2$@%3$@"
+          }
+        }
+      }
+    },
+    "Agents (MCP)": {
+      "extractionState": "manual"
+    },
+    "Agents such as Codex or Claude Code connect through scripts/draft-mcp.sh. They never change notes themselves: every change is a proposal you review. New agents can read and propose; destructive changes (deleting content, replacing a whole note, moving notes) stay off until you allow them.": {},
+    "All": {},
+    "All %lld": {},
+    "All Docs": {},
+    "All Spaces": {},
+    "All readable": {},
+    "Animate": {},
+    "Answers come only from the notes you choose and can be wrong. Nothing leaves this Mac.": {},
+    "Appearance": {
+      "extractionState": "manual"
+    },
+    "Applied: %@": {},
+    "Apply": {},
+    "Apply Agent Edits": {},
+    "Apply to This Document": {},
+    "Ask about the notes in this Space…": {},
+    "Ask about this text…": {},
+    "Ask about your notes, or pick an action below.": {},
+    "Assistant": {},
+    "Assistant (⌘J)": {},
+    "Assistant Settings…": {},
+    "Assistant answer": {},
+    "Assistant provider": {},
+    "Attachments": {},
+    "Automatic": {},
+    "BACKGROUNDS": {},
+    "Back": {},
+    "Back to the style's own backdrop": {},
+    "Backdrop": {},
+    "Backdrop %@": {},
+    "Backdrop option %lld": {},
+    "Backlinks": {},
+    "Backup health": {},
+    "Backups": {},
+    "Before this hour, Today still means the previous day.": {},
+    "Before writing, Draft copies these %lld file%@ to backups/repair-<time>/. After writing it checks the vault again; if anything is wrong, every file is put back and nothing changes.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "new",
+            "value": "Before writing, Draft copies these %1$lld file%2$@ to backups/repair-<time>/. After writing it checks the vault again; if anything is wrong, every file is put back and nothing changes."
+          }
+        }
+      }
+    },
+    "Block": {
+      "extractionState": "manual"
+    },
+    "Block color %@": {},
+    "Block handle: click to select, drag to move": {
+      "extractionState": "manual"
+    },
+    "Blocks": {},
+    "Blur": {},
+    "Body": {
+      "extractionState": "manual"
+    },
+    "Bold": {
+      "extractionState": "manual"
+    },
+    "Both start with a dry run. Rebuilding the library keeps every note's folder, Space, star, nesting and unknown fields; it only adds notes the library is missing and refreshes titles and counts from the note files.": {},
+    "Built in": {},
+    "Bulleted List": {
+      "extractionState": "manual"
+    },
+    "COLORS": {},
+    "Calculate": {},
+    "Calculation for %@": {},
+    "Calendar": {},
+    "Callout": {
+      "extractionState": "manual"
+    },
+    "Cancel": {},
+    "Cancel Download": {},
+    "Caption": {
+      "extractionState": "manual"
+    },
+    "Caption: %@": {},
+    "Card": {
+      "extractionState": "manual"
+    },
+    "Category": {},
+    "Changes": {},
+    "Changes applied to “%@”": {},
+    "Check & Repair": {},
+    "Check Again": {},
+    "Check Vault": {},
+    "Check Vault…": {},
+    "Check the vault for problems, repair them with a backup first, and browse versions and backups.": {},
+    "Check, repair and restore": {},
+    "Checking only reads your vault. Nothing changes until you review a repair and confirm it; the files it touches are copied to backups/ first, and Undo puts them back.": {},
+    "Checking the vault": {},
+    "Checking…": {},
+    "Checklist": {
+      "extractionState": "manual"
+    },
+    "Checklist items in this document will appear here. Type [] and a space to start one.": {},
+    "Choose a version.": {},
+    "Choose what the sidebar shows": {},
+    "Clean up backups older than 30 days": {},
+    "Clear": {},
+    "Clear Due Date": {},
+    "Clear History for This Space": {},
+    "Clear Sort": {},
+    "Clear activity": {},
+    "Click a field to sort ascending, again for descending, a third time to remove. Several fields sort in order.": {},
+    "Click to select · drag to move": {
+      "extractionState": "manual"
+    },
+    "Close": {},
+    "Close Tab": {},
+    "Close search": {},
+    "Close tab %@": {},
+    "Closed": {},
+    "Closes this without deciding; review it from Edit › Review Agent Proposals": {},
+    "Cloud requests use the OpenAI Responses API. Draft shows the context before each request and never stores the key in the vault.": {},
+    "Code Block": {
+      "extractionState": "manual"
+    },
+    "Collapse %@": {},
+    "Collapse All": {},
+    "Collapses this section": {},
+    "Collection": {
+      "extractionState": "manual"
+    },
+    "Collection name": {},
+    "Color %@": {},
+    "Color %lld": {},
+    "Color %lld of %lld": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "new",
+            "value": "Color %1$lld of %2$lld"
+          }
+        }
+      }
+    },
+    "Complete Task": {},
+    "Completed tasks": {},
+    "Condition": {},
+    "Connect OpenAI": {},
+    "Connected agents": {},
+    "Context: %@ · Model: %@": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "new",
+            "value": "Context: %1$@ · Model: %2$@"
+          }
+        }
+      }
+    },
+    "Copy Link to Block": {
+      "extractionState": "manual"
+    },
+    "Could not add image: %@": {},
+    "Could not add “%@”: %@": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "new",
+            "value": "Could not add “%1$@”: %2$@"
+          }
+        }
+      }
+    },
+    "Could not open “%@”: %@": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "new",
+            "value": "Could not open “%1$@”: %2$@"
+          }
+        }
+      }
+    },
+    "Could not record the rejection: %@": {},
+    "Could not restore: %@": {},
+    "Could not save a version: %@": {},
+    "Could not save: %@. Your text is still open; export it to be safe.": {},
+    "Could not undo: %@": {},
+    "Cover image": {
+      "extractionState": "manual"
+    },
+    "Create": {},
+    "Create Daily Note": {},
+    "Create Link": {},
+    "Creates %@ › %@": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "new",
+            "value": "Creates %1$@ › %2$@"
+          }
+        }
+      }
+    },
+    "Creates a nested page here and opens it.": {},
+    "Create…": {},
+    "Crop Cover": {},
+    "Crop area. Drag or use the arrow keys to move it.": {},
+    "Crop…": {},
+    "Current Space": {},
+    "Custom words to ignore": {},
+    "DRAFT STYLES": {},
+    "Daily Notes & Tasks": {
+      "extractionState": "manual"
+    },
+    "Daily notes": {},
+    "Daily notes are always in Calendar and Quick Open. ⇧⌘D opens today's note; there is never more than one note per day.": {},
+    "Data & Storage": {
+      "extractionState": "manual"
+    },
+    "Dates in documents": {},
+    "Default": {},
+    "Default Color": {},
+    "Default style for new documents ✓": {},
+    "Delete": {},
+    "Delete %lld documents permanently?": {},
+    "Delete Block": {
+      "extractionState": "manual"
+    },
+    "Delete Column": {},
+    "Delete Item": {},
+    "Delete Permanently": {},
+    "Delete Permanently…": {},
+    "Delete Row": {},
+    "Delete Style": {},
+    "Delete field %@": {},
+    "Delete permanently?": {},
+    "Delete this empty Space": {},
+    "Delete “%@”": {},
+    "Deleted documents stay here for %lld days, then are removed with their backups.": {},
+    "Deleted style “%@”": {},
+    "Deleted style “%@”. %lld document%@ now use%@ %@.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "new",
+            "value": "Deleted style “%1$@”. %2$lld document%3$@ now use%4$@ %5$@."
+          }
+        }
+      }
+    },
+    "Deleting blocks, replacing a whole note, moving notes": {},
+    "Destructive changes": {},
+    "Document": {},
+    "Document Font": {
+      "extractionState": "manual"
+    },
+    "Document body": {
+      "extractionState": "manual"
+    },
+    "Document sidebar pane": {},
+    "Document title": {
+      "extractionState": "manual"
+    },
+    "Documents": {},
+    "Documents in the Paper style turn dark with the app. Exports keep the light page.": {},
+    "Documents that link here appear in this list. Type [[ in another document to link to this one.": {},
+    "Done": {},
+    "Download": {},
+    "Download %@, %@": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "new",
+            "value": "Download %1$@, %2$@"
+          }
+        }
+      }
+    },
+    "Download Model (%@)": {},
+    "Download progress": {},
+    "Draft": {},
+    "Draft 0.6": {},
+    "Draft can summarize, explain and rewrite your notes, and answer questions about them, with a language model that runs entirely on this Mac. No account, no subscription, and your notes are never sent anywhere.": {},
+    "Draft can't import “%@”.": {},
+    "Draft can't open your notes safely": {},
+    "Draft copies every file before it updates its format. Rolling back puts those copies back (after backing up the current files) and opens the vault read-only so it isn't updated again.": {},
+    "Draft copies the vault to a temporary folder, updates the copy to this version's format, reads it back and compares every note, title, block id and link. The real vault is never touched.": {},
+    "Draft found a problem before opening your notes": {},
+    "Draft keeps the newest %lld automatic versions of each note (one every 10 minutes while you edit) plus every version you save yourself; notes stay in Recently Deleted for %lld days. Other backups stay until you remove them.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "new",
+            "value": "Draft keeps the newest %1$lld automatic versions of each note (one every 10 minutes while you edit) plus every version you save yourself; notes stay in Recently Deleted for %2$lld days. Other backups stay until you remove them."
+          }
+        }
+      }
+    },
+    "Draft saves a version every 10 minutes while you edit. Use Save Version Now to keep this one.": {},
+    "Draft will send “%@” to api.openverse.org and load image previews from it. Nothing else is sent.": {},
+    "Draft works fully offline. These send your search words or the pasted address to that website, only when you use them.": {},
+    "Drag the frame to reposition, the corner to resize. Arrow keys move it in small steps.": {},
+    "Due": {},
+    "Due date": {},
+    "Duplicate": {},
+    "Duplicate Block": {
+      "extractionState": "manual"
+    },
+    "Duplicated. Nested pages still open the original pages.": {},
+    "EFFECTS": {},
+    "Each Space has its own folders, documents, tags, tasks and tabs, and keeps its own theme, accent, daily-note and tag settings. Templates and styles are shared.": {},
+    "Edit": {},
+    "Editor": {
+      "extractionState": "manual"
+    },
+    "Edits, new notes and renames, shown for review": {},
+    "Effect": {},
+    "Empty Recently Deleted…": {},
+    "Every change is applied either way; this only shows them": {},
+    "Everything is in order. %lld notes and %lld attachments checked.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "new",
+            "value": "Everything is in order. %1$lld notes and %2$lld attachments checked."
+          }
+        }
+      }
+    },
+    "Expand %@": {},
+    "Expand / Collapse Toggle": {
+      "extractionState": "manual"
+    },
+    "Expand All": {},
+    "Expands this section": {},
+    "Export All Documents…": {},
+    "Export All as Markdown…": {},
+    "Export CSV…": {},
+    "Export Document as Markdown…": {},
+    "Export as Markdown…": {},
+    "Export everything": {},
+    "Export failed: %@": {},
+    "Export failed: the page could not be rendered.": {},
+    "Exported %@": {},
+    "Exported to %@.%@": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "new",
+            "value": "Exported to %1$@.%2$@"
+          }
+        }
+      }
+    },
+    "Exports include a lossless draft-export.json next to the Markdown.": {},
+    "Export…": {},
+    "Field": {},
+    "Fields": {},
+    "File": {
+      "extractionState": "manual"
+    },
+    "Filter": {},
+    "Filter (%lld)": {},
+    "Find": {},
+    "Find Next": {},
+    "Find Previous": {},
+    "Find in Page": {},
+    "Find in page": {},
+    "Focus Mode": {},
+    "Folder name": {},
+    "Folder “%@” removed": {},
+    "Folders": {},
+    "Format": {},
+    "Formatting Panel": {},
+    "Formula": {
+      "extractionState": "manual"
+    },
+    "Forward": {},
+    "From %@ · needs “%@”": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "new",
+            "value": "From %1$@ · needs “%2$@”"
+          }
+        }
+      }
+    },
+    "Gallery": {},
+    "Getting started": {},
+    "Go": {},
+    "Gradient color %lld of %lld": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "new",
+            "value": "Gradient color %1$lld of %2$lld"
+          }
+        }
+      }
+    },
+    "Gradient preview, %lld colors": {},
+    "Grid": {},
+    "Group into Page": {
+      "extractionState": "manual"
+    },
+    "Group: %@": {},
+    "Heading": {
+      "extractionState": "manual"
+    },
+    "Headings and pages in this document will appear here.": {},
+    "Hidden items stay reachable from the menus and Quick Open.": {},
+    "Hide Sidebar": {},
+    "Hide reasoning": {},
+    "Hides the preview": {},
+    "How checked items look in documents.": {},
+    "Ignore color codes": {},
+    "Ignore numbers": {},
+    "Image": {
+      "extractionState": "manual"
+    },
+    "Image %@": {},
+    "Image options": {
+      "extractionState": "manual"
+    },
+    "Image size": {
+      "extractionState": "manual"
+    },
+    "Images, links and files added to this document will appear here.": {},
+    "Import CSV…": {},
+    "Import failed for “%@”: %@": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "new",
+            "value": "Import failed for “%1$@”: %2$@"
+          }
+        }
+      }
+    },
+    "Import failed: %@": {},
+    "Import notes…": {},
+    "Imported %lld document%@": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "new",
+            "value": "Imported %1$lld document%2$@"
+          }
+        }
+      }
+    },
+    "Imported %lld document%@. %@": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "new",
+            "value": "Imported %1$lld document%2$@. %3$@"
+          }
+        }
+      }
+    },
+    "Imported %lld item%@": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "new",
+            "value": "Imported %1$lld item%2$@"
+          }
+        }
+      }
+    },
+    "Import…": {},
+    "In Use": {},
+    "Increase Contrast is on in System Settings, so effects show as one still, readable color.": {},
+    "Indent": {
+      "extractionState": "manual"
+    },
+    "Index": {},
+    "Index rebuilt from %lld documents in %@ s": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "new",
+            "value": "Index rebuilt from %1$lld documents in %2$@ s"
+          }
+        }
+      }
+    },
+    "Inline Code": {
+      "extractionState": "manual"
+    },
+    "Inline color: select text and use the highlighter in the floating bar. ⌘⇧B reapplies the last color.": {},
+    "Insert": {},
+    "Insert Below": {},
+    "Insert block": {},
+    "It may have been deleted permanently or its file can't be read.": {},
+    "Italic": {
+      "extractionState": "manual"
+    },
+    "Its %lld document%@ will move to Unsorted. No documents are deleted.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "new",
+            "value": "Its %1$lld document%2$@ will move to Unsorted. No documents are deleted."
+          }
+        }
+      }
+    },
+    "Kept on this Mac: tool, note and time only, never note text. The last 1,000 entries are kept.": {},
+    "Keyboard Shortcuts": {},
+    "Keyboard shortcuts": {},
+    "Kind": {},
+    "LIBRARY · %lld ORIGINAL SCENES, OFFLINE": {},
+    "Last reference is the most recent edit of a note that uses the file.": {},
+    "Later": {},
+    "Leave Focus Mode": {},
+    "Leaves the note unchanged and tells the agent": {},
+    "Left as it is: %@": {},
+    "License": {},
+    "Limits": {},
+    "Link to": {
+      "extractionState": "manual"
+    },
+    "Links, tags and tasks are kept in index/index.json, built from your documents. Rebuilding never changes a document.": {},
+    "Link…": {
+      "extractionState": "manual"
+    },
+    "List": {},
+    "Local model": {},
+    "Local notifications on this Mac only. Turning reminders off removes every pending one.": {},
+    "Location": {},
+    "MY STYLES": {},
+    "Mark done": {},
+    "Mark not done": {},
+    "Mark “%@” done": {},
+    "Mark “%@” not done": {},
+    "Markdown copied to the clipboard": {},
+    "Markdown files with a lossless draft-export.json": {},
+    "Match in %@: %@": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "new",
+            "value": "Match in %1$@: %2$@"
+          }
+        }
+      }
+    },
+    "Mention in %@: %@": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "new",
+            "value": "Mention in %1$@: %2$@"
+          }
+        }
+      }
+    },
+    "Message to the Assistant": {},
+    "Migration": {},
+    "Migration check": {},
+    "Migrations": {},
+    "Missing %lld": {},
+    "Model ID": {},
+    "Models are stored in %@, outside your vault, so backups and exports never include them.": {},
+    "Mono Font": {
+      "extractionState": "manual"
+    },
+    "More": {},
+    "Move %lld to Trash": {},
+    "Move Block Down": {
+      "extractionState": "manual"
+    },
+    "Move Block Up": {
+      "extractionState": "manual"
+    },
+    "Move Block to Bottom": {
+      "extractionState": "manual"
+    },
+    "Move Block to Top": {
+      "extractionState": "manual"
+    },
+    "Move Column": {},
+    "Move Column Left": {},
+    "Move Column Right": {},
+    "Move Row": {},
+    "Move Row Down": {},
+    "Move Row Up": {},
+    "Move Unused Files…": {},
+    "Move or delete its documents first": {},
+    "Move them to backups/? Nothing is deleted; Undo puts them back. To remove them for good, use Backups › Move to Trash.": {},
+    "Move to": {},
+    "Move to %@": {},
+    "Move to Backups": {},
+    "Move to New Document": {
+      "extractionState": "manual"
+    },
+    "Move to Recently Deleted": {},
+    "Move to Today’s Note": {
+      "extractionState": "manual"
+    },
+    "Move to Trash?": {},
+    "Move to Trash…": {},
+    "Move to…": {},
+    "Moved %lld backup%@ to the Trash. You can put %@ back from the Trash in Finder.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "new",
+            "value": "Moved %1$lld backup%2$@ to the Trash. You can put %3$@ back from the Trash in Finder."
+          }
+        }
+      }
+    },
+    "Moved %lld block%@ to “%@”": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "new",
+            "value": "Moved %1$lld block%2$@ to “%3$@”"
+          }
+        }
+      }
+    },
+    "Moved to %@": {},
+    "Moved “%@”%@ to Recently Deleted": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "new",
+            "value": "Moved “%1$@”%2$@ to Recently Deleted"
+          }
+        }
+      }
+    },
+    "Name": {},
+    "Nested pages": {},
+    "New": {},
+    "New Document": {},
+    "New Document in Folder": {},
+    "New Folder": {},
+    "New Item": {},
+    "New Space": {},
+    "New Space…": {},
+    "New from Template": {},
+    "New from Template…": {},
+    "New item in %@": {},
+    "Newest: %@": {},
+    "Next": {},
+    "Next Day": {},
+    "No API key saved": {},
+    "No agent has connected yet.": {},
+    "No backups of this kind yet.": {},
+    "No document matches “%@”.": {},
+    "No migration copies": {},
+    "No note, template or deleted note uses them.": {},
+    "No results on page": {},
+    "No shortcut matches “%@”.": {},
+    "No tags yet. Type # and a word in any document.": {},
+    "No templates match.": {},
+    "No versions yet": {},
+    "None": {},
+    "None yet.": {},
+    "Not applied: %@": {},
+    "Nothing changes until you apply. Draft checks that nothing changed since the agent read it, keeps a backup of any note it changes, and one Undo reverses the whole proposal.": {},
+    "Nothing has been changed. Your notes are separate files and the originals are kept. Choose how to continue.": {},
+    "Nothing here": {},
+    "Nothing here.": {},
+    "Nothing that old. The newest version of each note is always kept.": {},
+    "Nothing was changed on disk.": {},
+    "Nothing yet.": {},
+    "Numbered List": {
+      "extractionState": "manual"
+    },
+    "ONLINE (OPENVERSE)": {},
+    "Off": {},
+    "Off. Turn on in Settings → Advanced → Online to search openly licensed images.": {},
+    "On": {},
+    "On This Mac remains available without an account or network. OpenAI API is optional and uses your own API key.": {},
+    "Online (off by default)": {},
+    "Only the context and conversation shown here are sent. The API key is sent only to OpenAI for authentication; Draft does not send your whole vault.": {},
+    "Only the look changes; the dates stay the same.": {},
+    "Open": {},
+    "Open %@": {},
+    "Open Assistant Settings": {},
+    "Open Document": {},
+    "Open Read-Only": {},
+    "Open Recovery": {},
+    "Open Settings": {},
+    "Open a document or find a block…": {},
+    "Open a document, then Info → Actions → Save as Template.": {},
+    "Open as page": {},
+    "Open daily note for %@": {},
+    "Open in New Tab": {},
+    "Open in document": {},
+    "Open “%@” at this block": {},
+    "OpenAI API": {},
+    "OpenAI API · %@": {},
+    "OpenAI receives only the context you review before sending. Answers may be wrong; API usage may be billed.": {},
+    "Opens the document": {},
+    "Opens the document at this block": {},
+    "Openverse, from the backdrop picker": {},
+    "Optional. Draft asks macOS for access only when you turn this on, reads events on this Mac, and never changes them.": {},
+    "Outdent": {
+      "extractionState": "manual"
+    },
+    "Overrides the document font for the selected blocks.": {},
+    "PRESETS": {},
+    "PREVIEW": {},
+    "Page": {
+      "extractionState": "manual"
+    },
+    "Page Break": {
+      "extractionState": "manual"
+    },
+    "Palette": {},
+    "Panels and screens fade instead of moving. macOS Reduce Motion does the same.": {},
+    "Paper follows dark mode": {},
+    "Paste OpenAI API key": {},
+    "Permissions for %@": {},
+    "Pin": {},
+    "Pin to Top": {},
+    "Present": {},
+    "Presentation. Arrow keys change slides, Escape ends.": {},
+    "Presets": {},
+    "Previews for pasted web links": {},
+    "Previous Day": {},
+    "Print, or save as PDF from the print dialog": {},
+    "Print…": {},
+    "Privacy": {},
+    "Propose changes": {},
+    "Provider": {},
+    "Put Files Back": {},
+    "Put back %lld file%@ from before the migration. Quit Draft and open the older version to keep using them.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "new",
+            "value": "Put back %1$lld file%2$@ from before the migration. Quit Draft and open the older version to keep using them."
+          }
+        }
+      }
+    },
+    "Put back %lld file%@ into assets/.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "new",
+            "value": "Put back %1$lld file%2$@ into assets/."
+          }
+        }
+      }
+    },
+    "Put back the files from before the change.": {},
+    "Quick Open": {},
+    "Quick Open…": {},
+    "Quote": {
+      "extractionState": "manual"
+    },
+    "Read notes": {},
+    "Read-only": {},
+    "Read-only mode": {},
+    "Reading time": {},
+    "Reapply Last Color": {
+      "extractionState": "manual"
+    },
+    "Rebuild": {},
+    "Rebuild library.json from notes": {},
+    "Rebuild search and link index": {},
+    "Rebuild the index": {},
+    "Rebuilt the search and link index from your notes.": {},
+    "Recent activity": {},
+    "Recently Deleted": {},
+    "Recover": {},
+    "Recovered. The files from before are in backups/.": {},
+    "Recovery": {},
+    "Recovery preview": {},
+    "Recovery section": {},
+    "Recover…": {},
+    "Reduce animations": {},
+    "Regular expression": {},
+    "Reject": {},
+    "Remind me when tasks are due": {},
+    "Reminders": {},
+    "Reminders need the Draft app bundle (scripts/build-app.sh).": {},
+    "Remove": {},
+    "Remove Date": {},
+    "Remove Folder": {},
+    "Remove Folder…": {},
+    "Remove Key": {},
+    "Remove Model…": {},
+    "Remove block color": {},
+    "Remove condition": {},
+    "Remove folder “%@”?": {},
+    "Removes or moves content": {},
+    "Rename": {},
+    "Rename Style": {},
+    "Rename…": {},
+    "Repair": {},
+    "Repair %lld Problems": {},
+    "Repair preview": {},
+    "Repair: %@": {},
+    "Repaired %lld problem%@. A backup was made first.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "new",
+            "value": "Repaired %1$lld problem%2$@. A backup was made first."
+          }
+        }
+      }
+    },
+    "Replace": {},
+    "Replace All": {},
+    "Replace Note with Codex Draft": {},
+    "Replace with": {},
+    "Replaced %lld match%@": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "new",
+            "value": "Replaced %1$lld match%2$@"
+          }
+        }
+      }
+    },
+    "Replay Tour": {},
+    "Reset": {},
+    "Reset effect colors": {},
+    "Resize handle": {},
+    "Restore": {},
+    "Restore This Version": {},
+    "Restore Version": {},
+    "Restore it to keep working, or close this tab.": {},
+    "Restore this backup?": {},
+    "Restored %@. The version before it was backed up.": {},
+    "Restored the version from %@. The version before it was saved.": {},
+    "Restored “%@”": {},
+    "Restore…": {},
+    "Restoring this version changes: %@": {},
+    "Review Agent Proposals": {},
+    "Review Agent Proposals (%lld)": {},
+    "Review Recovery…": {},
+    "Review Repair…": {},
+    "Review proposed changes": {},
+    "Review the change": {},
+    "Review the text to insert": {},
+    "Review what OpenAI will receive": {},
+    "Review…": {},
+    "Roll Back": {},
+    "Roll Back…": {},
+    "Roll back": {},
+    "Rounded Font": {
+      "extractionState": "manual"
+    },
+    "Runs on this Mac · %@": {},
+    "SOURCES": {},
+    "Safe Mode": {},
+    "Save": {},
+    "Save Key": {},
+    "Save Style": {},
+    "Save Version Now": {},
+    "Save any document as a template from its Info panel (Actions → Save as Template).": {},
+    "Save as Template": {},
+    "Save as style": {},
+    "Save this look as a style": {},
+    "Saved a version of “%@”.": {},
+    "Saved style “%@”": {},
+    "Saved “%@” as a template": {},
+    "Saves the backdrop, colors, font and separator so you can use them in other documents.": {},
+    "Search": {},
+    "Search Openverse": {},
+    "Search documents": {},
+    "Search error: %@": {},
+    "Search images": {},
+    "Search keyboard shortcuts": {},
+    "Search online images": {},
+    "Search online?": {},
+    "Search openly licensed images": {},
+    "Search shortcuts": {},
+    "Search styles": {},
+    "Search templates": {},
+    "Search, backlinks, tags and tasks are rebuilt from your notes. Nothing in a note changes.": {},
+    "See the short introduction to Draft again.": {},
+    "Select Block": {
+      "extractionState": "manual"
+    },
+    "Select text to give it an effect.": {},
+    "Selection and Document work on the open document. Space searches every note in this Space and shows which ones it used.": {},
+    "Send": {},
+    "Send (Return)": {},
+    "Send to OpenAI": {},
+    "Separator": {
+      "extractionState": "manual"
+    },
+    "Serif Font": {
+      "extractionState": "manual"
+    },
+    "Set": {},
+    "Set due date for “%@”": {},
+    "Settings": {},
+    "Settings…": {},
+    "Shared with Me": {},
+    "Show": {},
+    "Show %@": {},
+    "Show %lld more change%@": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "new",
+            "value": "Show %1$lld more change%2$@"
+          }
+        }
+      }
+    },
+    "Show Data Folder": {},
+    "Show Data Folder in Finder": {},
+    "Show Full Effects": {},
+    "Show Sidebar": {},
+    "Show Welcome…": {},
+    "Show daily notes in All Docs and folders": {},
+    "Show earlier days": {},
+    "Show events from Calendar next to daily notes": {},
+    "Show in Finder": {},
+    "Show in sidebar": {},
+    "Show items matching": {},
+    "Show later days": {},
+    "Show me the folder": {},
+    "Show reasoning": {},
+    "Showing the first 8 rows and 6 columns.": {},
+    "Shows a preview and actions": {},
+    "Shows the exact difference first; backed up and undoable.": {},
+    "Sidebar": {},
+    "Simplify text effects with Increase Contrast": {},
+    "Skip Tour": {},
+    "Slide %lld of %lld": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "new",
+            "value": "Slide %1$lld of %2$lld"
+          }
+        }
+      }
+    },
+    "Sort": {},
+    "Sort (%lld)": {},
+    "Sort By": {},
+    "Source %lld: %@. %@": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "new",
+            "value": "Source %1$lld: %2$@. %3$@"
+          }
+        }
+      }
+    },
+    "Space": {
+      "extractionState": "manual"
+    },
+    "Space Settings…": {},
+    "Space: %@. Switch or create Spaces": {},
+    "Spaces": {},
+    "Star": {},
+    "Star documents to keep them close": {},
+    "Starred": {},
+    "Start Writing": {},
+    "Start from a template": {},
+    "Stats": {},
+    "Still while Reduce Motion is on.": {},
+    "Stop (⌘.)": {},
+    "Stop generating": {},
+    "Storage on disk": {},
+    "Stored on this Mac": {},
+    "Strikethrough": {
+      "extractionState": "manual"
+    },
+    "Strong": {
+      "extractionState": "manual"
+    },
+    "Struck-through text is in the note now; underlined text comes back with this version.": {},
+    "Style %@%@": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "new",
+            "value": "Style %1$@%2$@"
+          }
+        }
+      }
+    },
+    "Style Change": {},
+    "Style Gallery": {},
+    "Style Panel": {},
+    "Style for new documents": {},
+    "Style preview: %@": {},
+    "Subtitle": {
+      "extractionState": "manual"
+    },
+    "Such as #1 and #2026": {},
+    "Such as #fff and #a1b2c3": {},
+    "Summary: %lld changes%@": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "new",
+            "value": "Summary: %1$lld changes%2$@"
+          }
+        }
+      }
+    },
+    "Switch": {},
+    "Switched to %@": {},
+    "Switches how this nested page is presented.": {},
+    "System Font": {
+      "extractionState": "manual"
+    },
+    "Tab %@": {},
+    "Table": {},
+    "Table editor": {
+      "extractionState": "manual"
+    },
+    "Table of Contents": {},
+    "Tag color %@": {},
+    "Tags": {},
+    "Tags in this Space": {},
+    "Take the 1-minute Tour": {},
+    "Take the Tour": {},
+    "Task list": {},
+    "Tasks": {},
+    "Template for new daily notes": {},
+    "Templates": {
+      "extractionState": "manual"
+    },
+    "Text color": {},
+    "Text formatting": {
+      "extractionState": "manual"
+    },
+    "Text in page": {},
+    "That document is no longer available.": {},
+    "That task is no longer in “%@”.": {},
+    "The Format and Insert menus list every editor shortcut.": {},
+    "The current version of the note is saved first, so you can switch back.": {},
+    "The download comes from Liquid AI's page on Hugging Face and is checked against its published checksum. After that, the Assistant works with networking turned off. You can remove the model any time in Settings → Assistant.": {},
+    "The files it replaces are copied to backups/ first; Undo puts them back.": {},
+    "The files this touches are copied to backups/ first. If the result doesn't check out, everything is put back.": {},
+    "The letters' color; the effect keeps its own color": {},
+    "The linked block was removed from “%@”. Undo there or restore a backup to bring it back.": {},
+    "The linked document was deleted permanently.": {},
+    "The local model runs inside Draft on this Mac and does not send note content online. If you choose OpenAI API, Draft shows the exact context and conversation before every request. Chat history is saved separately by provider and Space in your vault (assistant/), and Clear History removes the selected conversation.": {},
+    "The note as it is now is saved as a version first. Command-Z undoes the restore.": {},
+    "The original text changed or isn't selected, so the result can only be inserted after the selection or cursor.": {},
+    "The search index was damaged, so Draft rebuilt it from your notes. A copy of the old one is in backups/.": {},
+    "The sidebar and tab strip take the open document's colors.": {},
+    "Their files and automatic backups are removed from this Mac. This cannot be undone.": {},
+    "Theme": {},
+    "These backups leave Draft's vault and go to the macOS Trash. They are gone for good only when you empty the Trash.": {},
+    "Third-party notices": {},
+    "This Draft link points to a document that isn't in this vault.": {},
+    "This Draft writes library schema %lld and note schema %lld.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "new",
+            "value": "This Draft writes library schema %1$lld and note schema %2$lld."
+          }
+        }
+      }
+    },
+    "This Space": {},
+    "This backup can't be restored automatically. Use Show in Finder.": {},
+    "This note isn't available": {},
+    "This removes or moves content. Draft keeps a backup and one Undo reverses it.": {},
+    "This section doesn't exist.": {},
+    "This version is the same as the note now.": {},
+    "Time": {},
+    "Time for tasks with only a date": {},
+    "Tint the app with document styles": {},
+    "Tint the app with the document's style": {},
+    "Title": {
+      "extractionState": "manual"
+    },
+    "Today": {},
+    "Today’s Daily Note": {},
+    "Toggle List": {
+      "extractionState": "manual"
+    },
+    "Tour step %lld of %lld: %@. %@": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "new",
+            "value": "Tour step %1$lld of %2$lld: %3$@. %4$@"
+          }
+        }
+      }
+    },
+    "Turn Into": {
+      "extractionState": "manual"
+    },
+    "Turns off Settings › Appearance › Simplify text effects with Increase Contrast": {},
+    "Type # and a word in any document": {},
+    "Underline": {
+      "extractionState": "manual"
+    },
+    "Undo": {},
+    "Undo Agent Change": {},
+    "Undo Agent Change: %@": {},
+    "Undo This Change…": {},
+    "Undo this change?": {},
+    "Ungroup Page": {
+      "extractionState": "manual"
+    },
+    "Unpin": {},
+    "Unsorted": {},
+    "Unstar": {},
+    "Untitled": {},
+    "Unused %lld": {},
+    "Unused files": {},
+    "Use Calmer Colors": {},
+    "Use document style": {},
+    "Use document style in PDF, HTML and image export": {},
+    "Use for New Documents": {},
+    "Use no backdrop": {},
+    "Use “%@” for new documents": {},
+    "Used %lld": {},
+    "Used when the effect can't be shown, for example with Increase Contrast": {},
+    "Validate": {},
+    "Validate Migration": {},
+    "Value": {},
+    "Vault Check": {},
+    "Vault Check, attachments, backups and migrations": {},
+    "Version History": {},
+    "Version History…": {},
+    "Versions": {},
+    "Week starts on": {},
+    "Welcome and tour": {},
+    "Welcome to Draft": {},
+    "What happened": {},
+    "When macOS Increase Contrast is on, show effects as one still, readable color: no gradients, Spectrum motion, glow, shadow or outline. Effect colors are kept readable either way.": {},
+    "Where your notes live": {},
+    "Window and motion": {},
+    "Words": {},
+    "Words that are not tags": {},
+    "Words, \"a phrase\", -exclude": {},
+    "Writing": {},
+    "You can undo the change with ⌘Z.": {},
+    "Your documents are portable JSON with Markdown export.": {},
+    "Your templates": {},
+    "and %lld more": {},
+    "and %lld more changes": {},
+    "and more in this note": {},
+    "checked": {},
+    "collapsed": {},
+    "expanded": {},
+    "library.json is the index, docs/ holds one JSON file per document, assets/ holds images, backups/ holds copies made before any format change. The format is documented in docs/FORMAT.md.": {},
+    "llama.cpp, Libraries.dev, Paper Shaders, Liquid AI models": {},
+    "of these:": {},
+    "planned": {
+      "extractionState": "manual"
+    },
+    "unchecked": {},
+    "·": {},
+    "· Not saved": {},
+    "· Saved": {},
+    "· Saving…": {},
+    "“%@” can't be opened: %@ The file is kept as it is.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "new",
+            "value": "“%1$@” can't be opened: %2$@ The file is kept as it is."
+          }
+        }
+      }
+    },
+    "“%@” is in Recently Deleted": {},
+    "“%@” is in Recently Deleted.": {},
+    "“%@” is larger than 512 MB and was not added.": {},
+    "“%@” isn't empty any more, so it was kept.": {},
+    "“%@” · %lld version%@ on this Mac": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "new",
+            "value": "“%1$@” · %2$lld version%3$@ on this Mac"
+          }
+        }
+      }
+    },
+    "• %@": {},
+    "⇧⌘D": {},
+    "⌘O": {}
+  },
+  "version": "1.0"
+}

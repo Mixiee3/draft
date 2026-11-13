@@ -62,7 +62,7 @@ public final class EditorController: NSObject, NSTextStorageDelegate, NSTextView
         textView.isVerticallyResizable = true
         textView.isHorizontallyResizable = false
         textView.autoresizingMask = [.width]
-        textView.setAccessibilityLabel("Document body")
+        textView.setAccessibilityLabel(loc("Document body"))
         layout.theme = theme
         spectrumTick()
     }

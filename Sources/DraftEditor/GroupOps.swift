@@ -175,7 +175,7 @@ extension EditorController {
         for id in ["block.body", "block.title", "block.subtitle", "block.heading", "block.strong", "block.caption", "block.quote", "block.code", "list.bullet", "list.ordered", "list.task"] {
             item(id, into: turn)
         }
-        let turnItem = NSMenuItem(title: "Turn Into", action: nil, keyEquivalent: "")
+        let turnItem = NSMenuItem(title: loc("Turn Into"), action: nil, keyEquivalent: "")
         turnItem.submenu = turn
         turnItem.image = NSImage(systemSymbolName: "arrow.triangle.2.circlepath", accessibilityDescription: nil)
         turnItem.isEnabled = !currentBlock.kind.isAttachment
@@ -193,7 +193,7 @@ extension EditorController {
         for t in targets {
             moveMenu.addItem(ClosureMenuItem(title: t.title) { [weak self] in self?.moveSelectedBlocks(toDocument: t.id) })
         }
-        let moveItem = NSMenuItem(title: "Move to", action: nil, keyEquivalent: "")
+        let moveItem = NSMenuItem(title: loc("Move to"), action: nil, keyEquivalent: "")
         moveItem.submenu = moveMenu
         moveItem.image = NSImage(systemSymbolName: "arrow.turn.up.right", accessibilityDescription: nil)
         moveItem.isEnabled = moveMenu.items.contains { $0.isEnabled && !$0.isSeparatorItem }
@@ -218,7 +218,7 @@ final class ClosureMenuItem: NSMenuItem {
     let handler: () -> Void
     init(title: String, handler: @escaping () -> Void) {
         self.handler = handler
-        super.init(title: title, action: #selector(fire), keyEquivalent: "")
+        super.init(title: loc(title), action: #selector(fire), keyEquivalent: "")
         target = self
     }
     required init(coder: NSCoder) { fatalError() }

@@ -56,7 +56,7 @@ struct VersionHistoryView: View {
         HStack(spacing: DS.s3) {
             VStack(alignment: .leading, spacing: 2) {
                 Text("Version History").font(.system(size: DS.headline, weight: .semibold)).foregroundStyle(t.text).accessibilityAddTraits(.isHeader)
-                Text("“\(model.docTitle(docId))” · \(count) version\(count == 1 ? "" : "s") on this Mac").font(.system(size: DS.footnote)).foregroundStyle(t.secondary)
+                Text("“\(model.docTitle(docId))” · \(count) versions on this Mac").font(.system(size: DS.footnote)).foregroundStyle(t.secondary)
             }
             Spacer()
             Button("Save Version Now") { model.saveVersionNow(docId) }.buttonStyle(DraftButtonStyle(compact: true)).keyboardShortcut("s", modifiers: [.command, .option]).disabled(model.readOnly != nil)
@@ -124,17 +124,17 @@ struct RestoreWarnings: View {
         VStack(alignment: .leading, spacing: DS.s2) {
             note("checkmark.shield", .green, "Block ids are kept as they were in this version, so links into unchanged blocks keep working.")
             if !check.lostLinkedBlocks.isEmpty {
-                note("link.badge.plus", .orange, "\(check.lostLinkedBlocks.count) block\(check.lostLinkedBlocks.count == 1 ? " that other notes link to doesn't" : "s that other notes link to don't") exist in this version. Those links are kept and work again if you undo.")
+                note("link.badge.plus", .orange, "\(check.lostLinkedBlocks.count) blocks that other notes link to don't exist in this version. Those links are kept and work again if you undo.")
             }
-            if !check.recoverableAssets.isEmpty { note("tray.and.arrow.up", .blue, "\(check.recoverableAssets.count) attachment\(check.recoverableAssets.count == 1 ? " was" : "s were") moved out as unused; Draft puts \(check.recoverableAssets.count == 1 ? "it" : "them") back.") }
+            if !check.recoverableAssets.isEmpty { note("tray.and.arrow.up", .blue, "\(check.recoverableAssets.count) attachments were moved out as unused; Draft puts them back.") }
             let lost = check.missingAssets.count - check.recoverableAssets.count
-            if lost > 0 { note("exclamationmark.triangle.fill", .orange, "\(lost) attachment\(lost == 1 ? " this version uses is" : "s this version uses are") no longer on this Mac and will show as missing.") }
-            if check.brokenLinks > 0 { note("link", .orange, "\(check.brokenLinks) link\(check.brokenLinks == 1 ? " points" : "s point") to notes that no longer exist.") }
+            if lost > 0 { note("exclamationmark.triangle.fill", .orange, "\(lost) attachments this version uses are no longer on this Mac and will show as missing.") }
+            if check.brokenLinks > 0 { note("link", .orange, "\(check.brokenLinks) links point to notes that no longer exist.") }
         }
         .padding(DS.s3).background(RoundedRectangle(cornerRadius: DS.rCard, style: .continuous).fill(t.card.opacity(t.dark ? 0.55 : 1)))
         .overlay(RoundedRectangle(cornerRadius: DS.rCard, style: .continuous).strokeBorder(t.line, lineWidth: 0.5))
     }
-    func note(_ s: String, _ c: Color, _ text: String) -> some View {
+    func note(_ s: String, _ c: Color, _ text: LocalizedStringKey) -> some View {
         Label { Text(text).font(.system(size: DS.footnote)).foregroundStyle(t.text).fixedSize(horizontal: false, vertical: true) } icon: { Image(systemName: s).foregroundStyle(c) }
     }
 }

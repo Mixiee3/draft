@@ -55,7 +55,7 @@ struct DocumentScreen: View {
                         Section(g == "Insert" ? "Insert" : g) {
                             ForEach(EditorCommands.all.filter { $0.group == g && (g == "Insert" || ["block.code", "list.task", "block.quote"].contains($0.id)) }) { cmd in
                                 Button { if let c = model.activeController { cmd.run(c) } } label: {
-                                    Label(cmd.plannedFor.map { "\(cmd.title) — planned \($0)" } ?? cmd.title, systemImage: cmd.symbol)
+                                    Label(cmd.plannedFor.map { "\(loc(cmd.title)) — \(loc("planned")) \($0)" } ?? loc(cmd.title), systemImage: cmd.symbol)
                                 }.disabled(cmd.plannedFor != nil)
                             }
                         }

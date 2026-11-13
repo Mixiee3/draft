@@ -206,7 +206,7 @@ struct CollectionScreen: View {
         p.allowedContentTypes = [.commaSeparatedText, .plainText]
         p.begin { r in
             guard r == .OK, let u = p.url else { return }
-            do { let n = try model.importCSV(docId, blockId, from: u, undo: undo); model.toast("Imported \(n) item\(n == 1 ? "" : "s")") } catch { model.toast("Import failed: \(error.localizedDescription)") }
+            do { let n = try model.importCSV(docId, blockId, from: u, undo: undo); model.toast("Imported \(n) items") } catch { model.toast("Import failed: \(error.localizedDescription)") }
         }
     }
 }
@@ -341,7 +341,7 @@ struct CollectionTable: View {
 
     func calcRow(_ rows: [CollectionItem]) -> some View {
         HStack(spacing: 0) {
-            Text("\(rows.count) item\(rows.count == 1 ? "" : "s")").frame(width: Self.titleWidth, alignment: .leading).padding(.leading, 12)
+            Text("\(rows.count) items").frame(width: Self.titleWidth, alignment: .leading).padding(.leading, 12)
             ForEach(fields) { f in
                 Menu {
                     ForEach(CollectionData.calculations, id: \.self) { k in Button(k.capitalized) { model.updateCollection(docId, blockId, "Calculate", undo: undo) { d in if let i = d.views.firstIndex(where: { $0.id == view.id }) { d.views[i].calc[f.id] = k } } } }

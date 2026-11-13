@@ -21,9 +21,9 @@ struct Toast: Identifiable, Equatable {
 
 struct ConfirmRequest: Identifiable {
     let id = UUID()
-    var title: String
-    var detail: String
-    var confirmLabel: String
+    var title: LocalizedStringKey
+    var detail: LocalizedStringKey
+    var confirmLabel: LocalizedStringKey
     var destructive: Bool
     var onConfirm: () -> Void
 }
@@ -954,8 +954,10 @@ final class AppModel {
 
     // MARK: Toasts
 
-    func toast(_ message: String, action: String? = nil, run: (() -> Void)? = nil) {
-        let t = Toast(message: message, actionLabel: action, action: run)
+    /// Literal messages are localized (and extracted into the String Catalog); pass user text by
+    /// interpolating it, e.g. toast("Opened “\(title)”").
+    func toast(_ message: String.LocalizationValue, action: String.LocalizationValue? = nil, run: (() -> Void)? = nil) {
+        let t = Toast(message: String(localized: message), actionLabel: action.map { String(localized: $0) }, action: run)
         // No withAnimation here: callers (a Space switch) change the whole window in the same turn,
         // and an animation transaction made SwiftUI render all of it synchronously. The toast
         // overlay animates itself.
@@ -1170,7 +1172,7 @@ final class EditorHostAdapter: EditorHost {
             let ok = model.appendBlocks(content, to: target)
             if ok {
                 let n = content.content?.count ?? 0, t = model.library.docs[target]?.title ?? ""
-                model.toast("Moved \(n) block\(n == 1 ? "" : "s") to “\(t.isEmpty ? "Untitled" : t)”", action: "Open") { [model] in model.openView(.doc(target)) }
+                model.toast("Moved \(n) blocks to “\(t.isEmpty ? "Untitled" : t)”", action: "Open") { [model] in model.openView(.doc(target)) }
             }
             return ok
         }

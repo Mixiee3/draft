@@ -220,7 +220,7 @@ struct TagView: View {
             } else {
                 ScrollView {
                     LazyVStack(alignment: .leading, spacing: 14) {
-                        Text("\(hits.count) block\(hits.count == 1 ? "" : "s") in \(byDoc.count) document\(byDoc.count == 1 ? "" : "s")").font(.system(size: DS.body)).foregroundStyle(t.secondary)
+                        Text("\(hits.count) blocks in \(byDoc.count) documents").font(.system(size: DS.body)).foregroundStyle(t.secondary)
                         ForEach(byDoc, id: \.key) { doc, items in
                             VStack(alignment: .leading, spacing: 4) {
                                 Button(model.docTitle(doc)) { model.openView(.doc(doc)) }.buttonStyle(.plain).font(.system(size: DS.body, weight: .semibold)).foregroundStyle(t.text)
@@ -255,7 +255,7 @@ struct BacklinksPane: View {
             VStack(alignment: .leading, spacing: 10) {
                 ForEach(groups, id: \.key) { src, items in
                     VStack(alignment: .leading, spacing: 3) {
-                        RailRow(icon: "doc.text", title: model.docTitle(src)) { model.openView(.doc(src), inPlace: true) }
+                        RailRow(icon: "doc.text", title: LocalizedStringKey(model.docTitle(src))) { model.openView(.doc(src), inPlace: true) }
                         let unique = items.reduce(into: [VaultIndex.Backlink]()) { acc, l in if !acc.contains(where: { $0.link.block == l.link.block }) { acc.append(l) } } // one row per mentioning block
                         ForEach(unique) { l in
                             Button { model.openDocLink(src, block: l.link.block) } label: {

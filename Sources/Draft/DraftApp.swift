@@ -80,7 +80,7 @@ struct DraftCommands: Commands {
         }
         CommandMenu("Format") {
             ForEach(EditorCommands.all.filter { $0.plannedFor == nil && $0.group != "Insert" }) { cmd in
-                let b = Button(cmd.title) { run(cmd.id) }.disabled(model.activeDocId == nil)
+                let b = Button(loc(cmd.title)) { run(cmd.id) }.disabled(model.activeDocId == nil)
                 if let k = cmd.key, let ch = k.first {
                     b.keyboardShortcut(k == "up" ? .upArrow : k == "down" ? .downArrow : KeyEquivalent(ch), modifiers: modifiers(cmd.modifiers))
                 } else { b }
@@ -106,7 +106,7 @@ struct DraftCommands: Commands {
         }
         CommandMenu("Insert") {
             ForEach(EditorCommands.all.filter { $0.group == "Insert" }) { cmd in
-                Button(cmd.plannedFor.map { "\(cmd.title) (planned \($0))" } ?? cmd.title) { run(cmd.id) }
+                Button(cmd.plannedFor.map { "\(loc(cmd.title)) (\(loc("planned")) \($0))" } ?? loc(cmd.title)) { run(cmd.id) }
                     .disabled(model.activeDocId == nil || cmd.plannedFor != nil)
             }
         }

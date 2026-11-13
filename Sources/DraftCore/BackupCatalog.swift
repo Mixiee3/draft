@@ -100,10 +100,10 @@ public enum BackupCatalog {
         case .change:
             guard let j = VaultRepair.allJournals(vault).first(where: { $0.folder.lastPathComponent == url.lastPathComponent })?.journal else { return [] }
             let state = ["done": "Applied", "undone": "Undone", "rolledBack": "Rolled back (nothing changed)", "writing": "Interrupted"][j.state] ?? j.state
-            return ["\(state) · \(j.touched.count) file\(j.touched.count == 1 ? "" : "s") saved, \(j.created.count) created"] + j.touched.prefix(6).map { "• " + $0 }
+            return ["\(state) · \(j.touched.count) files saved, \(j.created.count) created"] + j.touched.prefix(6).map { "• " + $0 }
         case .unusedFiles:
             let names = (try? fm.contentsOfDirectory(atPath: url.path)) ?? []
-            return ["\(names.count) file\(names.count == 1 ? "" : "s")"] + names.prefix(6).map { "• " + $0 }
+            return ["\(names.count) files"] + names.prefix(6).map { "• " + $0 }
         default:
             if item.path.contains("library"), let d = try? Data(contentsOf: url) {
                 if let l = try? Migrations.migrateLibrary(d).library { return ["Library with \(l.docs.count) notes and \(l.folders.count) folders"] }

@@ -138,7 +138,7 @@ public final class DraftTextView: NSTextView {
             format.image = NSImage(systemSymbolName: "textformat", accessibilityDescription: nil)
             menu.insertItem(format, at: i); i += 1
         }
-        let block = NSMenuItem(title: "Block", action: nil, keyEquivalent: "")
+        let block = NSMenuItem(title: loc("Block"), action: nil, keyEquivalent: "")
         block.image = NSImage(systemSymbolName: "square.stack", accessibilityDescription: nil)
         block.submenu = c.blockMenu()
         menu.insertItem(block, at: i); i += 1

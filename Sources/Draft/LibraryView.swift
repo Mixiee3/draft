@@ -135,7 +135,7 @@ struct EmptyLibrary: View {
     var symbol = "doc.text"
     var title = "Nothing here yet"
     var message: String
-    var body: some View { EmptyState(symbol: symbol, title: title, message: message) }
+    var body: some View { EmptyState(symbol: symbol, title: LocalizedStringKey(title), message: LocalizedStringKey(message)) }
 }
 
 // MARK: - Cards
@@ -392,7 +392,7 @@ struct SearchResults: View {
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 4) {
-                Text("\(hits.count) document\(hits.count == 1 ? "" : "s") match “\(model.librarySearch)”").font(.system(size: DS.body)).foregroundStyle(t.secondary).padding(.horizontal, 12).padding(.bottom, 6)
+                Text("\(hits.count) documents match “\(model.librarySearch)”").font(.system(size: DS.body)).foregroundStyle(t.secondary).padding(.horizontal, 12).padding(.bottom, 6)
                 ForEach(hits) { h in
                     Button { model.openSearchResult(h.meta.id) } label: {
                         HStack(alignment: .top, spacing: 12) {

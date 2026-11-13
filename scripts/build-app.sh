@@ -14,6 +14,10 @@ for b in "$BINDIR"/*.bundle; do cp -R "$b" "$APP/Contents/Resources/"; done
 mkdir -p "$APP/Contents/Frameworks"
 cp -R "$BINDIR/llama.framework" "$APP/Contents/Frameworks/"
 install_name_tool -add_rpath @executable_path/../Frameworks "$APP/Contents/MacOS/Draft" 2>/dev/null || true
+# Localizations: the String Catalog compiled to <lang>.lproj (English source, Czech, German).
+if [ -f Localization/Localizable.xcstrings ]; then
+  xcrun xcstringstool compile Localization/Localizable.xcstrings --output-directory "$APP/Contents/Resources" >/dev/null
+fi
 for t in THIRD_PARTY_NOTICES.md; do [ -f "$t" ] && cp "$t" "$APP/Contents/Resources/"; done
 if [ ! -f build/AppIcon.icns ]; then
   TMP=$(mktemp -d)
@@ -31,6 +35,9 @@ cat > "$APP/Contents/Info.plist" <<PLIST
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0"><dict>
   <key>CFBundleName</key><string>Draft</string>
+  <key>CFBundleDevelopmentRegion</key><string>en</string>
+  <key>CFBundleLocalizations</key><array><string>en</string><string>cs</string><string>de</string></array>
+  <key>CFBundleAllowMixedLocalizations</key><true/>
   <key>CFBundleDisplayName</key><string>Draft</string>
   <key>CFBundleIdentifier</key><string>org.draftnotes.Draft</string>
   <key>CFBundleExecutable</key><string>Draft</string>

@@ -137,7 +137,7 @@ extension AppModel {
         switch trigger {
         case "#":
             let tags = index.tagCounts(live: live).filter { ql.isEmpty || $0.tag.lowercased().hasPrefix(ql) }
-            var out = tags.prefix(8).map { MentionItem(kind: .tag, title: "#" + $0.tag, subtitle: "Used \($0.count) time\($0.count == 1 ? "" : "s")", symbol: "number", value: $0.tag) }
+            var out = tags.prefix(8).map { MentionItem(kind: .tag, title: "#" + $0.tag, subtitle: String(localized: "Used \($0.count) times"), symbol: "number", value: $0.tag) }
             if !q.isEmpty, !tags.contains(where: { $0.tag.lowercased() == ql }), Tags.find(in: "#" + q, rules: settings.tagRules).first?.name == q {
                 out.append(MentionItem(kind: .tag, title: "#" + q, subtitle: "New tag", symbol: "plus", value: q))
             }
@@ -283,7 +283,7 @@ extension AppModel {
             guard let self else { return }
             self.library.settings.reminders = false
             self.scheduleLibrarySave()
-            self.toast(message)
+            self.toast(String.LocalizationValue(stringLiteral: message))
         }
     }
 }

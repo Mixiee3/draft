@@ -185,12 +185,12 @@ public enum VaultCheck {
                 }
             }
             if !cards.isEmpty {
-                add(.pageCardBroken, .warning, id, "“\(d.title.nonEmpty ?? id)” has a page card for a missing page", "\(cards.count) nested page\(cards.count == 1 ? "" : "s") (\(cards.sorted().prefix(2).joined(separator: ", "))) can't be found. The card is kept so it works again if the page comes back.", doc: id)
+                add(.pageCardBroken, .warning, id, "“\(d.title.nonEmpty ?? id)” has a page card for a missing page", "\(cards.count) nested pages (\(cards.sorted().prefix(2).joined(separator: ", "))) can't be found. The card is kept so it works again if the page comes back.", doc: id)
             }
             if !missingDocs.isEmpty || !missingBlocks.isEmpty {
                 let n = missingDocs.count + missingBlocks.count
                 add(.linkBroken, .info, id, "“\(d.title.nonEmpty ?? id)” links to \(n == 1 ? "something" : "\(n) things") that can't be found",
-                    "\(missingDocs.count) missing note\(missingDocs.count == 1 ? "" : "s"), \(missingBlocks.count) missing block\(missingBlocks.count == 1 ? "" : "s"). Links are kept so they work again if the target returns.", doc: id)
+                    "\(missingDocs.count) missing notes, \(missingBlocks.count) missing blocks. Links are kept so they work again if the target returns.", doc: id)
             }
         }
         // Assets.
@@ -228,8 +228,8 @@ public enum VaultCheck {
         // Repairs or restores that never finished.
         for j in VaultRepair.openJournals(vault) {
             add(.journalOpen, .critical, j.folder.lastPathComponent, "A \(j.journal.kind) was interrupted", "“\(j.journal.summary)” started \(Date(timeIntervalSince1970: j.journal.startedAt / 1000).formatted(date: .abbreviated, time: .shortened)) and didn't finish. The files from before it are in backups/\(j.folder.lastPathComponent).",
-                repair: [j.journal.touched.isEmpty ? nil : "put back the \(j.journal.touched.count) file\(j.journal.touched.count == 1 ? "" : "s") from before it",
-                         j.journal.created.isEmpty ? nil : "remove the \(j.journal.created.count) file\(j.journal.created.count == 1 ? "" : "s") it created"]
+                repair: [j.journal.touched.isEmpty ? nil : "put back the \(j.journal.touched.count) files from before it",
+                         j.journal.created.isEmpty ? nil : "remove the \(j.journal.created.count) files it created"]
                     .compactMap { $0 }.joined(separator: " and ").capitalizedFirst.nonEmpty.map { $0 + "." } ?? "Mark it as rolled back; it hadn't changed anything yet.")
         }
         r.issues = issues.sorted { ($0.severity, $1.title) > ($1.severity, $0.title) }

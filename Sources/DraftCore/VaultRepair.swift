@@ -143,7 +143,7 @@ public enum VaultRepair {
                 let changed = zip(before, after).filter { $0 != $1 }.count
                 guard let enc = try? DraftJSON.encode(d) else { p.skipped.append(i); continue }
                 p.writes["docs/\(i.subject).json"] = enc
-                step(i, "docs/\(i.subject).json: \(changed) repeated block id\(changed == 1 ? "" : "s") renamed; first copies keep theirs.", ["docs/\(i.subject).json"])
+                step(i, "docs/\(i.subject).json: \(changed) repeated block ids renamed; first copies keep theirs.", ["docs/\(i.subject).json"])
             case .tempFile:
                 p.writes[i.subject] = .some(nil)
                 step(i, "\(i.subject): moved to the backup.", [i.subject])

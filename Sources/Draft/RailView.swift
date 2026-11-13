@@ -58,7 +58,7 @@ struct RailView: View {
 struct RailRow: View {
     @Environment(\.tokens) var t
     var icon: String
-    var title: String
+    var title: LocalizedStringKey
     var isSelected = false
     var indent: CGFloat = 0
     var trailing: AnyView? = nil
@@ -68,7 +68,7 @@ struct RailRow: View {
     var body: some View {
         HStack(spacing: 8) {
             Image(systemName: icon).font(.system(size: DS.body)).frame(width: 18).foregroundStyle(tint ?? t.secondary)
-            Text(title.isEmpty ? "Untitled" : title).font(.system(size: DS.body)).lineLimit(1).foregroundStyle(t.text)
+            Text(title).font(.system(size: DS.body)).lineLimit(1).foregroundStyle(t.text)
             Spacer(minLength: 0)
             trailing
         }
@@ -85,7 +85,7 @@ struct RailRow: View {
 
 struct SectionHeader: View {
     @Environment(\.tokens) var t
-    var title: String
+    var title: LocalizedStringKey
     var action: (() -> Void)? = nil
     var actionLabel = ""
     var body: some View {
@@ -162,7 +162,7 @@ struct LibraryRail: View {
                 Text("Star documents to keep them close").font(.system(size: DS.footnote)).italic().foregroundStyle(t.tertiary).padding(.horizontal, 10).padding(.vertical, 4)
             }
             ForEach(starred) { m in
-                RailRow(icon: "star.fill", title: m.title, isSelected: model.activeDocId == m.id) { model.openView(.doc(m.id)) }
+                RailRow(icon: "star.fill", title: LocalizedStringKey(m.title.isEmpty ? "Untitled" : m.title), isSelected: model.activeDocId == m.id) { model.openView(.doc(m.id)) }
             }
     }
 
@@ -188,7 +188,7 @@ struct LibraryRail: View {
                 Text("Type # and a word in any document").font(.system(size: DS.footnote)).italic().foregroundStyle(t.tertiary).padding(.horizontal, 10).padding(.vertical, 4)
             }
             ForEach(tags, id: \.tag) { tag in
-                RailRow(icon: "number", title: tag.tag, isSelected: v.kind == "tag" && v.section?.lowercased() == tag.tag.lowercased(),
+                RailRow(icon: "number", title: LocalizedStringKey(tag.tag), isSelected: v.kind == "tag" && v.section?.lowercased() == tag.tag.lowercased(),
                         trailing: AnyView(Text("\(tag.count)").font(.system(size: DS.caption)).foregroundStyle(t.tertiary)), tint: Color(hex: model.tagColor(tag.tag))) {
                     model.openView(ViewRef(kind: "tag", section: tag.tag))
                 }
@@ -204,7 +204,7 @@ struct LibraryRail: View {
                 .onAppear { renameText = f.name }
                 .onExitCommand { model.renamingFolder = nil }
         } else {
-            RailRow(icon: expanded ? "folder.fill" : "folder", title: f.name, isSelected: v.kind == "folder" && v.folderId == f.id,
+            RailRow(icon: expanded ? "folder.fill" : "folder", title: LocalizedStringKey(f.name), isSelected: v.kind == "folder" && v.folderId == f.id,
                     trailing: AnyView(Button { model.toggleExpanded(f.id) } label: {
                         Image(systemName: "chevron.right").font(.system(size: DS.micro, weight: .bold)).rotationEffect(.degrees(expanded ? 90 : 0)).frame(width: 18, height: 18)
                     }.buttonStyle(.plain).foregroundStyle(t.tertiary).accessibilityLabel(expanded ? "Collapse \(f.name)" : "Expand \(f.name)"))) {
@@ -218,7 +218,7 @@ struct LibraryRail: View {
             }
             if expanded {
                 ForEach(model.docsByFolder[f.id] ?? []) { m in
-                    RailRow(icon: "doc.text", title: m.title, isSelected: model.activeDocId == m.id, indent: 18) { model.openView(.doc(m.id)) }
+                    RailRow(icon: "doc.text", title: LocalizedStringKey(m.title.isEmpty ? "Untitled" : m.title), isSelected: model.activeDocId == m.id, indent: 18) { model.openView(.doc(m.id)) }
                 }
             }
         }
@@ -314,13 +314,13 @@ struct SaveBadge: View {
 
 struct PaneTitle: View {
     @Environment(\.tokens) var t
-    var title: String
+    var title: LocalizedStringKey
     var body: some View { Text(title).font(.system(size: DS.body, weight: .semibold)).foregroundStyle(t.text).padding(.horizontal, 16).padding(.bottom, 6) }
 }
 
 struct EmptyHint: View {
     @Environment(\.tokens) var t
-    var text: String
+    var text: LocalizedStringKey
     var body: some View { Text(text).font(.system(size: DS.footnote)).foregroundStyle(t.secondary).padding(.horizontal, 16).fixedSize(horizontal: false, vertical: true) }
 }
 
@@ -336,7 +336,7 @@ struct OutlinePane: View {
         ScrollView {
             LazyVStack(alignment: .leading, spacing: 1) {
                 ForEach(items) { it in
-                    RailRow(icon: it.kind == "page" ? "doc.text" : "number", title: it.text, indent: CGFloat(it.kind == "page" ? 8 : (it.level - 1) * 12)) {
+                    RailRow(icon: it.kind == "page" ? "doc.text" : "number", title: LocalizedStringKey(it.text), indent: CGFloat(it.kind == "page" ? 8 : (it.level - 1) * 12)) {
                         if it.kind == "page", let d = it.docId { model.openView(.doc(d), inPlace: true) }
                         else { model.editors[docId]?.controller.scrollTo(blockId: it.id) }
                     }
@@ -437,7 +437,7 @@ struct FindPane: View {
                 TextField("Replace with", text: $replacement).textFieldStyle(.plain).padding(8).background(RoundedRectangle(cornerRadius: DS.rControl).fill(t.hover))
                 HStack {
                     Button("Replace") { c?.replace(query: model.findQuery, with: replacement, all: false); model.findCount = c?.findMatches.count ?? 0 }.disabled(model.findCount == 0)
-                    Button("Replace All") { let n = c?.replace(query: model.findQuery, with: replacement, all: true) ?? 0; model.findCount = c?.findMatches.count ?? 0; model.toast("Replaced \(n) match\(n == 1 ? "" : "es")") }.disabled(model.findCount == 0)
+                    Button("Replace All") { let n = c?.replace(query: model.findQuery, with: replacement, all: true) ?? 0; model.findCount = c?.findMatches.count ?? 0; model.toast("Replaced \(n) matches") }.disabled(model.findCount == 0)
                 }.controlSize(.small)
             }
             HStack {
