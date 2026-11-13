@@ -8,7 +8,7 @@ CONFIG="${1:-release}"
 VERSION=$(tr -d ' \n' < VERSION)
 BUILD=$(git rev-list --count HEAD 2>/dev/null || echo 1)
 CHANNEL=${DRAFT_CHANNEL:-development}
-swift build -c "$CONFIG" --product Draft
+swift build -j "${JOBS:-2}" -c "$CONFIG" --product Draft
 BIN="$(swift build -c "$CONFIG" --show-bin-path)/Draft"
 APP=build/Draft.app
 rm -rf "$APP"
