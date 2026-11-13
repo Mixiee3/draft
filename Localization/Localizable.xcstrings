@@ -3537,7 +3537,7 @@
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Hinweisbox"
+            "value": "Hinweis"
           }
         }
       }
@@ -3586,7 +3586,7 @@
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Bildunterschrift"
+            "value": "Legende"
           }
         }
       }
@@ -5003,7 +5003,7 @@
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Tagesnotizen & Aufgaben"
+            "value": "Tage & Aufgaben"
           }
         }
       }
@@ -5503,13 +5503,13 @@
         "cs": {
           "stringUnit": {
             "state": "translated",
-            "value": "Dokument"
+            "value": "Dok"
           }
         },
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Dokument"
+            "value": "Dok"
           }
         }
       }
@@ -13726,6 +13726,23 @@
           "stringUnit": {
             "state": "translated",
             "value": "Teilen"
+          }
+        }
+      }
+    },
+    "Share and export": {
+      "extractionState": "manual",
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sdílet a exportovat"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Teilen und exportieren"
           }
         }
       }

@@ -422,7 +422,7 @@ struct PillButton: View {
         Button(action: action) {
             HStack(spacing: 5) {
                 Image(systemName: symbol).font(.system(size: DS.body, weight: .medium))
-                if let text { Text(text).font(.system(size: DS.body, weight: .medium)) }
+                if let text { Text(loc(text)).font(.system(size: DS.body, weight: .medium)) }
             }
             .padding(.horizontal, text == nil ? 0 : 10)
             .frame(minWidth: 32, minHeight: 30)
@@ -432,8 +432,8 @@ struct PillButton: View {
         .buttonStyle(.plain)
         .foregroundStyle(fg)
         .onHover { hover = $0 }
-        .help(label)
-        .accessibilityLabel(label)
+        .help(loc(label))
+        .accessibilityLabel(loc(label))
         .accessibilityAddTraits(isActive ? .isSelected : [])
     }
 }
