@@ -105,6 +105,7 @@ extension Automation {
                 guard l.hasSuffix("…") || l.hasSuffix("..."), l.count > 3 else { return nil }
                 let head = String(l.dropLast(l.hasSuffix("…") ? 1 : 3)).trimmingCharacters(in: .whitespaces)
                 if table.contains(head + "…") { return nil } // the label itself ends with an ellipsis
+                if lang == "en" { return nil } // shortcut: English has no table to compare against; English layouts are checked on screenshots
                 return table.contains { $0.hasPrefix(head) && $0.count > head.count + 1 && !$0.hasSuffix("…") } ? l : nil
             }
             let controls: Set<String> = ["AXButton", "AXCheckBox", "AXRadioButton", "AXPopUpButton", "AXMenuButton", "AXTextField", "AXSlider", "AXComboBox"]
