@@ -90,6 +90,12 @@ extension AppModel {
         setSettings { $0.lastSeenVersion = updates.version }
     }
 
+    /// Where backup archives go by default: ~/Documents/Draft Backups (next to the vault in tests).
+    func defaultBackupFolder() -> URL {
+        if let d = ProcessInfo.processInfo.environment["DRAFT_DATA_DIR"], !d.isEmpty { return URL(fileURLWithPath: d).deletingLastPathComponent().appendingPathComponent("Draft Backups") }
+        return FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0].appendingPathComponent("Draft Backups")
+    }
+
     /// Relaunches this app in Safe Mode (read-only).
     func relaunchInSafeMode() {
         flushAll()
