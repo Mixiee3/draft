@@ -87,6 +87,7 @@ final class AppModel {
     @ObservationIgnored var lastEditAt: Date?
     @ObservationIgnored let sessionStart = Date()
     var whatsNew = false
+    var reportProblem = false
     /// The last time a note reached the disk (shown after a crash and in Report a Problem).
     var lastSaveAt: Date?
     var panel: Panel?

@@ -6,7 +6,7 @@ enum SettingsSections {
     static let all: [(id: String, title: String, icon: String)] = [
         ("appearance", "Appearance", "paintpalette"), ("editor", "Editor", "text.cursor"), ("space", "Space", "square.on.circle"),
         ("daily", "Daily Notes & Tasks", "calendar"), ("tags", "Tags", "number"), ("templates", "Templates", "doc.on.doc"),
-        ("assistant", "Assistant", "sparkle"), ("agents", "Agents (MCP)", "person.badge.key"), ("advanced", "Advanced", "slider.horizontal.3"), ("data", "Data & Storage", "internaldrive"), ("recovery", "Recovery", "cross.case"),
+        ("assistant", "Assistant", "sparkle"), ("agents", "Agents (MCP)", "person.badge.key"), ("advanced", "Advanced", "slider.horizontal.3"), ("data", "Data & Storage", "internaldrive"), ("recovery", "Recovery", "cross.case"), ("privacy", "Privacy", "hand.raised"), ("updates", "Updates", "arrow.down.circle"), ("help", "Help", "questionmark.circle"),
         ("stats", "Stats", "chart.bar"), ("about", "About Draft", "info.circle"),
     ]
     static func title(_ id: String) -> String { loc(all.first { $0.id == id }?.title ?? "Settings") }
@@ -87,6 +87,9 @@ struct SettingsView: View {
         case "stats": stats
         case "data": data
         case "recovery": RecoveryView()
+        case "privacy": PrivacyView()
+        case "updates": UpdateSettings()
+        case "help": HelpView()
         case "about": about
         default: EmptyState(symbol: "questionmark.circle", title: "Nothing here", message: "This section doesn't exist.")
         }
@@ -307,6 +310,7 @@ struct SettingsView: View {
                     Button("Export…") { model.exportAll() }.buttonStyle(DraftButtonStyle(compact: true))
                 }
             }
+            BackupArchiveSection()
             SettingsSection(title: "Recovery", footer: "Check the vault for problems, repair them with a backup first, and browse versions and backups.") {
                 SettingsRow(title: "Check, repair and restore", detail: "Vault Check, attachments, backups and migrations") {
                     Button("Open Recovery") { model.showSettings("recovery") }.buttonStyle(DraftButtonStyle(compact: true))

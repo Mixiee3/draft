@@ -153,6 +153,12 @@ struct DraftCommands: Commands {
         CommandGroup(after: .appInfo) {
             Button("Check for Updates…") { model.updates.sheet = true; Task { await model.updates.check(manual: true, settings: model.library.settings) } }
         }
+        CommandGroup(replacing: .help) {
+            Button("Draft Help") { model.showSettings("help") }.keyboardShortcut("?", modifiers: [.command])
+            Button("Report a Problem…") { model.reportProblem = true }
+            Divider()
+            Button("Restart in Safe Mode") { model.relaunchInSafeMode() }
+        }
         CommandGroup(replacing: .appSettings) {
             Button("Settings…") { model.openView(ViewRef(kind: "settings", section: "appearance")) }.keyboardShortcut(",")
         }
