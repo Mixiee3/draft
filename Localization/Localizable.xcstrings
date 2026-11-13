@@ -2954,6 +2954,23 @@
         }
       }
     },
+    "Automatic lets macOS pick the language of each paragraph.": {
+      "extractionState": "manual",
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Automaticky nechá macOS určit jazyk každého odstavce."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Automatisch lässt macOS die Sprache jedes Absatzes erkennen."
+          }
+        }
+      }
+    },
     "BACKGROUNDS": {
       "localizations": {
         "cs": {
@@ -11181,7 +11198,7 @@
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Veröffentlichen"
+            "value": "Online"
           }
         }
       }
@@ -14387,6 +14404,23 @@
         }
       }
     },
+    "Spelling language": {
+      "extractionState": "manual",
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Jazyk kontroly pravopisu"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sprache der Rechtschreibung"
+          }
+        }
+      }
+    },
     "Ss": {
       "extractionState": "manual",
       "localizations": {
@@ -16095,7 +16129,7 @@
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Übertragen"
+            "value": "Senden"
           }
         }
       }

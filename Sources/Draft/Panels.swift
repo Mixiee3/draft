@@ -621,7 +621,7 @@ struct SharePanel: View {
                     exportRow("doc.text", "Word — later", enabled: false) {}
                     exportRow("envelope", "E-mail — v1.x", enabled: false) {}
                 }
-                Text("Exports include a lossless draft-export.json next to the Markdown.").font(.system(size: DS.caption)).foregroundStyle(t.tertiary)
+                Text("Exports include a lossless draft-export.json next to the Markdown.").font(.system(size: DS.caption)).foregroundStyle(t.tertiary).fixedSize(horizontal: false, vertical: true)
             }
         }.padding(16)
     }

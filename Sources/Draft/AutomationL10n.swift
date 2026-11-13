@@ -49,11 +49,20 @@ extension Automation {
         let env = ProcessInfo.processInfo.environment
         let narrow = env["AUDIT_NARROW"] != nil, dark = env["AUDIT_DARK"] != nil
         let lang = Bundle.main.preferredLocalizations.first ?? "en"
-        let p = lang + "-" + (narrow ? "narrow-" : "") + (dark ? "dark-" : "")
-        w.setFrame(NSRect(x: 40, y: 40, width: narrow ? 720 : 1280, height: narrow ? 700 : 900), display: true)
+        // AUDIT_SIZE=960x720 picks any window size; AUDIT_NARROW is 720x640.
+        let size = env["AUDIT_SIZE"].flatMap { s -> CGSize? in let p = s.split(separator: "x").compactMap { Double($0) }; return p.count == 2 ? CGSize(width: p[0], height: p[1]) : nil }
+            ?? (narrow ? CGSize(width: 720, height: 640) : CGSize(width: 1280, height: 900))
+        let p = lang + "-\(Int(size.width))x\(Int(size.height))-" + (dark ? "dark-" : "")
+        w.setFrame(NSRect(x: 40, y: 40, width: size.width, height: size.height), display: true)
+        // Every translation in this language, to recognise a label cut off with "…".
+        let table = (Bundle.main.path(forResource: "Localizable", ofType: "strings").flatMap { NSDictionary(contentsOfFile: $0) as? [String: String] } ?? [:]).values
+        var clipped: [String: [String]] = [:]
         m.setSettings { $0.theme = dark ? "dark" : "light" }
         var report: [String: Any] = ["language": lang]
         var english: [String: [String]] = [:], unnamed: [String: [String]] = [:], texts: [String: Int] = [:], axCounts: [String: Int] = [:]
+        // The sample notes are content in English; keep them out of the interface check.
+        for id in m.library.docs.keys { _ = m.library.trash(id) }
+        m.scheduleLibrarySave()
         guard let doc = m.createDoc(title: "Plán cesty") else { return }
         let c = m.editor(for: doc).controller
         c.pastePlainForAutomation("## Plán\nLetíme v pondělí ráno #cesta\n- [ ] Rezervovat hotel\n| Den | Místo |\n| --- | --- |\n| 1 | Lisabon |")
@@ -92,6 +101,12 @@ extension Automation {
             let lines = ocrLines(out.appendingPathComponent(p + name + ".png"))
             texts[name] = lines.count
             english[name] = Array(Set((all.map(\.text) + lines).filter(englishLooking))).sorted()
+            clipped[name] = lines.compactMap { l -> String? in
+                guard l.hasSuffix("…") || l.hasSuffix("..."), l.count > 3 else { return nil }
+                let head = String(l.dropLast(l.hasSuffix("…") ? 1 : 3)).trimmingCharacters(in: .whitespaces)
+                if table.contains(head + "…") { return nil } // the label itself ends with an ellipsis
+                return table.contains { $0.hasPrefix(head) && $0.count > head.count + 1 && !$0.hasSuffix("…") } ? l : nil
+            }
             let controls: Set<String> = ["AXButton", "AXCheckBox", "AXRadioButton", "AXPopUpButton", "AXMenuButton", "AXTextField", "AXSlider", "AXComboBox"]
             axCounts[name] = all.count
             unnamed[name] = all.filter { controls.contains($0.role) && !$0.named }.map(\.role)
@@ -99,6 +114,8 @@ extension Automation {
             await wait(0.3)
         }
         report["textsRead"] = texts
+        report["clipped"] = clipped
+        report["clippedCount"] = clipped.values.reduce(0) { $0 + $1.count }
         report["english"] = english
         report["englishCount"] = english.values.reduce(0) { $0 + $1.count }
         report["unnamedControls"] = unnamed.mapValues(\.count)
