@@ -1,52 +1,52 @@
-# Performance budgets — 2026-11-13T16-27-04
+# Performance budgets — 2026-11-13T20-41-01
 
-Commit b92fb2e · 3 runs · median judged · Mac16,12 (Apple M4), macOS 27.0.1, 16 GB · low power False · battery False · displays 1470 x 956 @ 60.00Hz
+Commit d5e1d67 · 3 runs · median judged · Mac16,12 (Apple M4), macOS 27.0.1, 16 GB · low power False · battery False · displays 1470 x 956 @ 60.00Hz
 Reduce Motion unknown · Increase Contrast unknown · Reduce Transparency unknown
 
 | Check | Median ms | Runs | Budget | Result |
 |---|---|---|---|---|
-| 10k keystroke p95 | 13.3 | 14 / 12 / 13 | < 33 | pass |
-| 10k Return p95 | 10.0 | 12 / 9 / 10 | < 33 | pass |
-| 10k open | 536.4 | 524 / 556 / 536 | < 2500 | pass |
+| 10k keystroke p95 | 20.1 | 20 / 19 / 25 | < 33 | pass |
+| 10k Return p95 | 10.5 | 14 / 10 / 10 | < 33 | pass |
+| 10k open | 557.5 | 558 / 558 / 566 | < 2500 | pass |
 | 10k scroll step p95 | 0.6 | 1 / 1 / 1 | < 16.7 | pass |
-| 10k toggle | 125.2 | 124 / 125 / 125 | < 200 | pass |
-| 10k block move p95 | 17.2 | 18 / 17 / 17 | < 100 | pass |
-| search (library) | 16.5 | 16 / 16 / 17 | < 500 | pass |
-| link/tag index rebuild | 91.8 | 92 / 92 / 90 | < 3000 | pass |
-| 20k keystroke p95 | 17.1 | 18 / 17 / 17 | < 33 | pass |
-| 20k Return p95 | 15.0 | 16 / 15 / 15 | < 33 | pass |
-| 20k scroll step p95 | 0.6 | 1 / 0 / 1 | < 16.7 | pass |
-| 20k open | 1092.8 | 1093 / 1108 / 1091 | < 5000 | pass |
-| 20k toggle (known limit) | 252.0 | 250 / 252 / 252 | — | info |
-| tab switch p95 | 32.2 | 32 / 32 / 33 | < 50 | pass |
-| Space switch p95 | 59.2 | 59 / 51 / 70 | < 100 | pass |
-| 2,000-block doc scroll p95 | 0.6 | 0 / 1 / 1 | < 16.7 | pass |
-| doc open from library | 132.8 | 128 / 133 / 133 | < 250 | pass |
-| 1,000-item collection open | 84.0 | 84 / 85 / 81 | < 1000 | pass |
-| 1,000-item collection scroll p95 | 3.7 | 3 / 4 / 4 | < 16.7 | pass |
-| search index rebuild (10k blocks) | 107.1 | 106 / 107 / 108 | < 3000 | pass |
-| search query p95 | 87.3 | 89 / 87 / 87 | < 500 | pass |
-| panel format (warm) | 48.9 | 50 / 47 / 49 | < 100 | pass |
-| panel format (first open) | 58.3 | 59 / 58 / 58 | — | info |
-| panel style (warm) | 47.6 | 47 / 48 / 48 | < 100 | pass |
-| panel style (first open) | 54.7 | 52 / 55 / 55 | — | info |
-| panel info (warm) | 34.8 | 34 / 36 / 35 | < 100 | pass |
-| panel info (first open) | 72.6 | 73 / 72 / 73 | — | info |
-| panel share (warm) | 36.0 | 36 / 35 / 38 | < 100 | pass |
-| panel share (first open) | 47.6 | 48 / 48 / 47 | — | info |
-| panel assistant (warm) | 23.3 | 23 / 16 / 27 | < 100 | pass |
-| panel assistant (first open) | 76.4 | 76 / 69 / 80 | — | info |
-| panel recovery (warm) | 41.1 | 42 / 41 / 40 | < 100 | pass |
-| panel recovery (first open) | 70.4 | 82 / 68 / 70 | — | info |
-| sheet versionHistory render | 4.1 | 4 / 4 / 5 | < 100 | pass |
-| sheet versionHistory on screen (incl. AppKit animation) | 300.6 | 304 / 300 / 301 | — | info |
-| sheet reviewSheet render | 35.9 | 36 / 36 / 36 | < 100 | pass |
-| sheet reviewSheet on screen (incl. AppKit animation) | 345.3 | 351 / 345 / 344 | — | info |
-| vault check 2,000 notes | 444.0 | 444 / 446 / 443 | < 2000 | pass |
-| Version History 30 versions, 2,000 blocks | 24.0 | 24 / 23 / 24 | < 500 | pass |
-| migration check 2,000 notes | 487.0 | 512 / 484 / 487 | < 5000 | pass |
-| migration schema 1→2, 2,000 notes | 1565.0 | 1565 / 1569 / 1561 | < 5000 | pass |
-| library rebuild 2,000 notes | 767.0 | 767 / 771 / 763 | < 3000 | pass |
-| repair plan | 370.0 | 370 / 370 / 370 | < 2000 | pass |
+| 10k toggle | 132.7 | 133 / 131 / 134 | < 200 | pass |
+| 10k block move p95 | 14.3 | 15 / 14 / 14 | < 100 | pass |
+| search (library) | 16.8 | 17 / 17 / 17 | < 500 | pass |
+| link/tag index rebuild | 94.3 | 95 / 94 / 93 | < 3000 | pass |
+| 20k keystroke p95 | 24.3 | 23 / 31 / 24 | < 33 | pass |
+| 20k Return p95 | 21.8 | 18 / 22 / 22 | < 33 | pass |
+| 20k scroll step p95 | 0.6 | 1 / 1 / 1 | < 16.7 | pass |
+| 20k open | 1143.3 | 1143 / 1130 / 1163 | < 5000 | pass |
+| 20k toggle (known limit) | 259.6 | 261 / 258 / 260 | — | info |
+| tab switch p95 | 42.2 | 42 / 37 / 50 | < 50 | pass |
+| Space switch p95 | 68.4 | 68 / 56 / 68 | < 100 | pass |
+| 2,000-block doc scroll p95 | 0.7 | 1 / 1 / 1 | < 16.7 | pass |
+| doc open from library | 143.7 | 144 / 130 / 146 | < 250 | pass |
+| 1,000-item collection open | 94.0 | 82 / 95 / 94 | < 1000 | pass |
+| 1,000-item collection scroll p95 | 5.1 | 4 / 5 / 5 | < 16.7 | pass |
+| search index rebuild (10k blocks) | 108.8 | 109 / 110 / 109 | < 3000 | pass |
+| search query p95 | 88.0 | 88 / 88 / 88 | < 500 | pass |
+| panel format (warm) | 47.1 | 47 / 42 / 47 | < 100 | pass |
+| panel format (first open) | 74.7 | 75 / 82 / 66 | — | info |
+| panel style (warm) | 46.5 | 46 / 48 / 33 | < 100 | pass |
+| panel style (first open) | 47.8 | 54 / 48 / 44 | — | info |
+| panel info (warm) | 35.7 | 37 / 34 / 36 | < 100 | pass |
+| panel info (first open) | 74.1 | 74 / 74 / 61 | — | info |
+| panel share (warm) | 39.8 | 41 / 40 / 37 | < 100 | pass |
+| panel share (first open) | 49.6 | 50 / 51 / 49 | — | info |
+| panel assistant (warm) | 22.6 | 34 / 17 / 23 | < 100 | pass |
+| panel assistant (first open) | 79.8 | 86 / 79 / 80 | — | info |
+| panel recovery (warm) | 28.1 | 23 / 28 / 43 | < 100 | pass |
+| panel recovery (first open) | 93.7 | 96 / 94 / 86 | — | info |
+| sheet versionHistory render | 4.4 | 4 / 3 / 5 | < 100 | pass |
+| sheet versionHistory on screen (incl. AppKit animation) | 307.9 | 308 / 308 / 304 | — | info |
+| sheet reviewSheet render | 37.1 | 37 / 35 / 37 | < 100 | pass |
+| sheet reviewSheet on screen (incl. AppKit animation) | 349.3 | 350 / 327 / 349 | — | info |
+| vault check 2,000 notes | 461.0 | 471 / 461 / 460 | < 2000 | pass |
+| Version History 30 versions, 2,000 blocks | 24.0 | 24 / 24 / 24 | < 500 | pass |
+| migration check 2,000 notes | 494.0 | 507 / 494 / 494 | < 5000 | pass |
+| migration schema 1→2, 2,000 notes | 1616.0 | 1586 / 1635 / 1616 | < 5000 | pass |
+| library rebuild 2,000 notes | 788.0 | 795 / 784 / 788 | < 3000 | pass |
+| repair plan | 389.0 | 372 / 393 / 389 | < 2000 | pass |
 
 *pass*: every run under budget · *noise*: a run was over but the median is under · *FAIL*: the median is over · *info*: reported, no budget (known limits and AppKit animations).
