@@ -1,3 +1,4 @@
+import DraftCore
 import SwiftUI
 import AppKit
 
@@ -81,7 +82,7 @@ struct DraftSegmented<T: Hashable>: View {
                 Button { selection = o.value } label: {
                     HStack(spacing: 5) {
                         if let s = o.symbol { Image(systemName: s).font(.system(size: DS.footnote, weight: .medium)) }
-                        if o.symbol == nil || !iconOnly { Text(o.title).font(.system(size: DS.footnote, weight: on ? .semibold : .medium)).lineLimit(1).minimumScaleFactor(0.85) }
+                        if o.symbol == nil || !iconOnly { Text(loc(o.title)).font(.system(size: DS.footnote, weight: on ? .semibold : .medium)).lineLimit(1).minimumScaleFactor(0.85) }
                     }
                     .padding(.horizontal, stretch ? DS.s1 : DS.s3) // stretched segments share the width; labels must not truncate
                     .frame(maxWidth: stretch ? .infinity : nil, minHeight: DS.controlSmall)
@@ -93,14 +94,14 @@ struct DraftSegmented<T: Hashable>: View {
                 }
                 .buttonStyle(.plain)
                 .help(o.title)
-                .accessibilityLabel(o.title)
+                .accessibilityLabel(loc(o.title))
                 .accessibilityAddTraits(on ? [.isSelected] : [])
             }
         }
         .padding(2)
         .background(RoundedRectangle(cornerRadius: DS.rControl, style: .continuous).fill(t.dark ? Color.white.opacity(0.07) : Color.black.opacity(0.055)))
         .accessibilityElement(children: .contain)
-        .accessibilityLabel(label)
+        .accessibilityLabel(loc(label))
     }
 }
 
@@ -122,7 +123,7 @@ struct DraftToggleChip: View {
             .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
-        .accessibilityLabel(title)
+        .accessibilityLabel(loc(title))
         .accessibilityValue(isOn ? "On" : "Off")
         .accessibilityAddTraits(.isToggle)
     }

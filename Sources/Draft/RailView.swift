@@ -280,7 +280,7 @@ struct DocumentRail: View {
                             .contentShape(Capsule())
                     }
                     .buttonStyle(.plain).foregroundStyle(on ? t.text : t.secondary)
-                    .help(label).accessibilityLabel(label).accessibilityAddTraits(on ? .isSelected : [])
+                    .help(loc(label)).accessibilityLabel(loc(label)).accessibilityAddTraits(on ? .isSelected : [])
                 }
             }
             .padding(3)

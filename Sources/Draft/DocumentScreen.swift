@@ -142,11 +142,11 @@ struct Breadcrumb: View {
 
 struct PanelSection<Content: View>: View {
     @Environment(\.tokens) var t
-    var title: String
+    var title: LocalizedStringKey
     @ViewBuilder var content: Content
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
-            Text(title.uppercased()).font(.system(size: DS.caption, weight: .semibold)).tracking(0.6).foregroundStyle(t.tertiary)
+            Text(title).textCase(.uppercase).font(.system(size: DS.caption, weight: .semibold)).tracking(0.6).foregroundStyle(t.tertiary)
             content
         }
     }
@@ -168,7 +168,7 @@ struct ChipButton: View {
         Button(action: action) {
             HStack(spacing: 5) {
                 if let symbol { Image(systemName: symbol).font(.system(size: DS.body)) }
-                if !title.isEmpty { Text(title).font(font).lineLimit(1).minimumScaleFactor(0.8) }
+                if !title.isEmpty { Text(loc(title)).font(font).lineLimit(1).minimumScaleFactor(0.8) }
             }
             .padding(.horizontal, 10)
             .frame(maxWidth: .infinity, minHeight: height)
@@ -182,7 +182,7 @@ struct ChipButton: View {
         .disabled(!isEnabled)
         .onHover { hover = $0 }
         .help(label ?? title)
-        .accessibilityLabel(label ?? (title.isEmpty ? (symbol ?? "") : title))
+        .accessibilityLabel(loc(label ?? (title.isEmpty ? (symbol ?? "") : title)))
         .accessibilityAddTraits(isActive ? .isSelected : [])
     }
 }
@@ -190,7 +190,7 @@ struct ChipButton: View {
 struct PanelHeader: View {
     @Environment(\.tokens) var t
     @Environment(AppModel.self) var model
-    var title: String
+    var title: LocalizedStringKey
     var body: some View {
         HStack {
             Text(title).font(.system(size: DS.headline, weight: .semibold)).foregroundStyle(t.text)

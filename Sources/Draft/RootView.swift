@@ -258,18 +258,18 @@ struct TabStrip: View {
 
     func title(_ v: ViewRef) -> String {
         switch v.kind {
-        case "all": return "All Docs"
-        case "unsorted": return "Unsorted"
-        case "starred": return "Starred"
-        case "shared": return "Shared with Me"
-        case "trash": return "Recently Deleted"
-        case "settings": return "Settings"
-        case "tasks": return "Tasks"
-        case "calendar": return "Calendar"
+        case "all": return String(localized: "All Docs")
+        case "unsorted": return String(localized: "Unsorted")
+        case "starred": return String(localized: "Starred")
+        case "shared": return String(localized: "Shared with Me")
+        case "trash": return String(localized: "Recently Deleted")
+        case "settings": return String(localized: "Settings")
+        case "tasks": return String(localized: "Tasks")
+        case "calendar": return String(localized: "Calendar")
         case "tag": return "#" + (v.section ?? "")
-        case "collection": return model.collectionData(v.docId ?? "", v.section ?? "")?.name ?? "Collection"
+        case "collection": return model.collectionData(v.docId ?? "", v.section ?? "")?.name ?? String(localized: "Collection")
         case "folder": return model.folderName(v.folderId)
-        case "doc": let s = model.library.docs[v.docId ?? ""]?.title ?? ""; return s.isEmpty ? "Untitled" : s
+        case "doc": let s = model.library.docs[v.docId ?? ""]?.title ?? ""; return s.isEmpty ? String(localized: "Untitled") : s
         default: return ""
         }
     }

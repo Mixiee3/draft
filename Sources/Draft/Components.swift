@@ -214,7 +214,7 @@ struct ShortcutList: View {
         VStack(spacing: 0) {
             ForEach(Array(items.enumerated()), id: \.offset) { i, item in
                 HStack {
-                    Text(item.1).font(.system(size: DS.body)).foregroundStyle(t.text)
+                    Text(LocalizedStringKey(item.1)).font(.system(size: DS.body)).foregroundStyle(t.text)
                     Spacer()
                     Text(item.0).font(.system(size: DS.body, design: .rounded).weight(.medium)).foregroundStyle(t.secondary)
                         .padding(.horizontal, DS.s2).frame(height: DS.controlSmall)

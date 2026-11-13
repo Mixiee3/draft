@@ -9,12 +9,12 @@ struct LibraryView: View {
 
     var title: String {
         switch view.kind {
-        case "unsorted": return "Unsorted"
-        case "starred": return "Starred"
-        case "shared": return "Shared with Me"
-        case "trash": return "Recently Deleted"
+        case "unsorted": return String(localized: "Unsorted")
+        case "starred": return String(localized: "Starred")
+        case "shared": return String(localized: "Shared with Me")
+        case "trash": return String(localized: "Recently Deleted")
         case "folder": return model.folderName(view.folderId)
-        default: return "All Docs"
+        default: return String(localized: "All Docs")
         }
     }
 
@@ -274,7 +274,7 @@ struct ListLayout: View {
     let docs: [DocMeta]
     let width: CGFloat
 
-    func header(_ title: String, _ key: SortKey, width: CGFloat?) -> some View {
+    func header(_ title: LocalizedStringKey, _ key: SortKey, width: CGFloat?) -> some View {
         let s = model.library.settings.sort
         return Button {
             model.setSettings { st in if st.sort.key == key { st.sort.dir = st.sort.dir == "asc" ? "desc" : "asc" } else { st.sort = SortSpec(key: key, dir: key == .name ? "asc" : "desc") } }

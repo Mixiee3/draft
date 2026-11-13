@@ -52,6 +52,7 @@ enum Automation {
             case "presets-shots": await presetsShots()
             case "trust-shots": await trustShots()
             case "search-perf": await searchPerf()
+            case "l10n-shots": await l10nShots()
             case "search-read": await searchRead()
             case "trust-read": await trustRead()
             case "safe-mode-check": await safeModeCheck()

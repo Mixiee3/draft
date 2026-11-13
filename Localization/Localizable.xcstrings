@@ -1763,6 +1763,9 @@
       }
     },
     ".*": {},
+    "00": {
+      "extractionState": "manual"
+    },
     "A %@ was interrupted": {
       "localizations": {
         "cs": {
@@ -1972,6 +1975,23 @@
         }
       }
     },
+    "Accent": {
+      "extractionState": "manual",
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Zvýraznění"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Akzent"
+          }
+        }
+      }
+    },
     "Accent color": {
       "localizations": {
         "cs": {
@@ -1984,6 +2004,39 @@
           "stringUnit": {
             "state": "translated",
             "value": "Akzentfarbe"
+          }
+        }
+      }
+    },
+    "Action Items": {
+      "extractionState": "manual",
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Úkoly k akci"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Aufgaben"
+          }
+        }
+      }
+    },
+    "Actions": {
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Akce"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Aktionen"
           }
         }
       }
@@ -2516,6 +2569,7 @@
       }
     },
     "Apply Agent Edits": {
+      "extractionState": "stale",
       "localizations": {
         "cs": {
           "stringUnit": {
@@ -2703,6 +2757,23 @@
           "stringUnit": {
             "state": "translated",
             "value": "Archiv"
+          }
+        }
+      }
+    },
+    "Ask": {
+      "extractionState": "manual",
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Zeptat se"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Fragen"
           }
         }
       }
@@ -3190,6 +3261,22 @@
           "stringUnit": {
             "state": "translated",
             "value": "Block"
+          }
+        }
+      }
+    },
+    "Block Font": {
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Písmo bloku"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Blockschrift"
           }
         }
       }
@@ -3971,6 +4058,23 @@
         }
       }
     },
+    "Close tab": {
+      "extractionState": "manual",
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Zavřít panel"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tab schließen"
+          }
+        }
+      }
+    },
     "Close tab %@": {
       "localizations": {
         "cs": {
@@ -4149,6 +4253,22 @@
         }
       }
     },
+    "Color": {
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Barva"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Farbe"
+          }
+        }
+      }
+    },
     "Color %@": {
       "localizations": {
         "cs": {
@@ -4299,6 +4419,22 @@
         }
       }
     },
+    "Content": {
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Obsah"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Inhalt"
+          }
+        }
+      }
+    },
     "Context: %@ · Model: %@": {
       "localizations": {
         "cs": {
@@ -4321,6 +4457,23 @@
         }
       }
     },
+    "Continue Writing": {
+      "extractionState": "manual",
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pokračovat v psaní"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Weiterschreiben"
+          }
+        }
+      }
+    },
     "Copy Link to Block": {
       "extractionState": "manual",
       "localizations": {
@@ -4334,6 +4487,22 @@
           "stringUnit": {
             "state": "translated",
             "value": "Link zum Block kopieren"
+          }
+        }
+      }
+    },
+    "Copy as Markdown": {
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kopírovat jako Markdown"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Als Markdown kopieren"
           }
         }
       }
@@ -4494,6 +4663,38 @@
         }
       }
     },
+    "Cover": {
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Titulní obrázek"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Titelbild"
+          }
+        }
+      }
+    },
+    "Cover Image": {
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Titulní obrázek"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Titelbild"
+          }
+        }
+      }
+    },
     "Cover added": {
       "localizations": {
         "cs": {
@@ -4603,6 +4804,22 @@
           "stringUnit": {
             "state": "translated",
             "value": "Link erstellen"
+          }
+        }
+      }
+    },
+    "Created": {
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Vytvořeno"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Erstellt"
           }
         }
       }
@@ -4835,6 +5052,22 @@
           "stringUnit": {
             "state": "translated",
             "value": "Daten in Dokumenten"
+          }
+        }
+      }
+    },
+    "Decorations": {
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dekorace"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dekorationen"
           }
         }
       }
@@ -5230,6 +5463,23 @@
         }
       }
     },
+    "Doc": {
+      "extractionState": "manual",
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dokument"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dokument"
+          }
+        }
+      }
+    },
     "Document": {
       "localizations": {
         "cs": {
@@ -5242,6 +5492,22 @@
           "stringUnit": {
             "state": "translated",
             "value": "Dokument"
+          }
+        }
+      }
+    },
+    "Document Color": {
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Barva dokumentu"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dokumentfarbe"
           }
         }
       }
@@ -5742,6 +6008,22 @@
         }
       }
     },
+    "E-mail — v1.x": {
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "E-mail — v1.x"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "E-Mail — v1.x"
+          }
+        }
+      }
+    },
     "EFFECTS": {
       "localizations": {
         "cs": {
@@ -5835,6 +6117,23 @@
           "stringUnit": {
             "state": "translated",
             "value": "Effekt"
+          }
+        }
+      }
+    },
+    "Emboss": {
+      "extractionState": "manual",
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ražba"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Prägung"
           }
         }
       }
@@ -5970,6 +6269,23 @@
           "stringUnit": {
             "state": "translated",
             "value": "Erwartete Änderungen: %@"
+          }
+        }
+      }
+    },
+    "Explain": {
+      "extractionState": "manual",
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Vysvětlit"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Erklären"
           }
         }
       }
@@ -6317,6 +6633,23 @@
         }
       }
     },
+    "Find in Page (⌘F)": {
+      "extractionState": "manual",
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Najít na stránce (⌘F)"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Auf der Seite suchen (⌘F)"
+          }
+        }
+      }
+    },
     "Find in page": {
       "localizations": {
         "cs": {
@@ -6333,6 +6666,40 @@
         }
       }
     },
+    "Fix Grammar": {
+      "extractionState": "manual",
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Opravit gramatiku"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Grammatik korrigieren"
+          }
+        }
+      }
+    },
+    "Focus": {
+      "extractionState": "manual",
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Fokus"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Fokus"
+          }
+        }
+      }
+    },
     "Focus Mode": {
       "localizations": {
         "cs": {
@@ -6345,6 +6712,23 @@
           "stringUnit": {
             "state": "translated",
             "value": "Fokusmodus"
+          }
+        }
+      }
+    },
+    "Focus the formatting bar": {
+      "extractionState": "manual",
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Přejít na lištu formátování"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Formatierungsleiste fokussieren"
           }
         }
       }
@@ -6409,6 +6793,22 @@
           "stringUnit": {
             "state": "translated",
             "value": "Ordner"
+          }
+        }
+      }
+    },
+    "Font": {
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Písmo"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Schrift"
           }
         }
       }
@@ -6570,6 +6970,40 @@
         }
       }
     },
+    "Glass": {
+      "extractionState": "manual",
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sklo"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Glas"
+          }
+        }
+      }
+    },
+    "Glow": {
+      "extractionState": "manual",
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Záře"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Leuchten"
+          }
+        }
+      }
+    },
     "Go": {
       "localizations": {
         "cs": {
@@ -6582,6 +7016,23 @@
           "stringUnit": {
             "state": "translated",
             "value": "Gehe zu"
+          }
+        }
+      }
+    },
+    "Gradient": {
+      "extractionState": "manual",
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Přechod"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Verlauf"
           }
         }
       }
@@ -6669,6 +7120,22 @@
           "stringUnit": {
             "state": "translated",
             "value": "Gruppe: %@"
+          }
+        }
+      }
+    },
+    "Groups": {
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Skupiny"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Gruppen"
           }
         }
       }
@@ -6879,6 +7346,22 @@
           "stringUnit": {
             "state": "translated",
             "value": "Bild (%@)"
+          }
+        }
+      }
+    },
+    "Image (PNG)…": {
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Obrázek (PNG)…"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bild (PNG)…"
           }
         }
       }
@@ -7298,6 +7781,22 @@
         }
       }
     },
+    "Info": {
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Informace"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Info"
+          }
+        }
+      }
+    },
     "Inline Code": {
       "extractionState": "manual",
       "localizations": {
@@ -7546,6 +8045,23 @@
         }
       }
     },
+    "Key Points": {
+      "extractionState": "manual",
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Hlavní body"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kernpunkte"
+          }
+        }
+      }
+    },
     "Keyboard Shortcuts": {
       "localizations": {
         "cs": {
@@ -7606,6 +8122,22 @@
           "stringUnit": {
             "state": "translated",
             "value": "BIBLIOTHEK · %lld ORIGINALSZENEN, OFFLINE"
+          }
+        }
+      }
+    },
+    "Last Viewed": {
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Naposledy zobrazeno"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Zuletzt angesehen"
           }
         }
       }
@@ -7740,6 +8272,23 @@
           "stringUnit": {
             "state": "translated",
             "value": "Lizenz"
+          }
+        }
+      }
+    },
+    "Lift": {
+      "extractionState": "manual",
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Zdvih"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Anheben"
           }
         }
       }
@@ -7906,6 +8455,39 @@
         }
       }
     },
+    "Longer": {
+      "extractionState": "manual",
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Delší"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Länger"
+          }
+        }
+      }
+    },
+    "Looks for damaged or missing notes, repeated ids, broken links and pages, missing or unused attachments, a damaged index and interrupted changes.": {
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Hledá poškozené nebo chybějící poznámky, opakovaná ID, nefunkční odkazy a stránky, chybějící či nepoužívané přílohy, poškozený index a přerušené změny."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sucht nach beschädigten oder fehlenden Notizen, doppelten IDs, defekten Links und Seiten, fehlenden oder unbenutzten Anhängen, einem beschädigten Index und unterbrochenen Änderungen."
+          }
+        }
+      }
+    },
     "MY STYLES": {
       "localizations": {
         "cs": {
@@ -8014,6 +8596,22 @@
           "stringUnit": {
             "state": "translated",
             "value": "„%@“ als nicht erledigt markieren"
+          }
+        }
+      }
+    },
+    "Markdown + assets folder…": {
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Markdown + složka assets…"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Markdown + assets-Ordner…"
           }
         }
       }
@@ -8971,6 +9569,23 @@
         }
       }
     },
+    "New document": {
+      "extractionState": "manual",
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nový dokument"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Neues Dokument"
+          }
+        }
+      }
+    },
     "New from Template": {
       "localizations": {
         "cs": {
@@ -8999,6 +9614,23 @@
           "stringUnit": {
             "state": "translated",
             "value": "Neu aus Vorlage…"
+          }
+        }
+      }
+    },
+    "New from template": {
+      "extractionState": "manual",
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nový ze šablony"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Neu aus Vorlage"
           }
         }
       }
@@ -9191,6 +9823,22 @@
           "stringUnit": {
             "state": "translated",
             "value": "Keine Notiz, Vorlage oder gelöschte Notiz verwendet sie."
+          }
+        }
+      }
+    },
+    "No problems": {
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Žádné problémy"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Keine Probleme"
           }
         }
       }
@@ -9933,6 +10581,23 @@
         }
       }
     },
+    "Outline": {
+      "extractionState": "manual",
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Osnova"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Gliederung"
+          }
+        }
+      }
+    },
     "Overrides the document font for the selected blocks.": {
       "localizations": {
         "cs": {
@@ -9961,6 +10626,22 @@
           "stringUnit": {
             "state": "translated",
             "value": "PDF"
+          }
+        }
+      }
+    },
+    "PDF…": {
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "PDF…"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "PDF…"
           }
         }
       }
@@ -10027,6 +10708,23 @@
           "stringUnit": {
             "state": "translated",
             "value": "Seitenumbruch"
+          }
+        }
+      }
+    },
+    "Page Info": {
+      "extractionState": "manual",
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Informace o stránce"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Seiteninfo"
           }
         }
       }
@@ -10283,6 +10981,22 @@
           "stringUnit": {
             "state": "translated",
             "value": "Datenschutz"
+          }
+        }
+      }
+    },
+    "Properties": {
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Vlastnosti"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Eigenschaften"
           }
         }
       }
@@ -10631,6 +11345,23 @@
       }
     },
     "Reapply Last Color": {
+      "extractionState": "manual",
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Znovu použít poslední barvu"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Letzte Farbe erneut anwenden"
+          }
+        }
+      }
+    },
+    "Reapply last color": {
       "extractionState": "manual",
       "localizations": {
         "cs": {
@@ -11454,6 +12185,7 @@
       }
     },
     "Replace Note with Codex Draft": {
+      "extractionState": "stale",
       "localizations": {
         "cs": {
           "stringUnit": {
@@ -11933,6 +12665,23 @@
         }
       }
     },
+    "Rewrite": {
+      "extractionState": "manual",
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Přepsat"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Umschreiben"
+          }
+        }
+      }
+    },
     "Roll Back": {
       "localizations": {
         "cs": {
@@ -12010,6 +12759,23 @@
           "stringUnit": {
             "state": "translated",
             "value": "Abgerundete Schrift"
+          }
+        }
+      }
+    },
+    "Rr": {
+      "extractionState": "manual",
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Rr"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Rr"
           }
         }
       }
@@ -12154,6 +12920,22 @@
           "stringUnit": {
             "state": "translated",
             "value": "Als Vorlage sichern"
+          }
+        }
+      }
+    },
+    "Save as Template…": {
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Uložit jako šablonu…"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Als Vorlage sichern…"
           }
         }
       }
@@ -12527,6 +13309,23 @@
         }
       }
     },
+    "Selection": {
+      "extractionState": "manual",
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Výběr"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Auswahl"
+          }
+        }
+      }
+    },
     "Selection and Document work on the open document. Space searches every note in this Space and shows which ones it used.": {
       "localizations": {
         "cs": {
@@ -12604,6 +13403,22 @@
           "stringUnit": {
             "state": "translated",
             "value": "Trennlinie"
+          }
+        }
+      }
+    },
+    "Separator Style": {
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Styl oddělovače"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Trennlinienstil"
           }
         }
       }
@@ -12711,6 +13526,23 @@
         }
       }
     },
+    "Shadow": {
+      "extractionState": "manual",
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Stín"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Schatten"
+          }
+        }
+      }
+    },
     "Shared with Me": {
       "localizations": {
         "cs": {
@@ -12723,6 +13555,23 @@
           "stringUnit": {
             "state": "translated",
             "value": "Mit mir geteilt"
+          }
+        }
+      }
+    },
+    "Shorter": {
+      "extractionState": "manual",
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kratší"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kürzer"
           }
         }
       }
@@ -13031,6 +13880,23 @@
         }
       }
     },
+    "Show or hide the sidebar": {
+      "extractionState": "manual",
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Zobrazit nebo skrýt boční panel"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Seitenleiste ein- oder ausblenden"
+          }
+        }
+      }
+    },
     "Show reasoning": {
       "localizations": {
         "cs": {
@@ -13300,6 +14166,40 @@
         }
       }
     },
+    "Spectrum": {
+      "extractionState": "manual",
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Spektrum"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Spektrum"
+          }
+        }
+      }
+    },
+    "Ss": {
+      "extractionState": "manual",
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ss"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ss"
+          }
+        }
+      }
+    },
     "Star": {
       "localizations": {
         "cs": {
@@ -13312,6 +14212,22 @@
           "stringUnit": {
             "state": "translated",
             "value": "Markieren"
+          }
+        }
+      }
+    },
+    "Star Document": {
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Označit dokument hvězdičkou"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dokument markieren"
           }
         }
       }
@@ -13526,6 +14442,22 @@
         }
       }
     },
+    "Style": {
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Styl"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Stil"
+          }
+        }
+      }
+    },
     "Style %@%@": {
       "localizations": {
         "cs": {
@@ -13695,6 +14627,23 @@
           "stringUnit": {
             "state": "translated",
             "value": "Etwa #fff und #a1b2c3"
+          }
+        }
+      }
+    },
+    "Summarize": {
+      "extractionState": "manual",
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Shrnout"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Zusammenfassen"
           }
         }
       }
@@ -14024,6 +14973,38 @@
           "stringUnit": {
             "state": "translated",
             "value": "Text"
+          }
+        }
+      }
+    },
+    "Text Color": {
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Barva textu"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Textfarbe"
+          }
+        }
+      }
+    },
+    "Text Effect": {
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Efekt textu"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Texteffekt"
           }
         }
       }
@@ -14617,6 +15598,22 @@
         }
       }
     },
+    "This is a template": {
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Toto je šablona"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dies ist eine Vorlage"
+          }
+        }
+      }
+    },
     "This note isn't available": {
       "localizations": {
         "cs": {
@@ -14762,6 +15759,22 @@
         }
       }
     },
+    "Titles": {
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nadpisy"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Titel"
+          }
+        }
+      }
+    },
     "Today": {
       "localizations": {
         "cs": {
@@ -14774,6 +15787,23 @@
           "stringUnit": {
             "state": "translated",
             "value": "Heute"
+          }
+        }
+      }
+    },
+    "Today's daily note": {
+      "extractionState": "manual",
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dnešní denní poznámka"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Heutige Tagesnotiz"
           }
         }
       }
@@ -14845,6 +15875,23 @@
           "stringUnit": {
             "state": "new",
             "value": "Tour step %1$lld of %2$lld: %3$@. %4$@"
+          }
+        }
+      }
+    },
+    "Translate": {
+      "extractionState": "manual",
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Přeložit"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Übersetzen"
           }
         }
       }
@@ -15076,6 +16123,22 @@
         }
       }
     },
+    "Unstar Document": {
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Odebrat hvězdičku dokumentu"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Markierung des Dokuments entfernen"
+          }
+        }
+      }
+    },
     "Untitled": {
       "localizations": {
         "cs": {
@@ -15152,6 +16215,22 @@
           "stringUnit": {
             "state": "translated",
             "value": "Unbenutzte Dateien aus assets/ verschoben"
+          }
+        }
+      }
+    },
+    "Updated": {
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Upraveno"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Aktualisiert"
           }
         }
       }
@@ -15444,6 +16523,22 @@
         }
       }
     },
+    "Version History (%lld)…": {
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Historie verzí (%lld)…"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Versionsverlauf (%lld)…"
+          }
+        }
+      }
+    },
     "Version History…": {
       "localizations": {
         "cs": {
@@ -15488,6 +16583,38 @@
           "stringUnit": {
             "state": "translated",
             "value": "Video"
+          }
+        }
+      }
+    },
+    "Web page (HTML)…": {
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Webová stránka (HTML)…"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Webseite (HTML)…"
+          }
+        }
+      }
+    },
+    "Website of all documents…": {
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Web ze všech dokumentů…"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Website aus allen Dokumenten…"
           }
         }
       }
@@ -15604,6 +16731,22 @@
         }
       }
     },
+    "Word — later": {
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Word — později"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Word — später"
+          }
+        }
+      }
+    },
     "Words": {
       "localizations": {
         "cs": {
@@ -15716,6 +16859,159 @@
         }
       }
     },
+    "a frosted card for a short aside on image or field backdrops": {
+      "extractionState": "manual",
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "matná karta pro krátkou poznámku na obrázkovém pozadí"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "eine Milchglaskarte für eine kurze Randnotiz auf Bild- oder Flächenhintergründen"
+          }
+        }
+      }
+    },
+    "a key term or a short heading in the document's accent color": {
+      "extractionState": "manual",
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "klíčový pojem nebo krátký nadpis v barvě zvýraznění dokumentu"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ein Schlüsselbegriff oder eine kurze Überschrift in der Akzentfarbe des Dokuments"
+          }
+        }
+      }
+    },
+    "a lit edge for a single warning or decision; at most one per note": {
+      "extractionState": "manual",
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "zářící okraj pro jedno varování nebo rozhodnutí; nejvýš jednou v poznámce"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ein leuchtender Rand für eine einzelne Warnung oder Entscheidung; höchstens einmal pro Notiz"
+          }
+        }
+      }
+    },
+    "a playful 3D offset for a title or label": {
+      "extractionState": "manual",
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "hravý 3D posun pro název nebo popisek"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ein verspielter 3D-Versatz für einen Titel oder eine Beschriftung"
+          }
+        }
+      }
+    },
+    "a quiet pressed-in look for labels and captions": {
+      "extractionState": "manual",
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "nenápadný vtlačený vzhled pro popisky"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ein dezenter eingeprägter Look für Beschriftungen"
+          }
+        }
+      }
+    },
+    "a quiet tinted box (pairs with block_color)": {
+      "extractionState": "manual",
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "klidný tónovaný rámeček (hodí se k barvě bloku)"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ein ruhiger getönter Kasten (passt zur Blockfarbe)"
+          }
+        }
+      }
+    },
+    "a single word that should stand out on dark pages": {
+      "extractionState": "manual",
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "jediné slovo, které má vyniknout na tmavých stránkách"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ein einzelnes Wort, das auf dunklen Seiten hervorstechen soll"
+          }
+        }
+      }
+    },
+    "a slowly moving multi-color gradient for one title or decorative label (value spectrum:<palette id>:<still|slow|normal|fast>:<forward|backward>, palette ids in effect_presets; forward moves the colors to the right); never body text, at most one per note, 200 characters at most": {
+      "extractionState": "manual",
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "pomalu se pohybující vícebarevný přechod pro jeden název nebo ozdobný popisek (hodnota spectrum:<palette id>:<still|slow|normal|fast>:<forward|backward>, ID palet v effect_presets; forward posouvá barvy doprava); nikdy pro běžný text, nejvýš jednou v poznámce, nejvýš 200 znaků"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ein langsam wandernder Mehrfarbverlauf für einen Titel oder ein dekoratives Label (Wert spectrum:<palette id>:<still|slow|normal|fast>:<forward|backward>, Paletten-IDs in effect_presets; forward bewegt die Farben nach rechts); nie für Fließtext, höchstens einmal pro Notiz, höchstens 200 Zeichen"
+          }
+        }
+      }
+    },
+    "a soft accent wash for a summary or key definition": {
+      "extractionState": "manual",
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "jemný barevný podklad pro shrnutí nebo klíčovou definici"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ein weicher Akzentschimmer für eine Zusammenfassung oder Kerndefinition"
+          }
+        }
+      }
+    },
     "added": {
       "localizations": {
         "cs": {
@@ -15760,6 +17056,40 @@
           "stringUnit": {
             "state": "translated",
             "value": "Alternativtext"
+          }
+        }
+      }
+    },
+    "an accent bar for the one paragraph to remember": {
+      "extractionState": "manual",
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "pruh zvýraznění pro ten jeden odstavec, který si zapamatovat"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ein Akzentbalken für den einen Absatz, den man sich merken soll"
+          }
+        }
+      }
+    },
+    "an accent outline; on a heading, an accent underline for section titles": {
+      "extractionState": "manual",
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "obrys v barvě zvýraznění; u nadpisu podtržení pro názvy oddílů"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ein Akzentrahmen; bei einer Überschrift eine Akzentunterstreichung für Abschnittstitel"
           }
         }
       }
@@ -16534,6 +17864,23 @@
         }
       }
     },
+    "large display words only; avoid in body text": {
+      "extractionState": "manual",
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "jen pro velká výrazná slova; nepoužívat v běžném textu"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "nur für große Anzeigewörter; nicht im Fließtext"
+          }
+        }
+      }
+    },
     "library 0 → 1: the document list becomes a table keyed by id; a default Space, folders and tabs are added": {
       "localizations": {
         "cs": {
@@ -16910,6 +18257,23 @@
         }
       }
     },
+    "one short title or phrase; at most one per section": {
+      "extractionState": "manual",
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "jeden krátký název nebo fráze; nejvýš jednou v oddílu"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ein kurzer Titel oder Ausdruck; höchstens einmal pro Abschnitt"
+          }
+        }
+      }
+    },
     "planned": {
       "extractionState": "manual",
       "localizations": {
@@ -16955,6 +18319,23 @@
           "stringUnit": {
             "state": "translated",
             "value": "entfernt"
+          }
+        }
+      }
+    },
+    "short headings on busy or image backdrops": {
+      "extractionState": "manual",
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "krátké nadpisy na rušném nebo obrázkovém pozadí"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "kurze Überschriften auf unruhigen oder Bildhintergründen"
           }
         }
       }

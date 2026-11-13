@@ -93,8 +93,8 @@ struct RecoveryCheck: View {
     }
 
     func summary(_ rep: VaultCheck.Report?) -> String {
-        guard let rep else { return "Looks for damaged or missing notes, repeated ids, broken links and pages, missing or unused attachments, a damaged index and interrupted changes." }
-        if rep.isClean { return "No problems" }
+        guard let rep else { return String(localized: "Looks for damaged or missing notes, repeated ids, broken links and pages, missing or unused attachments, a damaged index and interrupted changes.") }
+        if rep.isClean { return String(localized: "No problems") }
         return IssueSeverity.allCases.reversed().compactMap { s in rep.count(s) > 0 ? "\(rep.count(s)) \(s.label.lowercased())" : nil }.joined(separator: " · ")
     }
 }

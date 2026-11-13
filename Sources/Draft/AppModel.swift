@@ -1118,7 +1118,7 @@ final class AppModel {
         }
     }
 
-    func folderName(_ id: String?) -> String { id.flatMap { f in library.folders.first { $0.id == f }?.name } ?? "Unsorted" }
+    func folderName(_ id: String?) -> String { id.flatMap { f in library.folders.first { $0.id == f }?.name } ?? String(localized: "Unsorted") }
 
     func ancestors(_ id: String) -> [DocMeta] {
         var out: [DocMeta] = []

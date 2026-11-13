@@ -9,7 +9,7 @@ enum SettingsSections {
         ("assistant", "Assistant", "sparkle"), ("agents", "Agents (MCP)", "person.badge.key"), ("advanced", "Advanced", "slider.horizontal.3"), ("data", "Data & Storage", "internaldrive"), ("recovery", "Recovery", "cross.case"),
         ("stats", "Stats", "chart.bar"), ("about", "About Draft", "info.circle"),
     ]
-    static func title(_ id: String) -> String { all.first { $0.id == id }?.title ?? "Settings" }
+    static func title(_ id: String) -> String { loc(all.first { $0.id == id }?.title ?? "Settings") }
 }
 
 struct RailVisibleKey: EnvironmentKey { static let defaultValue = true }

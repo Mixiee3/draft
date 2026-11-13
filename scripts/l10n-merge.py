@@ -15,7 +15,7 @@ def unit(v): return {"stringUnit": {"state": "translated", "value": v}}
 n = 0
 for f in sorted(glob.glob("Localization/batches/*.json")):
     for key, t in json.load(open(f)).items():
-        if key not in c["strings"]: print("not in catalog (skipped):", key); continue
+        if key not in c["strings"]: c["strings"][key] = {"extractionState": "manual"}  # runtime key (loc())
         loc = c["strings"][key].setdefault("localizations", {})
         if isinstance(t, list):
             for lang, v in zip(["cs", "de"], t): check(key, v); loc[lang] = unit(v)

@@ -18,6 +18,10 @@ for f in glob.glob("Sources/**/*.swift", recursive=True):
     s = open(f).read()
     keys |= set(re.findall(r'\bloc\("((?:[^"\\]|\\.)+)"\)', s))
     keys |= set(re.findall(r'EditorCommand\("[^"]+", "((?:[^"\\]|\\.)+)"', s))
+    keys |= set(re.findall(r'chip\("[^"]+", "([^"]+)"', s))
+    if f.endswith("TextEffects.swift"):                                     # block effect names and uses
+        for n, u in re.findall(r'\("[a-z]+", "([A-Z][a-z]+)", "([^"]+)"\)', s): keys |= {n, u}            # Format panel chips (loc() inside)
+    keys |= set(re.findall(r'\("[⌘⇧⌥⌃][^"]*", "([^"]+)"\)', s))       # shortcut lists: (keys, name)
     if f.endswith("SettingsView.swift"):
         m = re.search(r'static let all: \[.*?\] = \[(.*?)\n    \]', s, re.S)
         if m: keys |= set(re.findall(r'\("[a-z]+", "([^"]+)"', m.group(1)))
