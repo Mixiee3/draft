@@ -53,7 +53,7 @@ extension Automation {
         w.setFrame(NSRect(x: 40, y: 40, width: narrow ? 720 : 1280, height: narrow ? 700 : 900), display: true)
         m.setSettings { $0.theme = dark ? "dark" : "light" }
         var report: [String: Any] = ["language": lang]
-        var english: [String: [String]] = [:], unnamed: [String: [String]] = [:], texts: [String: Int] = [:]
+        var english: [String: [String]] = [:], unnamed: [String: [String]] = [:], texts: [String: Int] = [:], axCounts: [String: Int] = [:]
         guard let doc = m.createDoc(title: "Plán cesty") else { return }
         let c = m.editor(for: doc).controller
         c.pastePlainForAutomation("## Plán\nLetíme v pondělí ráno #cesta\n- [ ] Rezervovat hotel\n| Den | Místo |\n| --- | --- |\n| 1 | Lisabon |")
@@ -85,12 +85,15 @@ extension Automation {
             await wait(1.0)
             await shot(p + name, w, settle: 0.2)
             var all: [(role: String, text: String, named: Bool)] = []
+            // SwiftUI builds its accessibility tree on the first request; ask, let it build, then read.
+            if let v = w.contentView { var warm: [(role: String, text: String, named: Bool)] = []; axWalk(v, into: &warm); await wait(0.6) }
             if let v = w.contentView { axWalk(v, into: &all) }
             if let s = w.attachedSheet?.contentView { axWalk(s, into: &all) }
             let lines = ocrLines(out.appendingPathComponent(p + name + ".png"))
             texts[name] = lines.count
             english[name] = Array(Set((all.map(\.text) + lines).filter(englishLooking))).sorted()
             let controls: Set<String> = ["AXButton", "AXCheckBox", "AXRadioButton", "AXPopUpButton", "AXMenuButton", "AXTextField", "AXSlider", "AXComboBox"]
+            axCounts[name] = all.count
             unnamed[name] = all.filter { controls.contains($0.role) && !$0.named }.map(\.role)
             close()
             await wait(0.3)
@@ -99,6 +102,7 @@ extension Automation {
         report["english"] = english
         report["englishCount"] = english.values.reduce(0) { $0 + $1.count }
         report["unnamedControls"] = unnamed.mapValues(\.count)
+        report["axElements"] = axCounts
         m.flushAll()
         if let d = try? JSONSerialization.data(withJSONObject: report, options: [.prettyPrinted, .sortedKeys]) { try? d.write(to: out.appendingPathComponent(p + "l10n.json")) }
     }

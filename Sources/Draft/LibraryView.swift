@@ -176,6 +176,8 @@ struct DocCardMenu: ViewModifier {
         content
             .contentShape(Rectangle())
             .onTapGesture { model.openView(.doc(meta.id)) }
+            .accessibilityAddTraits(.isButton)
+            .accessibilityAction { model.openView(.doc(meta.id)) }
             .contextMenu {
                 Button("Open") { model.openView(.doc(meta.id)) }
                 Button("Open in New Tab") { model.openView(.doc(meta.id), newTab: true) }

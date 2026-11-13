@@ -407,7 +407,7 @@ struct ConfirmDialog: View {
     let req: ConfirmRequest
     var body: some View {
         ZStack {
-            Color.black.opacity(0.3).ignoresSafeArea().onTapGesture { model.confirm = nil }
+            Color.black.opacity(0.3).ignoresSafeArea().onTapGesture { model.confirm = nil }.accessibilityHidden(true)
             VStack(alignment: .leading, spacing: 12) {
                 Text(req.title).font(.system(size: DS.headline, weight: .semibold)).foregroundStyle(t.text)
                 Text(req.detail).font(.system(size: DS.body)).foregroundStyle(t.secondary).fixedSize(horizontal: false, vertical: true)
@@ -458,7 +458,7 @@ struct QuickOpen: View {
 
     var body: some View {
         ZStack(alignment: .top) {
-            Color.black.opacity(0.22).ignoresSafeArea().onTapGesture { model.quickOpen = false }
+            Color.black.opacity(0.22).ignoresSafeArea().onTapGesture { model.quickOpen = false }.accessibilityHidden(true)
             VStack(spacing: 0) {
                 HStack(spacing: 8) {
                     Image(systemName: "magnifyingglass").foregroundStyle(t.secondary)
@@ -475,16 +475,16 @@ struct QuickOpen: View {
                     VStack(spacing: 2) {
                         ForEach(Array(results.enumerated()), id: \.element.id) { i, m in
                             row(icon: m.parentDocId == nil ? "doc.text" : "doc.on.doc", title: m.title.isEmpty ? "Untitled" : m.title, sub: model.folderName(m.folderId), selected: i == index)
-                                .onTapGesture { index = i; choose() }
+                                .onTapGesture { index = i; choose() }.accessibilityAddTraits(index == i ? [.isButton, .isSelected] : .isButton)
                         }
                         let blocks = blockResults
                         ForEach(Array(blocks.enumerated()), id: \.element.block.id) { i, h in
                             row(icon: h.block.heading == true ? "number" : "text.alignleft", title: h.block.text, sub: model.docTitle(h.doc), selected: results.count + i == index)
-                                .onTapGesture { index = results.count + i; choose() }
+                                .onTapGesture { index = results.count + i; choose() }.accessibilityAddTraits(.isButton)
                         }
                         if !query.isEmpty {
                             row(icon: "plus", title: "Create “\(query)”", sub: "New document", selected: index == results.count + blocks.count)
-                                .onTapGesture { index = results.count + blocks.count; choose() }
+                                .onTapGesture { index = results.count + blocks.count; choose() }.accessibilityAddTraits(.isButton)
                         }
                     }.padding(6)
                 }.frame(maxHeight: 360)

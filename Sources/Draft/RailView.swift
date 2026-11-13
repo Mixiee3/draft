@@ -401,6 +401,7 @@ struct AttachmentsPane: View {
                     }
                     .contentShape(Rectangle())
                     .onTapGesture { model.editors[docId]?.controller.scrollTo(blockId: a.blockId) }
+                    .accessibilityAddTraits(.isButton)
                     .padding(.horizontal, 10)
                 }
             }

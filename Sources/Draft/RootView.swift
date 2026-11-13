@@ -78,7 +78,7 @@ struct RootView: View {
                         .panelTransition(reduce: model.library.settings.reduceMotion)
                     }
                     if narrow && railOverlay {
-                        Color.black.opacity(0.2).ignoresSafeArea().onTapGesture { railOverlay = false }
+                        Color.black.opacity(0.2).ignoresSafeArea().onTapGesture { railOverlay = false }.accessibilityHidden(true)
                         RailView(narrow: true).frame(width: 280).padding(8)
                             .shadow(color: .black.opacity(0.25), radius: 24)
                             .transition(.move(edge: .leading))
