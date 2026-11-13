@@ -237,7 +237,7 @@ struct AssetThumb: View {
     let name: String
     let missing: Bool
     var body: some View {
-        let img: NSImage? = missing || !AssetCatalog.kind(name).hasPrefix("Image") ? nil : (try? model.vault.assetURL(name)).flatMap { NSImage(contentsOf: $0) }
+        let img: NSImage? = missing || !["png", "jpg", "jpeg", "gif", "webp", "heic", "tiff"].contains((name as NSString).pathExtension.lowercased()) ? nil : (try? model.vault.assetURL(name)).flatMap { NSImage(contentsOf: $0) }
         ZStack {
             RoundedRectangle(cornerRadius: 6, style: .continuous).fill(t.hover)
             if let img { Image(nsImage: img).resizable().aspectRatio(contentMode: .fill) }

@@ -79,8 +79,9 @@ public enum VaultCheck {
         vault.drain()
         var r = Report()
         var issues: [VaultIssue] = []
-        func add(_ k: VaultIssue.Kind, _ s: IssueSeverity, _ subject: String, _ title: String, _ detail: String, repair: String? = nil, doc: String? = nil) {
-            issues.append(VaultIssue(kind: k, severity: s, subject: subject, title: title, detail: detail, repair: repair, docId: doc))
+        // Messages are localized here (String Catalog); subjects and file names stay as they are.
+        func add(_ k: VaultIssue.Kind, _ s: IssueSeverity, _ subject: String, _ title: String.LocalizationValue, _ detail: String.LocalizationValue, repair: String.LocalizationValue? = nil, doc: String? = nil) {
+            issues.append(VaultIssue(kind: k, severity: s, subject: subject, title: String(localized: title), detail: String(localized: detail), repair: repair.map { String(localized: $0) }, docId: doc))
         }
         let fm = FileManager.default
         let dir = vault.dir
@@ -90,7 +91,7 @@ public enum VaultCheck {
             do { lib = try Migrations.migrateLibrary(data).library }
             catch let e as NewerSchemaError {
                 r.libraryReadable = false
-                add(.libraryNewer, .critical, "library.json", "The library was written by a newer Draft", e.localizedDescription + " Nothing will be changed.")
+                add(.libraryNewer, .critical, "library.json", "The library was written by a newer Draft", "\(e.localizedDescription) Nothing will be changed.")
             } catch {
                 r.libraryReadable = false
                 let json = (try? JSONSerialization.jsonObject(with: data)) != nil
@@ -114,17 +115,17 @@ public enum VaultCheck {
             r.docsChecked += 1
             let title = lib?.docs[id]?.title.nonEmpty ?? id
             guard let data = try? Data(contentsOf: docsDir.appendingPathComponent(id + ".json")) else { r.unreadableDocs.append(id); continue }
-            let restore: () -> String? = { vault.snapshots(id).first.map { "Restore it from the version of \(Date(timeIntervalSince1970: $0.savedAt / 1000).formatted(date: .abbreviated, time: .shortened)); the damaged file is kept in the repair backup." } }
+            let restore: () -> String.LocalizationValue? = { vault.snapshots(id).first.map { "Restore it from the version of \(Date(timeIntervalSince1970: $0.savedAt / 1000).formatted(date: .abbreviated, time: .shortened)); the damaged file is kept in the repair backup." } }
             switch readDoc(data) {
             case .malformed(let why):
                 r.unreadableDocs.append(id)
-                add(.docMalformed, .critical, id, "“\(title)” is damaged", "docs/\(id).json: \(why)" + (restore() == nil ? " No earlier version exists; the file is left as it is." : ""), repair: restore(), doc: id)
+                add(.docMalformed, .critical, id, "“\(title)” is damaged", restore() == nil ? "docs/\(id).json: \(why) No earlier version exists; the file is left as it is." : "docs/\(id).json: \(why)", repair: restore(), doc: id)
             case .unreadable(let why):
                 r.unreadableDocs.append(id)
-                add(.docUnreadable, .critical, id, "“\(title)” can't be read", "docs/\(id).json: \(why)" + (restore() == nil ? " No earlier version exists; the file is left as it is." : ""), repair: restore(), doc: id)
+                add(.docUnreadable, .critical, id, "“\(title)” can't be read", restore() == nil ? "docs/\(id).json: \(why) No earlier version exists; the file is left as it is." : "docs/\(id).json: \(why)", repair: restore(), doc: id)
             case .newer(let why):
                 r.unreadableDocs.append(id)
-                add(.docNewer, .warning, id, "“\(title)” was written by a newer Draft", why, doc: id)
+                add(.docNewer, .warning, id, "“\(title)” was written by a newer Draft", "\(why)", doc: id)
             case .ok(let d, let raw):
                 decoded[id] = d
                 internalIds[d.id, default: []].append(id)
@@ -228,9 +229,10 @@ public enum VaultCheck {
         // Repairs or restores that never finished.
         for j in VaultRepair.openJournals(vault) {
             add(.journalOpen, .critical, j.folder.lastPathComponent, "A \(j.journal.kind) was interrupted", "“\(j.journal.summary)” started \(Date(timeIntervalSince1970: j.journal.startedAt / 1000).formatted(date: .abbreviated, time: .shortened)) and didn't finish. The files from before it are in backups/\(j.folder.lastPathComponent).",
-                repair: [j.journal.touched.isEmpty ? nil : "put back the \(j.journal.touched.count) files from before it",
-                         j.journal.created.isEmpty ? nil : "remove the \(j.journal.created.count) files it created"]
-                    .compactMap { $0 }.joined(separator: " and ").capitalizedFirst.nonEmpty.map { $0 + "." } ?? "Mark it as rolled back; it hadn't changed anything yet.")
+                repair: j.journal.touched.isEmpty && j.journal.created.isEmpty ? "Mark it as rolled back; it hadn't changed anything yet."
+                    : j.journal.created.isEmpty ? "Put back the \(j.journal.touched.count) files from before it."
+                    : j.journal.touched.isEmpty ? "Remove the \(j.journal.created.count) files it created."
+                    : "Put back the \(j.journal.touched.count) files from before it and remove the \(j.journal.created.count) files it created.")
         }
         r.issues = issues.sorted { ($0.severity, $1.title) > ($1.severity, $0.title) }
         return r
