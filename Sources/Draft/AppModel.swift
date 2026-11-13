@@ -920,7 +920,7 @@ final class AppModel {
             self.toast("Folder “\(f.name)” removed")
         }
         if count == 0 { run(); return }
-        confirm = ConfirmRequest(title: "Remove folder “\(f.name)”?", detail: "Its \(count) document\(count > 1 ? "s" : "") will move to Unsorted. No documents are deleted.", confirmLabel: "Remove Folder", destructive: false, onConfirm: run)
+        confirm = ConfirmRequest(title: "Remove folder “\(f.name)”?", detail: "Its \(count) documents will move to Unsorted. No documents are deleted.", confirmLabel: "Remove Folder", destructive: false, onConfirm: run)
     }
 
     func toggleExpanded(_ id: String) {
