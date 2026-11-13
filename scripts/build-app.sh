@@ -3,6 +3,11 @@
 set -euo pipefail
 cd "$(dirname "$0")/.."
 CONFIG="${1:-release}"
+# Version from VERSION, build number from the commit count, channel from DRAFT_CHANNEL (local builds
+# are "development"; scripts/release.sh sets stable or beta). See docs/VERSIONING.md.
+VERSION=$(tr -d ' \n' < VERSION)
+BUILD=$(git rev-list --count HEAD 2>/dev/null || echo 1)
+CHANNEL=${DRAFT_CHANNEL:-development}
 swift build -c "$CONFIG" --product Draft
 BIN="$(swift build -c "$CONFIG" --show-bin-path)/Draft"
 APP=build/Draft.app
@@ -42,11 +47,13 @@ cat > "$APP/Contents/Info.plist" <<PLIST
   <key>CFBundleIdentifier</key><string>org.draftnotes.Draft</string>
   <key>CFBundleExecutable</key><string>Draft</string>
   <key>CFBundlePackageType</key><string>APPL</string>
-  <key>CFBundleShortVersionString</key><string>0.5.1</string>
+  <key>CFBundleShortVersionString</key><string>$VERSION</string>
+  <key>DraftChannel</key><string>$CHANNEL</string>
+  <key>DraftCommit</key><string>$(git rev-parse --short HEAD 2>/dev/null || echo unknown)</string>
   <key>NSMicrophoneUsageDescription</key><string>Draft listens only while you hold the Assistant's microphone button, to turn your speech into text on this Mac.</string>
   <key>NSSpeechRecognitionUsageDescription</key><string>Draft uses Apple's on-device speech recognition for Assistant dictation. Your voice is not sent to a server.</string>
   <key>NSCalendarsFullAccessUsageDescription</key><string>Draft shows your calendar events next to daily notes when you turn this on in Settings. Events are read on this Mac only and never changed.</string>
-  <key>CFBundleVersion</key><string>1</string>
+  <key>CFBundleVersion</key><string>$BUILD</string>
   <key>CFBundleIconFile</key><string>AppIcon</string>
   <key>LSMinimumSystemVersion</key><string>14.0</string>
   <key>LSApplicationCategoryType</key><string>public.app-category.productivity</string>
