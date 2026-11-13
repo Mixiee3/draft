@@ -27,7 +27,13 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         Automation.startIfRequested()
     }
     func applicationWillTerminate(_ notification: Notification) {
-        onMain { AppModel.shared.flushAll(); AppModel.shared.assistant.shutdown() }
+        onMain {
+            let m = AppModel.shared
+            m.flushAll(); m.assistant.shutdown()
+            m.cleanExit()
+            // "Install on Quit": hand over to the installer now that everything is saved.
+            if let item = m.updates.installOnQuit { try? m.updates.install(item, relaunch: false) }
+        }
     }
     func applicationShouldTerminateAfterLastWindowClosed(_ sender: NSApplication) -> Bool { true }
 }
@@ -143,6 +149,9 @@ struct DraftCommands: Commands {
             Divider()
             Button("Show Welcome…") { model.showWelcome() }
             Button("Take the Tour") { model.startTour() }
+        }
+        CommandGroup(after: .appInfo) {
+            Button("Check for Updates…") { model.updates.sheet = true; Task { await model.updates.check(manual: true, settings: model.library.settings) } }
         }
         CommandGroup(replacing: .appSettings) {
             Button("Settings…") { model.openView(ViewRef(kind: "settings", section: "appearance")) }.keyboardShortcut(",")

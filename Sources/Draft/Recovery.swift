@@ -34,6 +34,8 @@ final class RecoveryState {
     var safeMode = false
     /// The startup screen was answered (repaired or continued read-only) for this launch.
     var startupHandled = false
+    /// The previous session ended without quitting (crash, force quit, power loss).
+    var crash: CrashInfo?
 }
 
 struct HistoryTarget: Identifiable, Hashable { let id: String }
@@ -43,7 +45,7 @@ extension AppModel {
 
     /// Option held at launch, or DRAFT_SAFE_MODE=1: read everything, write nothing.
     static var safeModeRequested: Bool {
-        ProcessInfo.processInfo.environment["DRAFT_SAFE_MODE"] == "1" || NSEvent.modifierFlags.contains(.option)
+        ProcessInfo.processInfo.environment["DRAFT_SAFE_MODE"] == "1" || UserDefaults.standard.bool(forKey: "DraftSafeMode") || NSEvent.modifierFlags.contains(.option)
     }
 
     /// Cheap checks before the library is used: interrupted changes and a library that can't be read.

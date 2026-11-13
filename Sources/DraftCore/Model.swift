@@ -158,6 +158,12 @@ public struct Settings: Codable, Hashable, Sendable {
     public var completedTasks: String = "strike" // strike | dim | none
     /// Spell-checking language: nil = automatic (macOS picks per paragraph), else a code like "cs".
     public var spellingLanguage: String? = nil
+    /// Updates: automatic checks are off until the person turns them on (no request is made then).
+    public var updateChecks: Bool = false
+    public var updateChannel: String = "stable" // stable | beta | development
+    public var skippedUpdate: String? = nil
+    /// The version whose What's New was last shown.
+    public var lastSeenVersion: String? = nil
     public var libraryView: LibraryLayout = .gallery
     public var sort = SortSpec(key: .updatedAt, dir: "desc")
     public var railCollapsed: Bool = false
@@ -211,6 +217,10 @@ public struct Settings: Codable, Hashable, Sendable {
         reduceMotion = try c.decodeIfPresent(Bool.self, forKey: .reduceMotion) ?? def.reduceMotion
         simplifyEffectsWithIncreaseContrast = try c.decodeIfPresent(Bool.self, forKey: .simplifyEffectsWithIncreaseContrast) ?? def.simplifyEffectsWithIncreaseContrast
         spellingLanguage = try c.decodeIfPresent(String.self, forKey: .spellingLanguage)
+        updateChecks = try c.decodeIfPresent(Bool.self, forKey: .updateChecks) ?? false
+        updateChannel = try c.decodeIfPresent(String.self, forKey: .updateChannel) ?? "stable"
+        skippedUpdate = try c.decodeIfPresent(String.self, forKey: .skippedUpdate)
+        lastSeenVersion = try c.decodeIfPresent(String.self, forKey: .lastSeenVersion)
         completedTasks = try c.decodeIfPresent(String.self, forKey: .completedTasks) ?? def.completedTasks
         libraryView = (try? c.decodeIfPresent(LibraryLayout.self, forKey: .libraryView)) ?? def.libraryView
         sort = (try? c.decodeIfPresent(SortSpec.self, forKey: .sort)) ?? def.sort

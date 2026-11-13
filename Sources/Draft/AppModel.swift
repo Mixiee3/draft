@@ -81,6 +81,14 @@ final class AppModel {
     var readOnly: String?
     /// Vault check, repair, versions, backups and startup recovery (Recovery.swift).
     let recovery = RecoveryState()
+    /// Opt-in updates (Updater.swift).
+    let updates = UpdateController()
+    /// When the person last typed; installs wait for a confirmation while they are writing.
+    @ObservationIgnored var lastEditAt: Date?
+    @ObservationIgnored let sessionStart = Date()
+    var whatsNew = false
+    /// The last time a note reached the disk (shown after a crash and in Report a Problem).
+    var lastSaveAt: Date?
     var panel: Panel?
     var docRailTab: DocRailTab = .outline
     var railShowsFolders = false
@@ -173,7 +181,12 @@ final class AppModel {
             startAgentProposalWatch()
             if activeView.kind == "doc", let id = activeView.docId { _ = ensureDoc(id) }
             ready = true
+            updates.model = self
+            if let msg = updates.launchedAfterUpdate() { toast("\(msg)") }
+            beginSession()
             showWelcomeIfNeeded()
+            showWhatsNewIfNeeded()
+            updates.launchCheck(settings: library.settings)
         } catch let e as NewerSchemaError {
             readOnly = e.localizedDescription
             fatal = e.localizedDescription
@@ -205,6 +218,7 @@ final class AppModel {
     }
 
     func markDocDirty(_ id: String) {
+        lastEditAt = Date()
         dirtyDocs.insert(id)
         if saveState != "saving" { saveState = "saving" } // publish only real changes: every publish re-renders the window
         docTimer?.invalidate()
@@ -226,7 +240,8 @@ final class AppModel {
         v.enqueue({
             try v.saveDoc(saved)
             _ = try? v.snapshotIfDue(saved) // automatic local backups; never block a save on them
-        }, failed: { [weak self] e in onMain { self?.reportSaveError(e) } })
+            onMain { self.lastSaveAt = Date(); self.writeSession(lastSave: self.lastSaveAt) }
+        }, failed: { [weak self] e in onMain { self?.reportSaveError(e); DraftLog.write("save failed for \(saved.id): \((e as NSError).domain) \((e as NSError).code)") } })
         if var m = library.docs[id] {
             m.applyDerived(from: d)
             m.updatedAt = d.updatedAt
