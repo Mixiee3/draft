@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Merges translation batches into Localization/Localizable.xcstrings.
 
-Each batch (Localization/batches/*.json) maps an English key to either [czech, german] or, for counts,
+Each batch (Localization/batches/*.json, applied in name order, so 99-short-labels.json wins) maps an English key to either [czech, german] or, for counts,
 {"cs": {"one":…, "few":…, "other":…}, "de": {"one":…, "other":…}, "en": {"one":…, "other":…}}
 (plural forms keyed on the key's single %lld). Format specifiers must match the key's."""
 import json, glob, re, sys

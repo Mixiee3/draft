@@ -1,0 +1,11 @@
+{
+"Doc": ["Dok", "Dok"],
+"Caption": ["Popisek", "Legende"],
+"Callout": ["Rámeček", "Hinweis"],
+"Daily Notes & Tasks": ["Deník a úkoly", "Tage & Aufgaben"],
+"Publish": ["Publikovat", "Online"],
+"Transfer": ["Přenos", "Senden"],
+"Spelling language": ["Jazyk kontroly pravopisu", "Sprache der Rechtschreibung"],
+"Automatic lets macOS pick the language of each paragraph.": ["Automaticky nechá macOS určit jazyk každého odstavce.", "Automatisch lässt macOS die Sprache jedes Absatzes erkennen."],
+"Share and export": ["Sdílet a exportovat", "Teilen und exportieren"]
+}
