@@ -120,6 +120,7 @@ struct WelcomeView: View {
                     point("square.stack", "Spaces for each part of life", "Keep work, study and home apart. Each Space has its own notes, tags and tabs.")
                     point("textformat", "Write first, format later", "Just type. Select text for formatting, or type / to add a heading, list, table and more.")
                     point("sparkle", "An optional private Assistant", "Download a 1.6 GB model later if you like. It runs on this Mac, works offline, and never sends your notes anywhere.")
+                    point("network.slash", "Offline unless you choose", "Update checks, image search, link previews and the OpenAI Assistant are off until you turn them on. Agents like Codex only propose changes you review.")
                 }
                 .frame(width: 440, alignment: .leading).padding(.top, DS.s5 + 4)
                 VStack(spacing: DS.s2 + 2) {
@@ -131,6 +132,10 @@ struct WelcomeView: View {
                         Button("Import notes…") { model.finishOnboarding(startWriting: false); model.chooseImport() }.buttonStyle(.link)
                         Text("·").foregroundStyle(t.tertiary).accessibilityHidden(true)
                         Button("Show me the folder") { model.revealVault() }.buttonStyle(.link)
+                        Text("·").foregroundStyle(t.tertiary).accessibilityHidden(true)
+                        Button("Set Up the Assistant…") { model.finishOnboarding(startWriting: false); model.showSettings("assistant") }.buttonStyle(.link)
+                        Text("·").foregroundStyle(t.tertiary).accessibilityHidden(true)
+                        Button("Privacy") { model.finishOnboarding(startWriting: false); model.showSettings("privacy") }.buttonStyle(.link)
                     }.font(.system(size: DS.footnote)).padding(.top, DS.s1)
                 }
                 .padding(.top, DS.s5 + 4)
@@ -145,7 +150,7 @@ struct WelcomeView: View {
         }
     }
 
-    func point(_ symbol: String, _ title: String, _ text: String) -> some View {
+    func point(_ symbol: String, _ title: LocalizedStringKey, _ text: LocalizedStringKey) -> some View {
         HStack(alignment: .top, spacing: DS.s3 + 2) {
             Image(systemName: symbol).font(.system(size: DS.headline, weight: .semibold)).foregroundStyle(t.accent)
                 .frame(width: 34, height: 34).background(RoundedRectangle(cornerRadius: DS.rControl, style: .continuous).fill(t.accent.opacity(0.12)))
@@ -263,8 +268,8 @@ struct TourOverlay: View {
                 Spacer()
                 Button("Skip Tour") { model.finishOnboarding(startWriting: false) }.buttonStyle(.plain).font(.system(size: DS.footnote)).foregroundStyle(t.secondary)
             }
-            Text(info.title).font(.system(size: DS.headline + 1, weight: .semibold)).foregroundStyle(t.text)
-            Text(info.text).font(.system(size: DS.body)).foregroundStyle(t.secondary).fixedSize(horizontal: false, vertical: true)
+            Text(loc(info.title)).font(.system(size: DS.headline + 1, weight: .semibold)).foregroundStyle(t.text)
+            Text(loc(info.text)).font(.system(size: DS.body)).foregroundStyle(t.secondary).fixedSize(horizontal: false, vertical: true)
             if let note = info.note { Text(note).font(.system(size: DS.footnote)).foregroundStyle(t.tertiary).fixedSize(horizontal: false, vertical: true) }
             if last, !model.assistant.store.isInstalled(model.assistant.model) {
                 Button("Download Model (\(ByteCountFormatter.string(fromByteCount: model.assistant.model.bytes, countStyle: .file)))") {
@@ -286,6 +291,6 @@ struct TourOverlay: View {
         .padding(DS.s4 + 2)
         .surface(.overlay, radius: 18)
         .accessibilityElement(children: .contain)
-        .accessibilityLabel("Tour step \(step + 1) of \(total): \(info.title). \(info.text)")
+        .accessibilityLabel("Tour step \(step + 1) of \(total): \(loc(info.title)). \(loc(info.text))")
     }
 }

@@ -19,6 +19,7 @@ for f in glob.glob("Sources/**/*.swift", recursive=True):
     keys |= set(re.findall(r'\bloc\("((?:[^"\\]|\\.)+)"\)', s))
     keys |= set(re.findall(r'EditorCommand\("[^"]+", "((?:[^"\\]|\\.)+)"', s))
     keys |= set(re.findall(r'chip\("[^"]+", "([^"]+)"', s))
+    for t, x in re.findall(r'TourStep\(target: [^,]+, title: "([^"]+)",\s*text: "([^"]+)"', s): keys |= {t, x}  # tour (loc() at render)
     for opts in re.findall(r'options: \[((?:\("[^"]*", "[^"]+"\),? ?)+)\]', s):  # menu rows: (value, label)
         keys |= set(re.findall(r'\("[^"]*", "([^"]+)"\)', opts))
     if f.endswith("TextEffects.swift"):                                     # block effect names and uses

@@ -10,3 +10,11 @@ craft-original-screenshots/
 # User notes / vaults never belong in the repo.
 Vault/
 vault/
+dist/
+# Signing and update keys never belong in the repo.
+*.p12
+*.p8
+*.cer
+*.key
+update-private-key*
+.env*

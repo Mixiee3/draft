@@ -598,6 +598,59 @@ v0.9 screens; Full Keyboard Access with real Tab presses; typing with a physical
 keyboard and the real Japanese and Chinese input methods; reading the Czech and German text as a
 native speaker.
 
+## Manual checks carried forward (need a person; not forgotten)
+
+| Check | From | Status |
+|---|---|---|
+| Native-speaker review of the Czech and German translations | v0.9 #3 | ⬜ open |
+| Real keyboards: QWERTZ, AZERTY, Dvorak (typing and every shortcut in `docs/INPUT_MATRIX.md`) | v0.9 #4 | ⬜ open |
+| Real input methods: Japanese, Chinese, Korean (composition, candidate window, Return) | v0.9 #4 | ⬜ open |
+| VoiceOver on the v0.8 Trust & Recovery screens | v0.8 | ⬜ open |
+| Full VoiceOver / accessibility-tree audit (`swift scripts/ax-audit.swift`, needs Accessibility permission for the terminal) | v0.9 #7 | ⬜ open |
+| macOS Reduce Motion turned on: panels fade, Spectrum still, no slide animations | v0.9 #9 | ⬜ open |
+| Folding a toggle in a 30,000-block note (250 ms today; TextKit 1 limit) | v0.9 #1 | ⬜ known limit |
+
+## v1.0 groundwork — Release, Trust and Quality of Life (started 13 Nov 2026)
+
+One connected batch on `feature/v1.0-groundwork`. Rules: no network request the person didn't ask for
+(update checks are off by default, telemetry doesn't exist); every test on a throwaway vault; the
+installed app is replaced only after the whole batch passes.
+
+| # | Feature | Status |
+|---|---|---|
+| 12 | Version and migration policy (`docs/VERSIONING.md`) | ✅ complete |
+| 1 | Signed and notarized distribution (`scripts/release.sh`, `scripts/verify-release.sh`, hardened runtime, entitlements, `docs/RELEASE.md`) | 🟨 partial: signed (Apple Development) with hardened runtime, verified and launches; notarization and stapling scripted but need a Developer ID and notary credentials |
+| 2 | Secure opt-in updates (Ed25519-signed feed over HTTPS, verified download, install now / on quit / later, rollback, vault-compatibility warning, test mode) | ✅ complete (`scripts/update-test.sh`: 11 checks); no real feed hosted yet |
+| 3 | Release channels (stable default, beta, development; confirmation to switch; development builds never replace stable) | ✅ complete |
+| 4 | Onboarding and first run (welcome, tour, first note, model setup, import, vault folder, local-only and network explanations, What's New after updates) | ✅ complete |
+| 5 | Help center (searchable topics, each linking to its setting or action) | ✅ complete |
+| 6 | Report a Problem (local report, redacted diagnostics, reviewed before saving; nothing is sent) | ✅ complete |
+| 7 | Crash and recovery experience (unclean-exit detection, last save, recover, read-only, Safe Mode, logs, report; fault injection tests) | ✅ complete (`scripts/fault-test.sh`, limits in the script header) |
+| 8 | Privacy center (every permission and network feature with what it does and how to turn it off) | ✅ complete (`docs/PRIVACY.md`) |
+| 9 | Data portability (backup archive with manifest and restore, import preview with duplicates, export, “copy my data”) | ✅ complete |
+| 10 | Daily quality of life (consistency audit: save state, recent documents, command search, empty states, messages) | 🟨 partial: save state, Quick Open with commands, shortcut lists and confirmations already exist; no full screen-by-screen audit in this batch |
+| 11 | Release and CI gates (`scripts/release-check.sh`, GitHub Actions for what runs headless) | ✅ complete (CI not yet run on GitHub) |
+
+**Updater decision.** Sparkle 2 (MIT) is the standard; it expects a Developer ID–signed app and a
+binary dependency that wasn't approved for download here. Draft uses a small built-in updater instead:
+a JSON feed signed with Ed25519 (CryptoKit), HTTPS only, the download's size, SHA-256 and signature
+checked, the new app's code signature and bundle id checked, then a swap that keeps the old app until
+the new one launches (rollback otherwise). The feed format is documented so moving to Sparkle later is
+a drop-in replacement of `UpdateController`.
+
+**Acceptance.** Signed build verifies (`codesign --verify --deep --strict`, hardened runtime flag);
+notarization and stapling run when the secrets in `docs/RELEASE.md` are present (they are not on this
+Mac: no Developer ID certificate); the updater installs a signed test update and refuses a tampered
+one; a failed install rolls back; updates can be deferred and disabled; with checks off the app makes
+no update request (test); onboarding from a clean vault; What's New after a version change;
+diagnostics contain no note text, titles or paths (test); crash recovery keeps originals (fault
+injection); Safe Mode writes nothing; a backup archive restores to identical files; Czech and German
+uncut; all budgets pass.
+
+**Screenshots** (`docs/screenshots/v10/`, light, dark, narrow): update available, release notes,
+update settings, onboarding, What's New, Help, Report a Problem, Privacy, Crash Recovery, Safe Mode,
+backup archive, import preview.
+
 ## v1.0 — "A credible personal workspace" (macOS)
 
 **Gate.** Every parity row targeted ≤ 1.0 is `working` or `verified`; signed + notarized build;

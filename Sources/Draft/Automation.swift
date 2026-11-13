@@ -72,6 +72,12 @@ enum Automation {
             case "agent-review": await agentReview()
             case "agent-seed": await agentSeed()
             case "agent-external-accept": await agentExternalAccept()
+            case "update-e2e": await updateE2E()
+            case "update-disabled": await updateDisabled()
+            case "update-after": await updateAfter()
+            case "fault-write": await faultWrite()
+            case "fault-read": await faultRead()
+            case "screens-v10": await screensV10()
             default: break
             }
             NSApp.terminate(nil)

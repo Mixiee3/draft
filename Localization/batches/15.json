@@ -1,0 +1,907 @@
+{
+"#%@": [
+"#%@",
+"#%@"
+],
+"%@": [
+"%@",
+"%@"
+],
+"%@ %@": [
+"%@ %@",
+"%@ %@"
+],
+"%@ · %@": [
+"%@ · %@",
+"%@ · %@"
+],
+"%@ · %lld": [
+"%@ · %lld",
+"%@ · %lld"
+],
+"%@, %@": [
+"%@, %@",
+"%@, %@"
+],
+"%@: %@": [
+"%@: %@",
+"%@: %@"
+],
+"%@: %@. %@. %@": [
+"%@: %@. %@. %@",
+"%@: %@. %@. %@"
+],
+"%lld": [
+"%lld",
+"%lld"
+],
+"%lld %%": [
+"%lld %%",
+"%lld %%"
+],
+"%lld %@": [
+"%lld %@",
+"%lld %@"
+],
+"%lld / %lld": [
+"%lld / %lld",
+"%lld / %lld"
+],
+"%lld. %@": [
+"%lld. %@",
+"%lld. %@"
+],
+".*": [
+".*",
+".*"
+],
+"00": [
+"00",
+"00"
+],
+"A development build never replaces a stable or beta Draft.": [
+"Vývojové sestavení nikdy nenahradí stabilní ani beta Draft.",
+"Ein Entwicklungs-Build ersetzt nie ein stabiles oder Beta-Draft."
+],
+"A private Assistant, if you want one": [
+"Soukromý asistent, pokud o něj stojíte",
+"Ein privater Assistent, wenn du willst"
+],
+"A restored copy is already there: %@.": [
+"Obnovená kopie už existuje: %@.",
+"Eine wiederhergestellte Kopie ist schon da: %@."
+],
+"Aa formats the current block. The brush opens styles: backdrops, paper, fonts and separators. Style never changes your words.": [
+"Aa formátuje aktuální blok. Štětec otevře styly: pozadí, papír, písma a oddělovače. Styl nikdy nemění vaše slova.",
+"Aa formatiert den aktuellen Block. Der Pinsel öffnet Stile: Hintergründe, Papier, Schriften und Trenner. Ein Stil ändert nie deine Worte."
+],
+"Advanced Settings": [
+"Pokročilá nastavení",
+"Erweiterte Einstellungen"
+],
+"Agents (Codex, Claude Code) and permissions": [
+"Agenti (Codex, Claude Code) a oprávnění",
+"Agenten (Codex, Claude Code) und Berechtigungen"
+],
+"Agents Settings": [
+"Nastavení agentů",
+"Agenten-Einstellungen"
+],
+"Agents and permissions": [
+"Agenti a oprávnění",
+"Agenten und Berechtigungen"
+],
+"Agents connect through scripts/draft-mcp.sh. They read notes and propose changes; nothing changes until you apply a proposal, and one Undo reverses it. Destructive changes need your permission per agent.": [
+"Agenti se připojují přes scripts/draft-mcp.sh. Čtou poznámky a navrhují změny; nic se nezmění, dokud návrh nepoužijete, a jedno Zpět ho vrátí. Mazání a podobné změny vyžadují vaše svolení pro každého agenta.",
+"Agenten verbinden sich über scripts/draft-mcp.sh. Sie lesen Notizen und schlagen Änderungen vor; nichts ändert sich, bevor du einen Vorschlag anwendest, und ein Widerrufen macht ihn rückgängig. Zerstörende Änderungen brauchen deine Erlaubnis pro Agent."
+],
+"Agents talk to Draft on this Mac through scripts/draft-mcp.sh. Every change they want is a proposal you review.": [
+"Agenti komunikují s Draftem na tomto Macu přes scripts/draft-mcp.sh. Každá jejich změna je návrh, který zkontrolujete.",
+"Agenten sprechen auf diesem Mac über scripts/draft-mcp.sh mit Draft. Jede gewünschte Änderung ist ein Vorschlag, den du prüfst."
+],
+"Allowed": [
+"Povoleno",
+"Erlaubt"
+],
+"An optional private Assistant": [
+"Volitelný soukromý asistent",
+"Ein optionaler privater Assistent"
+],
+"Ask about a note or your whole Space, or have it summarize and rewrite. It needs a one-time 1.6 GB download and then runs entirely on this Mac.": [
+"Ptejte se na poznámku nebo celý prostor, nechte si shrnout a přepsat text. Potřebuje jednorázové stažení 1,6 GB a pak běží celý na tomto Macu.",
+"Frag zu einer Notiz oder deinem ganzen Bereich, lass zusammenfassen und umschreiben. Einmal 1,6 GB laden, dann läuft alles auf diesem Mac."
+],
+"Assistant Settings": [
+"Nastavení asistenta",
+"Assistent-Einstellungen"
+],
+"Assistant dictation, only while you hold the microphone button. Speech is recognized on this Mac.": [
+"Diktování asistentovi, jen když držíte tlačítko mikrofonu. Řeč se rozpoznává na tomto Macu.",
+"Diktieren für den Assistenten, nur solange du die Mikrofontaste hältst. Sprache wird auf diesem Mac erkannt."
+],
+"Assistant model": [
+"Model asistenta",
+"Assistent-Modell"
+],
+"Assistant privacy": [
+"Soukromí asistenta",
+"Datenschutz des Assistenten"
+],
+"Backup Archive: one file with your whole vault, which you can restore and check.": [
+"Archiv zálohy: jeden soubor s celým trezorem, který lze obnovit a zkontrolovat.",
+"Backup-Archiv: eine Datei mit deinem ganzen Tresor, die du wiederherstellen und prüfen kannst."
+],
+"Backup archive": [
+"Archiv zálohy",
+"Backup-Archiv"
+],
+"Backup archive saved.": [
+"Archiv zálohy uložen.",
+"Backup-Archiv gesichert."
+],
+"Backups and backup archives": [
+"Zálohy a archivy záloh",
+"Backups und Backup-Archive"
+],
+"Beta": [
+"Beta",
+"Beta"
+],
+"Beta versions get features earlier and may have bugs. Your notes stay in the same vault; make a backup archive first. You can switch back to Stable, but a newer vault format can't be opened by an older Draft.": [
+"Beta verze dostávají funkce dřív a mohou mít chyby. Poznámky zůstávají ve stejném trezoru; nejdřív vytvořte archiv zálohy. Na Stabilní se můžete vrátit, ale novější formát trezoru starší Draft neotevře.",
+"Beta-Versionen bekommen Funktionen früher und können Fehler haben. Deine Notizen bleiben im selben Tresor; erstelle zuerst ein Backup-Archiv. Du kannst zu Stabil zurück, aber ein älteres Draft öffnet kein neueres Tresorformat."
+],
+"Check for Updates…": [
+"Vyhledat aktualizace…",
+"Nach Updates suchen …"
+],
+"Check for Updates… in the Draft menu. Automatic checks are off until you turn them on. Every update is verified with Draft's release key before it is installed, and the previous version is kept until the new one starts.": [
+"Vyhledat aktualizace… v nabídce Draft. Automatická kontrola je vypnutá, dokud ji nezapnete. Každá aktualizace se před instalací ověří klíčem vydání Draftu a předchozí verze se uchová, dokud nová nenaběhne.",
+"Nach Updates suchen … im Draft-Menü. Automatische Prüfungen sind aus, bis du sie einschaltest. Jedes Update wird vor der Installation mit Drafts Release-Schlüssel geprüft, und die vorige Version bleibt, bis die neue startet."
+],
+"Check for Updates… in the Draft menu. Automatic checks stay off until you turn them on.": [
+"Vyhledat aktualizace… v nabídce Draft. Automatická kontrola zůstane vypnutá, dokud ji nezapnete.",
+"Nach Updates suchen … im Draft-Menü. Automatische Prüfungen bleiben aus, bis du sie einschaltest."
+],
+"Check for updates automatically": [
+"Hledat aktualizace automaticky",
+"Automatisch nach Updates suchen"
+],
+"Checking for updates…": [
+"Hledám aktualizace…",
+"Suche nach Updates …"
+],
+"Choose…": [
+"Vybrat…",
+"Auswählen …"
+],
+"Click + or press ⌘N. Notes are saved as you type, as plain files in Draft's folder on this Mac.": [
+"Klikněte na + nebo stiskněte ⌘N. Poznámky se ukládají během psaní jako obyčejné soubory ve složce Draftu na tomto Macu.",
+"Klicke auf + oder drücke ⌘N. Notizen werden beim Tippen gesichert, als einfache Dateien in Drafts Ordner auf diesem Mac."
+],
+"Codex, Claude Code and other agents: read notes and propose changes; destructive changes need your permission.": [
+"Codex, Claude Code a další agenti: čtou poznámky a navrhují změny; mazání a podobné změny vyžadují vaše svolení.",
+"Codex, Claude Code und andere Agenten: lesen Notizen und schlagen Änderungen vor; zerstörende Änderungen brauchen deine Erlaubnis."
+],
+"Continue": [
+"Pokračovat",
+"Weiter"
+],
+"Copy": [
+"Kopírovat",
+"Kopieren"
+],
+"Couldn't create the archive: %@": [
+"Archiv se nepodařilo vytvořit: %@",
+"Archiv konnte nicht erstellt werden: %@"
+],
+"Couldn't install the update: %@": [
+"Aktualizaci se nepodařilo nainstalovat: %@",
+"Update konnte nicht installiert werden: %@"
+],
+"Couldn't save the report: %@": [
+"Hlášení se nepodařilo uložit: %@",
+"Bericht konnte nicht gesichert werden: %@"
+],
+"Create Backup Archive": [
+"Vytvořit archiv zálohy",
+"Backup-Archiv erstellen"
+],
+"Daily Notes Settings": [
+"Nastavení denních poznámek",
+"Tagesnotizen-Einstellungen"
+],
+"Describe what happened. Draft writes a report file you can read below and save; nothing is sent. Note text, titles, file names and the vault's location are never included.": [
+"Popište, co se stalo. Draft napíše soubor s hlášením, který si níže přečtete a uložíte; nic se neodesílá. Text poznámek, názvy, jména souborů ani umístění trezoru nikdy neobsahuje.",
+"Beschreibe, was passiert ist. Draft schreibt eine Berichtsdatei, die du unten lesen und sichern kannst; nichts wird gesendet. Notiztext, Titel, Dateinamen und der Ort des Tresors sind nie enthalten."
+],
+"Development": [
+"Vývojový",
+"Entwicklung"
+],
+"Development builds are for testing and can break. They never replace a stable Draft on their own; keep a backup archive.": [
+"Vývojová sestavení jsou na testování a mohou se rozbít. Nikdy sama nenahradí stabilní Draft; mějte archiv zálohy.",
+"Entwicklungs-Builds sind zum Testen und können kaputtgehen. Sie ersetzen nie von selbst ein stabiles Draft; halte ein Backup-Archiv bereit."
+],
+"Dismiss": [
+"Zavřít",
+"Schließen"
+],
+"Download a 1.6 GB model later if you like. It runs on this Mac, works offline, and never sends your notes anywhere.": [
+"Model o velikosti 1,6 GB si můžete stáhnout později. Běží na tomto Macu, funguje offline a poznámky nikam neposílá.",
+"Lade später ein 1,6‑GB-Modell, wenn du willst. Es läuft auf diesem Mac, funktioniert offline und sendet deine Notizen nirgendwohin."
+],
+"Downloaded": [
+"Staženo",
+"Geladen"
+],
+"Downloaded and verified: signed by Draft's release key, checksum and code signature checked.": [
+"Staženo a ověřeno: podepsáno klíčem vydání Draftu, kontrolní součet i podpis kódu zkontrolovány.",
+"Geladen und geprüft: mit Drafts Release-Schlüssel signiert, Prüfsumme und Codesignatur kontrolliert."
+],
+"Downloaded once, only when you click Download; then the Assistant works offline.": [
+"Stáhne se jednou, jen když kliknete na Stáhnout; pak asistent funguje offline.",
+"Einmal geladen, nur wenn du auf Laden klickst; danach arbeitet der Assistent offline."
+],
+"Downloading…": [
+"Stahuji…",
+"Wird geladen …"
+],
+"Downloads the list of Draft versions over HTTPS. Sends nothing about you.": [
+"Stáhne seznam verzí Draftu přes HTTPS. O vás nic neposílá.",
+"Lädt die Liste der Draft-Versionen über HTTPS. Sendet nichts über dich."
+],
+"Draft %@ (%lld)": [
+"Draft %1$@ (%2$lld)",
+"Draft %1$@ (%2$lld)"
+],
+"Draft %@ (%lld) · %@": [
+"Draft %1$@ (%2$lld) · %3$@",
+"Draft %1$@ (%2$lld) · %3$@"
+],
+"Draft %@ is available": [
+"Je k dispozici Draft %@",
+"Draft %@ ist verfügbar"
+],
+"Draft Help": [
+"Nápověda Draftu",
+"Draft-Hilfe"
+],
+"Draft couldn't reach the update server. Check your connection and try again.": [
+"Draft se nespojil se serverem aktualizací. Zkontrolujte připojení a zkuste to znovu.",
+"Draft hat den Update-Server nicht erreicht. Prüfe deine Verbindung und versuch es erneut."
+],
+"Draft doesn't add its own encryption yet; FileVault encrypts the whole disk, including the vault.": [
+"Draft zatím nepřidává vlastní šifrování; FileVault šifruje celý disk včetně trezoru.",
+"Draft fügt noch keine eigene Verschlüsselung hinzu; FileVault verschlüsselt das ganze Laufwerk, auch den Tresor."
+],
+"Draft is up to date.": [
+"Draft je aktuální.",
+"Draft ist aktuell."
+],
+"Draft keeps versions of every note and copies files before any repair or migration. Create Backup Archive saves the whole vault in one file you can restore and check.": [
+"Draft uchovává verze každé poznámky a před každou opravou či migrací kopíruje soubory. Vytvořit archiv zálohy uloží celý trezor do jednoho souboru, který lze obnovit a zkontrolovat.",
+"Draft hält Versionen jeder Notiz und kopiert Dateien vor jeder Reparatur oder Migration. Backup-Archiv erstellen sichert den ganzen Tresor in einer Datei, die du wiederherstellen und prüfen kannst."
+],
+"Draft never sends usage data, crash reports or analytics. Report a Problem only saves a file you review.": [
+"Draft nikdy neposílá údaje o používání, hlášení o pádech ani analytiku. Nahlásit problém jen uloží soubor, který zkontrolujete.",
+"Draft sendet nie Nutzungsdaten, Absturzberichte oder Analysen. Problem melden sichert nur eine Datei, die du prüfst."
+],
+"Draft only contacts the update server when you click Check for Updates or turn on automatic checks. It sends nothing about you or your notes; the request is an ordinary download of the update list.": [
+"Draft kontaktuje server aktualizací, jen když kliknete na Vyhledat aktualizace nebo zapnete automatickou kontrolu. Neposílá nic o vás ani o poznámkách; požadavek je obyčejné stažení seznamu aktualizací.",
+"Draft kontaktiert den Update-Server nur, wenn du auf Nach Updates suchen klickst oder automatische Prüfungen einschaltest. Es sendet nichts über dich oder deine Notizen; die Anfrage ist ein normaler Download der Update-Liste."
+],
+"Draft quit unexpectedly last time": [
+"Draft se minule neočekávaně ukončil",
+"Draft wurde letztes Mal unerwartet beendet"
+],
+"Draft saves a version every 10 minutes while you edit; Save Version Now (⌥⌘S) keeps one on purpose. Version History (⌥⌘Y) shows the differences and restores with one Undo.": [
+"Draft během úprav ukládá verzi každých 10 minut; Uložit verzi teď (⌥⌘S) si ji ponechá záměrně. Historie verzí (⌥⌘Y) ukáže rozdíly a obnoví s jedním Zpět.",
+"Draft sichert beim Bearbeiten alle 10 Minuten eine Version; Version jetzt sichern (⌥⌘S) behält eine gezielt. Versionsverlauf (⌥⌘Y) zeigt Unterschiede und stellt mit einem Widerrufen wieder her."
+],
+"Draft saves everything first, then restarts. Choose Install on Quit to keep writing.": [
+"Draft nejdřív vše uloží a pak se restartuje. Chcete-li psát dál, zvolte Instalovat při ukončení.",
+"Draft sichert zuerst alles und startet dann neu. Wähle Beim Beenden installieren, um weiterzuschreiben."
+],
+"Draft will update when you quit.": [
+"Draft se aktualizuje při ukončení.",
+"Draft wird beim Beenden aktualisiert."
+],
+"Encryption": [
+"Šifrování",
+"Verschlüsselung"
+],
+"Every editor command has a shortcut; the Format, Insert and Table menus list them. ⌘O opens Quick Open for documents, blocks and commands.": [
+"Každý příkaz editoru má zkratku; najdete je v nabídkách Formát, Vložit a Tabulka. ⌘O otevře Rychlé otevření dokumentů, bloků a příkazů.",
+"Jeder Editor-Befehl hat ein Kürzel; die Menüs Format, Einfügen und Tabelle zeigen sie. ⌘O öffnet Schnell öffnen für Dokumente, Blöcke und Befehle."
+],
+"Every note is a file in a folder you can open. No account, no cloud, nothing to sign in to.": [
+"Každá poznámka je soubor ve složce, kterou můžete otevřít. Žádný účet, žádný cloud, nic k přihlašování.",
+"Jede Notiz ist eine Datei in einem Ordner, den du öffnen kannst. Kein Konto, keine Cloud, keine Anmeldung."
+],
+"Everything in this Space is here: all notes, Today, Calendar and Tasks. Click the Space name to make another Space for work, study or home.": [
+"Vše v tomto prostoru je tady: všechny poznámky, Dnes, Kalendář a Úkoly. Kliknutím na název prostoru vytvoříte další pro práci, studium nebo domov.",
+"Alles in diesem Bereich ist hier: alle Notizen, Heute, Kalender und Aufgaben. Klicke auf den Bereichsnamen, um einen weiteren für Arbeit, Studium oder Zuhause anzulegen."
+],
+"Exactly what will be saved": [
+"Přesně to, co se uloží",
+"Genau das wird gesichert"
+],
+"Extracts into a new folder next to the archive and runs Vault Check on it.": [
+"Rozbalí do nové složky vedle archivu a spustí na ní Kontrolu trezoru.",
+"Entpackt in einen neuen Ordner neben dem Archiv und führt die Tresorprüfung aus."
+],
+"FileVault is off": [
+"FileVault je vypnutý",
+"FileVault ist aus"
+],
+"FileVault is on": [
+"FileVault je zapnutý",
+"FileVault ist an"
+],
+"Formatting": [
+"Formátování",
+"Formatierung"
+],
+"Help": [
+"Nápověda",
+"Hilfe"
+],
+"Help: search how-tos for writing, backups, version history, agents and recovery.": [
+"Nápověda: vyhledávejte návody k psaní, zálohám, historii verzí, agentům a obnově.",
+"Hilfe: durchsuche Anleitungen zu Schreiben, Backups, Versionsverlauf, Agenten und Wiederherstellung."
+],
+"If something looks wrong, check the vault (Settings › Recovery). Restarting in Safe Mode opens your notes read-only. Hold Option while opening Draft to do the same.": [
+"Když něco nevypadá dobře, zkontrolujte trezor (Nastavení › Obnova). Restart v nouzovém režimu otevře poznámky jen pro čtení. Totéž udělá podržení Option při otevírání Draftu.",
+"Wenn etwas falsch aussieht, prüfe den Tresor (Einstellungen › Wiederherstellung). Ein Neustart im sicheren Modus öffnet deine Notizen schreibgeschützt. Dasselbe passiert, wenn du beim Öffnen von Draft Wahl hältst."
+],
+"Import %lld Notes": {
+"cs": {
+"few": "Importovat %lld poznámky",
+"one": "Importovat %lld poznámku",
+"other": "Importovat %lld poznámek"
+},
+"de": {
+"one": "%lld Notiz importieren",
+"other": "%lld Notizen importieren"
+},
+"en": {
+"one": "Import %lld Note",
+"other": "Import %lld Notes"
+}
+},
+"Import Markdown, text, OPML and Draft exports; you see a preview with duplicates before anything is added. Export Markdown with assets or a lossless JSON copy of everything.": [
+"Importujte Markdown, text, OPML a exporty Draftu; před přidáním uvidíte náhled s duplicitami. Exportujte Markdown s přílohami nebo bezeztrátovou kopii všeho v JSON.",
+"Importiere Markdown, Text, OPML und Draft-Exporte; vor dem Hinzufügen siehst du eine Vorschau mit Duplikaten. Exportiere Markdown mit Anhängen oder eine verlustfreie JSON-Kopie von allem."
+],
+"Import Preview": [
+"Náhled importu",
+"Importvorschau"
+],
+"Importing and exporting": [
+"Import a export",
+"Importieren und Exportieren"
+],
+"Include a screenshot of the Draft window (it may show note text)": [
+"Přiložit snímek okna Draftu (může ukazovat text poznámek)",
+"Bildschirmfoto des Draft-Fensters anhängen (kann Notiztext zeigen)"
+],
+"Include the recent log (events and ids only)": [
+"Přiložit nedávný protokol (jen události a ID)",
+"Aktuelles Protokoll anhängen (nur Ereignisse und IDs)"
+],
+"Install and Restart": [
+"Instalovat a restartovat",
+"Installieren und neu starten"
+],
+"Install on Quit": [
+"Instalovat při ukončení",
+"Beim Beenden installieren"
+],
+"Installing… Draft restarts in a moment.": [
+"Instaluji… Draft se za chvíli restartuje.",
+"Wird installiert … Draft startet gleich neu."
+],
+"Just type. Select text for formatting, or type / to add a heading, list, table and more.": [
+"Prostě pište. Pro formátování označte text, nebo napište / a přidejte nadpis, seznam, tabulku a další.",
+"Einfach tippen. Markiere Text zum Formatieren oder tippe / für Überschrift, Liste, Tabelle und mehr."
+],
+"Keep work, study and home apart. Each Space has its own notes, tags and tabs.": [
+"Oddělte práci, studium a domov. Každý prostor má vlastní poznámky, štítky a karty.",
+"Halte Arbeit, Studium und Zuhause getrennt. Jeder Bereich hat eigene Notizen, Tags und Tabs."
+],
+"Last checked %@": [
+"Naposledy zkontrolováno %@",
+"Zuletzt geprüft %@"
+],
+"Link previews": [
+"Náhledy odkazů",
+"Link-Vorschauen"
+],
+"Loads the title and image of a pasted web address from that website.": [
+"Načte název a obrázek vložené webové adresy z dané stránky.",
+"Lädt Titel und Bild einer eingefügten Webadresse von dieser Website."
+],
+"MCP agents": [
+"MCP agenti",
+"MCP-Agenten"
+],
+"Make it look yours": [
+"Ať to vypadá po vašem",
+"Mach es zu deinem"
+],
+"Microphone": [
+"Mikrofon",
+"Mikrofon"
+],
+"Network (each one off until you turn it on)": [
+"Síť (vše vypnuto, dokud nezapnete)",
+"Netzwerk (alles aus, bis du es einschaltest)"
+],
+"No help topic matches “%@”.": [
+"Výrazu „%@“ neodpovídá žádné téma nápovědy.",
+"Kein Hilfethema passt zu „%@“."
+],
+"Not allowed": [
+"Nepovoleno",
+"Nicht erlaubt"
+],
+"Not asked": [
+"Nedotázáno",
+"Nicht gefragt"
+],
+"Not checked in this session": [
+"V této relaci nezkontrolováno",
+"In dieser Sitzung nicht geprüft"
+],
+"Not downloaded": [
+"Nestaženo",
+"Nicht geladen"
+],
+"Not saved": [
+"Neuloženo",
+"Nicht gesichert"
+],
+"Notes are plain files in your vault folder: library.json, docs/, assets/, history/ and backups/. You can copy the folder to keep or move your data.": [
+"Poznámky jsou obyčejné soubory ve složce trezoru: library.json, docs/, assets/, history/ a backups/. Data uchováte nebo přesunete zkopírováním složky.",
+"Notizen sind einfache Dateien in deinem Tresorordner: library.json, docs/, assets/, history/ und backups/. Kopiere den Ordner, um deine Daten zu behalten oder umzuziehen."
+],
+"Notes: %lld · Folders: %lld. Nothing is added until you click Import.": [
+"Poznámky: %1$lld · Složky: %2$lld. Nic se nepřidá, dokud nekliknete na Importovat.",
+"Notizen: %1$lld · Ordner: %2$lld. Nichts wird hinzugefügt, bevor du auf Importieren klickst."
+],
+"Nothing else in Draft uses the network.": [
+"Nic jiného v Draftu síť nepoužívá.",
+"Nichts anderes in Draft nutzt das Netzwerk."
+],
+"Nothing was saved in that session. Versions and backups are untouched.": [
+"V té relaci se nic neuložilo. Verze a zálohy jsou nedotčené.",
+"In dieser Sitzung wurde nichts gesichert. Versionen und Backups sind unberührt."
+],
+"Notifications": [
+"Oznámení",
+"Mitteilungen"
+],
+"Offline unless you choose": [
+"Offline, dokud se nerozhodnete jinak",
+"Offline, außer du willst es anders"
+],
+"On this Mac": [
+"Na tomto Macu",
+"Auf diesem Mac"
+],
+"Once a day while Draft is open. Off: Draft never contacts the update server on its own.": [
+"Jednou denně, když je Draft otevřený. Vypnuto: Draft sám server aktualizací nikdy nekontaktuje.",
+"Einmal am Tag, solange Draft offen ist. Aus: Draft kontaktiert den Update-Server nie von selbst."
+],
+"One .zip with every note, attachment, version and backup, your settings, and a manifest with a checksum for each file. Restoring puts it in a new folder and checks it — it never writes over your vault.": [
+"Jeden .zip se všemi poznámkami, přílohami, verzemi a zálohami, nastavením a manifestem s kontrolním součtem každého souboru. Obnova ho rozbalí do nové složky a zkontroluje — nikdy nepřepíše váš trezor.",
+"Eine .zip mit allen Notizen, Anhängen, Versionen und Backups, deinen Einstellungen und einem Manifest mit Prüfsumme pro Datei. Wiederherstellen legt sie in einen neuen Ordner und prüft sie – dein Tresor wird nie überschrieben."
+],
+"Online image search": [
+"Online hledání obrázků",
+"Online-Bildsuche"
+],
+"Only when you ask": [
+"Jen na požádání",
+"Nur auf Anfrage"
+],
+"Open FileVault Settings": [
+"Otevřít nastavení FileVault",
+"FileVault-Einstellungen öffnen"
+],
+"Open Help": [
+"Otevřít nápovědu",
+"Hilfe öffnen"
+],
+"Open Version History": [
+"Otevřít historii verzí",
+"Versionsverlauf öffnen"
+],
+"Open the Format Panel": [
+"Otevřít panel Formát",
+"Formatbereich öffnen"
+],
+"OpenAI API key": [
+"Klíč OpenAI API",
+"OpenAI-API-Schlüssel"
+],
+"Plain files you own": [
+"Obyčejné soubory, které vlastníte",
+"Einfache Dateien, die dir gehören"
+],
+"Privacy: every permission and network feature, what it does and how to turn it off.": [
+"Soukromí: každé oprávnění a síťová funkce, co dělá a jak ji vypnout.",
+"Datenschutz: jede Berechtigung und Netzwerkfunktion, was sie tut und wie du sie ausschaltest."
+],
+"Recover from a damaged vault": [
+"Obnova poškozeného trezoru",
+"Einen beschädigten Tresor retten"
+],
+"Recovery lists every problem with an exact repair preview. Repairs copy the files they touch to backups/ first and one Undo puts them back. If Draft can't open the vault, it offers recovery or read-only at launch.": [
+"Obnova vypíše každý problém s přesným náhledem opravy. Opravy nejdřív zkopírují dotčené soubory do backups/ a jedno Zpět je vrátí. Když Draft trezor neotevře, nabídne při spuštění obnovu nebo režim jen pro čtení.",
+"Wiederherstellung listet jedes Problem mit genauer Reparaturvorschau. Reparaturen kopieren betroffene Dateien zuerst nach backups/, und ein Widerrufen legt sie zurück. Kann Draft den Tresor nicht öffnen, bietet es beim Start Wiederherstellung oder Nur-Lesen an."
+],
+"Released %@ · %@ · %@": [
+"Vydáno %1$@ · %2$@ · %3$@",
+"Veröffentlicht %1$@ · %2$@ · %3$@"
+],
+"Remind Me Later": [
+"Připomenout později",
+"Später erinnern"
+],
+"Report a Problem": [
+"Nahlásit problém",
+"Problem melden"
+],
+"Report a Problem writes a file with what you describe, versions and counts — no note text, titles or paths. You review it and save it; Draft sends nothing.": [
+"Nahlásit problém zapíše soubor s vaším popisem, verzemi a počty — bez textu poznámek, názvů a cest. Zkontrolujete ho a uložíte; Draft nic neposílá.",
+"Problem melden schreibt eine Datei mit deiner Beschreibung, Versionen und Zahlen – ohne Notiztext, Titel oder Pfade. Du prüfst und sicherst sie; Draft sendet nichts."
+],
+"Report a Problem: write a local report you review before saving. Nothing is sent.": [
+"Nahlásit problém: místní hlášení, které před uložením zkontrolujete. Nic se neodesílá.",
+"Problem melden: ein lokaler Bericht, den du vor dem Sichern prüfst. Nichts wird gesendet."
+],
+"Report a Problem…": [
+"Nahlásit problém…",
+"Problem melden …"
+],
+"Report a problem": [
+"Nahlásit problém",
+"Problem melden"
+],
+"Report copied.": [
+"Hlášení zkopírováno.",
+"Bericht kopiert."
+],
+"Restart in Safe Mode": [
+"Restartovat v nouzovém režimu",
+"Im sicheren Modus neu starten"
+],
+"Restore and Check an Archive": [
+"Obnovit a zkontrolovat archiv",
+"Archiv wiederherstellen und prüfen"
+],
+"Restored %lld files; Vault Check found %lld problems.": [
+"Obnoveno souborů: %lld; Kontrola trezoru našla problémů: %lld.",
+"%lld Dateien wiederhergestellt; die Tresorprüfung fand %lld Probleme."
+],
+"Restored and checked: %lld files, no problems.": {
+"cs": {
+"few": "Obnoveno a zkontrolováno: %lld soubory, žádné problémy.",
+"one": "Obnoveno a zkontrolováno: %lld soubor, žádné problémy.",
+"other": "Obnoveno a zkontrolováno: %lld souborů, žádné problémy."
+},
+"de": {
+"one": "Wiederhergestellt und geprüft: %lld Datei, keine Probleme.",
+"other": "Wiederhergestellt und geprüft: %lld Dateien, keine Probleme."
+},
+"en": {
+"one": "Restored and checked: %lld file, no problems.",
+"other": "Restored and checked: %lld files, no problems."
+}
+},
+"Same title exists": [
+"Stejný název existuje",
+"Gleicher Titel vorhanden"
+],
+"Save Here": [
+"Uložit sem",
+"Hier sichern"
+],
+"Save Report…": [
+"Uložit hlášení…",
+"Bericht sichern …"
+],
+"Saved in the Keychain": [
+"Uloženo v Klíčence",
+"Im Schlüsselbund gesichert"
+],
+"Saved the report in “%@”. Nothing was sent.": [
+"Hlášení uloženo do „%@“. Nic nebylo odesláno.",
+"Bericht in „%@“ gesichert. Nichts wurde gesendet."
+],
+"Saved to Documents › Draft Backups": [
+"Ukládá se do Dokumenty › Draft Backups",
+"Gesichert in Dokumente › Draft Backups"
+],
+"Search help": [
+"Hledat v nápovědě",
+"Hilfe durchsuchen"
+],
+"Select text to bring up the formatting bar. Type / for blocks, # for headings, [] for tasks and [[ to link a note. Effects and block decorations are in the Format panel.": [
+"Označením textu vyvoláte lištu formátování. Napište / pro bloky, # pro nadpisy, [] pro úkoly a [[ pro odkaz na poznámku. Efekty a ozdoby bloků jsou v panelu Formát.",
+"Markiere Text für die Formatleiste. Tippe / für Blöcke, # für Überschriften, [] für Aufgaben und [[ für einen Notizlink. Effekte und Blockdekor sind im Formatbereich."
+],
+"Select words to bold, highlight or link them. On an empty line, type / to add a heading, checklist, table or collection.": [
+"Označte slova a udělejte je tučná, zvýrazněná nebo z nich odkaz. Na prázdném řádku napište / a přidejte nadpis, zaškrtávací seznam, tabulku nebo kolekci.",
+"Markiere Wörter, um sie fett, hervorgehoben oder verlinkt zu machen. Tippe in einer leeren Zeile / für Überschrift, Checkliste, Tabelle oder Sammlung."
+],
+"Sends your search words to Openverse when you search for a backdrop image.": [
+"Při hledání obrázku na pozadí pošle hledaná slova do Openverse.",
+"Sendet deine Suchwörter an Openverse, wenn du ein Hintergrundbild suchst."
+],
+"Set Up the Assistant…": [
+"Nastavit asistenta…",
+"Assistent einrichten …"
+],
+"Show Shortcuts": [
+"Zobrazit zkratky",
+"Kürzel zeigen"
+],
+"Show the Vault in Finder": [
+"Zobrazit trezor ve Finderu",
+"Tresor im Finder zeigen"
+],
+"Shows your events next to daily notes when you turn it on. Draft never changes events.": [
+"Po zapnutí zobrazí vaše události vedle denních poznámek. Draft události nikdy nemění.",
+"Zeigt deine Termine neben Tagesnotizen, wenn du es einschaltest. Draft ändert nie Termine."
+],
+"Skip %lld notes whose title already exists in this Space": {
+"cs": {
+"few": "Přeskočit %lld poznámky, jejichž název už v tomto prostoru existuje",
+"one": "Přeskočit %lld poznámku, jejíž název už v tomto prostoru existuje",
+"other": "Přeskočit %lld poznámek, jejichž název už v tomto prostoru existuje"
+},
+"de": {
+"one": "%lld Notiz überspringen, deren Titel es in diesem Bereich schon gibt",
+"other": "%lld Notizen überspringen, deren Titel es in diesem Bereich schon gibt"
+},
+"en": {
+"one": "Skip %lld note whose title already exists in this Space",
+"other": "Skip %lld notes whose title already exists in this Space"
+}
+},
+"Skip This Version": [
+"Přeskočit tuto verzi",
+"Diese Version überspringen"
+],
+"Software Update": [
+"Aktualizace softwaru",
+"Softwareupdate"
+],
+"Spaces for each part of life": [
+"Prostory pro každou část života",
+"Bereiche für jeden Teil des Lebens"
+],
+"Stable": [
+"Stabilní",
+"Stabil"
+],
+"Stable is recommended. Beta gets new features earlier and may have bugs. Development is for testing builds.": [
+"Doporučujeme Stabilní. Beta dostává funkce dřív a může mít chyby. Vývojový je pro testovací sestavení.",
+"Stabil wird empfohlen. Beta bekommt Funktionen früher und kann Fehler haben. Entwicklung ist für Test-Builds."
+],
+"Start a note": [
+"Začněte poznámku",
+"Beginne eine Notiz"
+],
+"Switch to the %@ channel?": [
+"Přepnout na kanál %@?",
+"Zum Kanal %@ wechseln?"
+],
+"System Settings": [
+"Nastavení systému",
+"Systemeinstellungen"
+],
+"Task reminders, only when Remind me when tasks are due is on.": [
+"Připomínky úkolů, jen když je zapnuté Připomenout, když úkoly vyprší.",
+"Aufgabenerinnerungen, nur wenn Erinnern, wenn Aufgaben fällig sind an ist."
+],
+"Telemetry": [
+"Telemetrie",
+"Telemetrie"
+],
+"The archive is damaged: %@ is missing or changed. Nothing was restored.": [
+"Archiv je poškozený: %@ chybí nebo se změnil. Nic nebylo obnoveno.",
+"Das Archiv ist beschädigt: %@ fehlt oder wurde geändert. Nichts wurde wiederhergestellt."
+],
+"The download doesn't match its checksum, so it was discarded.": [
+"Stažený soubor neodpovídá kontrolnímu součtu, proto byl zahozen.",
+"Der Download passt nicht zur Prüfsumme und wurde verworfen."
+],
+"The download has the wrong size, so it was discarded.": [
+"Stažený soubor má špatnou velikost, proto byl zahozen.",
+"Der Download hat die falsche Größe und wurde verworfen."
+],
+"The download isn't signed by Draft's release key, so it was discarded.": [
+"Stažený soubor není podepsán klíčem vydání Draftu, proto byl zahozen.",
+"Der Download ist nicht mit Drafts Release-Schlüssel signiert und wurde verworfen."
+],
+"The last update couldn't start, so Draft put the previous version back. Your notes weren't touched.": [
+"Poslední aktualizace se nespustila, proto Draft vrátil předchozí verzi. Vašich poznámek se to nedotklo.",
+"Das letzte Update konnte nicht starten, daher hat Draft die vorige Version zurückgelegt. Deine Notizen wurden nicht berührt."
+],
+"The local model never sends notes anywhere. The optional OpenAI mode sends only the context you review before each request.": [
+"Místní model poznámky nikam neposílá. Volitelný režim OpenAI posílá jen kontext, který před každým požadavkem zkontrolujete.",
+"Das lokale Modell sendet Notizen nirgendwohin. Der optionale OpenAI-Modus sendet nur den Kontext, den du vor jeder Anfrage prüfst."
+],
+"The local model runs on this Mac and sends nothing. The optional OpenAI mode shows exactly what it will send before each request and uses your own API key.": [
+"Místní model běží na tomto Macu a nic neposílá. Volitelný režim OpenAI před každým požadavkem ukáže, co přesně pošle, a používá váš vlastní klíč API.",
+"Das lokale Modell läuft auf diesem Mac und sendet nichts. Der optionale OpenAI-Modus zeigt vor jeder Anfrage genau, was er sendet, und nutzt deinen eigenen API-Schlüssel."
+],
+"The update doesn't contain Draft.": [
+"Aktualizace neobsahuje Draft.",
+"Das Update enthält kein Draft."
+],
+"The update is a different app.": [
+"Aktualizace je jiná aplikace.",
+"Das Update ist eine andere App."
+],
+"The update is signed by someone else.": [
+"Aktualizaci podepsal někdo jiný.",
+"Das Update ist von jemand anderem signiert."
+],
+"The update isn't downloaded yet.": [
+"Aktualizace ještě není stažená.",
+"Das Update ist noch nicht geladen."
+],
+"The update list couldn't be read.": [
+"Seznam aktualizací nelze přečíst.",
+"Die Update-Liste konnte nicht gelesen werden."
+],
+"The update list isn't signed by Draft's release key, so it was ignored.": [
+"Seznam aktualizací není podepsán klíčem vydání Draftu, proto byl ignorován.",
+"Die Update-Liste ist nicht mit Drafts Release-Schlüssel signiert und wurde ignoriert."
+],
+"The update's build number doesn't match the update list.": [
+"Číslo sestavení aktualizace neodpovídá seznamu aktualizací.",
+"Die Build-Nummer des Updates passt nicht zur Update-Liste."
+],
+"This build has no release key, so it can't verify updates. Release builds can.": [
+"Toto sestavení nemá klíč vydání, takže aktualizace neověří. Sestavení k vydání ano.",
+"Dieser Build hat keinen Release-Schlüssel und kann Updates nicht prüfen. Release-Builds können es."
+],
+"This build has no update address. Updates come with release builds.": [
+"Toto sestavení nemá adresu aktualizací. Aktualizace mají sestavení k vydání.",
+"Dieser Build hat keine Update-Adresse. Updates gibt es mit Release-Builds."
+],
+"This build of Draft can't verify updates (no release key), so updates are off.": [
+"Toto sestavení Draftu neumí ověřit aktualizace (chybí klíč vydání), proto jsou vypnuté.",
+"Dieser Draft-Build kann Updates nicht prüfen (kein Release-Schlüssel), daher sind Updates aus."
+],
+"This isn't a Draft backup archive (no manifest).": [
+"Toto není archiv zálohy Draftu (chybí manifest).",
+"Das ist kein Draft-Backup-Archiv (kein Manifest)."
+],
+"This version needs macOS %@ or later.": [
+"Tato verze vyžaduje macOS %@ nebo novější.",
+"Diese Version braucht macOS %@ oder neuer."
+],
+"This version updates your vault's format (%lld → %lld). Draft makes a backup archive first; older versions of Draft can't open the updated vault.": [
+"Tato verze aktualizuje formát trezoru (%1$lld → %2$lld). Draft nejdřív vytvoří archiv zálohy; starší verze Draftu aktualizovaný trezor neotevřou.",
+"Diese Version aktualisiert das Format deines Tresors (%1$lld → %2$lld). Draft erstellt zuerst ein Backup-Archiv; ältere Draft-Versionen können den aktualisierten Tresor nicht öffnen."
+],
+"Troubleshooting": [
+"Řešení potíží",
+"Fehlerbehebung"
+],
+"Unknown": [
+"Neznámé",
+"Unbekannt"
+],
+"Update Settings": [
+"Nastavení aktualizací",
+"Update-Einstellungen"
+],
+"Update channel": [
+"Kanál aktualizací",
+"Update-Kanal"
+],
+"Update checks": [
+"Kontrola aktualizací",
+"Update-Prüfungen"
+],
+"Update checks, image search, link previews and the OpenAI Assistant are off until you turn them on. Agents like Codex only propose changes you review.": [
+"Kontrola aktualizací, hledání obrázků, náhledy odkazů a asistent OpenAI jsou vypnuté, dokud je nezapnete. Agenti jako Codex jen navrhují změny, které zkontrolujete.",
+"Update-Prüfungen, Bildsuche, Link-Vorschauen und der OpenAI-Assistent sind aus, bis du sie einschaltest. Agenten wie Codex schlagen nur Änderungen vor, die du prüfst."
+],
+"Updates": [
+"Aktualizace",
+"Updates"
+],
+"Updates are only downloaded over HTTPS.": [
+"Aktualizace se stahují jen přes HTTPS.",
+"Updates werden nur über HTTPS geladen."
+],
+"Updates you control, help and privacy in one place": [
+"Aktualizace pod vaší kontrolou, nápověda a soukromí na jednom místě",
+"Updates unter deiner Kontrolle, Hilfe und Datenschutz an einem Ort"
+],
+"Used only for requests you confirm. Remove it in Assistant settings.": [
+"Použije se jen pro požadavky, které potvrdíte. Odeberete ho v nastavení asistenta.",
+"Nur für Anfragen, die du bestätigst. Entferne ihn in den Assistent-Einstellungen."
+],
+"Vault": [
+"Trezor",
+"Tresor"
+],
+"Version history": [
+"Historie verzí",
+"Versionsverlauf"
+],
+"View Log": [
+"Zobrazit protokol",
+"Protokoll zeigen"
+],
+"What's New in Draft %@": [
+"Co je nového v Draftu %@",
+"Neu in Draft %@"
+],
+"Where every note, attachment, version and backup lives.": [
+"Kde jsou všechny poznámky, přílohy, verze a zálohy.",
+"Wo alle Notizen, Anhänge, Versionen und Backups liegen."
+],
+"Where your notes are": [
+"Kde jsou vaše poznámky",
+"Wo deine Notizen sind"
+],
+"Write first, format later": [
+"Nejdřív psát, formátovat potom",
+"Erst schreiben, dann formatieren"
+],
+"Write, then format": [
+"Pište, pak formátujte",
+"Schreiben, dann formatieren"
+],
+"You're writing right now": [
+"Právě píšete",
+"Du schreibst gerade"
+],
+"Your data": [
+"Vaše data",
+"Deine Daten"
+],
+"Your notes are plain files in this folder on this Mac. Draft has no account and no server, and it doesn't collect usage data.": [
+"Vaše poznámky jsou obyčejné soubory v této složce na tomto Macu. Draft nemá účet ani server a nesbírá údaje o používání.",
+"Deine Notizen sind einfache Dateien in diesem Ordner auf diesem Mac. Draft hat kein Konto und keinen Server und sammelt keine Nutzungsdaten."
+],
+"Your notes were last saved %@. Draft saves half a second after you stop typing, so at most the last moment of typing can be missing. Versions and backups are untouched.": [
+"Poznámky byly naposledy uloženy %@. Draft ukládá půl sekundy po dopsání, takže chybět může nanejvýš poslední okamžik psaní. Verze a zálohy jsou nedotčené.",
+"Deine Notizen wurden zuletzt %@ gesichert. Draft sichert eine halbe Sekunde nach dem Tippen, also fehlt höchstens der letzte Moment. Versionen und Backups sind unberührt."
+],
+"Your sidebar and Spaces": [
+"Postranní panel a prostory",
+"Deine Seitenleiste und Bereiche"
+],
+"·": [
+"·",
+"·"
+],
+"•": [
+"•",
+"•"
+],
+"• %@": [
+"• %@",
+"• %@"
+],
+"←": [
+"←",
+"←"
+],
+"→": [
+"→",
+"→"
+]
+}

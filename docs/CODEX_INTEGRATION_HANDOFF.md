@@ -1,5 +1,12 @@
 # Draft AI integration handoff
 
+## v0.10 groundwork (13 November 2026)
+
+Nothing changed in the MCP tools or the proposal flow. New for agents to know: Settings › Privacy lists
+MCP agents with their permissions; Report a Problem never includes note text, so agent bug reports
+should quote the request id from Settings › Agents. `scripts/release-check.sh` runs `mcp-test` and
+`agent-test` as release gates.
+
 ## Item 17: Codex app-server mode — research and architecture (12 November 2026)
 
 **Status: blocked on eligibility, not implemented.** OpenAI documents both pieces now:

@@ -104,6 +104,13 @@ struct RootView: View {
         .sheet(item: Binding(get: { model.agentProposal }, set: { model.agentProposal = $0 })) { proposal in
             AgentProposalReview(proposal: proposal).environment(model).environment(\.tokens, t)
         }
+        .sheet(isPresented: Binding(get: { model.updates.sheet }, set: { model.updates.sheet = $0 })) { UpdateSheet().environment(model).environment(\.tokens, t) }
+        .sheet(isPresented: Binding(get: { model.whatsNew }, set: { if !$0 { model.closeWhatsNew() } })) { WhatsNewView().environment(model).environment(\.tokens, t) }
+        .sheet(isPresented: Binding(get: { model.reportProblem }, set: { model.reportProblem = $0 })) { ReportProblemView().environment(model).environment(\.tokens, t) }
+        .sheet(item: Binding(get: { model.importPreview }, set: { model.importPreview = $0 })) { ImportPreviewView(preview: $0).environment(model).environment(\.tokens, t) }
+        .overlay(alignment: .top) {
+            if let c = model.recovery.crash, model.ready { CrashRecoveryCard(info: c).padding(.top, 64).padding(.horizontal, 16).transition(.opacity) }
+        }
         .sheet(item: Binding(get: { model.recovery.historyDoc }, set: { model.recovery.historyDoc = $0 })) { h in
             VersionHistoryView(docId: h.id).environment(model).environment(\.tokens, t)
         }

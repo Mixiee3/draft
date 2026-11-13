@@ -3,10 +3,52 @@
   "strings": {
     "": {},
     " ": {},
-    "#%@": {},
-    "%@": {},
+    "#%@": {
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "#%@"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "#%@"
+          }
+        }
+      }
+    },
+    "%@": {
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@"
+          }
+        }
+      }
+    },
     "%@ %@": {
       "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ %@"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ %@"
+          }
+        },
         "en": {
           "stringUnit": {
             "state": "new",
@@ -297,6 +339,18 @@
     },
     "%@ · %@": {
       "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ · %@"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ · %@"
+          }
+        },
         "en": {
           "stringUnit": {
             "state": "new",
@@ -307,6 +361,18 @@
     },
     "%@ · %lld": {
       "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ · %lld"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ · %lld"
+          }
+        },
         "en": {
           "stringUnit": {
             "state": "new",
@@ -383,6 +449,18 @@
     },
     "%@, %@": {
       "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@, %@"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@, %@"
+          }
+        },
         "en": {
           "stringUnit": {
             "state": "new",
@@ -475,6 +553,18 @@
     },
     "%@: %@": {
       "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@: %@"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@: %@"
+          }
+        },
         "en": {
           "stringUnit": {
             "state": "new",
@@ -485,6 +575,18 @@
     },
     "%@: %@. %@. %@": {
       "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@: %@. %@. %@"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@: %@. %@. %@"
+          }
+        },
         "en": {
           "stringUnit": {
             "state": "new",
@@ -525,9 +627,52 @@
         }
       }
     },
-    "%lld": {},
+    "%lld": {
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld"
+          }
+        }
+      }
+    },
+    "%lld %%": {
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld %%"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld %%"
+          }
+        }
+      }
+    },
     "%lld %@": {
       "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld %@"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld %@"
+          }
+        },
         "en": {
           "stringUnit": {
             "state": "new",
@@ -538,6 +683,18 @@
     },
     "%lld / %lld": {
       "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld / %lld"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld / %lld"
+          }
+        },
         "en": {
           "stringUnit": {
             "state": "new",
@@ -1632,6 +1789,29 @@
         }
       }
     },
+    "%lld notes in %lld folders from %lld items. Nothing is added until you click Import.": {
+      "extractionState": "stale",
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Poznámky: %lld, složky: %lld, z položek: %lld. Nic se nepřidá, dokud nekliknete na Importovat."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld Notizen in %lld Ordnern aus %lld Objekten. Nichts wird hinzugefügt, bevor du auf Importieren klickst."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "new",
+            "value": "%1$lld notes in %2$lld folders from %3$lld items. Nothing is added until you click Import."
+          }
+        }
+      }
+    },
     "%lld of %lld": {
       "localizations": {
         "cs": {
@@ -1754,6 +1934,18 @@
     },
     "%lld. %@": {
       "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld. %@"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld. %@"
+          }
+        },
         "en": {
           "stringUnit": {
             "state": "new",
@@ -1762,9 +1954,38 @@
         }
       }
     },
-    ".*": {},
+    ".*": {
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": ".*"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": ".*"
+          }
+        }
+      }
+    },
     "00": {
-      "extractionState": "manual"
+      "extractionState": "manual",
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "00"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "00"
+          }
+        }
+      }
     },
     "A %@ was interrupted": {
       "localizations": {
@@ -1830,6 +2051,22 @@
         }
       }
     },
+    "A development build never replaces a stable or beta Draft.": {
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Vývojové sestavení nikdy nenahradí stabilní ani beta Draft."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ein Entwicklungs-Build ersetzt nie ein stabiles oder Beta-Draft."
+          }
+        }
+      }
+    },
     "A free, open-source, local-first notes app. No account and no telemetry; nothing goes online unless you turn on image search, link previews, the Assistant's model download, or the optional OpenAI Assistant (after you review what it will send).": {
       "localizations": {
         "cs": {
@@ -1878,6 +2115,23 @@
         }
       }
     },
+    "A private Assistant, if you want one": {
+      "extractionState": "manual",
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Soukromý asistent, pokud o něj stojíte"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ein privater Assistent, wenn du willst"
+          }
+        }
+      }
+    },
     "A private assistant for your notes": {
       "localizations": {
         "cs": {
@@ -1906,6 +2160,22 @@
           "stringUnit": {
             "state": "translated",
             "value": "Ein ruhiger Ort zum Schreiben. Deine Notizen bleiben auf diesem Mac."
+          }
+        }
+      }
+    },
+    "A restored copy is already there: %@.": {
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Obnovená kopie už existuje: %@."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Eine wiederhergestellte Kopie ist schon da: %@."
           }
         }
       }
@@ -1954,6 +2224,23 @@
           "stringUnit": {
             "state": "translated",
             "value": "Aa"
+          }
+        }
+      }
+    },
+    "Aa formats the current block. The brush opens styles: backdrops, paper, fonts and separators. Style never changes your words.": {
+      "extractionState": "manual",
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Aa formátuje aktuální blok. Štětec otevře styly: pozadí, papír, písma a oddělovače. Styl nikdy nemění vaše slova."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Aa formatiert den aktuellen Block. Der Pinsel öffnet Stile: Hintergründe, Papier, Schriften und Trenner. Ein Stil ändert nie deine Worte."
           }
         }
       }
@@ -2234,6 +2521,22 @@
         }
       }
     },
+    "Advanced Settings": {
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pokročilá nastavení"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Erweiterte Einstellungen"
+          }
+        }
+      }
+    },
     "Affects %lld notes: %@": {
       "localizations": {
         "cs": {
@@ -2278,6 +2581,22 @@
         }
       }
     },
+    "Agents (Codex, Claude Code) and permissions": {
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Agenti (Codex, Claude Code) a oprávnění"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Agenten (Codex, Claude Code) und Berechtigungen"
+          }
+        }
+      }
+    },
     "Agents (MCP)": {
       "extractionState": "manual",
       "localizations": {
@@ -2295,6 +2614,54 @@
         }
       }
     },
+    "Agents Settings": {
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nastavení agentů"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Agenten-Einstellungen"
+          }
+        }
+      }
+    },
+    "Agents and permissions": {
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Agenti a oprávnění"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Agenten und Berechtigungen"
+          }
+        }
+      }
+    },
+    "Agents connect through scripts/draft-mcp.sh. They read notes and propose changes; nothing changes until you apply a proposal, and one Undo reverses it. Destructive changes need your permission per agent.": {
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Agenti se připojují přes scripts/draft-mcp.sh. Čtou poznámky a navrhují změny; nic se nezmění, dokud návrh nepoužijete, a jedno Zpět ho vrátí. Mazání a podobné změny vyžadují vaše svolení pro každého agenta."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Agenten verbinden sich über scripts/draft-mcp.sh. Sie lesen Notizen und schlagen Änderungen vor; nichts ändert sich, bevor du einen Vorschlag anwendest, und ein Widerrufen macht ihn rückgängig. Zerstörende Änderungen brauchen deine Erlaubnis pro Agent."
+          }
+        }
+      }
+    },
     "Agents such as Codex or Claude Code connect through scripts/draft-mcp.sh. They never change notes themselves: every change is a proposal you review. New agents can read and propose; destructive changes (deleting content, replacing a whole note, moving notes) stay off until you allow them.": {
       "localizations": {
         "cs": {
@@ -2307,6 +2674,22 @@
           "stringUnit": {
             "state": "translated",
             "value": "Agenten wie Codex oder Claude Code verbinden sich über scripts/draft-mcp.sh. Sie ändern Notizen nie selbst: Jede Änderung ist ein Vorschlag, den du prüfst. Neue Agenten dürfen lesen und vorschlagen; zerstörende Änderungen (Inhalt löschen, ganze Notiz ersetzen, Notizen verschieben) bleiben aus, bis du sie erlaubst."
+          }
+        }
+      }
+    },
+    "Agents talk to Draft on this Mac through scripts/draft-mcp.sh. Every change they want is a proposal you review.": {
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Agenti komunikují s Draftem na tomto Macu přes scripts/draft-mcp.sh. Každá jejich změna je návrh, který zkontrolujete."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Agenten sprechen auf diesem Mac über scripts/draft-mcp.sh mit Draft. Jede gewünschte Änderung ist ein Vorschlag, den du prüfst."
           }
         }
       }
@@ -2391,6 +2774,22 @@
         }
       }
     },
+    "Allowed": {
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Povoleno"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Erlaubt"
+          }
+        }
+      }
+    },
     "Already in the current format; nothing would change.": {
       "localizations": {
         "cs": {
@@ -2419,6 +2818,22 @@
           "stringUnit": {
             "state": "translated",
             "value": "Ein Bild oder eine Datei fehlt"
+          }
+        }
+      }
+    },
+    "An optional private Assistant": {
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Volitelný soukromý asistent"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ein optionaler privater Assistent"
           }
         }
       }
@@ -2777,6 +3192,23 @@
         }
       }
     },
+    "Ask about a note or your whole Space, or have it summarize and rewrite. It needs a one-time 1.6 GB download and then runs entirely on this Mac.": {
+      "extractionState": "manual",
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ptejte se na poznámku nebo celý prostor, nechte si shrnout a přepsat text. Potřebuje jednorázové stažení 1,6 GB a pak běží celý na tomto Macu."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Frag zu einer Notiz oder deinem ganzen Bereich, lass zusammenfassen und umschreiben. Einmal 1,6 GB laden, dann läuft alles auf diesem Mac."
+          }
+        }
+      }
+    },
     "Ask about the notes in this Space…": {
       "localizations": {
         "cs": {
@@ -2857,6 +3289,22 @@
         }
       }
     },
+    "Assistant Settings": {
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nastavení asistenta"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Assistent-Einstellungen"
+          }
+        }
+      }
+    },
     "Assistant Settings…": {
       "localizations": {
         "cs": {
@@ -2885,6 +3333,54 @@
           "stringUnit": {
             "state": "translated",
             "value": "Antwort des Assistenten"
+          }
+        }
+      }
+    },
+    "Assistant dictation, only while you hold the microphone button. Speech is recognized on this Mac.": {
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Diktování asistentovi, jen když držíte tlačítko mikrofonu. Řeč se rozpoznává na tomto Macu."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Diktieren für den Assistenten, nur solange du die Mikrofontaste hältst. Sprache wird auf diesem Mac erkannt."
+          }
+        }
+      }
+    },
+    "Assistant model": {
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Model asistenta"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Assistent-Modell"
+          }
+        }
+      }
+    },
+    "Assistant privacy": {
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Soukromí asistenta"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Datenschutz des Assistenten"
           }
         }
       }
@@ -3146,6 +3642,54 @@
         }
       }
     },
+    "Backup Archive: one file with your whole vault, which you can restore and check.": {
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Archiv zálohy: jeden soubor s celým trezorem, který lze obnovit a zkontrolovat."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Backup-Archiv: eine Datei mit deinem ganzen Tresor, die du wiederherstellen und prüfen kannst."
+          }
+        }
+      }
+    },
+    "Backup archive": {
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Archiv zálohy"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Backup-Archiv"
+          }
+        }
+      }
+    },
+    "Backup archive saved.": {
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Archiv zálohy uložen."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Backup-Archiv gesichert."
+          }
+        }
+      }
+    },
     "Backup health": {
       "localizations": {
         "cs": {
@@ -3174,6 +3718,22 @@
           "stringUnit": {
             "state": "translated",
             "value": "Sicherungen"
+          }
+        }
+      }
+    },
+    "Backups and backup archives": {
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Zálohy a archivy záloh"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Backups und Backup-Archive"
           }
         }
       }
@@ -3260,6 +3820,39 @@
           "stringUnit": {
             "state": "translated",
             "value": "Vor dem Schreiben kopiert Draft diese %lld Dateien nach backups/repair-<Zeit>/. Danach prüft es den Tresor erneut; wenn etwas nicht stimmt, wird jede Datei zurückgelegt und nichts ändert sich."
+          }
+        }
+      }
+    },
+    "Beta": {
+      "extractionState": "manual",
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Beta"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Beta"
+          }
+        }
+      }
+    },
+    "Beta versions get features earlier and may have bugs. Your notes stay in the same vault; make a backup archive first. You can switch back to Stable, but a newer vault format can't be opened by an older Draft.": {
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Beta verze dostávají funkce dřív a mohou mít chyby. Poznámky zůstávají ve stejném trezoru; nejdřív vytvořte archiv zálohy. Na Stabilní se můžete vrátit, ale novější formát trezoru starší Draft neotevře."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Beta-Versionen bekommen Funktionen früher und können Fehler haben. Deine Notizen bleiben im selben Tresor; erstelle zuerst ein Backup-Archiv. Du kannst zu Stabil zurück, aber ein älteres Draft öffnet kein neueres Tresorformat."
           }
         }
       }
@@ -3752,6 +4345,70 @@
         }
       }
     },
+    "Check for Updates…": {
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Vyhledat aktualizace…"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nach Updates suchen …"
+          }
+        }
+      }
+    },
+    "Check for Updates… in the Draft menu. Automatic checks are off until you turn them on. Every update is verified with Draft's release key before it is installed, and the previous version is kept until the new one starts.": {
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Vyhledat aktualizace… v nabídce Draft. Automatická kontrola je vypnutá, dokud ji nezapnete. Každá aktualizace se před instalací ověří klíčem vydání Draftu a předchozí verze se uchová, dokud nová nenaběhne."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nach Updates suchen … im Draft-Menü. Automatische Prüfungen sind aus, bis du sie einschaltest. Jedes Update wird vor der Installation mit Drafts Release-Schlüssel geprüft, und die vorige Version bleibt, bis die neue startet."
+          }
+        }
+      }
+    },
+    "Check for Updates… in the Draft menu. Automatic checks stay off until you turn them on.": {
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Vyhledat aktualizace… v nabídce Draft. Automatická kontrola zůstane vypnutá, dokud ji nezapnete."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nach Updates suchen … im Draft-Menü. Automatische Prüfungen bleiben aus, bis du sie einschaltest."
+          }
+        }
+      }
+    },
+    "Check for updates automatically": {
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Hledat aktualizace automaticky"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Automatisch nach Updates suchen"
+          }
+        }
+      }
+    },
     "Check the vault for problems, repair them with a backup first, and browse versions and backups.": {
       "localizations": {
         "cs": {
@@ -3780,6 +4437,22 @@
           "stringUnit": {
             "state": "translated",
             "value": "Prüfen, reparieren und wiederherstellen"
+          }
+        }
+      }
+    },
+    "Checking for updates…": {
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Hledám aktualizace…"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Suche nach Updates …"
           }
         }
       }
@@ -3914,6 +4587,22 @@
         }
       }
     },
+    "Choose…": {
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Vybrat…"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Auswählen …"
+          }
+        }
+      }
+    },
     "Clean up backups older than 30 days": {
       "localizations": {
         "cs": {
@@ -4006,6 +4695,23 @@
           "stringUnit": {
             "state": "translated",
             "value": "Aktivität löschen"
+          }
+        }
+      }
+    },
+    "Click + or press ⌘N. Notes are saved as you type, as plain files in Draft's folder on this Mac.": {
+      "extractionState": "manual",
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Klikněte na + nebo stiskněte ⌘N. Poznámky se ukládají během psaní jako obyčejné soubory ve složce Draftu na tomto Macu."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Klicke auf + oder drücke ⌘N. Notizen werden beim Tippen gesichert, als einfache Dateien in Drafts Ordner auf diesem Mac."
           }
         }
       }
@@ -4201,6 +4907,22 @@
           "stringUnit": {
             "state": "translated",
             "value": "Codeblock"
+          }
+        }
+      }
+    },
+    "Codex, Claude Code and other agents: read notes and propose changes; destructive changes need your permission.": {
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Codex, Claude Code a další agenti: čtou poznámky a navrhují změny; mazání a podobné změny vyžadují vaše svolení."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Codex, Claude Code und andere Agenten: lesen Notizen und schlagen Änderungen vor; zerstörende Änderungen brauchen deine Erlaubnis."
           }
         }
       }
@@ -4490,6 +5212,22 @@
         }
       }
     },
+    "Continue": {
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pokračovat"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Weiter"
+          }
+        }
+      }
+    },
     "Continue Writing": {
       "extractionState": "manual",
       "localizations": {
@@ -4503,6 +5241,22 @@
           "stringUnit": {
             "state": "translated",
             "value": "Weiterschreiben"
+          }
+        }
+      }
+    },
+    "Copy": {
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kopírovat"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kopieren"
           }
         }
       }
@@ -4696,6 +5450,54 @@
         }
       }
     },
+    "Couldn't create the archive: %@": {
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Archiv se nepodařilo vytvořit: %@"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Archiv konnte nicht erstellt werden: %@"
+          }
+        }
+      }
+    },
+    "Couldn't install the update: %@": {
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Aktualizaci se nepodařilo nainstalovat: %@"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Update konnte nicht installiert werden: %@"
+          }
+        }
+      }
+    },
+    "Couldn't save the report: %@": {
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Hlášení se nepodařilo uložit: %@"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bericht konnte nicht gesichert werden: %@"
+          }
+        }
+      }
+    },
     "Cover": {
       "localizations": {
         "cs": {
@@ -4805,6 +5607,22 @@
           "stringUnit": {
             "state": "translated",
             "value": "Erstellen"
+          }
+        }
+      }
+    },
+    "Create Backup Archive": {
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Vytvořit archiv zálohy"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Backup-Archiv erstellen"
           }
         }
       }
@@ -5020,6 +5838,22 @@
           "stringUnit": {
             "state": "translated",
             "value": "Tage & Aufgaben"
+          }
+        }
+      }
+    },
+    "Daily Notes Settings": {
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nastavení denních poznámek"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tagesnotizen-Einstellungen"
           }
         }
       }
@@ -5480,6 +6314,22 @@
         }
       }
     },
+    "Describe what happened. Draft writes a report file you can read below and save; nothing is sent. Note text, titles, file names and the vault's location are never included.": {
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Popište, co se stalo. Draft napíše soubor s hlášením, který si níže přečtete a uložíte; nic se neodesílá. Text poznámek, názvy, jména souborů ani umístění trezoru nikdy neobsahuje."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Beschreibe, was passiert ist. Draft schreibt eine Berichtsdatei, die du unten lesen und sichern kannst; nichts wird gesendet. Notiztext, Titel, Dateinamen und der Ort des Tresors sind nie enthalten."
+          }
+        }
+      }
+    },
     "Destructive changes": {
       "localizations": {
         "cs": {
@@ -5492,6 +6342,39 @@
           "stringUnit": {
             "state": "translated",
             "value": "Zerstörende Änderungen"
+          }
+        }
+      }
+    },
+    "Development": {
+      "extractionState": "manual",
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Vývojový"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Entwicklung"
+          }
+        }
+      }
+    },
+    "Development builds are for testing and can break. They never replace a stable Draft on their own; keep a backup archive.": {
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Vývojová sestavení jsou na testování a mohou se rozbít. Nikdy sama nenahradí stabilní Draft; mějte archiv zálohy."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Entwicklungs-Builds sind zum Testen und können kaputtgehen. Sie ersetzen nie von selbst ein stabiles Draft; halte ein Backup-Archiv bereit."
           }
         }
       }
@@ -5509,6 +6392,22 @@
           "stringUnit": {
             "state": "translated",
             "value": "Abgeblendet"
+          }
+        }
+      }
+    },
+    "Dismiss": {
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Zavřít"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Schließen"
           }
         }
       }
@@ -5747,6 +6646,22 @@
         }
       }
     },
+    "Download a 1.6 GB model later if you like. It runs on this Mac, works offline, and never sends your notes anywhere.": {
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Model o velikosti 1,6 GB si můžete stáhnout později. Běží na tomto Macu, funguje offline a poznámky nikam neposílá."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Lade später ein 1,6‑GB-Modell, wenn du willst. Es läuft auf diesem Mac, funktioniert offline und sendet deine Notizen nirgendwohin."
+          }
+        }
+      }
+    },
     "Download progress": {
       "localizations": {
         "cs": {
@@ -5759,6 +6674,86 @@
           "stringUnit": {
             "state": "translated",
             "value": "Download-Fortschritt"
+          }
+        }
+      }
+    },
+    "Downloaded": {
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Staženo"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Geladen"
+          }
+        }
+      }
+    },
+    "Downloaded and verified: signed by Draft's release key, checksum and code signature checked.": {
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Staženo a ověřeno: podepsáno klíčem vydání Draftu, kontrolní součet i podpis kódu zkontrolovány."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Geladen und geprüft: mit Drafts Release-Schlüssel signiert, Prüfsumme und Codesignatur kontrolliert."
+          }
+        }
+      }
+    },
+    "Downloaded once, only when you click Download; then the Assistant works offline.": {
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Stáhne se jednou, jen když kliknete na Stáhnout; pak asistent funguje offline."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Einmal geladen, nur wenn du auf Laden klickst; danach arbeitet der Assistent offline."
+          }
+        }
+      }
+    },
+    "Downloading…": {
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Stahuji…"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Wird geladen …"
+          }
+        }
+      }
+    },
+    "Downloads the list of Draft versions over HTTPS. Sends nothing about you.": {
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Stáhne seznam verzí Draftu přes HTTPS. O vás nic neposílá."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Lädt die Liste der Draft-Versionen über HTTPS. Sendet nichts über dich."
           }
         }
       }
@@ -5779,6 +6774,66 @@
         }
       }
     },
+    "Draft %@ (%lld)": {
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Draft %1$@ (%2$lld)"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Draft %1$@ (%2$lld)"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "new",
+            "value": "Draft %1$@ (%2$lld)"
+          }
+        }
+      }
+    },
+    "Draft %@ (%lld) · %@": {
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Draft %1$@ (%2$lld) · %3$@"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Draft %1$@ (%2$lld) · %3$@"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "new",
+            "value": "Draft %1$@ (%2$lld) · %3$@"
+          }
+        }
+      }
+    },
+    "Draft %@ is available": {
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Je k dispozici Draft %@"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Draft %@ ist verfügbar"
+          }
+        }
+      }
+    },
     "Draft 0.6": {
       "localizations": {
         "cs": {
@@ -5791,6 +6846,22 @@
           "stringUnit": {
             "state": "translated",
             "value": "Draft 0.6"
+          }
+        }
+      }
+    },
+    "Draft Help": {
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nápověda Draftu"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Draft-Hilfe"
           }
         }
       }
@@ -5875,6 +6946,38 @@
         }
       }
     },
+    "Draft couldn't reach the update server. Check your connection and try again.": {
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Draft se nespojil se serverem aktualizací. Zkontrolujte připojení a zkuste to znovu."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Draft hat den Update-Server nicht erreicht. Prüfe deine Verbindung und versuch es erneut."
+          }
+        }
+      }
+    },
+    "Draft doesn't add its own encryption yet; FileVault encrypts the whole disk, including the vault.": {
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Draft zatím nepřidává vlastní šifrování; FileVault šifruje celý disk včetně trezoru."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Draft fügt noch keine eigene Verschlüsselung hinzu; FileVault verschlüsselt das ganze Laufwerk, auch den Tresor."
+          }
+        }
+      }
+    },
     "Draft found a problem before opening your notes": {
       "localizations": {
         "cs": {
@@ -5887,6 +6990,22 @@
           "stringUnit": {
             "state": "translated",
             "value": "Draft hat vor dem Öffnen deiner Notizen ein Problem gefunden"
+          }
+        }
+      }
+    },
+    "Draft is up to date.": {
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Draft je aktuální."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Draft ist aktuell."
           }
         }
       }
@@ -5913,6 +7032,70 @@
         }
       }
     },
+    "Draft keeps versions of every note and copies files before any repair or migration. Create Backup Archive saves the whole vault in one file you can restore and check.": {
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Draft uchovává verze každé poznámky a před každou opravou či migrací kopíruje soubory. Vytvořit archiv zálohy uloží celý trezor do jednoho souboru, který lze obnovit a zkontrolovat."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Draft hält Versionen jeder Notiz und kopiert Dateien vor jeder Reparatur oder Migration. Backup-Archiv erstellen sichert den ganzen Tresor in einer Datei, die du wiederherstellen und prüfen kannst."
+          }
+        }
+      }
+    },
+    "Draft never sends usage data, crash reports or analytics. Report a Problem only saves a file you review.": {
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Draft nikdy neposílá údaje o používání, hlášení o pádech ani analytiku. Nahlásit problém jen uloží soubor, který zkontrolujete."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Draft sendet nie Nutzungsdaten, Absturzberichte oder Analysen. Problem melden sichert nur eine Datei, die du prüfst."
+          }
+        }
+      }
+    },
+    "Draft only contacts the update server when you click Check for Updates or turn on automatic checks. It sends nothing about you or your notes; the request is an ordinary download of the update list.": {
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Draft kontaktuje server aktualizací, jen když kliknete na Vyhledat aktualizace nebo zapnete automatickou kontrolu. Neposílá nic o vás ani o poznámkách; požadavek je obyčejné stažení seznamu aktualizací."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Draft kontaktiert den Update-Server nur, wenn du auf Nach Updates suchen klickst oder automatische Prüfungen einschaltest. Es sendet nichts über dich oder deine Notizen; die Anfrage ist ein normaler Download der Update-Liste."
+          }
+        }
+      }
+    },
+    "Draft quit unexpectedly last time": {
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Draft se minule neočekávaně ukončil"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Draft wurde letztes Mal unerwartet beendet"
+          }
+        }
+      }
+    },
     "Draft saves a version every 10 minutes while you edit. Use Save Version Now to keep this one.": {
       "localizations": {
         "cs": {
@@ -5929,6 +7112,38 @@
         }
       }
     },
+    "Draft saves a version every 10 minutes while you edit; Save Version Now (⌥⌘S) keeps one on purpose. Version History (⌥⌘Y) shows the differences and restores with one Undo.": {
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Draft během úprav ukládá verzi každých 10 minut; Uložit verzi teď (⌥⌘S) si ji ponechá záměrně. Historie verzí (⌥⌘Y) ukáže rozdíly a obnoví s jedním Zpět."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Draft sichert beim Bearbeiten alle 10 Minuten eine Version; Version jetzt sichern (⌥⌘S) behält eine gezielt. Versionsverlauf (⌥⌘Y) zeigt Unterschiede und stellt mit einem Widerrufen wieder her."
+          }
+        }
+      }
+    },
+    "Draft saves everything first, then restarts. Choose Install on Quit to keep writing.": {
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Draft nejdřív vše uloží a pak se restartuje. Chcete-li psát dál, zvolte Instalovat při ukončení."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Draft sichert zuerst alles und startet dann neu. Wähle Beim Beenden installieren, um weiterzuschreiben."
+          }
+        }
+      }
+    },
     "Draft will send “%@” to api.openverse.org and load image previews from it. Nothing else is sent.": {
       "localizations": {
         "cs": {
@@ -5941,6 +7156,22 @@
           "stringUnit": {
             "state": "translated",
             "value": "Draft sendet „%@“ an api.openverse.org und lädt von dort Bildvorschauen. Sonst wird nichts gesendet."
+          }
+        }
+      }
+    },
+    "Draft will update when you quit.": {
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Draft se aktualizuje při ukončení."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Draft wird beim Beenden aktualisiert."
           }
         }
       }
@@ -6204,6 +7435,22 @@
         }
       }
     },
+    "Encryption": {
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Šifrování"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Verschlüsselung"
+          }
+        }
+      }
+    },
     "Every change is applied either way; this only shows them": {
       "localizations": {
         "cs": {
@@ -6216,6 +7463,55 @@
           "stringUnit": {
             "state": "translated",
             "value": "Alle Änderungen werden ohnehin angewendet; dies zeigt sie nur an"
+          }
+        }
+      }
+    },
+    "Every editor command has a shortcut; the Format, Insert and Table menus list them. ⌘O opens Quick Open for documents, blocks and commands.": {
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Každý příkaz editoru má zkratku; najdete je v nabídkách Formát, Vložit a Tabulka. ⌘O otevře Rychlé otevření dokumentů, bloků a příkazů."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Jeder Editor-Befehl hat ein Kürzel; die Menüs Format, Einfügen und Tabelle zeigen sie. ⌘O öffnet Schnell öffnen für Dokumente, Blöcke und Befehle."
+          }
+        }
+      }
+    },
+    "Every note is a file in a folder you can open. No account, no cloud, nothing to sign in to.": {
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Každá poznámka je soubor ve složce, kterou můžete otevřít. Žádný účet, žádný cloud, nic k přihlašování."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Jede Notiz ist eine Datei in einem Ordner, den du öffnen kannst. Kein Konto, keine Cloud, keine Anmeldung."
+          }
+        }
+      }
+    },
+    "Everything in this Space is here: all notes, Today, Calendar and Tasks. Click the Space name to make another Space for work, study or home.": {
+      "extractionState": "manual",
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Vše v tomto prostoru je tady: všechny poznámky, Dnes, Kalendář a Úkoly. Kliknutím na název prostoru vytvoříte další pro práci, studium nebo domov."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Alles in diesem Bereich ist hier: alle Notizen, Heute, Kalender und Aufgaben. Klicke auf den Bereichsnamen, um einen weiteren für Arbeit, Studium oder Zuhause anzulegen."
           }
         }
       }
@@ -6238,6 +7534,22 @@
           "stringUnit": {
             "state": "new",
             "value": "Everything is in order. %1$lld notes and %2$lld attachments checked."
+          }
+        }
+      }
+    },
+    "Exactly what will be saved": {
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Přesně to, co se uloží"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Genau das wird gesichert"
           }
         }
       }
@@ -6555,6 +7867,22 @@
         }
       }
     },
+    "Extracts into a new folder next to the archive and runs Vault Check on it.": {
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Rozbalí do nové složky vedle archivu a spustí na ní Kontrolu trezoru."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Entpackt in einen neuen Ordner neben dem Archiv und führt die Tresorprüfung aus."
+          }
+        }
+      }
+    },
     "Faded": {
       "extractionState": "manual",
       "localizations": {
@@ -6617,6 +7945,38 @@
           "stringUnit": {
             "state": "translated",
             "value": "Datei"
+          }
+        }
+      }
+    },
+    "FileVault is off": {
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "FileVault je vypnutý"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "FileVault ist aus"
+          }
+        }
+      }
+    },
+    "FileVault is on": {
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "FileVault je zapnutý"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "FileVault ist an"
           }
         }
       }
@@ -6909,6 +8269,22 @@
           "stringUnit": {
             "state": "translated",
             "value": "Format"
+          }
+        }
+      }
+    },
+    "Formatting": {
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Formátování"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Formatierung"
           }
         }
       }
@@ -7273,6 +8649,39 @@
         }
       }
     },
+    "Help": {
+      "extractionState": "manual",
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nápověda"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Hilfe"
+          }
+        }
+      }
+    },
+    "Help: search how-tos for writing, backups, version history, agents and recovery.": {
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nápověda: vyhledávejte návody k psaní, zálohám, historii verzí, agentům a obnově."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Hilfe: durchsuche Anleitungen zu Schreiben, Backups, Versionsverlauf, Agenten und Wiederherstellung."
+          }
+        }
+      }
+    },
     "Hidden items stay reachable from the menus and Quick Open.": {
       "localizations": {
         "cs": {
@@ -7349,6 +8758,22 @@
           "stringUnit": {
             "state": "translated",
             "value": "Wie erledigte Einträge in Dokumenten aussehen."
+          }
+        }
+      }
+    },
+    "If something looks wrong, check the vault (Settings › Recovery). Restarting in Safe Mode opens your notes read-only. Hold Option while opening Draft to do the same.": {
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Když něco nevypadá dobře, zkontrolujte trezor (Nastavení › Obnova). Restart v nouzovém režimu otevře poznámky jen pro čtení. Totéž udělá podržení Option při otevírání Draftu."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Wenn etwas falsch aussieht, prüfe den Tresor (Einstellungen › Wiederherstellung). Ein Neustart im sicheren Modus öffnet deine Notizen schreibgeschützt. Dasselbe passiert, wenn du beim Öffnen von Draft Wahl hältst."
           }
         }
       }
@@ -7517,6 +8942,70 @@
         }
       }
     },
+    "Import %lld Notes": {
+      "localizations": {
+        "cs": {
+          "variations": {
+            "plural": {
+              "few": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "Importovat %lld poznámky"
+                }
+              },
+              "one": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "Importovat %lld poznámku"
+                }
+              },
+              "other": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "Importovat %lld poznámek"
+                }
+              }
+            }
+          }
+        },
+        "de": {
+          "variations": {
+            "plural": {
+              "one": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "%lld Notiz importieren"
+                }
+              },
+              "other": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "%lld Notizen importieren"
+                }
+              }
+            }
+          }
+        },
+        "en": {
+          "variations": {
+            "plural": {
+              "one": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "Import %lld Note"
+                }
+              },
+              "other": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "Import %lld Notes"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "Import CSV…": {
       "localizations": {
         "cs": {
@@ -7529,6 +9018,38 @@
           "stringUnit": {
             "state": "translated",
             "value": "CSV importieren…"
+          }
+        }
+      }
+    },
+    "Import Markdown, text, OPML and Draft exports; you see a preview with duplicates before anything is added. Export Markdown with assets or a lossless JSON copy of everything.": {
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Importujte Markdown, text, OPML a exporty Draftu; před přidáním uvidíte náhled s duplicitami. Exportujte Markdown s přílohami nebo bezeztrátovou kopii všeho v JSON."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Importiere Markdown, Text, OPML und Draft-Exporte; vor dem Hinzufügen siehst du eine Vorschau mit Duplikaten. Exportiere Markdown mit Anhängen oder eine verlustfreie JSON-Kopie von allem."
+          }
+        }
+      }
+    },
+    "Import Preview": {
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Náhled importu"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Importvorschau"
           }
         }
       }
@@ -7779,6 +9300,22 @@
         }
       }
     },
+    "Importing and exporting": {
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Import a export"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Importieren und Exportieren"
+          }
+        }
+      }
+    },
     "Import…": {
       "localizations": {
         "cs": {
@@ -7807,6 +9344,38 @@
           "stringUnit": {
             "state": "translated",
             "value": "In Verwendung"
+          }
+        }
+      }
+    },
+    "Include a screenshot of the Draft window (it may show note text)": {
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Přiložit snímek okna Draftu (může ukazovat text poznámek)"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bildschirmfoto des Draft-Fensters anhängen (kann Notiztext zeigen)"
+          }
+        }
+      }
+    },
+    "Include the recent log (events and ids only)": {
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Přiložit nedávný protokol (jen události a ID)"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Aktuelles Protokoll anhängen (nur Ereignisse und IDs)"
           }
         }
       }
@@ -7979,6 +9548,54 @@
         }
       }
     },
+    "Install and Restart": {
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Instalovat a restartovat"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Installieren und neu starten"
+          }
+        }
+      }
+    },
+    "Install on Quit": {
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Instalovat při ukončení"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Beim Beenden installieren"
+          }
+        }
+      }
+    },
+    "Installing… Draft restarts in a moment.": {
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Instaluji… Draft se za chvíli restartuje."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Wird installiert … Draft startet gleich neu."
+          }
+        }
+      }
+    },
     "It may have been deleted permanently or its file can't be read.": {
       "localizations": {
         "cs": {
@@ -8114,6 +9731,38 @@
         }
       }
     },
+    "Just type. Select text for formatting, or type / to add a heading, list, table and more.": {
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Prostě pište. Pro formátování označte text, nebo napište / a přidejte nadpis, seznam, tabulku a další."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Einfach tippen. Markiere Text zum Formatieren oder tippe / für Überschrift, Liste, Tabelle und mehr."
+          }
+        }
+      }
+    },
+    "Keep work, study and home apart. Each Space has its own notes, tags and tabs.": {
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Oddělte práci, studium a domov. Každý prostor má vlastní poznámky, štítky a karty."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Halte Arbeit, Studium und Zuhause getrennt. Jeder Bereich hat eigene Notizen, Tags und Tabs."
+          }
+        }
+      }
+    },
     "Kept as they are (unknown to this Draft): %@": {
       "localizations": {
         "cs": {
@@ -8239,6 +9888,22 @@
           "stringUnit": {
             "state": "translated",
             "value": "Zuletzt angesehen"
+          }
+        }
+      }
+    },
+    "Last checked %@": {
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Naposledy zkontrolováno %@"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Zuletzt geprüft %@"
           }
         }
       }
@@ -8443,6 +10108,22 @@
         }
       }
     },
+    "Link previews": {
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Náhledy odkazů"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Link-Vorschauen"
+          }
+        }
+      }
+    },
     "Link to": {
       "extractionState": "manual",
       "localizations": {
@@ -8521,6 +10202,22 @@
           "stringUnit": {
             "state": "translated",
             "value": "Listeneintrag"
+          }
+        }
+      }
+    },
+    "Loads the title and image of a pasted web address from that website.": {
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Načte název a obrázek vložené webové adresy z dané stránky."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Lädt Titel und Bild einer eingefügten Webadresse von dieser Website."
           }
         }
       }
@@ -8606,6 +10303,22 @@
         }
       }
     },
+    "MCP agents": {
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "MCP agenti"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "MCP-Agenten"
+          }
+        }
+      }
+    },
     "MY STYLES": {
       "localizations": {
         "cs": {
@@ -8634,6 +10347,23 @@
           "stringUnit": {
             "state": "translated",
             "value": "In library.json zu einer Notiz der obersten Ebene machen."
+          }
+        }
+      }
+    },
+    "Make it look yours": {
+      "extractionState": "manual",
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ať to vypadá po vašem"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Mach es zu deinem"
           }
         }
       }
@@ -8822,6 +10552,22 @@
           "stringUnit": {
             "state": "translated",
             "value": "Nachricht an den Assistenten"
+          }
+        }
+      }
+    },
+    "Microphone": {
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Mikrofon"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Mikrofon"
           }
         }
       }
@@ -9040,7 +10786,6 @@
       }
     },
     "Move Column": {
-      "extractionState": "stale",
       "localizations": {
         "cs": {
           "stringUnit": {
@@ -9089,7 +10834,6 @@
       }
     },
     "Move Row": {
-      "extractionState": "stale",
       "localizations": {
         "cs": {
           "stringUnit": {
@@ -9577,6 +11321,22 @@
         }
       }
     },
+    "Network (each one off until you turn it on)": {
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Síť (vše vypnuto, dokud nezapnete)"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Netzwerk (alles aus, bis du es einschaltest)"
+          }
+        }
+      }
+    },
     "New": {
       "localizations": {
         "cs": {
@@ -9915,6 +11675,22 @@
         }
       }
     },
+    "No help topic matches “%@”.": {
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Výrazu „%@“ neodpovídá žádné téma nápovědy."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kein Hilfethema passt zu „%@“."
+          }
+        }
+      }
+    },
     "No migration copies": {
       "localizations": {
         "cs": {
@@ -10075,6 +11851,22 @@
         }
       }
     },
+    "Not allowed": {
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nepovoleno"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nicht erlaubt"
+          }
+        }
+      }
+    },
     "Not applied: %@": {
       "localizations": {
         "cs": {
@@ -10087,6 +11879,70 @@
           "stringUnit": {
             "state": "translated",
             "value": "Nicht angewendet: %@"
+          }
+        }
+      }
+    },
+    "Not asked": {
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nedotázáno"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nicht gefragt"
+          }
+        }
+      }
+    },
+    "Not checked in this session": {
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "V této relaci nezkontrolováno"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "In dieser Sitzung nicht geprüft"
+          }
+        }
+      }
+    },
+    "Not downloaded": {
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nestaženo"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nicht geladen"
+          }
+        }
+      }
+    },
+    "Not saved": {
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Neuloženo"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nicht gesichert"
           }
         }
       }
@@ -10108,6 +11964,44 @@
         }
       }
     },
+    "Notes are plain files in your vault folder: library.json, docs/, assets/, history/ and backups/. You can copy the folder to keep or move your data.": {
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Poznámky jsou obyčejné soubory ve složce trezoru: library.json, docs/, assets/, history/ a backups/. Data uchováte nebo přesunete zkopírováním složky."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Notizen sind einfache Dateien in deinem Tresorordner: library.json, docs/, assets/, history/ und backups/. Kopiere den Ordner, um deine Daten zu behalten oder umzuziehen."
+          }
+        }
+      }
+    },
+    "Notes: %lld · Folders: %lld. Nothing is added until you click Import.": {
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Poznámky: %1$lld · Složky: %2$lld. Nic se nepřidá, dokud nekliknete na Importovat."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Notizen: %1$lld · Ordner: %2$lld. Nichts wird hinzugefügt, bevor du auf Importieren klickst."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "new",
+            "value": "Notes: %1$lld · Folders: %2$lld. Nothing is added until you click Import."
+          }
+        }
+      }
+    },
     "Nothing changes until you apply. Draft checks that nothing changed since the agent read it, keeps a backup of any note it changes, and one Undo reverses the whole proposal.": {
       "localizations": {
         "cs": {
@@ -10120,6 +12014,22 @@
           "stringUnit": {
             "state": "translated",
             "value": "Nichts ändert sich, bis du anwendest. Draft prüft, dass sich seit dem Lesen durch den Agenten nichts geändert hat, sichert jede geänderte Notiz, und ein Widerrufen macht den ganzen Vorschlag rückgängig."
+          }
+        }
+      }
+    },
+    "Nothing else in Draft uses the network.": {
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nic jiného v Draftu síť nepoužívá."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nichts anderes in Draft nutzt das Netzwerk."
           }
         }
       }
@@ -10204,6 +12114,22 @@
         }
       }
     },
+    "Nothing was saved in that session. Versions and backups are untouched.": {
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "V té relaci se nic neuložilo. Verze a zálohy jsou nedotčené."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "In dieser Sitzung wurde nichts gesichert. Versionen und Backups sind unberührt."
+          }
+        }
+      }
+    },
     "Nothing yet.": {
       "localizations": {
         "cs": {
@@ -10216,6 +12142,22 @@
           "stringUnit": {
             "state": "translated",
             "value": "Noch nichts."
+          }
+        }
+      }
+    },
+    "Notifications": {
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Oznámení"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Mitteilungen"
           }
         }
       }
@@ -10285,6 +12227,22 @@
         }
       }
     },
+    "Offline unless you choose": {
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Offline, dokud se nerozhodnete jinak"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Offline, außer du willst es anders"
+          }
+        }
+      }
+    },
     "On": {
       "localizations": {
         "cs": {
@@ -10317,6 +12275,54 @@
         }
       }
     },
+    "On this Mac": {
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Na tomto Macu"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Auf diesem Mac"
+          }
+        }
+      }
+    },
+    "Once a day while Draft is open. Off: Draft never contacts the update server on its own.": {
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Jednou denně, když je Draft otevřený. Vypnuto: Draft sám server aktualizací nikdy nekontaktuje."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Einmal am Tag, solange Draft offen ist. Aus: Draft kontaktiert den Update-Server nie von selbst."
+          }
+        }
+      }
+    },
+    "One .zip with every note, attachment, version and backup, your settings, and a manifest with a checksum for each file. Restoring puts it in a new folder and checks it — it never writes over your vault.": {
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Jeden .zip se všemi poznámkami, přílohami, verzemi a zálohami, nastavením a manifestem s kontrolním součtem každého souboru. Obnova ho rozbalí do nové složky a zkontroluje — nikdy nepřepíše váš trezor."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Eine .zip mit allen Notizen, Anhängen, Versionen und Backups, deinen Einstellungen und einem Manifest mit Prüfsumme pro Datei. Wiederherstellen legt sie in einen neuen Ordner und prüft sie – dein Tresor wird nie überschrieben."
+          }
+        }
+      }
+    },
     "Online (off by default)": {
       "localizations": {
         "cs": {
@@ -10329,6 +12335,22 @@
           "stringUnit": {
             "state": "translated",
             "value": "Online (standardmäßig aus)"
+          }
+        }
+      }
+    },
+    "Online image search": {
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Online hledání obrázků"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Online-Bildsuche"
           }
         }
       }
@@ -10361,6 +12383,22 @@
           "stringUnit": {
             "state": "translated",
             "value": "Nur das Aussehen ändert sich; die Daten bleiben gleich."
+          }
+        }
+      }
+    },
+    "Only when you ask": {
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Jen na požádání"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nur auf Anfrage"
           }
         }
       }
@@ -10429,6 +12467,38 @@
         }
       }
     },
+    "Open FileVault Settings": {
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Otevřít nastavení FileVault"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "FileVault-Einstellungen öffnen"
+          }
+        }
+      }
+    },
+    "Open Help": {
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Otevřít nápovědu"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Hilfe öffnen"
+          }
+        }
+      }
+    },
     "Open Read-Only": {
       "localizations": {
         "cs": {
@@ -10473,6 +12543,22 @@
           "stringUnit": {
             "state": "translated",
             "value": "Einstellungen öffnen"
+          }
+        }
+      }
+    },
+    "Open Version History": {
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Otevřít historii verzí"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Versionsverlauf öffnen"
           }
         }
       }
@@ -10573,6 +12659,22 @@
         }
       }
     },
+    "Open the Format Panel": {
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Otevřít panel Formát"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Formatbereich öffnen"
+          }
+        }
+      }
+    },
     "Open “%@” at this block": {
       "localizations": {
         "cs": {
@@ -10601,6 +12703,22 @@
           "stringUnit": {
             "state": "translated",
             "value": "OpenAI-API"
+          }
+        }
+      }
+    },
+    "OpenAI API key": {
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Klíč OpenAI API"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "OpenAI-API-Schlüssel"
           }
         }
       }
@@ -10994,6 +13112,22 @@
         }
       }
     },
+    "Plain files you own": {
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Obyčejné soubory, které vlastníte"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Einfache Dateien, die dir gehören"
+          }
+        }
+      }
+    },
     "Plain text": {
       "extractionState": "manual",
       "localizations": {
@@ -11135,6 +13269,22 @@
           "stringUnit": {
             "state": "translated",
             "value": "Datenschutz"
+          }
+        }
+      }
+    },
+    "Privacy: every permission and network feature, what it does and how to turn it off.": {
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Soukromí: každé oprávnění a síťová funkce, co dělá a jak ji vypnout."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Datenschutz: jede Berechtigung und Netzwerkfunktion, was sie tut und wie du sie ausschaltest."
           }
         }
       }
@@ -11726,6 +13876,22 @@
         }
       }
     },
+    "Recover from a damaged vault": {
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Obnova poškozeného trezoru"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Einen beschädigten Tresor retten"
+          }
+        }
+      }
+    },
     "Recovered. The files from before are in backups/.": {
       "localizations": {
         "cs": {
@@ -11754,6 +13920,22 @@
           "stringUnit": {
             "state": "translated",
             "value": "Wiederherstellung"
+          }
+        }
+      }
+    },
+    "Recovery lists every problem with an exact repair preview. Repairs copy the files they touch to backups/ first and one Undo puts them back. If Draft can't open the vault, it offers recovery or read-only at launch.": {
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Obnova vypíše každý problém s přesným náhledem opravy. Opravy nejdřív zkopírují dotčené soubory do backups/ a jedno Zpět je vrátí. Když Draft trezor neotevře, nabídne při spuštění obnovu nebo režim jen pro čtení."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Wiederherstellung listet jedes Problem mit genauer Reparaturvorschau. Reparaturen kopieren betroffene Dateien zuerst nach backups/, und ein Widerrufen legt sie zurück. Kann Draft den Tresor nicht öffnen, bietet es beim Start Wiederherstellung oder Nur-Lesen an."
           }
         }
       }
@@ -11872,6 +14054,44 @@
           "stringUnit": {
             "state": "translated",
             "value": "Ablehnen"
+          }
+        }
+      }
+    },
+    "Released %@ · %@ · %@": {
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Vydáno %1$@ · %2$@ · %3$@"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Veröffentlicht %1$@ · %2$@ · %3$@"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "new",
+            "value": "Released %1$@ · %2$@ · %3$@"
+          }
+        }
+      }
+    },
+    "Remind Me Later": {
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Připomenout později"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Später erinnern"
           }
         }
       }
@@ -12484,6 +14704,102 @@
         }
       }
     },
+    "Report a Problem": {
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nahlásit problém"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Problem melden"
+          }
+        }
+      }
+    },
+    "Report a Problem writes a file with what you describe, versions and counts — no note text, titles or paths. You review it and save it; Draft sends nothing.": {
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nahlásit problém zapíše soubor s vaším popisem, verzemi a počty — bez textu poznámek, názvů a cest. Zkontrolujete ho a uložíte; Draft nic neposílá."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Problem melden schreibt eine Datei mit deiner Beschreibung, Versionen und Zahlen – ohne Notiztext, Titel oder Pfade. Du prüfst und sicherst sie; Draft sendet nichts."
+          }
+        }
+      }
+    },
+    "Report a Problem: write a local report you review before saving. Nothing is sent.": {
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nahlásit problém: místní hlášení, které před uložením zkontrolujete. Nic se neodesílá."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Problem melden: ein lokaler Bericht, den du vor dem Sichern prüfst. Nichts wird gesendet."
+          }
+        }
+      }
+    },
+    "Report a Problem…": {
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nahlásit problém…"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Problem melden …"
+          }
+        }
+      }
+    },
+    "Report a problem": {
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nahlásit problém"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Problem melden"
+          }
+        }
+      }
+    },
+    "Report copied.": {
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Hlášení zkopírováno."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bericht kopiert."
+          }
+        }
+      }
+    },
     "Reset": {
       "localizations": {
         "cs": {
@@ -12532,6 +14848,22 @@
         }
       }
     },
+    "Restart in Safe Mode": {
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Restartovat v nouzovém režimu"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Im sicheren Modus neu starten"
+          }
+        }
+      }
+    },
     "Restore": {
       "localizations": {
         "cs": {
@@ -12576,6 +14908,22 @@
           "stringUnit": {
             "state": "translated",
             "value": "Version wiederherstellen"
+          }
+        }
+      }
+    },
+    "Restore and Check an Archive": {
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Obnovit a zkontrolovat archiv"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Archiv wiederherstellen und prüfen"
           }
         }
       }
@@ -12640,6 +14988,92 @@
           "stringUnit": {
             "state": "translated",
             "value": "%@ wiederhergestellt. Die vorherige Version wurde gesichert."
+          }
+        }
+      }
+    },
+    "Restored %lld files; Vault Check found %lld problems.": {
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Obnoveno souborů: %lld; Kontrola trezoru našla problémů: %lld."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld Dateien wiederhergestellt; die Tresorprüfung fand %lld Probleme."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "new",
+            "value": "Restored %1$lld files; Vault Check found %2$lld problems."
+          }
+        }
+      }
+    },
+    "Restored and checked: %lld files, no problems.": {
+      "localizations": {
+        "cs": {
+          "variations": {
+            "plural": {
+              "few": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "Obnoveno a zkontrolováno: %lld soubory, žádné problémy."
+                }
+              },
+              "one": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "Obnoveno a zkontrolováno: %lld soubor, žádné problémy."
+                }
+              },
+              "other": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "Obnoveno a zkontrolováno: %lld souborů, žádné problémy."
+                }
+              }
+            }
+          }
+        },
+        "de": {
+          "variations": {
+            "plural": {
+              "one": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "Wiederhergestellt und geprüft: %lld Datei, keine Probleme."
+                }
+              },
+              "other": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "Wiederhergestellt und geprüft: %lld Dateien, keine Probleme."
+                }
+              }
+            }
+          }
+        },
+        "en": {
+          "variations": {
+            "plural": {
+              "one": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "Restored and checked: %lld file, no problems."
+                }
+              },
+              "other": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "Restored and checked: %lld files, no problems."
+                }
+              }
+            }
           }
         }
       }
@@ -13015,6 +15449,22 @@
         }
       }
     },
+    "Same title exists": {
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Stejný název existuje"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Gleicher Titel vorhanden"
+          }
+        }
+      }
+    },
     "Save": {
       "localizations": {
         "cs": {
@@ -13031,6 +15481,22 @@
         }
       }
     },
+    "Save Here": {
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Uložit sem"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Hier sichern"
+          }
+        }
+      }
+    },
     "Save Key": {
       "localizations": {
         "cs": {
@@ -13043,6 +15509,22 @@
           "stringUnit": {
             "state": "translated",
             "value": "Schlüssel sichern"
+          }
+        }
+      }
+    },
+    "Save Report…": {
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Uložit hlášení…"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bericht sichern …"
           }
         }
       }
@@ -13191,6 +15673,22 @@
         }
       }
     },
+    "Saved in the Keychain": {
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Uloženo v Klíčence"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Im Schlüsselbund gesichert"
+          }
+        }
+      }
+    },
     "Saved style “%@”": {
       "localizations": {
         "cs": {
@@ -13203,6 +15701,38 @@
           "stringUnit": {
             "state": "translated",
             "value": "Stil „%@“ gesichert"
+          }
+        }
+      }
+    },
+    "Saved the report in “%@”. Nothing was sent.": {
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Hlášení uloženo do „%@“. Nic nebylo odesláno."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bericht in „%@“ gesichert. Nichts wurde gesendet."
+          }
+        }
+      }
+    },
+    "Saved to Documents › Draft Backups": {
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ukládá se do Dokumenty › Draft Backups"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Gesichert in Dokumente › Draft Backups"
           }
         }
       }
@@ -13299,6 +15829,22 @@
           "stringUnit": {
             "state": "translated",
             "value": "Suchfehler: %@"
+          }
+        }
+      }
+    },
+    "Search help": {
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Hledat v nápovědě"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Hilfe durchsuchen"
           }
         }
       }
@@ -13480,6 +16026,22 @@
         }
       }
     },
+    "Select text to bring up the formatting bar. Type / for blocks, # for headings, [] for tasks and [[ to link a note. Effects and block decorations are in the Format panel.": {
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Označením textu vyvoláte lištu formátování. Napište / pro bloky, # pro nadpisy, [] pro úkoly a [[ pro odkaz na poznámku. Efekty a ozdoby bloků jsou v panelu Formát."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Markiere Text für die Formatleiste. Tippe / für Blöcke, # für Überschriften, [] für Aufgaben und [[ für einen Notizlink. Effekte und Blockdekor sind im Formatbereich."
+          }
+        }
+      }
+    },
     "Select text to give it an effect.": {
       "localizations": {
         "cs": {
@@ -13492,6 +16054,23 @@
           "stringUnit": {
             "state": "translated",
             "value": "Wähle Text aus, um ihm einen Effekt zu geben."
+          }
+        }
+      }
+    },
+    "Select words to bold, highlight or link them. On an empty line, type / to add a heading, checklist, table or collection.": {
+      "extractionState": "manual",
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Označte slova a udělejte je tučná, zvýrazněná nebo z nich odkaz. Na prázdném řádku napište / a přidejte nadpis, zaškrtávací seznam, tabulku nebo kolekci."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Markiere Wörter, um sie fett, hervorgehoben oder verlinkt zu machen. Tippe in einer leeren Zeile / für Überschrift, Checkliste, Tabelle oder Sammlung."
           }
         }
       }
@@ -13577,6 +16156,22 @@
         }
       }
     },
+    "Sends your search words to Openverse when you search for a backdrop image.": {
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Při hledání obrázku na pozadí pošle hledaná slova do Openverse."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sendet deine Suchwörter an Openverse, wenn du ein Hintergrundbild suchst."
+          }
+        }
+      }
+    },
     "Separator": {
       "extractionState": "manual",
       "localizations": {
@@ -13639,6 +16234,22 @@
           "stringUnit": {
             "state": "translated",
             "value": "Festlegen"
+          }
+        }
+      }
+    },
+    "Set Up the Assistant…": {
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nastavit asistenta…"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Assistent einrichten …"
           }
         }
       }
@@ -13941,6 +16552,22 @@
         }
       }
     },
+    "Show Shortcuts": {
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Zobrazit zkratky"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kürzel zeigen"
+          }
+        }
+      }
+    },
     "Show Sidebar": {
       "localizations": {
         "cs": {
@@ -14134,6 +16761,22 @@
         }
       }
     },
+    "Show the Vault in Finder": {
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Zobrazit trezor ve Finderu"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tresor im Finder zeigen"
+          }
+        }
+      }
+    },
     "Showing the first 8 rows and 6 columns.": {
       "localizations": {
         "cs": {
@@ -14182,6 +16825,22 @@
         }
       }
     },
+    "Shows your events next to daily notes when you turn it on. Draft never changes events.": {
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Po zapnutí zobrazí vaše události vedle denních poznámek. Draft události nikdy nemění."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Zeigt deine Termine neben Tagesnotizen, wenn du es einschaltest. Draft ändert nie Termine."
+          }
+        }
+      }
+    },
     "Sidebar": {
       "localizations": {
         "cs": {
@@ -14210,6 +16869,86 @@
           "stringUnit": {
             "state": "translated",
             "value": "Texteffekte bei erhöhtem Kontrast vereinfachen"
+          }
+        }
+      }
+    },
+    "Skip %lld notes whose title already exists in this Space": {
+      "localizations": {
+        "cs": {
+          "variations": {
+            "plural": {
+              "few": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "Přeskočit %lld poznámky, jejichž název už v tomto prostoru existuje"
+                }
+              },
+              "one": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "Přeskočit %lld poznámku, jejíž název už v tomto prostoru existuje"
+                }
+              },
+              "other": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "Přeskočit %lld poznámek, jejichž název už v tomto prostoru existuje"
+                }
+              }
+            }
+          }
+        },
+        "de": {
+          "variations": {
+            "plural": {
+              "one": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "%lld Notiz überspringen, deren Titel es in diesem Bereich schon gibt"
+                }
+              },
+              "other": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "%lld Notizen überspringen, deren Titel es in diesem Bereich schon gibt"
+                }
+              }
+            }
+          }
+        },
+        "en": {
+          "variations": {
+            "plural": {
+              "one": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "Skip %lld note whose title already exists in this Space"
+                }
+              },
+              "other": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "Skip %lld notes whose title already exists in this Space"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "Skip This Version": {
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Přeskočit tuto verzi"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Diese Version überspringen"
           }
         }
       }
@@ -14248,6 +16987,22 @@
           "stringUnit": {
             "state": "new",
             "value": "Slide %1$lld of %2$lld"
+          }
+        }
+      }
+    },
+    "Software Update": {
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Aktualizace softwaru"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Softwareupdate"
           }
         }
       }
@@ -14387,6 +17142,22 @@
         }
       }
     },
+    "Spaces for each part of life": {
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Prostory pro každou část života"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bereiche für jeden Teil des Lebens"
+          }
+        }
+      }
+    },
     "Spectrum": {
       "extractionState": "manual",
       "localizations": {
@@ -14434,6 +17205,39 @@
           "stringUnit": {
             "state": "translated",
             "value": "Ss"
+          }
+        }
+      }
+    },
+    "Stable": {
+      "extractionState": "manual",
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Stabilní"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Stabil"
+          }
+        }
+      }
+    },
+    "Stable is recommended. Beta gets new features earlier and may have bugs. Development is for testing builds.": {
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Doporučujeme Stabilní. Beta dostává funkce dřív a může mít chyby. Vývojový je pro testovací sestavení."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Stabil wird empfohlen. Beta bekommt Funktionen früher und kann Fehler haben. Entwicklung ist für Test-Builds."
           }
         }
       }
@@ -14514,6 +17318,23 @@
           "stringUnit": {
             "state": "translated",
             "value": "Mit dem Schreiben beginnen"
+          }
+        }
+      }
+    },
+    "Start a note": {
+      "extractionState": "manual",
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Začněte poznámku"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Beginne eine Notiz"
           }
         }
       }
@@ -14924,6 +17745,22 @@
         }
       }
     },
+    "Switch to the %@ channel?": {
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Přepnout na kanál %@?"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Zum Kanal %@ wechseln?"
+          }
+        }
+      }
+    },
     "Switched to %@": {
       "localizations": {
         "cs": {
@@ -14969,6 +17806,22 @@
           "stringUnit": {
             "state": "translated",
             "value": "Systemschrift"
+          }
+        }
+      }
+    },
+    "System Settings": {
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nastavení systému"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Systemeinstellungen"
           }
         }
       }
@@ -15150,6 +18003,22 @@
         }
       }
     },
+    "Task reminders, only when Remind me when tasks are due is on.": {
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Připomínky úkolů, jen když je zapnuté Připomenout, když úkoly vyprší."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Aufgabenerinnerungen, nur wenn Erinnern, wenn Aufgaben fällig sind an ist."
+          }
+        }
+      }
+    },
     "Tasks": {
       "localizations": {
         "cs": {
@@ -15162,6 +18031,22 @@
           "stringUnit": {
             "state": "translated",
             "value": "Aufgaben"
+          }
+        }
+      }
+    },
+    "Telemetry": {
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Telemetrie"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Telemetrie"
           }
         }
       }
@@ -15344,6 +18229,22 @@
         }
       }
     },
+    "The archive is damaged: %@ is missing or changed. Nothing was restored.": {
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Archiv je poškozený: %@ chybí nebo se změnil. Nic nebylo obnoveno."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Das Archiv ist beschädigt: %@ fehlt oder wurde geändert. Nichts wurde wiederhergestellt."
+          }
+        }
+      }
+    },
     "The copy migrated and read back with nothing lost (%lld notes).": {
       "localizations": {
         "cs": {
@@ -15392,6 +18293,54 @@
         }
       }
     },
+    "The download doesn't match its checksum, so it was discarded.": {
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Stažený soubor neodpovídá kontrolnímu součtu, proto byl zahozen."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Der Download passt nicht zur Prüfsumme und wurde verworfen."
+          }
+        }
+      }
+    },
+    "The download has the wrong size, so it was discarded.": {
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Stažený soubor má špatnou velikost, proto byl zahozen."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Der Download hat die falsche Größe und wurde verworfen."
+          }
+        }
+      }
+    },
+    "The download isn't signed by Draft's release key, so it was discarded.": {
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Stažený soubor není podepsán klíčem vydání Draftu, proto byl zahozen."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Der Download ist nicht mit Drafts Release-Schlüssel signiert und wurde verworfen."
+          }
+        }
+      }
+    },
     "The files it replaces are copied to backups/ first; Undo puts them back.": {
       "localizations": {
         "cs": {
@@ -15420,6 +18369,22 @@
           "stringUnit": {
             "state": "translated",
             "value": "Betroffene Dateien werden zuerst nach backups/ kopiert. Besteht das Ergebnis die Prüfung nicht, wird alles zurückgelegt."
+          }
+        }
+      }
+    },
+    "The last update couldn't start, so Draft put the previous version back. Your notes weren't touched.": {
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Poslední aktualizace se nespustila, proto Draft vrátil předchozí verzi. Vašich poznámek se to nedotklo."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Das letzte Update konnte nicht starten, daher hat Draft die vorige Version zurückgelegt. Deine Notizen wurden nicht berührt."
           }
         }
       }
@@ -15536,6 +18501,22 @@
         }
       }
     },
+    "The local model never sends notes anywhere. The optional OpenAI mode sends only the context you review before each request.": {
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Místní model poznámky nikam neposílá. Volitelný režim OpenAI posílá jen kontext, který před každým požadavkem zkontrolujete."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Das lokale Modell sendet Notizen nirgendwohin. Der optionale OpenAI-Modus sendet nur den Kontext, den du vor jeder Anfrage prüfst."
+          }
+        }
+      }
+    },
     "The local model runs inside Draft on this Mac and does not send note content online. If you choose OpenAI API, Draft shows the exact context and conversation before every request. Chat history is saved separately by provider and Space in your vault (assistant/), and Clear History removes the selected conversation.": {
       "localizations": {
         "cs": {
@@ -15548,6 +18529,22 @@
           "stringUnit": {
             "state": "translated",
             "value": "Das lokale Modell läuft in Draft auf diesem Mac und sendet keine Notizinhalte ins Internet. Wenn du die OpenAI-API wählst, zeigt Draft vor jeder Anfrage den genauen Kontext und das Gespräch. Der Chatverlauf wird nach Anbieter und Bereich getrennt in deinem Tresor (assistant/) gespeichert, und „Verlauf löschen“ entfernt das gewählte Gespräch."
+          }
+        }
+      }
+    },
+    "The local model runs on this Mac and sends nothing. The optional OpenAI mode shows exactly what it will send before each request and uses your own API key.": {
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Místní model běží na tomto Macu a nic neposílá. Volitelný režim OpenAI před každým požadavkem ukáže, co přesně pošle, a používá váš vlastní klíč API."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Das lokale Modell läuft auf diesem Mac und sendet nichts. Der optionale OpenAI-Modus zeigt vor jeder Anfrage genau, was er sendet, und nutzt deinen eigenen API-Schlüssel."
           }
         }
       }
@@ -15686,6 +18683,118 @@
         }
       }
     },
+    "The update doesn't contain Draft.": {
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Aktualizace neobsahuje Draft."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Das Update enthält kein Draft."
+          }
+        }
+      }
+    },
+    "The update is a different app.": {
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Aktualizace je jiná aplikace."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Das Update ist eine andere App."
+          }
+        }
+      }
+    },
+    "The update is signed by someone else.": {
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Aktualizaci podepsal někdo jiný."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Das Update ist von jemand anderem signiert."
+          }
+        }
+      }
+    },
+    "The update isn't downloaded yet.": {
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Aktualizace ještě není stažená."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Das Update ist noch nicht geladen."
+          }
+        }
+      }
+    },
+    "The update list couldn't be read.": {
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Seznam aktualizací nelze přečíst."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Die Update-Liste konnte nicht gelesen werden."
+          }
+        }
+      }
+    },
+    "The update list isn't signed by Draft's release key, so it was ignored.": {
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Seznam aktualizací není podepsán klíčem vydání Draftu, proto byl ignorován."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Die Update-Liste ist nicht mit Drafts Release-Schlüssel signiert und wurde ignoriert."
+          }
+        }
+      }
+    },
+    "The update's build number doesn't match the update list.": {
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Číslo sestavení aktualizace neodpovídá seznamu aktualizací."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Die Build-Nummer des Updates passt nicht zur Update-Liste."
+          }
+        }
+      }
+    },
     "Their files and automatic backups are removed from this Mac. This cannot be undone.": {
       "localizations": {
         "cs": {
@@ -15820,6 +18929,54 @@
         }
       }
     },
+    "This build has no release key, so it can't verify updates. Release builds can.": {
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Toto sestavení nemá klíč vydání, takže aktualizace neověří. Sestavení k vydání ano."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dieser Build hat keinen Release-Schlüssel und kann Updates nicht prüfen. Release-Builds können es."
+          }
+        }
+      }
+    },
+    "This build has no update address. Updates come with release builds.": {
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Toto sestavení nemá adresu aktualizací. Aktualizace mají sestavení k vydání."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dieser Build hat keine Update-Adresse. Updates gibt es mit Release-Builds."
+          }
+        }
+      }
+    },
+    "This build of Draft can't verify updates (no release key), so updates are off.": {
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Toto sestavení Draftu neumí ověřit aktualizace (chybí klíč vydání), proto jsou vypnuté."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dieser Draft-Build kann Updates nicht prüfen (kein Release-Schlüssel), daher sind Updates aus."
+          }
+        }
+      }
+    },
     "This copy can't be read.": {
       "localizations": {
         "cs": {
@@ -15848,6 +19005,22 @@
           "stringUnit": {
             "state": "translated",
             "value": "Dies ist eine Vorlage"
+          }
+        }
+      }
+    },
+    "This isn't a Draft backup archive (no manifest).": {
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Toto není archiv zálohy Draftu (chybí manifest)."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Das ist kein Draft-Backup-Archiv (kein Manifest)."
           }
         }
       }
@@ -15912,6 +19085,44 @@
           "stringUnit": {
             "state": "translated",
             "value": "Diese Version entspricht der aktuellen Notiz."
+          }
+        }
+      }
+    },
+    "This version needs macOS %@ or later.": {
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tato verze vyžaduje macOS %@ nebo novější."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Diese Version braucht macOS %@ oder neuer."
+          }
+        }
+      }
+    },
+    "This version updates your vault's format (%lld → %lld). Draft makes a backup archive first; older versions of Draft can't open the updated vault.": {
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tato verze aktualizuje formát trezoru (%1$lld → %2$lld). Draft nejdřív vytvoří archiv zálohy; starší verze Draftu aktualizovaný trezor neotevřou."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Diese Version aktualisiert das Format deines Tresors (%1$lld → %2$lld). Draft erstellt zuerst ein Backup-Archiv; ältere Draft-Versionen können den aktualisierten Tresor nicht öffnen."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "new",
+            "value": "This version updates your vault's format (%1$lld → %2$lld). Draft makes a backup archive first; older versions of Draft can't open the updated vault."
           }
         }
       }
@@ -16151,6 +19362,22 @@
         }
       }
     },
+    "Troubleshooting": {
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Řešení potíží"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Fehlerbehebung"
+          }
+        }
+      }
+    },
     "Turn Into": {
       "extractionState": "manual",
       "localizations": {
@@ -16347,6 +19574,22 @@
         }
       }
     },
+    "Unknown": {
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Neznámé"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Unbekannt"
+          }
+        }
+      }
+    },
     "Unpin": {
       "localizations": {
         "cs": {
@@ -16491,6 +19734,70 @@
         }
       }
     },
+    "Update Settings": {
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nastavení aktualizací"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Update-Einstellungen"
+          }
+        }
+      }
+    },
+    "Update channel": {
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kanál aktualizací"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Update-Kanal"
+          }
+        }
+      }
+    },
+    "Update checks": {
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kontrola aktualizací"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Update-Prüfungen"
+          }
+        }
+      }
+    },
+    "Update checks, image search, link previews and the OpenAI Assistant are off until you turn them on. Agents like Codex only propose changes you review.": {
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kontrola aktualizací, hledání obrázků, náhledy odkazů a asistent OpenAI jsou vypnuté, dokud je nezapnete. Agenti jako Codex jen navrhují změny, které zkontrolujete."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Update-Prüfungen, Bildsuche, Link-Vorschauen und der OpenAI-Assistent sind aus, bis du sie einschaltest. Agenten wie Codex schlagen nur Änderungen vor, die du prüfst."
+          }
+        }
+      }
+    },
     "Updated": {
       "localizations": {
         "cs": {
@@ -16503,6 +19810,54 @@
           "stringUnit": {
             "state": "translated",
             "value": "Aktualisiert"
+          }
+        }
+      }
+    },
+    "Updates": {
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Aktualizace"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Updates"
+          }
+        }
+      }
+    },
+    "Updates are only downloaded over HTTPS.": {
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Aktualizace se stahují jen přes HTTPS."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Updates werden nur über HTTPS geladen."
+          }
+        }
+      }
+    },
+    "Updates you control, help and privacy in one place": {
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Aktualizace pod vaší kontrolou, nápověda a soukromí na jednom místě"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Updates unter deiner Kontrolle, Hilfe und Datenschutz an einem Ort"
           }
         }
       }
@@ -16683,6 +20038,22 @@
         }
       }
     },
+    "Used only for requests you confirm. Remove it in Assistant settings.": {
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Použije se jen pro požadavky, které potvrdíte. Odeberete ho v nastavení asistenta."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nur für Anfragen, die du bestätigst. Entferne ihn in den Assistent-Einstellungen."
+          }
+        }
+      }
+    },
     "Used when the effect can't be shown, for example with Increase Contrast": {
       "localizations": {
         "cs": {
@@ -16743,6 +20114,22 @@
           "stringUnit": {
             "state": "translated",
             "value": "Wert"
+          }
+        }
+      }
+    },
+    "Vault": {
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Trezor"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tresor"
           }
         }
       }
@@ -16827,6 +20214,22 @@
         }
       }
     },
+    "Version history": {
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Historie verzí"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Versionsverlauf"
+          }
+        }
+      }
+    },
     "Versions": {
       "localizations": {
         "cs": {
@@ -16855,6 +20258,22 @@
           "stringUnit": {
             "state": "translated",
             "value": "Video"
+          }
+        }
+      }
+    },
+    "View Log": {
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Zobrazit protokol"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Protokoll zeigen"
           }
         }
       }
@@ -16955,6 +20374,22 @@
         }
       }
     },
+    "What's New in Draft %@": {
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Co je nového v Draftu %@"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Neu in Draft %@"
+          }
+        }
+      }
+    },
     "When macOS Increase Contrast is on, show effects as one still, readable color: no gradients, Spectrum motion, glow, shadow or outline. Effect colors are kept readable either way.": {
       "localizations": {
         "cs": {
@@ -16967,6 +20402,38 @@
           "stringUnit": {
             "state": "translated",
             "value": "Bei aktivem „Kontrast erhöhen“ in macOS Effekte als eine ruhige, lesbare Farbe zeigen: keine Verläufe, keine Spektrum-Bewegung, kein Leuchten, Schatten oder Umriss. Effektfarben bleiben so oder so lesbar."
+          }
+        }
+      }
+    },
+    "Where every note, attachment, version and backup lives.": {
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kde jsou všechny poznámky, přílohy, verze a zálohy."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Wo alle Notizen, Anhänge, Versionen und Backups liegen."
+          }
+        }
+      }
+    },
+    "Where your notes are": {
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kde jsou vaše poznámky"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Wo deine Notizen sind"
           }
         }
       }
@@ -17067,6 +20534,39 @@
         }
       }
     },
+    "Write first, format later": {
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nejdřív psát, formátovat potom"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Erst schreiben, dann formatieren"
+          }
+        }
+      }
+    },
+    "Write, then format": {
+      "extractionState": "manual",
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pište, pak formátujte"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Schreiben, dann formatieren"
+          }
+        }
+      }
+    },
     "Writing": {
       "localizations": {
         "cs": {
@@ -17099,6 +20599,38 @@
         }
       }
     },
+    "You're writing right now": {
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Právě píšete"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Du schreibst gerade"
+          }
+        }
+      }
+    },
+    "Your data": {
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Vaše data"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Deine Daten"
+          }
+        }
+      }
+    },
     "Your documents are portable JSON with Markdown export.": {
       "localizations": {
         "cs": {
@@ -17111,6 +20643,55 @@
           "stringUnit": {
             "state": "translated",
             "value": "Deine Dokumente sind portables JSON mit Markdown-Export."
+          }
+        }
+      }
+    },
+    "Your notes are plain files in this folder on this Mac. Draft has no account and no server, and it doesn't collect usage data.": {
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Vaše poznámky jsou obyčejné soubory v této složce na tomto Macu. Draft nemá účet ani server a nesbírá údaje o používání."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Deine Notizen sind einfache Dateien in diesem Ordner auf diesem Mac. Draft hat kein Konto und keinen Server und sammelt keine Nutzungsdaten."
+          }
+        }
+      }
+    },
+    "Your notes were last saved %@. Draft saves half a second after you stop typing, so at most the last moment of typing can be missing. Versions and backups are untouched.": {
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Poznámky byly naposledy uloženy %@. Draft ukládá půl sekundy po dopsání, takže chybět může nanejvýš poslední okamžik psaní. Verze a zálohy jsou nedotčené."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Deine Notizen wurden zuletzt %@ gesichert. Draft sichert eine halbe Sekunde nach dem Tippen, also fehlt höchstens der letzte Moment. Versionen und Backups sind unberührt."
+          }
+        }
+      }
+    },
+    "Your sidebar and Spaces": {
+      "extractionState": "manual",
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Postranní panel a prostory"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Deine Seitenleiste und Bereiche"
           }
         }
       }
@@ -18774,7 +22355,22 @@
         }
       }
     },
-    "·": {},
+    "·": {
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "·"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "·"
+          }
+        }
+      }
+    },
     "· Not saved": {
       "localizations": {
         "cs": {
@@ -19141,12 +22737,71 @@
         }
       }
     },
-    "• %@": {},
+    "•": {
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "•"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "•"
+          }
+        }
+      }
+    },
+    "• %@": {
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "• %@"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "• %@"
+          }
+        }
+      }
+    },
     "←": {
-      "extractionState": "manual"
+      "extractionState": "manual",
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "←"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "←"
+          }
+        }
+      }
     },
     "→": {
-      "extractionState": "manual"
+      "extractionState": "manual",
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "→"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "→"
+          }
+        }
+      }
     },
     "⇧⌘D": {
       "localizations": {

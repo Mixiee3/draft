@@ -164,6 +164,11 @@ Key decisions:
 - [`docs/ROADMAP.md`](docs/ROADMAP.md) — versioned plan from v0.1 to 1.0 and beyond (incl. Windows).
 - [`docs/FEATURE_PARITY.md`](docs/FEATURE_PARITY.md) — evidence-backed gap matrix with acceptance checks.
 - [`docs/FORMAT.md`](docs/FORMAT.md) — the portable on-disk format.
+- [`docs/VERSIONING.md`](docs/VERSIONING.md) — versions, channels, schemas, migration and rollback.
+- [`docs/UPDATES.md`](docs/UPDATES.md) — the updater and its security model.
+- [`docs/RELEASE.md`](docs/RELEASE.md) — signing, notarization, required secrets, `scripts/release.sh`.
+- [`docs/PRIVACY.md`](docs/PRIVACY.md) — what stays local, every network feature and permission.
+- Release gate: `scripts/release-check.sh` runs every suite; a release ships only when it passes.
 - [`docs/screenshots/`](docs/screenshots) — Draft captured by `DRAFT_AUTOMATION=screenshots`.
 
 Reference screenshots of other products used during design research are **not** part of this

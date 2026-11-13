@@ -12,7 +12,7 @@ app or screenshots) · `verified` (covered by `swift test` or `scripts/smoke.sh`
 
 Platform: all statuses are for the native macOS app. Windows: see §22.
 
-Last updated: v0.4 shipped (native macOS) — 2026‑11‑08.
+Last updated: v0.10 (v1.0 groundwork) — 2026‑11‑13.
 
 ## 1. Editor primitives and keyboard
 
@@ -190,7 +190,7 @@ Last updated: v0.4 shipped (native macOS) — 2026‑11‑08.
 | X2 | Lossless native export | — | B§10 | verified | — | 0.1 | `draft-export.json` in bundle (`testExportBundle…`) |
 | X3 | Export all | Library ⋯ | S25 | working | X1 | 0.1 | One folder, subfolders per folder |
 | X4 | PDF / Print / Word / Image / E-mail | Export panel | S39 | verified | — | 0.4 | PDF (paged), HTML and PNG with "Use document style"; page color and text agree with the editor (style test). Word later, E-mail v1.x |
-| X5 | Import | Library ⋯ → Import | S25 | working | — | 0.5 | ⇧⌘I: Markdown files and folders (subfolders → folders, links → doc links, images → assets), HTML, OPML, Draft JSON (ids remapped on clash; folders and styles included). Draft export → import reproduces documents, links, style and folder (workflow test, `ImportTests`) |
+| X5 | Import | Library ⋯ → Import | S25 | working | — | 0.5 | ⇧⌘I opens a preview first (v0.10): notes listed, duplicates by title marked and skipped by default, nothing written until Import. Formats: Markdown files and folders (subfolders → folders, links → doc links, images → assets), HTML, OPML, Draft JSON (ids remapped on clash; folders and styles included). Draft export → import reproduces documents, links, style and folder (workflow test, `ImportTests`) |
 | X6 | Duplicate | Export panel | S39 | working | — | 0.1 | New ids for every block |
 | X7 | Transfer to other apps | Disabled when absent | S40 | missing | — | 1.x | Share panel explains |
 | X8 | Copy as Markdown | — | — | working | X1 | 0.1 | Share/Info → clipboard |
@@ -204,6 +204,8 @@ Last updated: v0.4 shipped (native macOS) — 2026‑11‑08.
 | H3 | View backups / restore | Info → View Backups | S41 | verified | — | 0.2 | Automatic backup at most every 10 min while editing, 30 kept per doc; Info → View Backups → Restore (current version backed up first) (`BackupTests`, smoke `backups`) |
 | H4 | Recently Deleted | Top-level docs | B§B | verified | — | 0.2 | Delete → Recently Deleted with Undo toast; Restore / Delete Permanently / Empty; purged after 30 days with backups (`TrashTests`, smoke `trashed`) |
 | H5 | Save state indicator | Quiet | B§8 | working | — | 0.1 | "Saved / Saving… / Not saved" in document rail |
+| H7 | Backup archive (whole vault, checksummed manifest, restore into a new folder) | — | v1.0 brief | verified | — | 0.10 | `BackupArchiveTests` (round trip, damage refused) |
+| H8 | Crash recovery card, Safe Mode, local log | — | v1.0 brief | verified | — | 0.10 | `scripts/fault-test.sh` (SIGKILL mid-save ×5: crash noticed, vault intact), trust-test `safe-mode-check` (writes nothing) |
 | H6 | Unknown data preserved | — | prompt | verified | — | 0.1 | `testLibraryV0…KeepsUnknownFields`, `testUnknownNodeTypes…`, unknown block shown as preserved placeholder |
 
 ## 14. Publishing
@@ -339,3 +341,17 @@ Last updated: v0.4 shipped (native macOS) — 2026‑11‑08.
 | ST7 | Spectrum (moving gradient) text | verified | 0.7 | Five palettes, speed, direction; verified from screen pixels in the live editor (moves, one gradient, still for Reduce Motion and Increase Contrast, survives scroll/tabs/styles/theme/undo/paste/reopen/relaunch); `SpectrumTests`, `GradientRenderingTests`, `spectrum-test` |
 | ST8 | Window chrome | verified | 0.7 | Window buttons inside the window and centred on the tab row in 13 states; empty title row drags and double-click zooms (`nav-test.sh` chrome check) |
 | AG15 | Richer agent actions (links to notes, tags, due dates, image text, folders, styles, daily note) | verified | 0.7 | `RicherAgentActionTests`, `mcp-test.sh` 123/123 |
+
+## 25. Release, updates, support (v0.10 groundwork)
+
+| ID | Capability | Status | Acceptance check |
+|---|---|---|---|
+| R1 | Hardened runtime, entitlements, version/build/channel, release archive, notes | verified | `scripts/release.sh` + `scripts/verify-release.sh` (signature, runtime, entitlements, launch, archive) |
+| R2 | Notarization and stapling | partial | Scripted; needs a Developer ID certificate and notary credentials ([RELEASE.md](RELEASE.md)) |
+| R3 | Opt-in signed updates with rollback | verified | `scripts/update-test.sh` (install, on quit, later, tampered, rollback, no request when off), `UpdatesTests` |
+| R4 | Channels (stable / beta / development) with confirmation | working | Settings › Updates; development never replaces stable (stage check) |
+| R5 | Onboarding, tour, What's New | working | First run on a clean vault; What's New when the version changes |
+| R6 | Help center with linked actions | working | Settings › Help, ⌘? |
+| R7 | Report a Problem (local, reviewed, redacted) | verified | `DiagnosticsTests` (no paths, titles or note text) |
+| R8 | Privacy center | working | Settings › Privacy, [PRIVACY.md](PRIVACY.md) |
+| R9 | Release gate and CI | working | `scripts/release-check.sh`, `.github/workflows/ci.yml` |
