@@ -69,7 +69,7 @@ struct VersionHistoryView: View {
             ForEach(snaps) { s in
                 VStack(alignment: .leading, spacing: 2) {
                     // System styles, so the row inverts with the selection highlight.
-                    Text(Date(timeIntervalSince1970: s.savedAt / 1000).formatted(date: .abbreviated, time: .shortened)).font(.system(size: DS.body)).foregroundStyle(.primary)
+                    Text(Date(timeIntervalSince1970: s.savedAt / 1000).formatted(Date.FormatStyle(date: .abbreviated, time: .shortened, locale: appLocale))).font(.system(size: DS.body)).foregroundStyle(.primary)
                     HStack(spacing: 4) {
                         Image(systemName: s.source == "manual" ? "bookmark.fill" : s.source == "auto" ? "clock" : "arrow.uturn.backward").font(.system(size: 9))
                         Text("\(s.sourceLabel) · \(relative(s.savedAt))")
@@ -77,7 +77,7 @@ struct VersionHistoryView: View {
                 }
                 .padding(.vertical, 2).tag(s.id)
                 .accessibilityElement(children: .combine)
-                .accessibilityLabel("\(s.sourceLabel) version, \(Date(timeIntervalSince1970: s.savedAt / 1000).formatted(date: .abbreviated, time: .shortened))")
+                .accessibilityLabel("\(s.sourceLabel) version, \(Date(timeIntervalSince1970: s.savedAt / 1000).formatted(Date.FormatStyle(date: .abbreviated, time: .shortened, locale: appLocale)))")
             }
         }
         .listStyle(.sidebar).scrollContentBackground(.hidden).focused($listFocused)

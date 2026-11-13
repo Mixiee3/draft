@@ -173,7 +173,7 @@ public enum VaultRepair {
         return p
     }
 
-    static func stamp(_ ms: Double) -> String { Date(timeIntervalSince1970: ms / 1000).formatted(date: .abbreviated, time: .shortened) }
+    static func stamp(_ ms: Double) -> String { Date(timeIntervalSince1970: ms / 1000).formatted(Date.FormatStyle(date: .abbreviated, time: .shortened, locale: appLocale)) }
 
     /// The page card that shows a note, if any other note has one.
     static func parentFromPageCards(_ id: String, vault: Vault, lib: Library) -> String? {

@@ -255,7 +255,7 @@ struct GridLayout: View {
     }
 }
 
-private let monthFormatter: DateFormatter = { let f = DateFormatter(); f.dateFormat = "LLLL"; return f }()
+private let monthFormatter: DateFormatter = { let f = DateFormatter(); f.locale = appLocale; f.dateFormat = "LLLL"; return f }()
 private let yearFormatter: DateFormatter = { let f = DateFormatter(); f.dateFormat = "yyyy"; return f }()
 
 func groupByDate(_ docs: [DocMeta], key: SortKey) -> [(String, [DocMeta])] {

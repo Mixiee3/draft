@@ -2569,7 +2569,6 @@
       }
     },
     "Apply Agent Edits": {
-      "extractionState": "stale",
       "localizations": {
         "cs": {
           "stringUnit": {
@@ -3548,13 +3547,13 @@
         "cs": {
           "stringUnit": {
             "state": "translated",
-            "value": "Rámeček"
+            "value": "Upozornění"
           }
         },
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Hinweis"
+            "value": "Hinweisbox"
           }
         }
       }
@@ -3603,7 +3602,7 @@
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Legende"
+            "value": "Bildunterschrift"
           }
         }
       }
@@ -5014,13 +5013,13 @@
         "cs": {
           "stringUnit": {
             "state": "translated",
-            "value": "Deník a úkoly"
+            "value": "Denní poznámky a úkoly"
           }
         },
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Tage & Aufgaben"
+            "value": "Tagesnotizen & Aufgaben"
           }
         }
       }
@@ -5520,13 +5519,13 @@
         "cs": {
           "stringUnit": {
             "state": "translated",
-            "value": "Dok"
+            "value": "Dokument"
           }
         },
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Dok"
+            "value": "Dokument"
           }
         }
       }
@@ -9041,6 +9040,7 @@
       }
     },
     "Move Column": {
+      "extractionState": "stale",
       "localizations": {
         "cs": {
           "stringUnit": {
@@ -9089,6 +9089,7 @@
       }
     },
     "Move Row": {
+      "extractionState": "stale",
       "localizations": {
         "cs": {
           "stringUnit": {
@@ -11198,7 +11199,7 @@
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Online"
+            "value": "Veröffentlichen"
           }
         }
       }
@@ -12372,7 +12373,6 @@
       }
     },
     "Replace Note with Codex Draft": {
-      "extractionState": "stale",
       "localizations": {
         "cs": {
           "stringUnit": {
@@ -16129,7 +16129,7 @@
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Senden"
+            "value": "Übertragen"
           }
         }
       }
@@ -18170,6 +18170,22 @@
         }
       }
     },
+    "just now": {
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "právě teď"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "gerade eben"
+          }
+        }
+      }
+    },
     "large display words only; avoid in body text": {
       "extractionState": "manual",
       "localizations": {
@@ -19126,6 +19142,12 @@
       }
     },
     "• %@": {},
+    "←": {
+      "extractionState": "manual"
+    },
+    "→": {
+      "extractionState": "manual"
+    },
     "⇧⌘D": {
       "localizations": {
         "cs": {

@@ -174,7 +174,7 @@ struct DayCard: View {
                 ForEach(evs, id: \.eventIdentifier) { e in
                     HStack(spacing: 8) {
                         Circle().fill(Color(nsColor: e.calendar.color)).frame(width: 7, height: 7)
-                        Text(e.isAllDay ? "All day" : e.startDate.formatted(date: .omitted, time: .shortened)).foregroundStyle(t.secondary).frame(width: 64, alignment: .leading)
+                        Text(e.isAllDay ? "All day" : e.startDate.formatted(Date.FormatStyle(date: .omitted, time: .shortened, locale: appLocale))).foregroundStyle(t.secondary).frame(width: 64, alignment: .leading)
                         Text(e.title ?? "Event").foregroundStyle(t.text).lineLimit(1)
                     }.font(.system(size: DS.body)).accessibilityElement(children: .combine)
                 }

@@ -61,4 +61,28 @@ extension Automation {
         m.librarySearch = ""
         if let d = try? JSONSerialization.data(withJSONObject: r, options: [.prettyPrinted, .sortedKeys]) { try? d.write(to: out.appendingPathComponent("search-read.json")) }
     }
+
+    /// `table-shots`: a table with rich text, a link and a column moved with the keyboard command.
+    static func tableShots() async {
+        guard let w = NSApp.windows.first(where: { $0.isVisible }) else { return }
+        w.setFrame(NSRect(x: 40, y: 40, width: 1280, height: 800), display: true)
+        guard let id = m.createDoc(title: "Reading list") else { return }
+        func cell(_ t: String, _ marks: [Mark]? = nil) -> Node { Node("tableCell", content: [.text(t, marks: marks)]) }
+        let link = Mark("link", attrs: ["href": "https://example.com"])
+        let table = ensureBlockIds(Node("table", attrs: ["id": "b_t"], content: [
+            Node("tableRow", content: [cell("Title"), cell("Author"), cell("Year")]),
+            Node("tableRow", content: [cell("The Overstory", [Mark("bold")]), cell("Richard Powers"), cell("2018")]),
+            Node("tableRow", content: [cell("Piranesi", [link]), cell("Susanna Clarke"), cell("2020")])]))
+        let c = m.editor(for: id).controller
+        c.load(Node("doc", content: [table, Node("paragraph", attrs: ["id": "b_after"])])); m.editorChanged(id)
+        await wait(0.6)
+        c.tableEditor.begin(tableId: "b_t", row: 1, column: 2)
+        await wait(0.4)
+        await shot("table-before-move", w)
+        c.tableEditor.moveColumn(by: -2)
+        await wait(0.4)
+        await shot("table-after-move", w)
+        c.tableEditor.end()
+        m.flushAll()
+    }
 }

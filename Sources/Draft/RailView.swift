@@ -2,11 +2,11 @@ import SwiftUI
 import DraftCore
 import DraftEditor
 
-private let relativeFormatter: RelativeDateTimeFormatter = { let f = RelativeDateTimeFormatter(); f.unitsStyle = .full; return f }()
+private let relativeFormatter: RelativeDateTimeFormatter = { let f = RelativeDateTimeFormatter(); f.unitsStyle = .full; f.locale = appLocale; return f }()
 
 func relative(_ ms: Double) -> String {
     let d = Date(timeIntervalSince1970: ms / 1000)
-    if abs(d.timeIntervalSinceNow) < 60 { return "just now" }
+    if abs(d.timeIntervalSinceNow) < 60 { return String(localized: "just now") }
     return relativeFormatter.localizedString(for: d, relativeTo: Date())
 }
 

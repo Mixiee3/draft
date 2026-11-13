@@ -37,7 +37,7 @@ struct AgentSettings: View {
                 ForEach(Array(activity.suffix(30).reversed().enumerated()), id: \.offset) { _, e in
                     SettingsRow(title: "\(e.client) · \(e.tool.replacingOccurrences(of: "draft_", with: "").replacingOccurrences(of: "_", with: " "))",
                                 detail: e.document.flatMap { model.library.docs[$0]?.title }.map { LocalizedStringKey($0.isEmpty ? "Untitled" : $0) }) {
-                        Text(Date(timeIntervalSince1970: e.time / 1000).formatted(date: .omitted, time: .shortened)).font(.system(size: DS.footnote)).foregroundStyle(t.tertiary)
+                        Text(Date(timeIntervalSince1970: e.time / 1000).formatted(Date.FormatStyle(date: .omitted, time: .shortened, locale: appLocale))).font(.system(size: DS.footnote)).foregroundStyle(t.tertiary)
                     }
                 }
                 if !activity.isEmpty {

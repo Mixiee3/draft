@@ -115,7 +115,7 @@ public enum VaultCheck {
             r.docsChecked += 1
             let title = lib?.docs[id]?.title.nonEmpty ?? id
             guard let data = try? Data(contentsOf: docsDir.appendingPathComponent(id + ".json")) else { r.unreadableDocs.append(id); continue }
-            let restore: () -> String.LocalizationValue? = { vault.snapshots(id).first.map { "Restore it from the version of \(Date(timeIntervalSince1970: $0.savedAt / 1000).formatted(date: .abbreviated, time: .shortened)); the damaged file is kept in the repair backup." } }
+            let restore: () -> String.LocalizationValue? = { vault.snapshots(id).first.map { "Restore it from the version of \(Date(timeIntervalSince1970: $0.savedAt / 1000).formatted(Date.FormatStyle(date: .abbreviated, time: .shortened, locale: appLocale))); the damaged file is kept in the repair backup." } }
             switch readDoc(data) {
             case .malformed(let why):
                 r.unreadableDocs.append(id)
@@ -152,7 +152,7 @@ public enum VaultCheck {
                     r.missingDocFiles.append(id)
                     let s = snapshotsFor(id).first
                     add(.docMissing, .warning, id, "“\(m.title.nonEmpty ?? id)” has no note file", "The library lists it but docs/\(id).json is missing.",
-                        repair: s.map { "Recreate docs/\(id).json from the version of \(Date(timeIntervalSince1970: $0.savedAt / 1000).formatted(date: .abbreviated, time: .shortened))." }
+                        repair: s.map { "Recreate docs/\(id).json from the version of \(Date(timeIntervalSince1970: $0.savedAt / 1000).formatted(Date.FormatStyle(date: .abbreviated, time: .shortened, locale: appLocale)))." }
                             ?? "Remove the entry from library.json (it stays in the repair backup).", doc: id)
                 }
                 if let p = m.parentDocId, lib.docs[p] == nil {
@@ -228,7 +228,7 @@ public enum VaultCheck {
         }
         // Repairs or restores that never finished.
         for j in VaultRepair.openJournals(vault) {
-            add(.journalOpen, .critical, j.folder.lastPathComponent, "A \(j.journal.kind) was interrupted", "“\(j.journal.summary)” started \(Date(timeIntervalSince1970: j.journal.startedAt / 1000).formatted(date: .abbreviated, time: .shortened)) and didn't finish. The files from before it are in backups/\(j.folder.lastPathComponent).",
+            add(.journalOpen, .critical, j.folder.lastPathComponent, "A \(j.journal.kind) was interrupted", "“\(j.journal.summary)” started \(Date(timeIntervalSince1970: j.journal.startedAt / 1000).formatted(Date.FormatStyle(date: .abbreviated, time: .shortened, locale: appLocale))) and didn't finish. The files from before it are in backups/\(j.folder.lastPathComponent).",
                 repair: journalRepair(j.journal))
         }
         r.issues = issues.sorted { ($0.severity, $1.title) > ($1.severity, $0.title) }

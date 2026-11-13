@@ -792,7 +792,7 @@ struct AgentProposalReview: View {
             case "add_tag": return ("Add \(e.value ?? "")", nil, nil, block, nil)
             case "remove_tag": return ("Remove \(e.value ?? "")", nil, nil, block, nil)
             case "task_due":
-                return (e.value == "none" ? "Clear the due date" : "Set the due date to \(Day.date(e.value ?? "").map { $0.formatted(date: .abbreviated, time: .omitted) } ?? e.value ?? "")", nil, nil, block, nil)
+                return (e.value == "none" ? "Clear the due date" : "Set the due date to \(Day.date(e.value ?? "").map { $0.formatted(Date.FormatStyle(date: .abbreviated, time: .omitted, locale: appLocale)) } ?? e.value ?? "")", nil, nil, block, nil)
             case "image_caption", "image_alt":
                 let key = e.action == "image_caption" ? "caption" : "alt"
                 let old = model.docs[proposal.documentId]?.content.block(e.blockId)?.attrs?[key]?.string

@@ -216,7 +216,7 @@ struct AssetRow: View {
             VStack(alignment: .leading, spacing: 2) {
                 Text(item.name).font(.system(size: DS.footnote, design: .monospaced)).foregroundStyle(t.text).lineLimit(1).truncationMode(.middle).textSelection(.enabled)
                 Text([item.kind, item.status == .missing ? nil : ByteCountFormatter.string(fromByteCount: item.bytes, countStyle: .file),
-                      item.lastReference.map { "last used " + $0.formatted(date: .abbreviated, time: .omitted) }].compactMap { $0 }.joined(separator: " · "))
+                      item.lastReference.map { "last used " + $0.formatted(Date.FormatStyle(date: .abbreviated, time: .omitted, locale: appLocale)) }].compactMap { $0 }.joined(separator: " · "))
                     .font(.system(size: DS.caption)).foregroundStyle(t.secondary)
                 if !item.users.isEmpty {
                     Text("In " + item.users.prefix(3).map { "“\(model.docTitle($0))”" }.joined(separator: ", ") + (item.users.count > 3 ? " and \(item.users.count - 3) more" : ""))
@@ -256,7 +256,7 @@ struct RecoveryBackups: View {
             SettingsSection(title: "Backup health", footer: "Draft keeps the newest \(Vault.snapshotsKept) automatic versions of each note (one every 10 minutes while you edit) plus every version you save yourself; notes stay in Recently Deleted for \(Int(Library.trashRetentionDays)) days. Other backups stay until you remove them.") {
                 if let h = r.health {
                     SettingsRow(title: "\(h.items) backups · \(ByteCountFormatter.string(fromByteCount: h.bytes, countStyle: .file))",
-                                detail: h.oldest == nil ? "\(h.notesWithVersions) notes have versions" : "\(h.notesWithVersions) notes have versions · oldest \(h.oldest!.formatted(date: .abbreviated, time: .omitted))") {
+                                detail: h.oldest == nil ? "\(h.notesWithVersions) notes have versions" : "\(h.notesWithVersions) notes have versions · oldest \(h.oldest!.formatted(Date.FormatStyle(date: .abbreviated, time: .omitted, locale: appLocale)))") {
                         if h.unreadable.isEmpty { Label("All readable", systemImage: "checkmark.seal").font(.system(size: DS.footnote, weight: .medium)).foregroundStyle(.green) }
                         else { Label("\(h.unreadable.count) can't be read", systemImage: "exclamationmark.triangle.fill").font(.system(size: DS.footnote, weight: .medium)).foregroundStyle(.orange) }
                     }
@@ -297,13 +297,13 @@ struct BackupRow: View {
                     Image(systemName: Self.symbol(item.kind)).foregroundStyle(t.secondary).frame(width: 18)
                     VStack(alignment: .leading, spacing: 2) {
                         Text(title).font(.system(size: DS.body)).foregroundStyle(t.text).lineLimit(1)
-                        Text("\(item.date.formatted(date: .abbreviated, time: .shortened)) · \(ByteCountFormatter.string(fromByteCount: item.bytes, countStyle: .file))" + (item.state == "writing" ? " · interrupted" : item.state == "undone" ? " · undone" : ""))
+                        Text("\(item.date.formatted(Date.FormatStyle(date: .abbreviated, time: .shortened, locale: appLocale))) · \(ByteCountFormatter.string(fromByteCount: item.bytes, countStyle: .file))" + (item.state == "writing" ? " · interrupted" : item.state == "undone" ? " · undone" : ""))
                             .font(.system(size: DS.caption)).foregroundStyle(item.state == "writing" ? .orange : t.secondary)
                     }
                     Spacer()
                     Image(systemName: "chevron.right").rotationEffect(.degrees(open ? 90 : 0)).foregroundStyle(t.tertiary).accessibilityHidden(true)
                 }.contentShape(Rectangle())
-            }.buttonStyle(.plain).accessibilityLabel("\(title), \(item.date.formatted(date: .abbreviated, time: .shortened))").accessibilityHint(open ? "Hides the preview" : "Shows a preview and actions")
+            }.buttonStyle(.plain).accessibilityLabel("\(title), \(item.date.formatted(Date.FormatStyle(date: .abbreviated, time: .shortened, locale: appLocale)))").accessibilityHint(open ? "Hides the preview" : "Shows a preview and actions")
             if open {
                 VStack(alignment: .leading, spacing: 3) {
                     ForEach(Array(BackupCatalog.preview(model.vault, item).enumerated()), id: \.offset) { i, line in

@@ -54,6 +54,7 @@ enum Automation {
             case "search-perf": await searchPerf()
             case "l10n-shots": await l10nShots()
             case "search-read": await searchRead()
+            case "table-shots": await tableShots()
             case "trust-read": await trustRead()
             case "safe-mode-check": await safeModeCheck()
             case "effects-live": await effectsLive(read: false)
@@ -559,6 +560,7 @@ enum Automation {
             keys.append(ms(t0))
         }
         r["keystrokeMs"] = stats(keys)
+        if ProcessInfo.processInfo.environment["DRAFT_PERF_SHOT"] != nil { await shot("long-document-\(blocks)", w) }
         var enters: [Double] = []
         for _ in 0..<10 {
             t0 = CFAbsoluteTimeGetCurrent(); tv.insertNewline(nil); await settle(); enters.append(ms(t0))
