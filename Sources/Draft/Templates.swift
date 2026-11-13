@@ -235,7 +235,7 @@ struct ImportPreviewView: View {
         let n = preview.notes - (skipDuplicates ? preview.duplicates.count : 0)
         VStack(alignment: .leading, spacing: DS.s3) {
             Text("Import Preview").font(.system(size: DS.title2, weight: .bold)).foregroundStyle(t.text).accessibilityAddTraits(.isHeader)
-            Text("\(preview.notes) notes in \(preview.folders) folders from \(preview.urls.count) items. Nothing is added until you click Import.").font(.system(size: DS.footnote)).foregroundStyle(t.secondary)
+            Text("Notes: \(preview.notes) · Folders: \(preview.folders). Nothing is added until you click Import.").font(.system(size: DS.footnote)).foregroundStyle(t.secondary)
             List {
                 ForEach(preview.titles.prefix(300), id: \.self) { title in
                     HStack {

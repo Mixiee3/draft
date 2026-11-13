@@ -77,6 +77,7 @@ enum Automation {
             case "update-after": await updateAfter()
             case "fault-write": await faultWrite()
             case "fault-read": await faultRead()
+            case "screens-v10": await screensV10()
             default: break
             }
             NSApp.terminate(nil)

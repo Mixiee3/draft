@@ -618,25 +618,25 @@ installed app is replaced only after the whole batch passes.
 
 | # | Feature | Status |
 |---|---|---|
-| 12 | Version and migration policy (`docs/VERSIONING.md`) | ⬜ |
-| 1 | Signed and notarized distribution (`scripts/release.sh`, `scripts/verify-release.sh`, hardened runtime, entitlements, `docs/RELEASE.md`) | ⬜ |
-| 2 | Secure opt-in updates (Ed25519-signed feed over HTTPS, verified download, install now / on quit / later, rollback, vault-compatibility warning, test mode) | ⬜ |
-| 3 | Release channels (stable default, beta, development; confirmation to switch; development builds never replace stable) | ⬜ |
-| 4 | Onboarding and first run (welcome, tour, first note, model setup, import, vault folder, local-only and network explanations, What's New after updates) | ⬜ |
-| 5 | Help center (searchable topics, each linking to its setting or action) | ⬜ |
-| 6 | Report a Problem (local report, redacted diagnostics, reviewed before saving; nothing is sent) | ⬜ |
-| 7 | Crash and recovery experience (unclean-exit detection, last save, recover, read-only, Safe Mode, logs, report; fault injection tests) | ⬜ |
-| 8 | Privacy center (every permission and network feature with what it does and how to turn it off) | ⬜ |
-| 9 | Data portability (backup archive with manifest and restore, import preview with duplicates, export, “copy my data”) | ⬜ |
-| 10 | Daily quality of life (consistency audit: save state, recent documents, command search, empty states, messages) | ⬜ |
-| 11 | Release and CI gates (`scripts/release-check.sh`, GitHub Actions for what runs headless) | ⬜ |
+| 12 | Version and migration policy (`docs/VERSIONING.md`) | ✅ complete |
+| 1 | Signed and notarized distribution (`scripts/release.sh`, `scripts/verify-release.sh`, hardened runtime, entitlements, `docs/RELEASE.md`) | 🟨 partial: signed (Apple Development) with hardened runtime, verified and launches; notarization and stapling scripted but need a Developer ID and notary credentials |
+| 2 | Secure opt-in updates (Ed25519-signed feed over HTTPS, verified download, install now / on quit / later, rollback, vault-compatibility warning, test mode) | ✅ complete (`scripts/update-test.sh`: 11 checks); no real feed hosted yet |
+| 3 | Release channels (stable default, beta, development; confirmation to switch; development builds never replace stable) | ✅ complete |
+| 4 | Onboarding and first run (welcome, tour, first note, model setup, import, vault folder, local-only and network explanations, What's New after updates) | ✅ complete |
+| 5 | Help center (searchable topics, each linking to its setting or action) | ✅ complete |
+| 6 | Report a Problem (local report, redacted diagnostics, reviewed before saving; nothing is sent) | ✅ complete |
+| 7 | Crash and recovery experience (unclean-exit detection, last save, recover, read-only, Safe Mode, logs, report; fault injection tests) | ✅ complete (`scripts/fault-test.sh`, limits in the script header) |
+| 8 | Privacy center (every permission and network feature with what it does and how to turn it off) | ✅ complete (`docs/PRIVACY.md`) |
+| 9 | Data portability (backup archive with manifest and restore, import preview with duplicates, export, “copy my data”) | ✅ complete |
+| 10 | Daily quality of life (consistency audit: save state, recent documents, command search, empty states, messages) | 🟨 partial: save state, Quick Open with commands, shortcut lists and confirmations already exist; no full screen-by-screen audit in this batch |
+| 11 | Release and CI gates (`scripts/release-check.sh`, GitHub Actions for what runs headless) | ✅ complete (CI not yet run on GitHub) |
 
 **Updater decision.** Sparkle 2 (MIT) is the standard; it expects a Developer ID–signed app and a
 binary dependency that wasn't approved for download here. Draft uses a small built-in updater instead:
 a JSON feed signed with Ed25519 (CryptoKit), HTTPS only, the download's size, SHA-256 and signature
 checked, the new app's code signature and bundle id checked, then a swap that keeps the old app until
 the new one launches (rollback otherwise). The feed format is documented so moving to Sparkle later is
-a drop-in replacement of `UpdateClient`.
+a drop-in replacement of `UpdateController`.
 
 **Acceptance.** Signed build verifies (`codesign --verify --deep --strict`, hardened runtime flag);
 notarization and stapling run when the secrets in `docs/RELEASE.md` are present (they are not on this

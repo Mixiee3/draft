@@ -16,7 +16,7 @@ struct UpdateSheet: View {
                 DraftMark().frame(width: 40, height: 40).accessibilityHidden(true)
                 VStack(alignment: .leading, spacing: 2) {
                     Text("Software Update").font(.system(size: DS.title2, weight: .bold)).foregroundStyle(t.text).accessibilityAddTraits(.isHeader)
-                    Text("Draft \(u.version) (\(u.build)) · \(LocalizedStringKey(channelName(model.library.settings.updateChannel)))").font(.system(size: DS.footnote)).foregroundStyle(t.secondary)
+                    Text("Draft \(u.version) (\(u.build)) · \(loc(channelName(model.library.settings.updateChannel)))").font(.system(size: DS.footnote)).foregroundStyle(t.secondary)
                 }
             }
             content
@@ -85,7 +85,7 @@ struct UpdateSheet: View {
     @ViewBuilder func notes(_ item: UpdateItem) -> some View {
         VStack(alignment: .leading, spacing: DS.s2) {
             Text("Draft \(item.version) is available").font(.system(size: DS.headline, weight: .semibold)).foregroundStyle(t.text)
-            Text("Released \(item.date) · \(ByteCountFormatter.string(fromByteCount: item.size, countStyle: .file)) · \(LocalizedStringKey(channelName(item.channel)))")
+            Text("Released \(item.date) · \(ByteCountFormatter.string(fromByteCount: item.size, countStyle: .file)) · \(loc(channelName(item.channel)))")
                 .font(.system(size: DS.footnote)).foregroundStyle(t.secondary)
             ScrollView {
                 VStack(alignment: .leading, spacing: 4) {
@@ -137,7 +137,7 @@ struct UpdateSettings: View {
                 }
             }
         }
-        .alert("Switch to the \(LocalizedStringKey(channelName(pendingChannel ?? "")))  channel?", isPresented: Binding(get: { pendingChannel != nil }, set: { if !$0 { pendingChannel = nil } })) {
+        .alert("Switch to the \(loc(channelName(pendingChannel ?? ""))) channel?", isPresented: Binding(get: { pendingChannel != nil }, set: { if !$0 { pendingChannel = nil } })) {
             Button("Switch") { if let c = pendingChannel { model.setSettings { $0.updateChannel = c } }; pendingChannel = nil }
             Button("Cancel", role: .cancel) { pendingChannel = nil }
         } message: {

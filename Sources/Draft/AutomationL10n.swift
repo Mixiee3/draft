@@ -87,7 +87,7 @@ extension Automation {
             ("recovery-migration", { m.recovery.tab = "migration" }, { m.recovery.tab = "check" }),
             ("version-history", { m.openView(.doc(doc)); m.recovery.historyDoc = HistoryTarget(id: doc) }, { m.recovery.historyDoc = nil }),
             ("assistant", { m.openView(.doc(doc)); m.toggleAssistant() }, { m.toggleAssistant() }),
-        ]
+        ] + v10Screens()
         for (name, open, close) in screens {
             open()
             if name == "recovery-check" { await m.checkVault() }
