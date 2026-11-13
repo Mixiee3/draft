@@ -283,3 +283,22 @@ Styled exports (v0.4): one `.html` per document with inline CSS from its style (
 "Use document style" off), `assets/`, and `backdrop.png` for scenic backdrops; PDF and PNG are
 rendered from that HTML. A website export adds `index.html`, one page per document (nested pages
 included) and `backdrops/`; every link between pages is relative and nothing loads from the network.
+
+## Backup archive (v0.10)
+
+`Draft Backup <ISO time>.zip` containing one folder with `manifest.json` and `vault/` (library.json,
+docs, assets, history, backups, agent-requests, assistant; the derived index, dotfiles and `.DS_Store`
+are left out):
+
+```json
+{ "format": 1, "appVersion": "0.10.0", "librarySchema": 2, "docSchema": 1, "createdAt": "<ISO 8601>",
+  "files": [ { "path": "docs/d_x.json", "size": 1234, "sha256": "<hex>" } ] }
+```
+
+Restore extracts into a new folder `<archive name> (restored)`, checks every listed file's SHA-256,
+refuses a damaged archive or an existing target, and runs Vault Check. It never writes over a vault.
+
+## Outside the vault (v0.10)
+
+Not part of the format and safe to delete: `session.json` (crash marker), `Updates/` (updater work
+folder and the previous app), `~/Library/Logs/Draft/draft.log`. Update feed format: [UPDATES.md](UPDATES.md).

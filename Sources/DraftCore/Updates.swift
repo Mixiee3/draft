@@ -103,7 +103,7 @@ public enum Updates {
         url.scheme == "https" || (testMode && url.isFileURL)
     }
 
-    // MARK: Publishing (used by scripts/sign-update.swift and tests)
+    // MARK: Publishing (used by scripts/update-tool.swift and tests)
 
     public static func signFeed(_ items: [UpdateItem], key: Curve25519.Signing.PrivateKey) throws -> Data {
         let payload = try DraftJSON.encode(items)
