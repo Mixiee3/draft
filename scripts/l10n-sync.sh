@@ -6,6 +6,7 @@
 set -euo pipefail
 cd "$(dirname "$0")/.."
 T=$(mktemp -d)
+trap 'rm -rf "$T"' EXIT
 swift build -c release --product Draft -Xswiftc -emit-localized-strings -Xswiftc -emit-localized-strings-path -Xswiftc "$T" >/dev/null 2>&1
 xcrun xcstringstool sync Localization/Localizable.xcstrings --stringsdata "$T"/*.stringsdata >/dev/null
 python3 -I - <<'PY'

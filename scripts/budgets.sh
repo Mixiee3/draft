@@ -11,6 +11,7 @@ APP=build/Draft.app/Contents/MacOS/Draft
 [ -x "$APP" ] || scripts/build-app.sh >/dev/null
 if ! pgrep -x WindowServer >/dev/null; then echo "No GUI session: app budgets skipped."; exit 0; fi
 W=$(mktemp -d)
+trap 'rm -rf "$W"' EXIT # throwaway vaults and raw runs; the report stays in perf-history/
 probe() { local name=$1 auto=$2; shift 2; local d; d=$(mktemp -d); env "$@" DRAFT_DATA_DIR="$d/vault" DRAFT_OUT="$W/$name" DRAFT_AUTOMATION="$auto" "$APP" >/dev/null 2>&1 || true; rm -rf "$d"; }
 for i in $(seq 1 "$RUNS"); do
   mkdir -p "$W/run$i"

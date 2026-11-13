@@ -53,6 +53,7 @@ final class VaultCheckTests: XCTestCase {
 
     func testTwoThousandNotesAndAThousandFilesUnderTwoSeconds() throws {
         let dir = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+        defer { try? FileManager.default.removeItem(at: dir) }
         let v = Vault(dir: dir); try v.prepare()
         var lib = Library.empty()
         var assets: [String] = []

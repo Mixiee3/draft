@@ -52,6 +52,7 @@ final class BackupCatalogTests: XCTestCase {
 
     func testFiveThousandBackupsListUnderASecond() throws {
         let v = try vault()
+        defer { try? FileManager.default.removeItem(at: v.dir) }
         var d = DocFile.empty(id: "d_x", title: "X", styleId: "paper")
         for doc in 0..<170 {
             d.id = "d_\(doc)"
