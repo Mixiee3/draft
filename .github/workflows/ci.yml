@@ -1,0 +1,24 @@
+# Headless gates. The GUI suites (smoke, trust, updater, fault injection, localization, budgets) need a
+# logged-in session and run locally through scripts/release-check.sh before a release.
+name: CI
+on:
+  push: { branches: [main] }
+  pull_request:
+  workflow_dispatch:
+permissions: { contents: read }
+jobs:
+  test:
+    runs-on: macos-15
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+        with: { fetch-depth: 0 }   # the build number is the commit count
+      - name: Unit tests (core, updater signatures, backup archive, diagnostics redaction, migrations)
+        run: swift test -j 2
+      - name: Static accessibility check
+        run: python3 -I scripts/a11y-static.py
+      - name: App bundle builds and launches
+        run: |
+          scripts/build-app.sh
+          T=$(mktemp -d); DRAFT_DATA_DIR=$T/vault DRAFT_AUTOMATION=none build/Draft.app/Contents/MacOS/Draft & P=$!
+          sleep 10; test -f "$T/vault/library.json"; kill $P || true
