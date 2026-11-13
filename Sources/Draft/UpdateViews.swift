@@ -78,7 +78,7 @@ struct UpdateSheet: View {
             }
             try u.install(item, relaunch: true)
             DraftLog.write("installing update \(item.version) (\(item.build))")
-            NSApp.terminate(nil)
+            u.quitForInstall()
         } catch { model.toast("Couldn't install the update: \(error.localizedDescription)"); u.phase = .failed(error.localizedDescription) }
     }
 

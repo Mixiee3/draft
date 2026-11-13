@@ -194,6 +194,14 @@ final class UpdateController {
         phase = .installing
     }
 
+    /// Quits so the installer can swap the app. AppKit ignores terminate while a sheet is attached
+    /// (the update sheet itself), so close sheets first.
+    func quitForInstall() {
+        sheet = false
+        for w in NSApp.windows { if let s = w.attachedSheet { w.endSheet(s) } }
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) { NSApp.terminate(nil) }
+    }
+
     /// At launch: say whether the last update rolled back, and confirm this app started.
     func launchedAfterUpdate() -> String? {
         let fm = FileManager.default

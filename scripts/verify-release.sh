@@ -7,7 +7,7 @@ set -uo pipefail
 APP=${1:-build/Draft.app}; ZIP=${2:-}
 fail=0; ok() { echo "PASS $1"; }; bad() { echo "FAIL $1"; fail=1; }; note() { echo "NOTE $1"; }
 codesign --verify --deep --strict "$APP" 2>/dev/null && ok "code signature is valid (deep, strict)" || bad "code signature"
-FLAGS=$(codesign -dv "$APP" 2>&1)
+FLAGS=$(codesign -dvv "$APP" 2>&1)
 echo "$FLAGS" | grep -q "flags=.*runtime" && ok "hardened runtime" || bad "hardened runtime flag missing"
 codesign -d --entitlements - --xml "$APP" 2>/dev/null | grep -q "audio-input" && ok "entitlements present" || bad "entitlements"
 codesign -d --entitlements - --xml "$APP" 2>/dev/null | grep -q "allow-jit\|allow-unsigned-executable-memory\|disable-library-validation" && bad "unexpected hardened-runtime exception" || ok "no JIT/unsigned-memory/library-validation exceptions"
