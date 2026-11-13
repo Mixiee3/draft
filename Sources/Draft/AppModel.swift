@@ -165,6 +165,7 @@ final class AppModel {
             tabs = lib.tabs
             activeTabId = lib.activeTabId
             Styles.user = lib.userStyles
+            applySpellingLanguage()
             let expired = lib.expiredTrash()
             if !expired.isEmpty && !vault.isReadOnly { deleteForever(expired) }
             loadIndex()
@@ -930,6 +931,17 @@ final class AppModel {
 
     // MARK: Settings
 
+    /// The spell checker is shared by every text view: automatic, or one chosen language.
+    func applySpellingLanguage() {
+        let sc = NSSpellChecker.shared
+        if let l = library.settings.spellingLanguage, sc.availableLanguages.contains(l) {
+            sc.automaticallyIdentifiesLanguages = false
+            _ = sc.setLanguage(l)
+        } else {
+            sc.automaticallyIdentifiesLanguages = true
+        }
+    }
+
     func setSettings(_ f: (inout DraftCore.Settings) -> Void) {
         let before = library.settings
         f(&library.settings)
@@ -938,6 +950,7 @@ final class AppModel {
             retheme()
         }
         if before.tagRules != now.tagRules { saveDirtyDocs(); refreshIndex() }
+        if before.spellingLanguage != now.spellingLanguage { applySpellingLanguage() }
         if before.reminders != now.reminders || before.reminderHour != now.reminderHour { syncReminders(requestIfNeeded: now.reminders && !before.reminders) }
         if before.dayStartHour != now.dayStartHour || before.weekStart != now.weekStart { indexTick &+= 1 }
         scheduleLibrarySave()

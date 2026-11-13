@@ -391,6 +391,14 @@ public final class EditorController: NSObject, NSTextStorageDelegate, NSTextView
     public func undoManager(for view: NSTextView) -> UndoManager? { undo }
 
     public func textDidChange(_ notification: Notification) {
+        // An input method (Japanese, Chinese, dead keys) is still composing: nothing is typed yet,
+        // so slash commands, mentions and Markdown shortcuts wait for the committed text.
+        if textView.hasMarkedText() {
+            pendingTrigger = nil
+            toolbar.update()
+            host?.editorDidChange()
+            return
+        }
         if !isLoading, let t = pendingTrigger {
             pendingTrigger = nil
             slash.textChanged(typed: t.text, at: t.location)

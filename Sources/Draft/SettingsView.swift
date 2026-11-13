@@ -165,6 +165,9 @@ struct SettingsView: View {
     var editor: some View {
         VStack(alignment: .leading, spacing: DS.s5) {
             SettingsSection(title: "Writing") {
+                SettingsMenuRow(title: "Spelling language", detail: "Automatic lets macOS pick the language of each paragraph.",
+                                selection: Binding(get: { model.library.settings.spellingLanguage ?? "" }, set: { v in model.setSettings { $0.spellingLanguage = v.isEmpty ? nil : v } }),
+                                options: [("", "Automatic")] + NSSpellChecker.shared.availableLanguages.map { ($0, Locale.current.localizedString(forIdentifier: $0) ?? $0) })
                 SettingsMenuRow(title: "Completed tasks", detail: "How checked items look in documents.", selection: bind(\.completedTasks), options: [("strike", "Strikethrough"), ("dim", "Dimmed"), ("none", "Unchanged")])
                 SettingsMenuRow(title: "Style for new documents", selection: bind(\.defaultStyleId), options: Styles.all.map { ($0.id, $0.name) })
                 SettingsMenuRow(title: "Dates in documents", detail: "Only the look changes; the dates stay the same.", selection: bind(\.dateStyle), options: [("chip", "Chips"), ("text", "Plain text")])
