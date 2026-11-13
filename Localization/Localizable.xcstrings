@@ -3849,6 +3849,23 @@
         }
       }
     },
+    "Chips": {
+      "extractionState": "manual",
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Štítky"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Chips"
+          }
+        }
+      }
+    },
     "Choose a version.": {
       "localizations": {
         "cs": {
@@ -5463,6 +5480,23 @@
         }
       }
     },
+    "Dimmed": {
+      "extractionState": "manual",
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ztlumené"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Abgeblendet"
+          }
+        }
+      }
+    },
     "Doc": {
       "extractionState": "manual",
       "localizations": {
@@ -6290,6 +6324,23 @@
         }
       }
     },
+    "Export": {
+      "extractionState": "manual",
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Export"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Export"
+          }
+        }
+      }
+    },
     "Export All Documents…": {
       "localizations": {
         "cs": {
@@ -6484,6 +6535,23 @@
           "stringUnit": {
             "state": "translated",
             "value": "Exportieren…"
+          }
+        }
+      }
+    },
+    "Faded": {
+      "extractionState": "manual",
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Vybledlé"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Verblasst"
           }
         }
       }
@@ -7416,6 +7484,23 @@
         }
       }
     },
+    "Immersive": {
+      "extractionState": "manual",
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pohlcující"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Immersiv"
+          }
+        }
+      }
+    },
     "Import CSV…": {
       "localizations": {
         "cs": {
@@ -8305,6 +8390,23 @@
           "stringUnit": {
             "state": "translated",
             "value": "Grenzen"
+          }
+        }
+      }
+    },
+    "Linear": {
+      "extractionState": "manual",
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Lineární"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Linear"
           }
         }
       }
@@ -9971,6 +10073,23 @@
         }
       }
     },
+    "Notes": {
+      "extractionState": "manual",
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Poznámky"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Notizen"
+          }
+        }
+      }
+    },
     "Nothing changes until you apply. Draft checks that nothing changed since the agent read it, keeps a backup of any note it changes, and one Undo reverses the whole proposal.": {
       "localizations": {
         "cs": {
@@ -10857,6 +10976,23 @@
         }
       }
     },
+    "Plain text": {
+      "extractionState": "manual",
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Prostý text"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Reiner Text"
+          }
+        }
+      }
+    },
     "Present": {
       "localizations": {
         "cs": {
@@ -11029,6 +11165,23 @@
           "stringUnit": {
             "state": "translated",
             "value": "Anbieter"
+          }
+        }
+      }
+    },
+    "Publish": {
+      "extractionState": "manual",
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Publikovat"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Veröffentlichen"
           }
         }
       }
@@ -11276,6 +11429,23 @@
           "stringUnit": {
             "state": "translated",
             "value": "Zitat"
+          }
+        }
+      }
+    },
+    "Radial": {
+      "extractionState": "manual",
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kruhový"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Radial"
           }
         }
       }
@@ -13539,6 +13709,23 @@
           "stringUnit": {
             "state": "translated",
             "value": "Schatten"
+          }
+        }
+      }
+    },
+    "Share": {
+      "extractionState": "manual",
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sdílet"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Teilen"
           }
         }
       }
@@ -15879,6 +16066,23 @@
         }
       }
     },
+    "Transfer": {
+      "extractionState": "manual",
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Přenos"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Übertragen"
+          }
+        }
+      }
+    },
     "Translate": {
       "extractionState": "manual",
       "localizations": {
@@ -15957,6 +16161,23 @@
           "stringUnit": {
             "state": "translated",
             "value": "Tippe # und ein Wort in einem beliebigen Dokument"
+          }
+        }
+      }
+    },
+    "Unchanged": {
+      "extractionState": "manual",
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Beze změny"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Unverändert"
           }
         }
       }
@@ -17044,6 +17265,23 @@
         }
       }
     },
+    "all": {
+      "extractionState": "manual",
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "všem"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "allen"
+          }
+        }
+      }
+    },
     "alt text": {
       "localizations": {
         "cs": {
@@ -17138,6 +17376,23 @@
           "stringUnit": {
             "state": "translated",
             "value": "und mehr in dieser Notiz"
+          }
+        }
+      }
+    },
+    "any": {
+      "extractionState": "manual",
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "kterékoli"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "einer"
           }
         }
       }

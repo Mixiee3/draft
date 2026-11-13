@@ -187,11 +187,11 @@ struct SettingsMenuRow<V: Hashable>: View {
         SettingsRow(title: title, detail: detail) {
             Menu {
                 ForEach(Array(options.enumerated()), id: \.offset) { _, o in
-                    Button { selection = o.0 } label: { if o.0 == selection { Label(o.1, systemImage: "checkmark") } else { Text(o.1) } }
+                    Button { selection = o.0 } label: { if o.0 == selection { Label(loc(o.1), systemImage: "checkmark") } else { Text(loc(o.1)) } }
                 }
             } label: {
                 HStack(spacing: 6) {
-                    Text(options.first { $0.0 == selection }?.1 ?? "—").font(.system(size: DS.body)).foregroundStyle(t.text).lineLimit(1)
+                    Text(loc(options.first { $0.0 == selection }?.1 ?? "—")).font(.system(size: DS.body)).foregroundStyle(t.text).lineLimit(1)
                     Image(systemName: "chevron.up.chevron.down").font(.system(size: DS.micro, weight: .semibold)).foregroundStyle(t.tertiary)
                 }
                 .padding(.horizontal, DS.s3).frame(height: DS.controlSmall + 4)
