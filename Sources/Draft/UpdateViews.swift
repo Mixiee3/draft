@@ -87,12 +87,31 @@ struct UpdateSheet: View {
             Text("Draft \(item.version) is available").font(.system(size: DS.headline, weight: .semibold)).foregroundStyle(t.text)
             Text("Released \(item.date) · \(ByteCountFormatter.string(fromByteCount: item.size, countStyle: .file)) · \(loc(channelName(item.channel)))")
                 .font(.system(size: DS.footnote)).foregroundStyle(t.secondary)
-            ScrollView {
-                VStack(alignment: .leading, spacing: 4) {
-                    ForEach(Array(item.notes.enumerated()), id: \.offset) { _, n in Label { Text(verbatim: n) } icon: { Text("•").accessibilityHidden(true) } }
-                }.frame(maxWidth: .infinity, alignment: .leading)
-            }.frame(maxHeight: 160)
-            .padding(DS.s3).background(RoundedRectangle(cornerRadius: DS.rCard, style: .continuous).fill(t.card.opacity(t.dark ? 0.55 : 1)))
+            // Do not leave an empty card behind when an older or minimal feed has no notes.
+            // The explicit colour keeps notes readable in both appearance modes.
+            if !item.notes.isEmpty {
+                VStack(alignment: .leading, spacing: DS.s2) {
+                    Text("What’s new")
+                        .font(.system(size: DS.footnote, weight: .semibold))
+                        .foregroundStyle(t.text)
+                    ScrollView {
+                        VStack(alignment: .leading, spacing: 4) {
+                            ForEach(Array(item.notes.enumerated()), id: \.offset) { _, n in
+                                Label {
+                                    Text(verbatim: n)
+                                        .foregroundStyle(t.text)
+                                        .fixedSize(horizontal: false, vertical: true)
+                                } icon: {
+                                    Text("•").foregroundStyle(t.secondary).accessibilityHidden(true)
+                                }
+                            }
+                        }.frame(maxWidth: .infinity, alignment: .leading)
+                    }
+                    .frame(maxHeight: 160)
+                }
+                .padding(DS.s3)
+                .background(RoundedRectangle(cornerRadius: DS.rCard, style: .continuous).fill(t.card.opacity(t.dark ? 0.55 : 1)))
+            }
             switch Updates.compatibility(item) {
             case .migration(let from, let to):
                 Label("This version updates your vault's format (\(from) → \(to)). Draft makes a backup archive first; older versions of Draft can't open the updated vault.", systemImage: "exclamationmark.triangle.fill")
