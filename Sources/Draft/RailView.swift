@@ -68,7 +68,7 @@ struct RailRow: View {
     var action: () -> Void
     @State private var hover = false
     var body: some View {
-        HStack(spacing: 8) {
+        let row = HStack(spacing: 8) {
             Image(systemName: icon).font(.system(size: DS.body)).frame(width: 18).foregroundStyle(tint ?? t.secondary)
             Text(title).font(.system(size: DS.body)).lineLimit(1).foregroundStyle(t.text)
             Spacer(minLength: 0)
@@ -79,9 +79,15 @@ struct RailRow: View {
         .background(RoundedRectangle(cornerRadius: DS.rControl, style: .continuous).fill(isSelected ? t.selected : (hover ? t.hover : .clear)))
         .contentShape(Rectangle())
         .onHover { hover = $0 }
-        .onTapGesture(perform: action)
         .accessibilityElement(children: .combine)
         .accessibilityAddTraits(isSelected ? [.isButton, .isSelected] : .isButton)
+        // Rows without a trailing control are real buttons: a tap gesture swallowed the mouse-down
+        // that starts a drag, so documents could not be dragged onto folders.
+        if trailing == nil {
+            Button(action: action) { row }.buttonStyle(.plain)
+        } else {
+            row.onTapGesture(perform: action)
+        }
     }
 }
 
