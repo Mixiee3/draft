@@ -95,7 +95,7 @@ struct RailRow: View {
         if trailing == nil {
             Button(action: action) { rowContent }.buttonStyle(.plain)
         } else {
-            rowContent.onTapGesture(perform: action)
+            rowContent.onTapGesture(perform: action).accessibilityAddTraits(.isButton)
         }
     }
 }
