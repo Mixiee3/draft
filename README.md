@@ -188,5 +188,7 @@ Contributions are welcome. Start with [CONTRIBUTING.md](CONTRIBUTING.md) and the
 - Bugs and features: https://github.com/Mixiee3/draft/issues/new/choose
 - Fork the repo and open a pull request against `main`.
 
+Draft is inspired by Craft's calm, document-first design. Draft is not affiliated with Craft and reuses none of its code or artwork.
+
 Third-party components and their licenses are listed in [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md).
 
