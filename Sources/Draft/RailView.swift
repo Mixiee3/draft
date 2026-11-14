@@ -65,9 +65,11 @@ struct RailRow: View {
     var indent: CGFloat = 0
     var trailing: AnyView? = nil
     var tint: Color? = nil
+    /// Document id this row can be dragged by (onto a folder row in the sidebar).
+    var dragID: String? = nil
     var action: () -> Void
     @State private var hover = false
-    var body: some View {
+    @ViewBuilder var rowContent: some View {
         let row = HStack(spacing: 8) {
             Image(systemName: icon).font(.system(size: DS.body)).frame(width: 18).foregroundStyle(tint ?? t.secondary)
             Text(title).font(.system(size: DS.body)).lineLimit(1).foregroundStyle(t.text)
@@ -83,10 +85,17 @@ struct RailRow: View {
         .accessibilityAddTraits(isSelected ? [.isButton, .isSelected] : .isButton)
         // Rows without a trailing control are real buttons: a tap gesture swallowed the mouse-down
         // that starts a drag, so documents could not be dragged onto folders.
-        if trailing == nil {
-            Button(action: action) { row }.buttonStyle(.plain)
+        if let dragID {
+            row.onDrag { NSItemProvider(object: dragID as NSString) }
         } else {
-            row.onTapGesture(perform: action)
+            row
+        }
+    }
+    var body: some View {
+        if trailing == nil {
+            Button(action: action) { rowContent }.buttonStyle(.plain)
+        } else {
+            rowContent.onTapGesture(perform: action)
         }
     }
 }
@@ -234,8 +243,7 @@ struct LibraryRail: View {
             }
             if expanded {
                 ForEach(model.docsByFolder[f.id] ?? []) { m in
-                    RailRow(icon: "doc.text", title: LocalizedStringKey(m.title.isEmpty ? "Untitled" : m.title), isSelected: model.activeDocId == m.id, indent: CGFloat(depth) * 14 + 18) { model.openView(.doc(m.id)) }
-                        .draggable(m.id)
+                    RailRow(icon: "doc.text", title: LocalizedStringKey(m.title.isEmpty ? "Untitled" : m.title), isSelected: model.activeDocId == m.id, indent: CGFloat(depth) * 14 + 18, dragID: m.id) { model.openView(.doc(m.id)) }
                 }
             }
         }
