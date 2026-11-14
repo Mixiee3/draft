@@ -89,7 +89,7 @@ open-source registration for it would misrepresent the app, so Draft does not do
 ## Status on 8 November 2026 (v0.7 MCP operations)
 
 - Merged into `main`. Codex runs `~/Documents/Draft/scripts/draft-mcp.sh`; Claude Code has the same
-  server registered for this project (`~/.claude.json`, project `/Users/danielpekarek/Documents/Draft`,
+  server registered for this project (`~/.claude.json`, project `<your-checkout>`,
   server `draft`) and its CLI reports it connected.
 - DraftMCP tools (21 now; 14 at the time of this paragraph): `draft_list_spaces`, `draft_list_documents`, `draft_list_folders`,
   `draft_search`, `draft_read_document`, `draft_read_structure`, `draft_read_block`,

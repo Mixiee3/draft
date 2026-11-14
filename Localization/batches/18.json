@@ -1,0 +1,7 @@
+{
+"First public release": ["První veřejné vydání", "Erste öffentliche Version"],
+"Folders nest: New Subfolder in a folder's menu.": ["Složky se vnoří: Nová podsložka v nabídce složky.", "Ordner lassen sich verschachteln: Neuer Unterordner im Menü eines Ordners."],
+"Drag a note from the board or the sidebar onto a folder to move it.": ["Přetáhněte poznámku z nástěnky nebo z postranního panelu na složku a přesunete ji.", "Ziehe eine Notiz vom Board oder aus der Seitenleiste auf einen Ordner, um sie zu verschieben."],
+"Focus Mode is in the rail menu. Present works from Info.": ["Režim soustředění je v nabídce postranního panelu. Prezentace funguje z Info.", "Der Fokusmodus ist im Menü der Seitenleiste. Präsentieren funktioniert über Info."],
+"Draft is open source under AGPL-3.0. Contributions and forks are welcome.": ["Draft je open source pod licencí AGPL-3.0. Příspěvky i forky jsou vítány.", "Draft ist Open Source unter AGPL-3.0. Beiträge und Forks sind willkommen."]
+}

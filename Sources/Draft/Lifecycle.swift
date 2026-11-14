@@ -41,6 +41,12 @@ struct CrashInfo: Codable, Equatable {
 /// Notes for What's New, newest first. Each version shows its own once after an update.
 enum ReleaseNotes {
     static let all: [(version: String, title: LocalizedStringKey, points: [LocalizedStringKey])] = [
+        ("0.11.0", "First public release", [
+            "Folders nest: New Subfolder in a folder's menu.",
+            "Drag a note from the board or the sidebar onto a folder to move it.",
+            "Focus Mode is in the rail menu. Present works from Info.",
+            "Draft is open source under AGPL-3.0. Contributions and forks are welcome.",
+        ]),
         ("0.10.1", "Hosted update test build", [
             "This build came through the in-app updater from a signed, hosted update list.",
             "Your notes, Spaces and settings were kept as they were.",

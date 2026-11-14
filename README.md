@@ -174,3 +174,19 @@ Key decisions:
 Reference screenshots of other products used during design research are **not** part of this
 repository and must not be committed. All Draft artwork (scenes, separators, icon) is original and
 generated in code.
+
+## License
+
+Draft is free software, licensed under the [GNU Affero General Public License v3.0](LICENSE). If you run a changed version as a service, you must publish your changes under the same license.
+
+## Contributing
+
+Contributions are welcome. Start with [CONTRIBUTING.md](CONTRIBUTING.md) and the [Code of Conduct](CODE_OF_CONDUCT.md).
+
+- Good first issues: https://github.com/Mixiee3/draft/labels/good%20first%20issue
+- Ideas and questions: https://github.com/Mixiee3/draft/discussions
+- Bugs and features: https://github.com/Mixiee3/draft/issues/new/choose
+- Fork the repo and open a pull request against `main`.
+
+Third-party components and their licenses are listed in [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md).
+

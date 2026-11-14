@@ -21,8 +21,8 @@ The sections below are the original handoff, kept for context.
 
 | Workstream | Checkout | Branch and state |
 |---|---|---|
-| Main app and v0.6 polish | `/Users/danielpekarek/Documents/Draft` | `feature/v0.6-polish`, with substantial **uncommitted** code on top of the `4358749` polish baseline and this handoff commit. This is the active app checkout. Preserve every modification and untracked file. |
-| Codex, OpenAI and MCP integration | `/Users/danielpekarek/.codex/worktrees/draft-codex-integration/Draft` | `feature/codex-integration` at `fb30dd9`, clean and pushed. See its `docs/CODEX_INTEGRATION_HANDOFF.md`. |
+| Main app and v0.6 polish | `<your-checkout>` | `feature/v0.6-polish`, with substantial **uncommitted** code on top of the `4358749` polish baseline and this handoff commit. This is the active app checkout. Preserve every modification and untracked file. |
+| Codex, OpenAI and MCP integration | `<codex-worktree>/draft-codex-integration/Draft` | `feature/codex-integration` at `fb30dd9`, clean and pushed. See its `docs/CODEX_INTEGRATION_HANDOFF.md`. |
 
 `main` is at the v0.5.1 baseline (`3b75f26`) in the integration worktree. Verify local and remote refs again before merging; the references above can become stale. Keep the GitHub repository private.
 
