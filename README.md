@@ -1,6 +1,6 @@
 <div align="center">
 
-<img src="docs/assets/draft-icon.png" alt="Draft logo" width="112" />
+<img src="docs/assets/draft-icon.png" alt="Draft logo" width="160" />
 
 # Draft
 
