@@ -99,7 +99,7 @@ Last updated: v0.10 (v1.0 groundwork) — 2026‑11‑13.
 | T11 | Separator styles | Line, tape, doodle | S02, B§C | working | — | 0.1 | Line / Dots / Tape / Wave (original artwork), document-wide |
 | T12 | Fonts System/Serif/Mono/Rounded | Families | S02, B§C | working | — | 0.1 | System font designs; document-only |
 | T13 | Shell tinted by doc style | Appearance setting | S10 | working | — | 0.1 | Rail/tabs tint (`document-ember.png`), toggle in Settings and Style panel |
-| T14 | Present mode | Info → Present | S41 | missing | — | 0.6 | Listed disabled in Info |
+| T14 | Present mode | Info → Present | S41 | working | — | 0.6 | Info → Present opens the presentation window (checked in code, Panels.swift; not clicked in a run) |
 | T15 | Style independent of semantics | — | B§G | verified | — | 0.1 | `testThemeChangeDoesNotChangeContent`, `testOverridesLayerOnStyle…` |
 
 ## 5. Sidebar, tabs, spaces, folders
@@ -108,18 +108,18 @@ Last updated: v0.10 (v1.0 groundwork) — 2026‑11‑13.
 |---|---|---|---|---|---|---|---|
 | N1 | Full-height rail | Space, destinations, Starred, Folders, Tags, utilities | S21 | working | — | 0.1 | `library-gallery.png` (local "Stored on this Mac" card replaces plan card) |
 | N2 | Document rail + 4-segment control | Thumb, title, time; Outline/Tasks/Attachments/Find | S01, S18–20, S35 | working | — | 0.1 | `document.png`, `document-tasks-rail.png`, `document-find.png` |
-| N3 | Rail mode menu | Folders / Document; Focus mode | S08 | partial | — | 0.6 | Folders/Document switch works; Focus mode missing |
+| N3 | Rail mode menu | Folders / Document; Focus mode | S08 | working | — | 0.6 | Rail mode menu: Document, Folders and Focus Mode (added in this batch, RailView) |
 | N4 | Collapse rail | — | S01 | working | — | 0.1 | ⌃⌘S; persisted |
 | N5 | Tab strip | Home + tabs, close, + | S01, S21 | verified | — | 0.1 | Open doc tab survives restart (smoke `tabOpen`) |
 | N6 | Tab state restore | Scroll/caret per tab | B§5.5 | verified | — | 0.2.1 | Each document tab stores scroll offset and selection (captured on tab switch and quit); restored once when the tab reappears after relaunch (smoke `tabState`) |
 | N7 | Back / forward | Back button in doc | S01 | verified | L1 | 0.3 | ⌘[ / ⌘] (Go menu) per tab with scroll per entry; follow → back → forward (links test) |
 | N8 | Spaces | Switcher, per-space tree | B§4, S13 | working | schema 2 | 0.5 | Rail switcher and Settings → Space: create, switch, delete (empty only); each Space keeps its own folders, documents, tags, tasks and tabs; templates and styles are shared. Unsaved text survives a switch; tabs restore after relaunch (`scripts/workflow-test.sh`, `SchemaTwoTests`, `v05-settings-spaces.png`) |
-| N9 | Folders | Create/rename/nest/delete | S21, S30 | partial | — | 0.2 | Create, rename, remove (docs → Unsorted); nesting missing |
+| N9 | Folders | Create/rename/nest/delete | S21, S30 | working | — | 0.2 | Folders nest: New Subfolder in the folder menu; nested rows indented; children show when the parent is expanded (`FolderTreeTests`) |
 | N10 | Move doc to folder | Info → Move to | S41 | working | N9 | 0.1 | Info panel and card context menu |
 | N11 | Unsorted view + empty state | Message + skeletons | S29 | working | — | 0.1 | Empty-state message and placeholder rows |
 | N12 | Starred | — | S21, S41 | working | — | 0.1 | Star in Info/context menu; shows in rail |
 | N13 | Shared with Me | Empty view | S31 | partial | R2 | 2.0 | Honest local-only empty state |
-| N14 | Drag doc to folder | — | B§5.5 | missing | — | 0.2 | — |
+| N14 | Drag doc to folder | — | B§5.5 | working | — | 0.2 | Drag a document from the library cards or from a folder's documents onto a folder row to move it (`dropDestination`, `draggable`); the mouse drag itself still needs a person to confirm |
 
 ## 6. Search, Quick Open, Find in Page
 
@@ -220,7 +220,7 @@ Last updated: v0.10 (v1.0 groundwork) — 2026‑11‑13.
 
 | ID | Capability | Reference behavior | Evidence | Status | Deps | Target | Acceptance check |
 |---|---|---|---|---|---|---|---|
-| R1 | Share panel tabs | Share/Publish/Export/Transfer | S36, S37 | partial | — | 0.1 | All four tabs; Share explains local-only + Copy Markdown |
+| R1 | Share panel tabs | Share/Publish/Export/Transfer | S36, S37 | working | — | 0.1 | All four tabs (Share, Publish, Export, Transfer) are present |
 | R2 | Collaborators | Viewer/editor | B§J | missing | Y2 | 2.0 | — |
 | R3 | Comments | Toolbar comment | S06, S42 | missing | — | 2.0 | — |
 | R4 | Mentions | `@` | S06 | missing | L1 | 0.3 / 2.0 | — |
@@ -241,7 +241,7 @@ Last updated: v0.10 (v1.0 groundwork) — 2026‑11‑13.
 | Z2 | Accent color | Swatches | S10 | working | — | 0.1 | Recolors selection, active states |
 | Z3 | Reduce animations | Toggle | S10 | working | — | 0.1 | Disables panel/rail animations |
 | Z4 | Sound / app icon choice | Toggles | S10 | missing | — | later | — |
-| Z5 | Language & spelling | Rows | S11 | missing | I1 | 0.6 | Planned state |
+| Z5 | Language & spelling | Rows | S11 | working | I1 | 0.6 | Settings › Writing › spelling language picker, applied to the editor (AppModel.applySpellingLanguage); the Rows part is not separate |
 | Z6 | Advanced | Task appearance, date links, sidebar, week start | S12 | partial | — | 0.6 | Week start, start of day, dates as chips/plain text, Online (off by default), Rebuild Index; sidebar customization → v0.6 |
 | Z7 | Space settings | Avatar, name | S13 | working | N8 | 0.5 | Rename, list, switch, delete empty Spaces, New Space; generated avatar |
 | Z8 | Stats | Storage, docs, blocks, pages, words, reading time | S15 | working | — | 0.1 | Settings → Stats |

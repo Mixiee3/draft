@@ -28,6 +28,8 @@ struct RailView: View {
                                 Text("Document").tag(false)
                                 Text("Folders").tag(true)
                             }.pickerStyle(.inline)
+                            Divider()
+                            Button(model.focusMode ? "Leave Focus Mode" : "Focus Mode") { withAnimation(Motion.standard(model.library.settings.reduceMotion)) { model.focusMode.toggle() } }
                         } label: {
                             Image(systemName: model.railShowsFolders ? "folder" : "list.bullet.indent")
                         }
