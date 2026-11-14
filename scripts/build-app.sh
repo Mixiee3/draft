@@ -24,16 +24,16 @@ if [ -f Localization/Localizable.xcstrings ]; then
   xcrun xcstringstool compile Localization/Localizable.xcstrings --output-directory "$APP/Contents/Resources" >/dev/null
 fi
 for t in THIRD_PARTY_NOTICES.md; do [ -f "$t" ] && cp "$t" "$APP/Contents/Resources/"; done
-if [ ! -f build/AppIcon.icns ]; then
-  TMP=$(mktemp -d)
-  swift scripts/make-icon.swift "$TMP/icon.png"
-  mkdir -p "$TMP/AppIcon.iconset"
-  for s in 16 32 128 256 512; do
-    sips -z $s $s "$TMP/icon.png" --out "$TMP/AppIcon.iconset/icon_${s}x${s}.png" >/dev/null
-    sips -z $((s*2)) $((s*2)) "$TMP/icon.png" --out "$TMP/AppIcon.iconset/icon_${s}x${s}@2x.png" >/dev/null
-  done
-  iconutil -c icns "$TMP/AppIcon.iconset" -o build/AppIcon.icns
-fi
+# Rebuild the icon every time: the source artwork is part of the release and a cached icns
+# would otherwise let a branding patch ship with the previous app icon.
+TMP=$(mktemp -d)
+swift scripts/make-icon.swift "$TMP/icon.png"
+mkdir -p "$TMP/AppIcon.iconset"
+for s in 16 32 128 256 512; do
+  sips -z $s $s "$TMP/icon.png" --out "$TMP/AppIcon.iconset/icon_${s}x${s}.png" >/dev/null
+  sips -z $((s*2)) $((s*2)) "$TMP/icon.png" --out "$TMP/AppIcon.iconset/icon_${s}x${s}@2x.png" >/dev/null
+done
+iconutil -c icns "$TMP/AppIcon.iconset" -o build/AppIcon.icns
 cp build/AppIcon.icns "$APP/Contents/Resources/AppIcon.icns"
 cat > "$APP/Contents/Info.plist" <<PLIST
 <?xml version="1.0" encoding="UTF-8"?>
