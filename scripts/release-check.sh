@@ -26,6 +26,7 @@ gate drag              scripts/drag-test.sh
 gate trust-recovery    scripts/trust-test.sh        # migration, repair, restore, Safe Mode writes nothing
 gate fault-injection   scripts/fault-test.sh
 gate updater           scripts/update-test.sh
+gate features        scripts/feature-scenarios.sh
 gate accessibility     python3 -I scripts/a11y-static.py
 gate localization      scripts/l10n-check.sh
 gate perf              scripts/perf.sh
