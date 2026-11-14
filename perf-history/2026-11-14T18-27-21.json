@@ -1,0 +1,458 @@
+{
+ "date": "2026-11-14T18-27-21",
+ "machine": {
+  "build": "release",
+  "chip": "Apple M4",
+  "commit": "b6619ef",
+  "displays": [
+   {
+    "main": true,
+    "name": "Color LCD",
+    "resolution": "1470 x 956 @ 60.00Hz",
+    "retina": "2940 x 1912"
+   }
+  ],
+  "increaseContrast": "unknown",
+  "lowPowerMode": false,
+  "macOS": "27.0.1",
+  "memoryGB": 16,
+  "model": "Mac16,12",
+  "onBattery": true,
+  "reduceMotion": "unknown",
+  "reduceTransparency": "unknown",
+  "thermal": "Note: No CPU power status has been recorded"
+ },
+ "results": {
+  "1,000-item collection open": {
+   "budget": 1000,
+   "median": 92.0,
+   "runs": [
+    92.0,
+    79.0,
+    96.0
+   ],
+   "status": "pass"
+  },
+  "1,000-item collection scroll p95": {
+   "budget": 16.7,
+   "median": 3.8,
+   "runs": [
+    4.6,
+    3.8,
+    3.2
+   ],
+   "status": "pass"
+  },
+  "10k Return p95": {
+   "budget": 33,
+   "median": 10.7,
+   "runs": [
+    10.6,
+    10.7,
+    11.1
+   ],
+   "status": "pass"
+  },
+  "10k block move p95": {
+   "budget": 100,
+   "median": 16.9,
+   "runs": [
+    16.9,
+    18.4,
+    16.6
+   ],
+   "status": "pass"
+  },
+  "10k keystroke p95": {
+   "budget": 33,
+   "median": 16.4,
+   "runs": [
+    34.9,
+    12.8,
+    16.4
+   ],
+   "status": "noise"
+  },
+  "10k open": {
+   "budget": 2500,
+   "median": 592.9,
+   "runs": [
+    570.4,
+    592.9,
+    594.4
+   ],
+   "status": "pass"
+  },
+  "10k scroll step p95": {
+   "budget": 16.7,
+   "median": 0.6,
+   "runs": [
+    0.6,
+    0.6,
+    0.6
+   ],
+   "status": "pass"
+  },
+  "10k toggle": {
+   "budget": 200,
+   "median": 131.9,
+   "runs": [
+    131.9,
+    131.3,
+    133.1
+   ],
+   "status": "pass"
+  },
+  "2,000-block doc scroll p95": {
+   "budget": 16.7,
+   "median": 0.7,
+   "runs": [
+    0.7,
+    0.7,
+    0.7
+   ],
+   "status": "pass"
+  },
+  "20k Return p95": {
+   "budget": 33,
+   "median": 17.2,
+   "runs": [
+    17.2,
+    17.7,
+    16.7
+   ],
+   "status": "pass"
+  },
+  "20k keystroke p95": {
+   "budget": 33,
+   "median": 21.5,
+   "runs": [
+    17.8,
+    23.6,
+    21.5
+   ],
+   "status": "pass"
+  },
+  "20k open": {
+   "budget": 5000,
+   "median": 1156.5,
+   "runs": [
+    1126.7,
+    1156.5,
+    1167.4
+   ],
+   "status": "pass"
+  },
+  "20k scroll step p95": {
+   "budget": 16.7,
+   "median": 0.6,
+   "runs": [
+    0.6,
+    0.6,
+    0.6
+   ],
+   "status": "pass"
+  },
+  "20k toggle (known limit)": {
+   "budget": null,
+   "median": 250.5,
+   "runs": [
+    249.5,
+    260.1,
+    250.5
+   ],
+   "status": "info"
+  },
+  "Space switch p95": {
+   "budget": 100,
+   "median": 69.0,
+   "runs": [
+    69.0,
+    70.9,
+    56.8
+   ],
+   "status": "pass"
+  },
+  "Version History 30 versions, 2,000 blocks": {
+   "budget": 500,
+   "median": 25.0,
+   "runs": [
+    25.0,
+    25.0,
+    25.0
+   ],
+   "status": "pass"
+  },
+  "doc open from library": {
+   "budget": 250,
+   "median": 143.4,
+   "runs": [
+    135.2,
+    144.3,
+    143.4
+   ],
+   "status": "pass"
+  },
+  "library rebuild 2,000 notes": {
+   "budget": 3000,
+   "median": 797.0,
+   "runs": [
+    797.0,
+    870.0,
+    785.0
+   ],
+   "status": "pass"
+  },
+  "link/tag index rebuild": {
+   "budget": 3000,
+   "median": 94.1,
+   "runs": [
+    94.1,
+    96.5,
+    92.5
+   ],
+   "status": "pass"
+  },
+  "migration check 2,000 notes": {
+   "budget": 5000,
+   "median": 516.0,
+   "runs": [
+    522.0,
+    516.0,
+    509.0
+   ],
+   "status": "pass"
+  },
+  "migration schema 1\u21922, 2,000 notes": {
+   "budget": 5000,
+   "median": 1632.0,
+   "runs": [
+    1608.0,
+    1658.0,
+    1632.0
+   ],
+   "status": "pass"
+  },
+  "panel assistant (first open)": {
+   "budget": null,
+   "median": 80.8,
+   "runs": [
+    77.5,
+    90.8,
+    80.8
+   ],
+   "status": "info"
+  },
+  "panel assistant (warm)": {
+   "budget": 100,
+   "median": 23.7,
+   "runs": [
+    16.3,
+    23.7,
+    26.9
+   ],
+   "status": "pass \u00b7 slower than last (13)"
+  },
+  "panel format (first open)": {
+   "budget": null,
+   "median": 65.1,
+   "runs": [
+    65.1,
+    62.7,
+    75.2
+   ],
+   "status": "info"
+  },
+  "panel format (warm)": {
+   "budget": 100,
+   "median": 50.7,
+   "runs": [
+    50.8,
+    50.7,
+    41.5
+   ],
+   "status": "pass"
+  },
+  "panel info (first open)": {
+   "budget": null,
+   "median": 66.2,
+   "runs": [
+    72.9,
+    66.2,
+    60.3
+   ],
+   "status": "info"
+  },
+  "panel info (warm)": {
+   "budget": 100,
+   "median": 35.7,
+   "runs": [
+    35.7,
+    36.1,
+    33.3
+   ],
+   "status": "pass"
+  },
+  "panel recovery (first open)": {
+   "budget": null,
+   "median": 90.7,
+   "runs": [
+    90.8,
+    75.9,
+    90.7
+   ],
+   "status": "info"
+  },
+  "panel recovery (warm)": {
+   "budget": 100,
+   "median": 60.2,
+   "runs": [
+    61.2,
+    60.2,
+    42.9
+   ],
+   "status": "pass"
+  },
+  "panel share (first open)": {
+   "budget": null,
+   "median": 41.0,
+   "runs": [
+    41.0,
+    40.8,
+    41.4
+   ],
+   "status": "info"
+  },
+  "panel share (warm)": {
+   "budget": 100,
+   "median": 32.1,
+   "runs": [
+    31.2,
+    34.8,
+    32.1
+   ],
+   "status": "pass"
+  },
+  "panel style (first open)": {
+   "budget": null,
+   "median": 50.4,
+   "runs": [
+    50.4,
+    52.3,
+    40.1
+   ],
+   "status": "info"
+  },
+  "panel style (warm)": {
+   "budget": 100,
+   "median": 49.3,
+   "runs": [
+    50.2,
+    49.3,
+    46.6
+   ],
+   "status": "pass"
+  },
+  "repair plan": {
+   "budget": 2000,
+   "median": 392.0,
+   "runs": [
+    378.0,
+    398.0,
+    392.0
+   ],
+   "status": "pass"
+  },
+  "search (library)": {
+   "budget": 500,
+   "median": 16.6,
+   "runs": [
+    16.8,
+    16.6,
+    16.5
+   ],
+   "status": "pass"
+  },
+  "search index rebuild (10k blocks)": {
+   "budget": 3000,
+   "median": 110.9,
+   "runs": [
+    111.3,
+    110.3,
+    110.9
+   ],
+   "status": "pass"
+  },
+  "search query p95": {
+   "budget": 500,
+   "median": 88.8,
+   "runs": [
+    88.6,
+    89.2,
+    88.8
+   ],
+   "status": "pass"
+  },
+  "sheet reviewSheet on screen (incl. AppKit animation)": {
+   "budget": null,
+   "median": 346.0,
+   "runs": [
+    346.0,
+    334.8,
+    347.4
+   ],
+   "status": "info"
+  },
+  "sheet reviewSheet render": {
+   "budget": 100,
+   "median": 37.6,
+   "runs": [
+    37.6,
+    36.4,
+    37.7
+   ],
+   "status": "pass"
+  },
+  "sheet versionHistory on screen (incl. AppKit animation)": {
+   "budget": null,
+   "median": 296.4,
+   "runs": [
+    289.5,
+    296.4,
+    299.1
+   ],
+   "status": "info"
+  },
+  "sheet versionHistory render": {
+   "budget": 100,
+   "median": 4.4,
+   "runs": [
+    4.0,
+    4.4,
+    4.6
+   ],
+   "status": "pass"
+  },
+  "tab switch p95": {
+   "budget": 50,
+   "median": 40.7,
+   "runs": [
+    40.7,
+    39.8,
+    43.1
+   ],
+   "status": "pass"
+  },
+  "vault check 2,000 notes": {
+   "budget": 2000,
+   "median": 470.0,
+   "runs": [
+    470.0,
+    478.0,
+    466.0
+   ],
+   "status": "pass"
+  }
+ },
+ "runs": 3
+}
