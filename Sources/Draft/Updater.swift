@@ -89,21 +89,41 @@ final class UpdateController {
             do {
                 let data: Data
                 if url.isFileURL { data = try Data(contentsOf: url); phase = .downloading(1) }
-                else {
-                    let (bytes, _) = try await URLSession(configuration: .ephemeral).bytes(from: url)
-                    var buf = Data(); buf.reserveCapacity(Int(item.size))
-                    for try await b in bytes {
-                        buf.append(b)
-                        if buf.count % 262_144 == 0 { phase = .downloading(Double(buf.count) / Double(max(1, item.size))) }
-                        if Task.isCancelled { phase = .available(item); return }
-                    }
-                    data = buf
-                }
+                else { data = try await fetchArchive(url) { p in self.phase = .downloading(p) } }
+                if Task.isCancelled { phase = .available(item); return }
                 try Updates.verifyArchive(data, item: item, key: try Updates.publicKey(base64: publicKeyBase64))
                 stagedApp = try stage(data, item: item)
                 phase = .ready(item)
             } catch is CancellationError { phase = .available(item) }
+            catch let e as URLError where e.code == .cancelled { phase = .available(item) }
             catch { phase = .failed(error.localizedDescription) }
+        }
+    }
+
+    /// One native download task with progress (a byte-by-byte loop was far too slow for a 14 MB archive).
+    /// Ephemeral session: no cookies, cache or credentials. Cancelling the Task cancels the transfer.
+    func fetchArchive(_ url: URL, progress: @escaping @MainActor (Double) -> Void) async throws -> Data {
+        let session = URLSession(configuration: .ephemeral)
+        defer { session.finishTasksAndInvalidate() }
+        var task: URLSessionDownloadTask?
+        return try await withTaskCancellationHandler {
+            try await withCheckedThrowingContinuation { (cont: CheckedContinuation<Data, Error>) in
+                var observation: NSKeyValueObservation?
+                let t = session.downloadTask(with: url) { file, response, error in
+                    withExtendedLifetime(observation) {} // keeps progress updates alive until the transfer ends
+                    if let error { cont.resume(throwing: error); return }
+                    guard (response as? HTTPURLResponse)?.statusCode == 200, let file else { cont.resume(throwing: URLError(.badServerResponse)); return }
+                    do { cont.resume(returning: try Data(contentsOf: file)) } catch { cont.resume(throwing: error) }
+                }
+                observation = t.progress.observe(\.fractionCompleted) { p, _ in
+                    let f = p.fractionCompleted
+                    Task { @MainActor in progress(f) }
+                }
+                task = t
+                t.resume()
+            }
+        } onCancel: {
+            task?.cancel()
         }
     }
 
