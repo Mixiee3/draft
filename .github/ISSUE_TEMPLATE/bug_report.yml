@@ -1,0 +1,30 @@
+name: Bug report
+description: Something in Draft doesn't work as expected
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Please don't attach your vault or note text. Help › Report a Problem creates a local report you can review and paste the relevant parts from.
+  - type: input
+    id: version
+    attributes: { label: Draft version, placeholder: "0.10.1 (206)" }
+    validations: { required: true }
+  - type: input
+    id: macos
+    attributes: { label: macOS version, placeholder: "Sequoia 15.4" }
+    validations: { required: true }
+  - type: textarea
+    id: steps
+    attributes: { label: Steps to reproduce, placeholder: "1. …\n2. …" }
+    validations: { required: true }
+  - type: textarea
+    id: expected
+    attributes: { label: What you expected, and what happened }
+    validations: { required: true }
+  - type: dropdown
+    id: language
+    attributes: { label: App language, options: [English, Čeština, Deutsch, Other] }
+  - type: textarea
+    id: report
+    attributes: { label: Report a Problem summary (optional), description: Paste the reviewed text only. }
