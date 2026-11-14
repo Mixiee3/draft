@@ -1,194 +1,150 @@
+<div align="center">
+
+<img src="docs/screenshots/document.png" alt="Draft notes app" width="920" />
+
 # Draft
 
-A free, open-source, local-first notes and document app. **First release: native macOS.**
-No account and no telemetry — your notes are plain files on your Mac. Nothing goes online unless you
-turn it on (image search, link previews, downloading the Assistant's local model, or the optional
-OpenAI Assistant with your own API key).
+### Quiet notes. Owned by you.
 
-![Draft document](docs/screenshots/document.png)
+A free, open-source, local-first notes app for macOS — built for writing, thinking and making beautiful documents without giving up control of your data.
 
-## Build and run
+<p>
+  <a href="https://draftnotes.app"><strong>Website</strong></a> ·
+  <a href="https://github.com/Mixiee3/draft/releases"><strong>Download</strong></a> ·
+  <a href="docs/ROADMAP.md"><strong>Roadmap</strong></a> ·
+  <a href="https://github.com/Mixiee3/draft/discussions"><strong>Discussions</strong></a>
+</p>
 
-Requirements: macOS 14 or later, Xcode 16+ (Swift 6 toolchain) with the Metal Toolchain component
-(`xcodebuild -downloadComponent MetalToolchain`). SwiftPM fetches two pinned dependencies: the
-llama.cpp XCFramework and Libraries.dev (see [`THIRD_PARTY_NOTICES.md`](THIRD_PARTY_NOTICES.md)).
+![macOS](https://img.shields.io/badge/macOS-14%2B-161616?style=flat-square&logo=apple&logoColor=white)
+![Swift](https://img.shields.io/badge/Swift-6-FA7343?style=flat-square&logo=swift&logoColor=white)
+![License](https://img.shields.io/badge/license-AGPL--3.0-ef6c57?style=flat-square)
+![Status](https://img.shields.io/badge/status-early%20open%20source-8d79ff?style=flat-square)
 
-```bash
-scripts/build-app.sh          # builds build/Draft.app (release)
-```
+</div>
 
-```bash
-open build/Draft.app
-```
+> Draft is a calm place to write first and organise later. Your notes remain plain, portable files on your Mac. No account is required, and nothing leaves your computer unless you explicitly turn on a network feature.
 
-Development loop and checks:
+## Why Draft?
 
-```bash
-swift run Draft               # run without bundling
-```
+Most note apps make you choose between a beautiful writing space and ownership of your data. Draft is an attempt to keep both.
 
-```bash
-swift test                    # 147 tests: format, schema 2 migration, vault, index, links, tags, dates, styles, tables, collections, import, HTML/site export, online parsing, editor, blocks, paste, grouping, media, cursor, Assistant retrieval, citations, prompts, chat history, model download verification, privacy, cancellation, one-step undo
-```
+- **Local by default** — your vault lives on your Mac, not in a mandatory cloud account.
+- **A real writing environment** — rich blocks, keyboard-first editing, document styles and quiet visual details.
+- **Portable files** — one JSON document per note, content-addressed assets and documented migrations.
+- **Private AI options** — a local Liquid AI model can answer questions about your notes with networking disabled.
+- **Reviewed automation** — Claude Code, Codex and other MCP clients can propose edits, but Draft asks before applying them.
+- **Open source** — inspect the storage format, test the app and help shape what comes next.
 
-```bash
-scripts/smoke.sh              # end-to-end: edit, group, trash, quit, relaunch; verify content, page, trash, backups, search, link, ungroup
-```
+## A glimpse of Draft
 
-```bash
-scripts/perf.sh               # opens a 10,000-block document and checks editing and index-rebuild budgets
-```
+<div align="center">
+<img src="docs/screenshots/document-ember.png" alt="Draft document with a warm Ember style" width="48%" />
+<img src="docs/screenshots/library-gallery.png" alt="Draft document library" width="48%" />
+<br />
+<img src="docs/screenshots/v10/dark-onboarding-tour.png" alt="Draft onboarding tour" width="48%" />
+<img src="docs/screenshots/v10/dark-update-available.png" alt="Draft update panel" width="48%" />
+</div>
 
-```bash
-scripts/links-test.sh         # links, backlinks, tasks, daily notes: write, relaunch, delete index/ and relaunch
-```
+More states are available in [docs/screenshots](docs/screenshots/).
 
-```bash
-scripts/style-test.sh         # saved styles, block fonts, cards, separators; styled PDF/HTML/PNG and an offline site
-```
+## What Draft can do
 
-```bash
-scripts/drag-test.sh          # drags a block with mouse events posted through the app; checks undo, redo, relaunch
-```
+### Write and organise
 
-```bash
-scripts/structure-test.sh     # tables and collections: views, sort, sums, Kanban drag undo, CSV round trip; 1,000-item open and scroll
-```
+Rich blocks, headings, lists, tasks, quotes, code, callouts, separators, nested pages, tables, collections, tags, backlinks, daily notes, calendar views and cross-document search.
 
-```bash
-scripts/workflow-test.sh      # Spaces, templates, Draft JSON and Markdown import round trips
-```
+### Make documents feel like yours
 
-```bash
-scripts/ux-perf.sh            # tab and Space switching, library, scrolling, panels, idle CPU/GPU
-```
+Original paper and scenic styles, gradients, textures, dots, separators, covers, block treatments, text effects, Spectrum animation, styled HTML/PDF/PNG export and offline website export.
 
-```bash
-scripts/assistant-test.sh     # the Assistant with all networking denied (needs the downloaded model)
-```
+### Work with an Assistant
 
-```bash
-scripts/assistant-quality.sh  # 30-question benchmark: expected facts and citations, offline
-```
+Draft’s default Assistant runs locally through llama.cpp and Metal. It can retrieve facts from long notes, cite source blocks, shorten or rewrite text, read answers aloud and work with networking turned off. An optional OpenAI provider is separate, uses your own API key and asks before sending selected note content.
 
-```bash
-scripts/mcp-test.sh           # the MCP server end to end over stdio in a throwaway vault
-```
+### Let agents help — safely
 
-```bash
-scripts/nav-test.sh           # tab navigation with real clicks from every kind of screen
-```
+The local MCP server exposes reading and proposal tools for Codex, Claude Code and other clients. Agents can propose note, block, table, collection, style and attachment changes. Draft shows a before/after review sheet, checks revisions, makes a backup and applies the entire proposal as one undoable change.
 
-```bash
-scripts/agent-test.sh         # Codex/MCP proposals: accept, undo, reject, stale revision, links/tags/tasks kept
-```
+## Privacy model
 
-## Local Assistant
+Draft does not require an account and does not include telemetry. Local Assistant inference stays on-device. Network features such as image search, link previews, model downloads, optional OpenAI requests and update checks are separately controlled and documented.
 
-Press ⌘J (or the Assistant button). The first time, Draft offers to download **LFM2.5-2.6B** by
-Liquid AI (1.6 GB, open weights under the LFM Open License v1.0, not Draft's license). The file is
-checked against its published SHA-256 and stored in `~/Library/Application Support/Draft/Models`,
-outside your vault. Inference runs inside Draft with llama.cpp on Metal: no Python, server, account or
-API key, and it works with networking off. Notes are never sent anywhere. Settings → Assistant
-switches to the smaller 1.2B model or removes the model.
+Read the full model in [docs/PRIVACY.md](docs/PRIVACY.md).
 
-It reads a long document in parts and says so, answers a second question about the same note several
-times faster (the model's state after reading the note is kept), reads answers aloud with the
-system voice, and takes dictation only through Apple's on-device recognizer (Draft refuses
-server-based recognition; macOS asks for microphone and speech permission the first time).
+## Current status
 
-**Optional OpenAI provider.** Settings → Assistant → provider *OpenAI API* uses your own API key
-(stored in the macOS Keychain, never in the vault) and the Responses API with `store: false`. Before
-every request Draft shows exactly which note text and earlier turns will be sent, and nothing is
-sent until you confirm. This is not ChatGPT sign-in and not a Codex agent inside Draft; local
-remains the default.
+Draft is **early open-source software**. The macOS app is the primary supported platform. The project has a working native editor, local Assistant, MCP automation, recovery tools and an evolving release/update system. Some integrations still need wider hardware, accessibility and real-world testing.
 
-## Codex, Claude Code and other MCP clients
+Check [docs/ROADMAP.md](docs/ROADMAP.md) for the versioned plan and [docs/FEATURE_PARITY.md](docs/FEATURE_PARITY.md) for acceptance checks.
 
-`scripts/draft-mcp.sh` runs `DraftMCP`, a local stdio MCP server over your vault (or `--vault <folder>`).
-It lists Spaces, folders and documents, searches, reads documents, blocks and structure, describes
-Draft's formatting (with a restrained "make it look better" recipe), and **proposes** changes:
-note edits (text, append, insert, delete, reorder, headings, lists, tasks, quotes, callouts, code,
-inline formatting, colours, highlights, text effects, links, block colours, block decorations
-and effects (focus, block, gradient, glass, glow, accent), separators, document style, a custom
-gradient backdrop (contrast-checked; the review shows the look before and after), links to other notes,
-tags, task due dates, image captions and descriptions, saved styles, folder names, today's daily note, table cells, rows and columns, collection items, fields and views, and images or files from a local path — copied into the vault
-only when you apply), edits across several notes at once (all or nothing), and creating,
-renaming, moving and deleting notes (to Recently Deleted only) and creating folders.
+## Install and run from source
 
-Each agent is listed in Settings › Agents with switches for reading, proposing and destructive
-changes (deleting content, replacing a whole note, moving or deleting notes); destructive changes
-are off for every agent until you allow them. Draft keeps a local activity list (tool, note, time;
-never note text).
+Requirements: macOS 14 or later, Xcode 16 or later, Swift 6 and the Metal Toolchain.
 
-A proposal is only a file in `agent-requests/`. Draft shows it in a review sheet with before and
-after for each change; nothing happens until you click Apply. Draft then checks the note (or the
-folders) haven't changed since the agent read them, saves with a backup, updates the index, and the
-whole proposal is one Undo. Reject leaves everything as it was. Draft never deletes images, files,
-tables or nested pages from a proposal, and whole-note replacement is refused for notes that have them.
+    xcodebuild -downloadComponent MetalToolchain
+    scripts/build-app.sh
+    open build/Draft.app
 
-Setup: Codex — add `[mcp_servers.draft] command = "<repo>/scripts/draft-mcp.sh"` to
-`~/.codex/config.toml`. Claude Code — `claude mcp add draft -- <repo>/scripts/draft-mcp.sh` (or the
-`mcpServers` entry in `~/.claude.json`). Keep Draft open to review proposals; they wait if it's closed.
-`scripts/mcp-test.sh` checks the whole loop in a throwaway vault.
+The first release is a native macOS app. Signed/notarized distribution and the update feed are documented in [docs/RELEASE.md](docs/RELEASE.md) and [docs/UPDATES.md](docs/UPDATES.md).
 
-## Architecture (v0.1)
+## Development checks
 
-| Layer | Target | Notes |
-|---|---|---|
-| Portable format | `Sources/DraftCore` | Foundation only. Document tree, library index, migrations, vault (atomic writes), Markdown/JSON export, styles, seed content. This is the layer a future Windows app re-implements; see [`docs/FORMAT.md`](docs/FORMAT.md). |
-| Editor | `Sources/DraftEditor` | AppKit + **TextKit 1** (`NSTextView`, custom `NSLayoutManager`). One text paragraph = one block with a stable id. Semantic attributes (block info, inline marks) are separate from derived display attributes. |
-| App shell | `Sources/Draft` | SwiftUI: rail, tabs, library, panels, settings, Assistant. Hosts the editor through `NSViewRepresentable`. Design tokens in `DesignSystem.swift`. |
-| Assistant runtime | `Sources/DraftAssistant` | Model download and verification, llama.cpp engine. Prompting, retrieval and history are in `DraftCore` (`Assistant.swift`). |
+    swift test
+    scripts/smoke.sh
+    scripts/perf.sh
+    scripts/style-test.sh
+    scripts/structure-test.sh
+    scripts/workflow-test.sh
+    scripts/mcp-test.sh
+    scripts/assistant-test.sh
+    scripts/release-check.sh
 
-Key decisions:
+Use throwaway vaults for tests. Never run destructive experiments against a personal vault. Do not commit build folders, vaults, backups, model files, credentials or private screenshots.
 
-- **Four separate layers**: semantic content (`content`), inline marks (inside content), block style
-  (`blockColor`, `decoration`, `textAlign` attrs), document appearance (`appearance`: style id +
-  sparse overrides + cover). Restyling never touches content (tested).
-- **One command registry** (`EditorCommands`) drives the selection toolbar, `Aa` panel, slash menu,
-  `+` insert menu, menu bar and shortcuts; every command is undoable through `NSTextView`'s undo.
-  Markdown conversions run as their own undo step, so ⌘Z restores the literal text.
-- **Selection toolbar** is an AppKit overlay that never takes focus from the text, so the selection
-  survives the color palette and link field; it flips below near the top, clamps horizontally,
-  dismisses with Esc, and is keyboard reachable with ⌥F10 (←/→, Return, Esc).
-- **Storage**: `library.json` (index) + one JSON file per document + content-addressed `assets/`.
-  Explicit schema versions; migrations back up the original first; files from a newer schema open
-  read-only; unknown fields and unknown block types are preserved verbatim.
-- **Nested pages** are child documents referenced by a `pageCard` block (card or page presentation).
-- The earlier Electron prototype was replaced; its data format, styles, seed copy, export rules and
-  migration design were ported to `DraftCore` unchanged in spirit.
+## Project shape
 
-## Docs
-
-- [`docs/ROADMAP.md`](docs/ROADMAP.md) — versioned plan from v0.1 to 1.0 and beyond (incl. Windows).
-- [`docs/FEATURE_PARITY.md`](docs/FEATURE_PARITY.md) — evidence-backed gap matrix with acceptance checks.
-- [`docs/FORMAT.md`](docs/FORMAT.md) — the portable on-disk format.
-- [`docs/VERSIONING.md`](docs/VERSIONING.md) — versions, channels, schemas, migration and rollback.
-- [`docs/UPDATES.md`](docs/UPDATES.md) — the updater and its security model.
-- [`docs/RELEASE.md`](docs/RELEASE.md) — signing, notarization, required secrets, `scripts/release.sh`.
-- [`docs/PRIVACY.md`](docs/PRIVACY.md) — what stays local, every network feature and permission.
-- Release gate: `scripts/release-check.sh` runs every suite; a release ships only when it passes.
-- [`docs/screenshots/`](docs/screenshots) — Draft captured by `DRAFT_AUTOMATION=screenshots`.
-
-Reference screenshots of other products used during design research are **not** part of this
-repository and must not be committed. All Draft artwork (scenes, separators, icon) is original and
-generated in code.
-
-## License
-
-Draft is free software, licensed under the [GNU Affero General Public License v3.0](LICENSE). If you run a changed version as a service, you must publish your changes under the same license.
+| Layer | Location | Purpose |
+| --- | --- | --- |
+| Portable data and migrations | Sources/DraftCore | Vault format, indexing, recovery, import/export and shared semantics |
+| Native editor | Sources/DraftEditor | AppKit/TextKit editing with stable block IDs and undo |
+| macOS app | Sources/Draft | SwiftUI shell, library, panels, settings and Assistant UI |
+| Local Assistant | Sources/DraftAssistant | Model verification, download and llama.cpp/Metal runtime |
+| MCP bridge | Sources/DraftMCP | Reviewed proposals for Codex, Claude Code and other agents |
 
 ## Contributing
 
-Contributions are welcome. Start with [CONTRIBUTING.md](CONTRIBUTING.md) and the [Code of Conduct](CODE_OF_CONDUCT.md).
+Contributions are welcome — design feedback, bug reports, accessibility testing, performance work, documentation and code all help.
 
-- Good first issues: https://github.com/Mixiee3/draft/labels/good%20first%20issue
-- Ideas and questions: https://github.com/Mixiee3/draft/discussions
-- Bugs and features: https://github.com/Mixiee3/draft/issues/new/choose
-- Fork the repo and open a pull request against `main`.
+1. Read [CONTRIBUTING.md](CONTRIBUTING.md).
+2. Search existing [issues](https://github.com/Mixiee3/draft/issues) and [discussions](https://github.com/Mixiee3/draft/discussions).
+3. For larger changes, open a discussion before writing a large pull request.
+4. Use a throwaway vault and include exact test or reproduction steps.
+5. Keep changes focused and preserve the portable file format.
 
-Draft is inspired by Craft's calm, document-first design. Draft is not affiliated with Craft and reuses none of its code or artwork.
+Useful labels include [good first issue](https://github.com/Mixiee3/draft/labels/good%20first%20issue), [help wanted](https://github.com/Mixiee3/draft/labels/help%20wanted), ui/ux, accessibility, performance and local-ai.
 
-Third-party components and their licenses are listed in [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md).
+Please read [CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md) and [SECURITY.md](SECURITY.md) before contributing.
 
+## Documentation
+
+- [ROADMAP.md](docs/ROADMAP.md) — versioned product plan
+- [FORMAT.md](docs/FORMAT.md) — portable on-disk format
+- [PRIVACY.md](docs/PRIVACY.md) — network and data boundaries
+- [UPDATES.md](docs/UPDATES.md) — update security model
+- [RELEASE.md](docs/RELEASE.md) — release and signing process
+- [CODEX_INTEGRATION_HANDOFF.md](docs/CODEX_INTEGRATION_HANDOFF.md) — agent integration details
+- [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md) — dependency licenses
+
+## License and inspiration
+
+Draft is free software under the [GNU Affero General Public License v3.0](LICENSE). Draft is inspired by calm, document-first tools such as Craft, but is not affiliated with Craft and reuses none of its code or artwork.
+
+All Draft scenes, separators, icons and visual assets are original or generated in code. Third-party components and licenses are listed in [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md).
+
+<div align="center">
+
+### Write locally. Shape it together.
+
+<a href="https://draftnotes.app">Visit Draft’s website →</a>
+
+</div>
