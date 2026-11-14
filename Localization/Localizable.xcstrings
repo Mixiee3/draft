@@ -8746,6 +8746,22 @@
         }
       }
     },
+    "Hosted update test build": {
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Testovací sestavení aktualizace ze serveru"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Test-Build für Online-Aktualisierung"
+          }
+        }
+      }
+    },
     "How checked items look in documents.": {
       "localizations": {
         "cs": {
@@ -10786,6 +10802,7 @@
       }
     },
     "Move Column": {
+      "extractionState": "stale",
       "localizations": {
         "cs": {
           "stringUnit": {
@@ -10834,6 +10851,7 @@
       }
     },
     "Move Row": {
+      "extractionState": "stale",
       "localizations": {
         "cs": {
           "stringUnit": {
@@ -11445,6 +11463,22 @@
           "stringUnit": {
             "state": "translated",
             "value": "Neuer Bereich…"
+          }
+        }
+      }
+    },
+    "New Subfolder": {
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nová podsložka"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Neuer Unterordner"
           }
         }
       }
@@ -18929,6 +18963,22 @@
         }
       }
     },
+    "This build came through the in-app updater from a signed, hosted update list.": {
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tato verze přišla přes aktualizaci v aplikaci z podepsaného seznamu aktualizací na serveru."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Diese Version kam über die In-App-Aktualisierung aus einer signierten, gehosteten Update-Liste."
+          }
+        }
+      }
+    },
     "This build has no release key, so it can't verify updates. Release builds can.": {
       "localizations": {
         "cs": {
@@ -20675,6 +20725,22 @@
           "stringUnit": {
             "state": "translated",
             "value": "Deine Notizen wurden zuletzt %@ gesichert. Draft sichert eine halbe Sekunde nach dem Tippen, also fehlt höchstens der letzte Moment. Versionen und Backups sind unberührt."
+          }
+        }
+      }
+    },
+    "Your notes, Spaces and settings were kept as they were.": {
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Vaše poznámky, prostory a nastavení zůstaly beze změny."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Deine Notizen, Bereiche und Einstellungen blieben unverändert."
           }
         }
       }
