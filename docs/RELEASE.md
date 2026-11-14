@@ -57,3 +57,20 @@ the script says `NOT NOTARIZED` and writes `NOT-NOTARIZED.txt` so such a build i
 This Mac has only an Apple Development certificate, not Developer ID, and no notary credentials, so
 releases made here are signed with that identity and the hardened runtime, run on this Mac, and are **not notarized**. Notarization
 and stapling run unchanged once the secrets above exist.
+
+## Hosted test distribution (not production)
+
+For testing the updater over HTTPS without publishing to users:
+
+- Build: `DRAFT_CHANNEL=stable SIGN_IDENTITY="Apple Development: …" UPDATE_KEY=~/Keys/draft-update.key UPDATE_FEED_URL=https://github.com/Mixiee3/draft-updates/releases/download/preview/feed.json UPDATE_BASE_URL=https://github.com/Mixiee3/draft-updates/releases/download/preview scripts/release.sh`
+- Sign the list: `swift scripts/update-tool.swift feed ~/Keys/draft-update.key items.json > feed.json` (items from `dist/<version>/feed-item.json`).
+- Upload `Draft-<version>.zip`, `feed.json` and `release-notes.md` to the `preview` release of `Mixiee3/draft-updates` with `gh release upload --clobber`.
+- Check: `curl -sSL <feed URL>` gives the signed JSON, and the zip's SHA-256 equals `dist/<version>/SHA256SUMS`.
+
+Rules: no source code, personal notes or secrets in that repo; never put a token in a URL or the app; the
+repo stays public only for these test assets. A hosted test build is not notarized and is not a release.
+
+## Production (not done)
+
+Requires a Developer ID Application certificate, notarytool credentials (`NOTARY_PROFILE`), and a stable
+release published to the stable feed. Only then is the build offered to people outside testing.

@@ -57,3 +57,27 @@ Only in development builds, only with `DRAFT_UPDATE_TEST=1`. `DRAFT_UPDATE_FEED`
 `DRAFT_UPDATE_LAUNCH` (relaunch command). `scripts/update-test.sh` runs: install and restart, install
 on quit, remind me later, tampered archive refused, update that doesn't start rolled back, and no
 request with automatic checks off — on throwaway vaults and app copies.
+
+## Three levels of testing (keep them apart)
+
+1. **Local automated tests** (`scripts/update-test.sh`, `UpdatesTests`). Development builds only, with
+   `DRAFT_UPDATE_TEST=1` and a `file://` feed on this Mac. They cover install and restart, install on quit,
+   remind me later, tampered archive refused, an update that doesn't start rolled back, and no request with
+   automatic checks off. They prove the logic, not the network.
+2. **Hosted test distribution** (`github.com/Mixiee3/draft-updates`, release tag `preview`, a public repo
+   holding only test archives, the signed `feed.json` and release notes). Test-channel *stable* builds
+   with the test update key, reached over HTTPS with the production code path (no test mode). Verified on
+   14 Nov 2026: a baseline 0.10.0 (205) offered and installed 0.10.1 (206) on a throwaway vault, notes byte-identical,
+   and a second check reported no newer update. Test builds are signed with the Apple Development
+   identity, so they are not notarized and not for other Macs.
+3. **Production public distribution.** Needs a Developer ID certificate, notarization and stapling
+   ([RELEASE.md](RELEASE.md)), a stable release channel that you publish, and the update key kept offline.
+   Not done yet.
+
+Public-repo rules for hosted tests: no source, no notes, no secrets, no tokens in URLs or the app.
+The update key lives outside the repo (`~/Keys/draft-update.key`, mode 0600).
+
+Known limits of the hosted test: the feed is fetched with an ephemeral session, so a private GitHub
+release can't be used (it needs authentication the app must not carry). Corrupted and failed-launch
+cases are tested locally (level 1), not on the hosted feed. Downloads report progress through a native
+download task; a byte-by-byte loop was too slow for a 14 MB archive and was replaced.
