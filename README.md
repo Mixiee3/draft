@@ -9,7 +9,7 @@
 A free, open-source, local-first notes app for macOS — built for writing, thinking and making beautiful documents without giving up control of your data.
 
 <p>
-  <a href="https://github.com/Mixiee3/draft-site"><strong>Website source</strong></a> ·
+  <a href="https://draft-notes.github.io/"><strong>Visit the website</strong></a> ·
   <a href="https://github.com/Mixiee3/draft/releases"><strong>Download</strong></a> ·
   <a href="docs/ROADMAP.md"><strong>Roadmap</strong></a> ·
   <a href="https://github.com/Mixiee3/draft/discussions"><strong>Discussions</strong></a>
@@ -155,6 +155,6 @@ All Draft scenes, separators, icons and visual assets are original or generated 
 
 ### Write locally. Shape it together.
 
-<a href="https://github.com/Mixiee3/draft-site">Visit the Draft website repository →</a>
+<a href="https://draft-notes.github.io/">Visit the Draft website →</a>
 
 </div>
