@@ -23,7 +23,7 @@ A free, open-source, local-first notes app for macOS — built for writing, thin
 </div>
 
 <div align="center">
-  <img src="docs/assets/draft-banner.png" alt="Draft — notes that feel like yours" width="900" />
+  <img src="docs/assets/draft-banner-v2.png" alt="Draft — calm paper layers with a flowing blue accent" width="900" />
 </div>
 
 > Draft is a calm place to write first and organise later. Your notes remain plain, portable files on your Mac. No account is required, and nothing leaves your computer unless you explicitly turn on a network feature.
@@ -50,6 +50,12 @@ Most note apps make you choose between a beautiful writing space and ownership o
 </div>
 
 More states are available in [docs/screenshots](docs/screenshots/).
+
+<div align="center">
+<img src="docs/screenshots/document.png" alt="Draft writing workspace" width="900" />
+</div>
+
+The editor is the centre of Draft: a focused page, a quiet rail and styles that can change the atmosphere without changing the words.
 
 ## What Draft can do
 
