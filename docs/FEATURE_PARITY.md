@@ -40,7 +40,7 @@ Last updated: v0.10 (v1.0 groundwork) — 2026‑11‑13.
 | E17 | Move up/down/top/bottom | Shortcut actions | S42 | verified | E15 | 0.2 | ⌥⌘↑/↓, ⌃⌥⌘↑/↓; ids, marks, task state preserved; one undo each (`testMoveUpDown…`) |
 | E18 | Paste | Rich, plain, Markdown | B§5.3 | verified | — | 0.2 | Multi-line text → one block per line, Markdown recognized; RTF/HTML → headings, lists, bold/italic/underline/strike/code/links; Draft→Draft keeps blocks+marks with new ids; surrounding block keeps id; one undo (`PasteTests`, `MarkdownImportTests`) |
 | E19 | Multi-block text selection | Beta in reference | S12 | working | — | 0.1 | Drag across paragraphs selects text in all (native TextKit) |
-| E20 | IME / non-US layouts | Fixes documented | B§7, B§8 | partial | — | 0.6 | NSTextView composition works; layout matrix untested |
+| E20 | IME / non-US layouts | Fixes documented | B§7, B§8 | partial | — | 0.6 | Open, needs a person: layout matrix in docs/INPUT_MATRIX.md (QWERTZ, AZERTY, Dvorak) and IME tests |
 | E21 | 10k-block performance | Quality gate | B§11 | partial | — | 0.2.1→0.8 | `scripts/perf.sh` (10,000 blocks, real app): keystroke 7 ms p50 / ~20 ms p95, Return ~13 ms, block move ~14 ms, save ~0.3 s, open ~2.1 s, search past the index limit ~0.15 s. Limits: a keystroke that changes line wrapping and a toggle near the top (~120 ms) relayout everything below (TextKit 1 contiguous layout; non-contiguous layout mis-measures collapsed toggles) |
 | E22 | Spellcheck | Native | S11 | working | — | 0.1 | Continuous spellcheck on in editor |
 
@@ -50,7 +50,7 @@ Last updated: v0.10 (v1.0 groundwork) — 2026‑11‑13.
 |---|---|---|---|---|---|---|---|
 | F1 | Selection toolbar | Translucent pill above selected line | S06 | verified | — | 0.1 | Select text → bar visible (`testPaletteKeepsSelection…`); screenshot `selection-toolbar.png` |
 | F2 | Flip / clamp | Flip near top; clamp in canvas | S06 notes | verified | F1 | 0.1 | `testToolbarFlipsBelowNearTopAndClamps` |
-| F3 | Toolbar controls | Highlight▾, B, I, S, code, link, equation, @, comment, suggestions, feedback | S06 | partial | F1 | 0.1 | Highlight▾/B/I/U/S/code/link/clear work; equation (E10), @ (L1), comment (R3), suggestions (J3) not shown |
+| F3 | Toolbar controls | Highlight▾, B, I, S, code, link, equation, @, comment, suggestions, feedback | S06 | partial | F1 | 0.1 | Deferred for 1.0: equations are planned for later (Formula command); the other toolbar buttons are a placement decision, not a missing feature |
 | F4 | Active states | From selection | S06 | working | F1 | 0.1 | Bold selection shows B active (`isMarkActive`), accessibility value "on" |
 | F5 | Inline color palette in place | Clear + pastels + saturated | S07 | verified | F1 | 0.1 | ▾ swaps bar to palette; swatch applies (`testPaletteKeeps…`); `color-palette.png` |
 | F6 | Selection preserved through palette/link | — | S07 | verified | F5 | 0.1 | Selection range unchanged after choosing color (test) |
@@ -139,7 +139,7 @@ Last updated: v0.10 (v1.0 groundwork) — 2026‑11‑13.
 | K1 | Checklist block | `[] ` | B§G | verified | — | 0.1 | Trigger + click toggle (`testTaskTrigger…`) and smoke test |
 | K2 | Document Tasks pane | Tasks in doc | S18 | working | K1 | 0.1 | Lists, counts, toggles source block |
 | K3 | Global Tasks view | Today/Upcoming/etc. | B§5.7 | verified | index | 0.3 | Inbox/Today/Upcoming/Overdue/Completed with counts; completing updates the source block (editor and file) and one undo reverts it (links test) |
-| K4 | Due dates / reminders | Date on task | B§5.7 | partial | K3 | 0.4 | `@tomorrow 3pm` and the Tasks date/time picker set the due date; reminder scheduled at that time; one undo (links test). Real permission prompt not exercised |
+| K4 | Due dates / reminders | Date on task | B§5.7 | partial | K3 | 0.4 | Open, needs a person: a real reminder permission prompt has to be clicked once |
 | K5 | Daily notes | One page per date | B§5.7, S33 | verified | index | 0.3 | ⇧⌘D opens today; opening twice never creates two notes (also after relaunch); previous/next/Today in the top bar; template; start-of-day setting (links test, `LinkingTests`) |
 | K6 | Calendar stream | Day cards, Add Task, Create Daily Note, filters | S33 | verified | K5 | 0.4 | Today highlighted; Add Task on a future day is due that day; filters persist across relaunch; Today/Overdue roll over while idle (links test) |
 | K7 | Completed-task appearance | Setting | S12 | working | — | 0.1 | Strikethrough / Dimmed / Unchanged |
@@ -231,7 +231,7 @@ Last updated: v0.10 (v1.0 groundwork) — 2026‑11‑13.
 |---|---|---|---|---|---|---|---|
 | Y1 | Offline-first | Offline mode | B§16 | working | — | 0.1 | App contains no networking code |
 | Y2 | Multi-device sync | Cloud | — | missing | CRDT | 1.x | — |
-| Y3 | Custom vault location | External locations | S12, S16 | partial | — | 0.6 | `DRAFT_DATA_DIR`; in-app chooser missing |
+| Y3 | Custom vault location | External locations | S12, S16 | partial | — | 0.6 | Deferred for 1.0: an in-app vault move needs a careful data-move and undo design; `DRAFT_DATA_DIR` covers tests |
 
 ## 17. Settings
 
@@ -242,7 +242,7 @@ Last updated: v0.10 (v1.0 groundwork) — 2026‑11‑13.
 | Z3 | Reduce animations | Toggle | S10 | working | — | 0.1 | Disables panel/rail animations |
 | Z4 | Sound / app icon choice | Toggles | S10 | missing | — | later | — |
 | Z5 | Language & spelling | Rows | S11 | working | I1 | 0.6 | Settings › Writing › spelling language picker, applied to the editor (AppModel.applySpellingLanguage); the Rows part is not separate |
-| Z6 | Advanced | Task appearance, date links, sidebar, week start | S12 | partial | — | 0.6 | Week start, start of day, dates as chips/plain text, Online (off by default), Rebuild Index; sidebar customization → v0.6 |
+| Z6 | Advanced | Task appearance, date links, sidebar, week start | S12 | partial | — | 0.6 | Deferred: sidebar customisation was planned for v0.6 and is not built; the other settings listed here are done |
 | Z7 | Space settings | Avatar, name | S13 | working | N8 | 0.5 | Rename, list, switch, delete empty Spaces, New Space; generated avatar |
 | Z8 | Stats | Storage, docs, blocks, pages, words, reading time | S15 | working | — | 0.1 | Settings → Stats |
 | Z10 | Daily notes & tasks, Tags settings | Daily notes, reminders, calendar events; tag rules and colors | S12, S17, S25 | working | K5, G2 | 0.3 | `v03-settings-daily.png`, `v03-settings-tags.png` |
