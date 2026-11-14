@@ -41,6 +41,10 @@ struct CrashInfo: Codable, Equatable {
 /// Notes for What's New, newest first. Each version shows its own once after an update.
 enum ReleaseNotes {
     static let all: [(version: String, title: LocalizedStringKey, points: [LocalizedStringKey])] = [
+        ("0.10.1", "Hosted update test build", [
+            "This build came through the in-app updater from a signed, hosted update list.",
+            "Your notes, Spaces and settings were kept as they were.",
+        ]),
         ("0.10.0", "Updates you control, help and privacy in one place", [
             "Check for Updates… in the Draft menu. Automatic checks stay off until you turn them on.",
             "Help: search how-tos for writing, backups, version history, agents and recovery.",
