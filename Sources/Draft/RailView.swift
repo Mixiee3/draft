@@ -169,8 +169,8 @@ struct LibraryRail: View {
     @ViewBuilder func foldersSection(_ v: ViewRef) -> some View {
             SectionHeader(title: "Folders", action: { renameText = "New Folder"; model.createFolder() }, actionLabel: "New folder (⇧⌘N)")
             RailRow(icon: "tray", title: "Unsorted", isSelected: v.kind == "unsorted") { model.openView(ViewRef(kind: "unsorted")) }
-            ForEach(model.library.spaceFolders.sorted { $0.order < $1.order }) { f in
-                folderRow(f)
+            ForEach(model.flatFolders(), id: \.folder.id) { item in
+                folderRow(item.folder, depth: item.depth)
             }
     }
 
@@ -195,7 +195,7 @@ struct LibraryRail: View {
             }
     }
 
-    @ViewBuilder func folderRow(_ f: Folder) -> some View {
+    @ViewBuilder func folderRow(_ f: Folder, depth: Int) -> some View {
         let expanded = model.library.expandedFolders.contains(f.id)
         let v = model.activeView
         if model.renamingFolder == f.id {
@@ -205,20 +205,29 @@ struct LibraryRail: View {
                 .onExitCommand { model.renamingFolder = nil }
         } else {
             RailRow(icon: expanded ? "folder.fill" : "folder", title: LocalizedStringKey(f.name), isSelected: v.kind == "folder" && v.folderId == f.id,
+                    indent: CGFloat(depth) * 14,
                     trailing: AnyView(Button { model.toggleExpanded(f.id) } label: {
                         Image(systemName: "chevron.right").font(.system(size: DS.micro, weight: .bold)).rotationEffect(.degrees(expanded ? 90 : 0)).frame(width: 18, height: 18)
                     }.buttonStyle(.plain).foregroundStyle(t.tertiary).accessibilityLabel(expanded ? "Collapse \(f.name)" : "Expand \(f.name)"))) {
                 model.openView(.folder(f.id))
             }
+            .dropDestination(for: String.self) { ids, _ in
+                // Drag a document from the library or the rail onto a folder to move it there.
+                guard let id = ids.first, model.library.docs[id] != nil else { return false }
+                model.move(id, to: f.id)
+                return true
+            }
             .contextMenu {
                 Button("Rename") { renameText = f.name; model.renamingFolder = f.id }
+                Button("New Subfolder") { _ = model.createFolder(parentId: f.id) }
                 Button("New Document in Folder") { model.createDoc(folderId: .some(f.id)) }
                 Divider()
                 Button("Remove Folder…", role: .destructive) { model.requestDeleteFolder(f.id) }
             }
             if expanded {
                 ForEach(model.docsByFolder[f.id] ?? []) { m in
-                    RailRow(icon: "doc.text", title: LocalizedStringKey(m.title.isEmpty ? "Untitled" : m.title), isSelected: model.activeDocId == m.id, indent: 18) { model.openView(.doc(m.id)) }
+                    RailRow(icon: "doc.text", title: LocalizedStringKey(m.title.isEmpty ? "Untitled" : m.title), isSelected: model.activeDocId == m.id, indent: CGFloat(depth) * 14 + 18) { model.openView(.doc(m.id)) }
+                        .draggable(m.id)
                 }
             }
         }

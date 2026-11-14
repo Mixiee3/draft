@@ -910,12 +910,18 @@ final class AppModel {
     // MARK: Folders
 
     @discardableResult
-    func createFolder() -> String {
-        let f = Folder(name: "New Folder", order: Double(library.spaceFolders.count), spaceId: library.space.id)
+    func createFolder(parentId: String? = nil) -> String {
+        let f = Folder(name: "New Folder", parentId: parentId, order: Double(library.spaceFolders.count), spaceId: library.space.id)
         library.folders.append(f)
+        if let parentId, !library.expandedFolders.contains(parentId) { library.expandedFolders.append(parentId) }
         renamingFolder = f.id
         scheduleLibrarySave()
         return f.id
+    }
+
+    /// Folders of this Space in display order (see `FolderTree`).
+    func flatFolders() -> [(folder: Folder, depth: Int)] {
+        FolderTree.rows(library.spaceFolders, expanded: Set(library.expandedFolders))
     }
 
     func renameFolder(_ id: String, _ name: String) {

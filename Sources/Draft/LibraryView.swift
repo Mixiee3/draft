@@ -218,6 +218,7 @@ struct GalleryLayout: View {
                         ForEach(Array(docs.enumerated()).filter { $0.offset % cols == c }.map(\.element)) { m in
                             DocPreview(meta: m, height: min(380, max(200, w * 0.95 + CGFloat(m.excerpt.count) * 0.35)))
                                 .modifier(HoverLift()).modifier(DocCardMenu(meta: m))
+                                .draggable(m.id) // drop onto a folder in the rail to move it
                         }
                     }.frame(width: w)
                 }

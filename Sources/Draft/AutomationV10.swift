@@ -40,3 +40,26 @@ extension Automation {
         }
     }
 }
+
+extension Automation {
+    /// Nested folders and moving a document into one (throwaway vault): checks the model and the rail.
+    static func foldersCheck() async {
+        guard let (w, p) = trustSetup() else { return }
+        var r: [String: Any] = [:]
+        defer { writeResult(r, p + "folders-check.json") }
+        let parent = m.createFolder()
+        m.renamingFolder = nil
+        m.renameFolder(parent, "Projects")
+        let sub = m.createFolder(parentId: parent)
+        m.renamingFolder = nil
+        m.renameFolder(sub, "Draft")
+        guard let doc = m.createDoc(title: "Folder check") else { r["error"] = "no doc"; return }
+        m.flushAll()
+        m.move(doc, to: sub)
+        await wait(0.8)
+        r["rows"] = m.flatFolders().map { "\($0.folder.name)@\($0.depth)" }
+        r["docInSub"] = m.library.docs[doc]?.folderId == sub
+        r["subParentIsProjects"] = m.library.folders.first { $0.id == sub }?.parentId == parent
+        await shot(p + "folders-rail", w, settle: 0.3)
+    }
+}
