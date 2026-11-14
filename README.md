@@ -1,6 +1,6 @@
 <div align="center">
 
-<img src="docs/screenshots/document.png" alt="Draft notes app" width="920" />
+<img src="docs/assets/draft-icon.png" alt="Draft logo" width="112" />
 
 # Draft
 
@@ -20,6 +20,10 @@ A free, open-source, local-first notes app for macOS — built for writing, thin
 ![License](https://img.shields.io/badge/license-AGPL--3.0-ef6c57?style=flat-square)
 ![Status](https://img.shields.io/badge/status-early%20open%20source-8d79ff?style=flat-square)
 
+</div>
+
+<div align="center">
+  <img src="docs/assets/draft-banner.png" alt="Draft — notes that feel like yours" width="900" />
 </div>
 
 > Draft is a calm place to write first and organise later. Your notes remain plain, portable files on your Mac. No account is required, and nothing leaves your computer unless you explicitly turn on a network feature.
