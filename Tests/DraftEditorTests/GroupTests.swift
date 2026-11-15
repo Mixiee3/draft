@@ -15,6 +15,7 @@ class FakeHost: EditorHost {
     func createChildPage() -> (docId: String, title: String)? { nil }
     func pickImage(_ completion: @escaping (String?) -> Void) {}
     func storeImage(data: Data, ext: String) -> String? { nil }
+    func storeFile(data: Data, name: String, ext: String) -> (assetId: String, name: String, size: Int)? { ("0123456789abcdef0123456789abcdef.\(ext)", name, data.count) }
     func open(url: URL) {}
     func editorDidChange() {}
     func editorStateDidChange() {}

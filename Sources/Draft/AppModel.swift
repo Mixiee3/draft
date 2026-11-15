@@ -1031,6 +1031,12 @@ final class AppModel {
         } catch { toast("Could not add “\(url.lastPathComponent)”: \(error.localizedDescription)"); return nil }
     }
 
+    func storeFile(data: Data, name: String, ext: String) -> (assetId: String, name: String, size: Int)? {
+        guard data.count <= Self.maxFileBytes else { toast("“\(name)” is larger than 512 MB and was not added."); return nil }
+        do { return (try vault.putAsset(data, ext: ext), name, data.count) }
+        catch { toast("Could not add “\(name)”: \(error.localizedDescription)"); return nil }
+    }
+
     func pickFile(_ completion: @escaping ((assetId: String, name: String, size: Int)?) -> Void) {
         let p = NSOpenPanel()
         p.allowsMultipleSelection = false
@@ -1198,6 +1204,7 @@ final class EditorHostAdapter: EditorHost {
     func link(toBlock blockId: String) -> URL? { AppModel.blockLink(doc: docId, block: blockId) }
     func pickFile(_ completion: @escaping ((assetId: String, name: String, size: Int)?) -> Void) { onMain { model.pickFile(completion) } }
     func storeFile(at url: URL) -> (assetId: String, name: String, size: Int)? { onMain { model.storeFile(at: url) } }
+    func storeFile(data: Data, name: String, ext: String) -> (assetId: String, name: String, size: Int)? { onMain { model.storeFile(data: data, name: name, ext: ext) } }
     func openAttachment(assetId: String, name: String) { onMain { model.openAttachment(assetId: assetId, name: name) } }
     func moveTargets() -> [(id: String, title: String)] {
         onMain { model.moveTargets(excluding: docId).map { ($0.id, $0.title.isEmpty ? "Untitled" : $0.title) } }

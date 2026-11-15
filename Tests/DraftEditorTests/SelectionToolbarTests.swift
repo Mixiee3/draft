@@ -57,8 +57,8 @@ final class SelectionToolbarTests: XCTestCase {
         let e = NSEvent.mouseEvent(with: .rightMouseDown, location: inside, modifierFlags: [], timestamp: 0, windowNumber: window.windowNumber, context: nil, eventNumber: 0, clickCount: 1, pressure: 1)!
         let titles = c.textView.menu(for: e)!.items.map(\.title)
         XCTAssertEqual(titles.first, "Format Selection…"); XCTAssertTrue(titles.contains("Block"))
-        for gone in ["Font", "Layout Orientation", "AutoFill"] { XCTAssertFalse(titles.contains(gone), gone) }
-        XCTAssertNil(c.textView.validRequestor(forSendType: nil, returnType: .tiff), "no Continuity Camera insertion")
+        for gone in ["Font", "Layout Orientation"] { XCTAssertFalse(titles.contains(gone), gone) }
+        XCTAssertNotNil(c.textView.validRequestor(forSendType: nil, returnType: .tiff), "native camera and sketch services can insert via Draft's image handler")
         // Escape with the bar showing dismisses it and keeps the selection.
         c.textView.cancelOperation(nil)
         XCTAssertFalse(c.toolbar.isVisible); XCTAssertEqual(c.textView.selectedRange().length, 11)

@@ -10,6 +10,7 @@ public protocol EditorHost: AnyObject {
     func createChildPage() -> (docId: String, title: String)?
     func pickImage(_ completion: @escaping (String?) -> Void)
     func storeImage(data: Data, ext: String) -> String?
+    func storeFile(data: Data, name: String, ext: String) -> (assetId: String, name: String, size: Int)?
     func open(url: URL)
     func editorDidChange()
     func editorStateDidChange()

@@ -1191,6 +1191,12 @@ public final class EditorController: NSObject, NSTextStorageDelegate, NSTextView
         insertImage(assetId: id)
         return true
     }
+
+    func pasteFile(_ data: Data, name: String, ext: String) -> Bool {
+        guard let f = host?.storeFile(data: data, name: name, ext: ext) else { return false }
+        insertFile(assetId: f.assetId, name: f.name, size: f.size)
+        return true
+    }
 }
 
 extension EditorController: NSLayoutManagerDelegate {

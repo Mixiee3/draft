@@ -1,5 +1,6 @@
 import AppKit
 import DraftCore
+import UniformTypeIdentifiers
 
 public final class DraftTextView: NSTextView {
     weak var controller: EditorController?
@@ -117,14 +118,15 @@ public final class DraftTextView: NSTextView {
     /// The text's context menu starts with the Block menu.
     /// The right-click menu is for the clipboard, look-up, block structure and system services;
     /// inline formatting lives in the formatting bar, which steps aside while the menu is open.
-    /// AppKit's Font and Layout Orientation menus would bypass Draft's styles, so they are left out.
+    /// Keep useful native services while routing their returned text and attachments through Draft.
+    /// Font and Layout Orientation are omitted because they bypass Draft's style and block model.
     public override func menu(for event: NSEvent) -> NSMenu? {
         let menu = super.menu(for: event) ?? NSMenu()
         guard let c = controller else { return menu }
         let dropped: Set<String> = ["orderFrontFontPanel:", "changeLayoutOrientation:"]
         for item in menu.items.reversed() {
             let actions = ([item] + (item.submenu?.items ?? [])).compactMap { $0.action.map(NSStringFromSelector) }
-            if actions.contains(where: dropped.contains) || ["Font", "Layout Orientation", "AutoFill"].contains(item.title) { menu.removeItem(item) }
+            if actions.contains(where: dropped.contains) || ["Font", "Layout Orientation"].contains(item.title) { menu.removeItem(item) }
         }
         while let first = menu.items.first, first.isSeparatorItem { menu.removeItem(first) }
         for (k, item) in menu.items.enumerated().reversed() where k > 0 && item.isSeparatorItem && menu.items[k - 1].isSeparatorItem { menu.removeItem(item) }
@@ -152,12 +154,6 @@ public final class DraftTextView: NSTextView {
         controller?.toolbar.suspended = true; controller?.toolbar.update()
         super.rightMouseDown(with: event)
         controller?.toolbar.suspended = false; controller?.toolbar.update()
-    }
-
-    /// No Continuity Camera or sketch insertion: images come in through Draft's own image block.
-    public override func validRequestor(forSendType sendType: NSPasteboard.PasteboardType?, returnType: NSPasteboard.PasteboardType?) -> Any? {
-        if let r = returnType, [.png, .tiff, NSPasteboard.PasteboardType("public.image"), NSPasteboard.PasteboardType("public.jpeg")].contains(r) { return nil }
-        return super.validRequestor(forSendType: sendType, returnType: returnType)
     }
 
     /// Printing / Save as PDF: start a new page at every page-break block.
@@ -243,7 +239,17 @@ public final class DraftTextView: NSTextView {
         return super.writeSelection(to: pboard, type: type)
     }
 
-    public override var readablePasteboardTypes: [NSPasteboard.PasteboardType] { [EditorController.pasteboardType, .fileURL, .rtf, .html, .png, .tiff, .string] }
+    private static let imagePasteboardTypes: [NSPasteboard.PasteboardType] = [
+        NSPasteboard.PasteboardType(UTType.image.identifier),
+        NSPasteboard.PasteboardType(UTType.png.identifier),
+        NSPasteboard.PasteboardType(UTType.jpeg.identifier),
+        NSPasteboard.PasteboardType(UTType.heic.identifier),
+    ]
+    private static let pdfPasteboardType = NSPasteboard.PasteboardType(UTType.pdf.identifier)
+
+    public override var readablePasteboardTypes: [NSPasteboard.PasteboardType] {
+        [EditorController.pasteboardType, .fileURL, .rtf, .html, .png, .tiff] + Self.imagePasteboardTypes + [Self.pdfPasteboardType, .string]
+    }
 
     public override func readSelection(from pboard: NSPasteboard, type: NSPasteboard.PasteboardType) -> Bool {
         guard let c = controller else { return super.readSelection(from: pboard, type: type) }
@@ -254,6 +260,8 @@ public final class DraftTextView: NSTextView {
             if let d = pboard.data(forType: .png) { return c.pasteImage(d, ext: "png") }
         case .tiff:
             if let d = pboard.data(forType: .tiff), let rep = NSBitmapImageRep(data: d), let png = rep.representation(using: .png, properties: [:]) { return c.pasteImage(png, ext: "png") }
+        case Self.pdfPasteboardType:
+            if let d = pboard.data(forType: Self.pdfPasteboardType) { return c.pasteFile(d, name: "Scanned Document.pdf", ext: "pdf") }
         case .fileURL:
             if let urls = pboard.readObjects(forClasses: [NSURL.self], options: [.urlReadingFileURLsOnly: true]) as? [URL], !urls.isEmpty { return c.insertFiles(urls) }
         case .rtf, .html:
@@ -263,7 +271,12 @@ public final class DraftTextView: NSTextView {
             }
         case .string:
             if let s = pboard.string(forType: .string) { c.pastePlain(s); return true }
-        default: break
+        default:
+            if Self.imagePasteboardTypes.contains(type), let d = pboard.data(forType: type) {
+                if let ext = UTType(type.rawValue)?.preferredFilenameExtension { return c.pasteImage(d, ext: ext) }
+                guard let rep = NSBitmapImageRep(data: d), let png = rep.representation(using: .png, properties: [:]) else { return false }
+                return c.pasteImage(png, ext: "png")
+            }
         }
         return super.readSelection(from: pboard, type: type)
     }
@@ -271,7 +284,9 @@ public final class DraftTextView: NSTextView {
     public override func preferredPasteboardType(from availableTypes: [NSPasteboard.PasteboardType], restrictedToTypesFrom allowedTypes: [NSPasteboard.PasteboardType]?) -> NSPasteboard.PasteboardType? {
         for t in readablePasteboardTypes where availableTypes.contains(t) {
             // Prefer images only when there is no text alongside (e.g. a screenshot).
-            if (t == .png || t == .tiff) && availableTypes.contains(.string) { continue }
+            if Self.imagePasteboardTypes.contains(t) || t == .png || t == .tiff {
+                if availableTypes.contains(.string) { continue }
+            }
             return t
         }
         return super.preferredPasteboardType(from: availableTypes, restrictedToTypesFrom: allowedTypes)
