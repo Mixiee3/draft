@@ -32,8 +32,11 @@ The app trusts one thing: the Ed25519 **release public key** in its Info.plist (
    same Team ID as the running app, and a development build is refused over stable or beta.
 5. **Install:** a detached script waits for Draft to quit, moves the old app to
    `~/Library/Application Support/Draft/Updates/previous`, copies the new one, verifies its signature,
-   and relaunches it. If the new app doesn't write its `launched-<build>` marker within 40 s, the old
-   app is put back and the next launch says so.
+   and relaunches it. A protected location such as `/Applications` triggers macOS authorization.
+   Cancelling or a failed move/install keeps or restores the old app and reports the problem on the
+   next launch. If the new app doesn't write its `launched-<build>` marker within 40 s, the old app
+   is put back and the next launch says so. Diagnostics are in
+   `~/Library/Application Support/Draft/Updates/install.log` and `~/Library/Logs/Draft/draft.log`.
 
 HTTPS protects privacy in transit; the signatures protect integrity even if the server or the
 connection is compromised. A stolen release key is the main risk: keep it offline (see RELEASE.md).
@@ -82,11 +85,11 @@ release can't be used (it needs authentication the app must not carry). Corrupte
 cases are tested locally (level 1), not on the hosted feed. Downloads report progress through a native
 download task; a byte-by-byte loop was too slow for a 14 MB archive and was replaced.
 
-## Where the update feed lives (as of 0.11.4)
+## Where the update feed lives (as of 0.11.5)
 
 - The signed feed is `feed.json` on the `preview` release of the public repo `Mixiee3/draft-updates`.
   Public installs read this address because it is baked into each build (`DraftUpdateFeedURL`).
-- Each update archive is a public release asset of `Mixiee3/draft` (for example `v0.11.4/Draft-0.11.4.zip`).
+- Each update archive is a public release asset of `Mixiee3/draft` (for example `v0.11.5/Draft-0.11.5.zip`).
   Its item in the feed has an HTTPS URL to that asset.
 - To publish a new version: build with `scripts/release.sh`, add its `feed-item.json` (with the archive URL)
   to the feed, sign the feed with `scripts/update-tool.swift feed`, and upload it with `gh release upload --clobber`.

@@ -180,35 +180,82 @@ final class UpdateController {
         try fm.createDirectory(at: workDir, withIntermediateDirectories: true)
         let backup = workDir.appendingPathComponent("previous", isDirectory: true)
         let marker = workDir.appendingPathComponent("launched-\(item.build)")
+        let failedMarker = workDir.appendingPathComponent("install-failed")
         try? fm.removeItem(at: marker)
-        let launch = testMode ? (env["DRAFT_UPDATE_LAUNCH"] ?? "true") : "/usr/bin/open \"$DEST\""
+        try? fm.removeItem(at: failedMarker)
+        let launch = testMode ? (env["DRAFT_UPDATE_LAUNCH"] ?? "true") : "open_app \"$DEST\""
+        let team = teamID(destination) ?? ""
+        let ownerUID = (try? fm.attributesOfItem(atPath: NSHomeDirectory())[.ownerAccountID] as? NSNumber)?.stringValue ?? ""
         let script = """
         #!/bin/bash
         # Draft updater: replace the app after it quits; roll back if the new one doesn't start.
-        PID=\(ProcessInfo.processInfo.processIdentifier); NEW="\(staged.path)"; DEST="\(destination.path)"; BACKUP="\(backup.path)"; MARKER="\(marker.path)"; LOG="\(workDir.appendingPathComponent("install.log").path)"
+        PID=\(ProcessInfo.processInfo.processIdentifier); NEW="\(staged.path)"; DEST="\(destination.path)"; BACKUP="\(backup.path)"; MARKER="\(marker.path)"; FAILED="\(failedMarker.path)"; LOG="\(workDir.appendingPathComponent("install.log").path)"; TEAM="\(team)"; OWNER_UID="\(ownerUID)"
         exec >>"$LOG" 2>&1; echo "$(date) install \(item.version) (\(item.build)) relaunch=\(relaunch ? 1 : 0)"
-        for i in $(seq 1 600); do kill -0 $PID 2>/dev/null || break; sleep 0.1; done
-        rm -rf "$BACKUP"; mkdir -p "$BACKUP"
-        mv "$DEST" "$BACKUP/Draft.app" || { echo "could not move the old app"; exit 1; }
+        open_app() {
+          if [ "$(/usr/bin/id -u)" = "0" ]; then
+            CONSOLE_UID=$(/usr/bin/stat -f '%u' /dev/console)
+            /bin/launchctl asuser "$CONSOLE_UID" /usr/bin/open "$1"
+          else /usr/bin/open "$1"; fi
+        }
+        fix_owner() { if [ -n "$OWNER_UID" ]; then /usr/sbin/chown "$OWNER_UID" "$LOG" "$FAILED" "\(workDir.appendingPathComponent("rolled-back").path)" 2>/dev/null || true; fi; }
+        fail() { echo "INSTALL FAILED: $*"; touch "$FAILED"; fix_owner; if [ -d "$DEST" ]; then open_app "$DEST" >/dev/null 2>&1 || true; fi; exit 1; }
+        for i in $(seq 1 600); do kill -0 "$PID" 2>/dev/null || break; sleep 0.1; done
+        if kill -0 "$PID" 2>/dev/null; then fail "Draft did not quit within 60 seconds"; fi
+        rm -rf "$BACKUP"; mkdir -p "$BACKUP" || fail "could not create backup folder: $BACKUP"
+        mv "$DEST" "$BACKUP/Draft.app" || fail "could not move the old app (check folder permissions)"
         if ! /usr/bin/ditto "$NEW" "$DEST" || ! /usr/bin/codesign --verify --deep --strict "$DEST"; then
-          echo "install failed, rolling back"; rm -rf "$DEST"; mv "$BACKUP/Draft.app" "$DEST"; touch "\(workDir.appendingPathComponent("rolled-back").path)"; exit 1
+          echo "install failed, rolling back"; rm -rf "$DEST"; mv "$BACKUP/Draft.app" "$DEST" || fail "install failed and rollback could not restore the old app"; touch "\(workDir.appendingPathComponent("rolled-back").path)"; touch "$FAILED"; fix_owner; open_app "$DEST" >/dev/null 2>&1 || true; exit 1
         fi
+        if [ -n "$TEAM" ]; then NEW_TEAM=$(/usr/bin/codesign -dv "$DEST" 2>&1 | /usr/bin/sed -n 's/^TeamIdentifier=//p'); [ "$NEW_TEAM" = "$TEAM" ] || { rm -rf "$DEST"; mv "$BACKUP/Draft.app" "$DEST" || fail "signing check failed and rollback could not restore the old app"; fail "the installed app's signing team changed"; }; fi
+        # The archive and app have both passed Draft's cryptographic and code-signature checks.
+        # Remove download quarantine from this verified copy so Gatekeeper does not block an
+        # otherwise valid, explicitly user-approved in-app update on a non-notarized build.
+        /usr/bin/xattr -dr com.apple.quarantine "$DEST" 2>/dev/null || true
         if [ \(relaunch ? 1 : 0) = 1 ]; then
           \(launch) &
           for i in $(seq 1 \(testMode ? 200 : 400)); do [ -f "$MARKER" ] && break; sleep 0.1; done
           if [ ! -f "$MARKER" ]; then
-            echo "new app did not start, rolling back"; pkill -f "$DEST/Contents/MacOS/Draft"; rm -rf "$DEST"; mv "$BACKUP/Draft.app" "$DEST"
+            echo "new app did not start, rolling back"; pkill -f "$DEST/Contents/MacOS/Draft"; rm -rf "$DEST"; mv "$BACKUP/Draft.app" "$DEST" || fail "new app did not start and rollback could not restore the old app"
             touch "\(workDir.appendingPathComponent("rolled-back").path)"
-            \(testMode ? "" : "/usr/bin/open \"$DEST\"")
+            touch "$FAILED"
+            fix_owner
+            \(testMode ? "" : "open_app \"$DEST\"")
             exit 1
           fi
         fi
         echo "installed"
+        fix_owner
         """
         let url = workDir.appendingPathComponent("install.sh")
         try script.write(to: url, atomically: true, encoding: .utf8)
         try fm.setAttributes([.posixPermissions: 0o700], ofItemAtPath: url.path)
-        let p = Process(); p.executableURL = URL(fileURLWithPath: "/bin/bash"); p.arguments = [url.path]
+        let parent = destination.deletingLastPathComponent().path
+        let needsAuthorization = !fm.isWritableFile(atPath: parent) && !testMode
+        var commandURL = url
+        if needsAuthorization {
+            // A small unprivileged supervisor keeps the old version available if the user cancels
+            // the macOS authorization prompt. The privileged script re-verifies the code signature.
+            let appleScriptPath = url.path.replacingOccurrences(of: "\\", with: "\\\\").replacingOccurrences(of: "\"", with: "\\\"")
+            let supervisor = """
+            #!/bin/bash
+            PID=\(ProcessInfo.processInfo.processIdentifier)
+            /usr/bin/osascript <<'APPLESCRIPT'
+            do shell script "/bin/bash " & quoted form of "\(appleScriptPath)" with administrator privileges
+            APPLESCRIPT
+            STATUS=$?
+            if [ "$STATUS" -ne 0 ]; then
+              for i in $(seq 1 600); do kill -0 "$PID" 2>/dev/null || break; sleep 0.1; done
+              echo "$(date) authorization cancelled or privileged install failed (status $STATUS)" >> "\(workDir.appendingPathComponent("install.log").path)"
+              touch "\(failedMarker.path)"
+              /usr/bin/open "\(destination.path)" >/dev/null 2>&1 || true
+            fi
+            """
+            let supervisorURL = workDir.appendingPathComponent("install-supervisor.sh")
+            try supervisor.write(to: supervisorURL, atomically: true, encoding: .utf8)
+            try fm.setAttributes([.posixPermissions: 0o700], ofItemAtPath: supervisorURL.path)
+            commandURL = supervisorURL
+        }
+        let p = Process(); p.executableURL = URL(fileURLWithPath: "/bin/bash"); p.arguments = [commandURL.path]
         p.environment = ProcessInfo.processInfo.environment.filter { !$0.key.hasPrefix("DRAFT_AUTOMATION") }
         try p.run() // detached: keeps running after Draft quits
         phase = .installing
@@ -229,6 +276,11 @@ final class UpdateController {
         fm.createFile(atPath: workDir.appendingPathComponent("launched-\(build)").path, contents: Data(version.utf8))
         let rb = workDir.appendingPathComponent("rolled-back")
         if fm.fileExists(atPath: rb.path) { try? fm.removeItem(at: rb); return String(localized: "The last update couldn't start, so Draft put the previous version back. Your notes weren't touched.") }
+        let failed = workDir.appendingPathComponent("install-failed")
+        if fm.fileExists(atPath: failed.path) {
+            try? fm.removeItem(at: failed)
+            return String(localized: "The last update could not be installed. Draft kept your previous version and your notes are unchanged. Open Settings › Updates to try again. Details are in ~/Library/Application Support/Draft/Updates/install.log.")
+        }
         return nil
     }
 }

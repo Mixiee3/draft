@@ -44,7 +44,10 @@ scripts/release.sh
    `feed-item.json` (signed by the update key) and `SHA256SUMS`.
 5. Runs `scripts/verify-release.sh`: deep strict signature, hardened runtime, entitlements, Gatekeeper,
    stapled ticket, semantic version, archive integrity.
-6. Publish: add `feed-item.json` to the channel's items list, then
+6. Creates `Draft-<version>.dmg`, a drag-to-Applications disk image with a shortcut and install
+   instructions. `llama.framework` and the app resources are already bundled; no separate runtime
+   download is needed.
+7. Publish: add `feed-item.json` to the channel's items list, then
    `swift scripts/update-tool.swift feed <key> items.json > feed.json`, upload the archive, then the feed.
 
 `SIGN_IDENTITY` is required: ad hoc is refused because the hardened runtime only loads `llama.framework`
@@ -52,7 +55,7 @@ when it carries the same Team ID as the app. An Apple Development identity works
 Without `NOTARY_PROFILE` the build is not notarized;
 the script says `NOT NOTARIZED` and writes `NOT-NOTARIZED.txt` so such a build is never mistaken for a release.
 
-## Current state (v0.10.0)
+## Current state (v0.11.5)
 
 This Mac has only an Apple Development certificate, not Developer ID, and no notary credentials, so
 releases made here are signed with that identity and the hardened runtime, run on this Mac, and are **not notarized**. Notarization

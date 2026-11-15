@@ -38,11 +38,13 @@ if [ -n "${NOTARY_PROFILE:-}" ]; then
 else
   echo "NOT NOTARIZED: set SIGN_IDENTITY (Developer ID) and NOTARY_PROFILE for a distributable build." | tee "$OUT/NOT-NOTARIZED.txt"
 fi
+DMG=$OUT/Draft-$VERSION.dmg
+scripts/make-dmg.sh "$APP" "$VERSION" "$DMG"
 cp "Release/notes/$VERSION.md" "$OUT/release-notes.md" 2>/dev/null || echo "# Draft $VERSION" > "$OUT/release-notes.md"
 if [ -n "${UPDATE_KEY:-}" ]; then
   LIB=$(grep -o 'librarySchemaVersion = [0-9]*' Sources/DraftCore/Model.swift | grep -o '[0-9]*$'); DOC=$(grep -o 'docSchemaVersion = [0-9]*' Sources/DraftCore/Model.swift | grep -o '[0-9]*$')
   swift scripts/update-tool.swift item "$UPDATE_KEY" "$ZIP" "$VERSION" "$BUILD" "$CHANNEL" "${UPDATE_BASE_URL:-https://example.invalid}/Draft-$VERSION.zip" "$OUT/release-notes.md" "$LIB" "$DOC" > "$OUT/feed-item.json"
 fi
-(cd "$OUT" && shasum -a 256 "Draft-$VERSION.zip" > SHA256SUMS)
+(cd "$OUT" && shasum -a 256 "Draft-$VERSION.zip" "Draft-$VERSION.dmg" > SHA256SUMS)
 scripts/verify-release.sh "$APP" "$ZIP"
 echo "release in $OUT"
