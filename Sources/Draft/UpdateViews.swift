@@ -107,7 +107,10 @@ struct UpdateSheet: View {
                             }
                         }.frame(maxWidth: .infinity, alignment: .leading)
                     }
-                    .frame(maxHeight: 160)
+                    // A vertical ScrollView has no useful intrinsic height inside this sheet's
+                    // VStack and can collapse to zero. Give it a real viewport so release notes
+                    // render; longer lists remain scrollable within the card.
+                    .frame(height: min(160, max(28, CGFloat(item.notes.count) * 28)))
                 }
                 .padding(DS.s3)
                 .background(RoundedRectangle(cornerRadius: DS.rCard, style: .continuous).fill(t.card.opacity(t.dark ? 0.55 : 1)))

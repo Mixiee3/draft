@@ -82,11 +82,11 @@ release can't be used (it needs authentication the app must not carry). Corrupte
 cases are tested locally (level 1), not on the hosted feed. Downloads report progress through a native
 download task; a byte-by-byte loop was too slow for a 14 MB archive and was replaced.
 
-## Where the update feed lives (as of 0.11.3)
+## Where the update feed lives (as of 0.11.4)
 
 - The signed feed is `feed.json` on the `preview` release of the public repo `Mixiee3/draft-updates`.
   Public installs read this address because it is baked into each build (`DraftUpdateFeedURL`).
-- Each update archive is a public release asset of `Mixiee3/draft` (for example `v0.11.3/Draft-0.11.3.zip`).
+- Each update archive is a public release asset of `Mixiee3/draft` (for example `v0.11.4/Draft-0.11.4.zip`).
   Its item in the feed has an HTTPS URL to that asset.
 - To publish a new version: build with `scripts/release.sh`, add its `feed-item.json` (with the archive URL)
   to the feed, sign the feed with `scripts/update-tool.swift feed`, and upload it with `gh release upload --clobber`.
