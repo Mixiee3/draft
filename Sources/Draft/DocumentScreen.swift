@@ -57,6 +57,18 @@ struct DocumentScreen: View {
                                 Button { if let c = model.activeController { cmd.run(c) } } label: {
                                     Label(cmd.plannedFor.map { "\(loc(cmd.title)) — \(loc("planned")) \($0)" } ?? loc(cmd.title), systemImage: cmd.symbol)
                                 }.disabled(cmd.plannedFor != nil)
+                                if cmd.id == "insert.divider" {
+                                    Menu {
+                                        ForEach(["line", "strong", "dotted", "dots", "wave", "tape"], id: \.self) { variant in
+                                            Button { model.activeController?.insertDivider(variant: variant) } label: {
+                                                HStack(spacing: 8) {
+                                                    SeparatorPreview(kind: variant).frame(width: 64, height: 16)
+                                                    Text(variant.capitalized)
+                                                }
+                                            }
+                                        }
+                                    } label: { Label("Choose separator style…", systemImage: "line.3.horizontal") }
+                                }
                             }
                         }
                     }
@@ -109,6 +121,35 @@ struct DocumentScreen: View {
 
     func toggle(_ p: Panel) {
         withAnimation(Motion.panel(model.library.settings.reduceMotion)) { model.panel = model.panel == p ? nil : p }
+    }
+}
+
+private struct SeparatorPreview: View {
+    let kind: String
+    var body: some View {
+        GeometryReader { g in
+            let mid = g.size.height / 2
+            ZStack {
+                switch kind {
+                case "tape":
+                    RoundedRectangle(cornerRadius: 2).fill(Color.accentColor.opacity(0.35)).frame(width: g.size.width * 0.72, height: 9).rotationEffect(.degrees(-3))
+                case "wave":
+                    Path { p in
+                        p.move(to: CGPoint(x: 0, y: mid))
+                        for i in 0..<4 {
+                            let x = CGFloat(i) * g.size.width / 4
+                            p.addCurve(to: CGPoint(x: x + g.size.width / 4, y: mid), control1: CGPoint(x: x + g.size.width / 16, y: mid - 4), control2: CGPoint(x: x + g.size.width * 3 / 16, y: mid + 4))
+                        }
+                    }.stroke(Color.accentColor, lineWidth: 1.5)
+                case "dots":
+                    HStack(spacing: 8) { ForEach(0..<3) { _ in Circle().fill(Color.primary.opacity(0.7)).frame(width: 4, height: 4) } }
+                case "dotted":
+                    HStack(spacing: 3) { ForEach(0..<13) { _ in Circle().fill(Color.primary.opacity(0.55)).frame(width: 2, height: 2) } }
+                default:
+                    Rectangle().fill(Color.primary.opacity(kind == "strong" ? 0.7 : 0.4)).frame(height: kind == "strong" ? 3 : 1)
+                }
+            }.frame(width: g.size.width, height: g.size.height)
+        }
     }
 }
 

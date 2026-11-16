@@ -59,7 +59,7 @@ struct RailView: View {
 
 struct RailRow: View {
     @Environment(\.tokens) var t
-    var icon: String
+    var icon: String?
     var title: LocalizedStringKey
     var isSelected = false
     var indent: CGFloat = 0
@@ -71,7 +71,9 @@ struct RailRow: View {
     @State private var hover = false
     @ViewBuilder var rowContent: some View {
         let row = HStack(spacing: 8) {
-            Image(systemName: icon).font(.system(size: DS.body)).frame(width: 18).foregroundStyle(tint ?? t.secondary)
+            if let icon {
+                Image(systemName: icon).font(.system(size: DS.body)).frame(width: 18).foregroundStyle(tint ?? t.secondary)
+            }
             Text(title).font(.system(size: DS.body)).lineLimit(1).foregroundStyle(t.text)
             Spacer(minLength: 0)
             trailing
@@ -277,6 +279,8 @@ struct VaultCard: View {
 struct DocumentRail: View {
     @Environment(AppModel.self) var model
     @Environment(\.tokens) var t
+    @State private var hoveredTab: DocRailTab?
+    @Namespace private var railGlass
     let docId: String
 
     var body: some View {
@@ -295,23 +299,82 @@ struct DocumentRail: View {
                 }
             }.padding(.horizontal, 14).padding(.bottom, 12)
 
-            HStack(spacing: 2) {
-                ForEach([(DocRailTab.outline, "list.bullet", "Outline"), (.backlinks, "arrow.uturn.backward", "Backlinks"), (.tasks, "checkmark.circle", "Tasks"), (.attachments, "paperclip", "Attachments"), (.find, "doc.text.magnifyingglass", "Find in Page (⌘F)")], id: \.0) { tab, icon, label in
-                    let on = model.docRailTab == tab
-                    Button { model.docRailTab = tab } label: {
-                        Image(systemName: icon).font(.system(size: DS.body, weight: .medium))
-                            .frame(maxWidth: .infinity, minHeight: 26)
-                            .background(Capsule(style: .continuous).fill(on ? (t.dark ? Color.white.opacity(0.16) : Color.white) : .clear).shadow(color: .black.opacity(on && !t.dark ? 0.08 : 0), radius: 2, y: 1))
-                            .contentShape(Capsule())
+            if #available(macOS 26.0, *) {
+            GlassEffectContainer(spacing: 3) {
+                GeometryReader { proxy in
+                    HStack(spacing: 2) {
+                        ForEach([(DocRailTab.outline, "list.bullet", "Outline"), (.backlinks, "arrow.uturn.backward", "Backlinks"), (.tasks, "checkmark.circle", "Tasks"), (.attachments, "paperclip", "Attachments"), (.find, "doc.text.magnifyingglass", "Find in Page (⌘F)")], id: \.0) { tab, icon, label in
+                            let on = model.docRailTab == tab
+                            let glassHere = (hoveredTab ?? model.docRailTab) == tab
+                            Button { withAnimation(.smooth(duration: 0.2)) { model.docRailTab = tab } } label: {
+                                Image(systemName: icon).font(.system(size: DS.body, weight: .medium))
+                                    .frame(maxWidth: .infinity, minHeight: 26)
+                                    .background {
+                                        if glassHere {
+                                            Capsule(style: .continuous)
+                                                // Keep the live refraction, but
+                                                // provide a small adaptive tint
+                                                // so the selected symbol remains
+                                                // legible over the dark rail.
+                                                .fill(t.dark ? .white.opacity(0.10) : .white.opacity(0.62))
+                                                .glassEffect(.regular.interactive(), in: Capsule())
+                                                .glassEffectID("document-rail-selection", in: railGlass)
+                                        }
+                                    }
+                                    .contentShape(Capsule())
+                            }
+                            .buttonStyle(.plain)
+                            .foregroundStyle(on ? (t.dark ? .white : t.text) : t.secondary)
+                            .opacity(on ? 1 : 0.92)
+                            .onHover { inside in
+                                withAnimation(.smooth(duration: 0.2)) {
+                                    hoveredTab = inside ? tab : (hoveredTab == tab ? nil : hoveredTab)
+                                }
+                            }
+                            .help(loc(label)).accessibilityLabel(loc(label)).accessibilityAddTraits(on ? .isSelected : [])
+                        }
                     }
-                    .buttonStyle(.plain).foregroundStyle(on ? t.text : t.secondary)
-                    .help(loc(label)).accessibilityLabel(loc(label)).accessibilityAddTraits(on ? .isSelected : [])
+                    .padding(3)
+                    // SwiftUI hover tracking stops being reliable while the
+                    // mouse button is held. Tracking the whole rail lets users
+                    // press and slide across tabs, like Craft's liquid selector.
+                    .contentShape(Rectangle())
+                    // Use a simultaneous gesture so the tab buttons retain their normal
+                    // click/accessibility behavior while a press can still slide across
+                    // the rail and hand off selection to the tab under the pointer.
+                    .simultaneousGesture(DragGesture(minimumDistance: 0).onChanged { value in
+                        let tabIndex = min(max(Int(value.location.x / max(proxy.size.width / 5, 1)), 0), 4)
+                        let tab = [DocRailTab.outline, .backlinks, .tasks, .attachments, .find][tabIndex]
+                        withAnimation(.smooth(duration: 0.16)) {
+                            hoveredTab = tab
+                            model.docRailTab = tab
+                        }
+                    }.onEnded { _ in
+                        withAnimation(.smooth(duration: 0.16)) { hoveredTab = nil }
+                    })
                 }
+                .frame(height: 32)
             }
-            .padding(3)
-            .background(Capsule(style: .continuous).fill(t.dark ? Color.white.opacity(0.06) : Color.black.opacity(0.06)))
             .padding(.horizontal, 12).padding(.bottom, 12)
             .accessibilityElement(children: .contain).accessibilityLabel("Document sidebar pane")
+            } else {
+                HStack(spacing: 2) {
+                    ForEach([(DocRailTab.outline, "list.bullet", "Outline"), (.backlinks, "arrow.uturn.backward", "Backlinks"), (.tasks, "checkmark.circle", "Tasks"), (.attachments, "paperclip", "Attachments"), (.find, "doc.text.magnifyingglass", "Find in Page (⌘F)")], id: \.0) { tab, icon, label in
+                        let on = model.docRailTab == tab
+                        Button { model.docRailTab = tab } label: {
+                            Image(systemName: icon).font(.system(size: DS.body, weight: .medium))
+                                .frame(maxWidth: .infinity, minHeight: 26)
+                        .background(Capsule().fill(on ? (t.dark ? Color.white.opacity(0.14) : Color.white.opacity(0.78)) : .clear))
+                        }
+                        .buttonStyle(.plain).foregroundStyle(on ? t.text : t.secondary)
+                        .help(loc(label)).accessibilityLabel(loc(label)).accessibilityAddTraits(on ? .isSelected : [])
+                    }
+                }
+                .padding(3)
+                .background(Capsule().fill(t.dark ? Color.white.opacity(0.06) : Color.black.opacity(0.06)))
+                .padding(.horizontal, 12).padding(.bottom, 12)
+                .accessibilityElement(children: .contain).accessibilityLabel("Document sidebar pane")
+            }
 
             switch model.docRailTab {
             case .outline: OutlinePane(docId: docId, content: content)
@@ -361,7 +424,7 @@ struct OutlinePane: View {
         ScrollView {
             LazyVStack(alignment: .leading, spacing: 1) {
                 ForEach(items) { it in
-                    RailRow(icon: it.kind == "page" ? "doc.text" : "number", title: LocalizedStringKey(it.text), indent: CGFloat(it.kind == "page" ? 8 : (it.level - 1) * 12)) {
+                    RailRow(icon: it.kind == "page" ? "doc.text" : nil, title: LocalizedStringKey(it.text), indent: CGFloat(it.kind == "page" ? 8 : (it.level - 1) * 12)) {
                         if it.kind == "page", let d = it.docId { model.openView(.doc(d), inPlace: true) }
                         else { model.editors[docId]?.controller.scrollTo(blockId: it.id) }
                     }

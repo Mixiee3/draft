@@ -171,7 +171,7 @@ public final class DraftLayoutManager: NSLayoutManager {
             }
             if selectedBlockIds().contains(b.id) {
                 let bg = NSRect(x: origin.x - 8, y: r.minY - 3, width: width + 16, height: r.height + 6)
-                theme.accentColor.withAlphaComponent(theme.isDarkPage ? 0.3 : 0.14).setFill()
+                theme.text.withAlphaComponent(theme.isDarkPage ? 0.10 : 0.07).setFill()
                 NSBezierPath(roundedRect: bg, xRadius: 8, yRadius: 8).fill()
             }
             if b.decoration == "focus" {
@@ -190,9 +190,25 @@ public final class DraftLayoutManager: NSLayoutManager {
     private func drawEffect(_ d: String, _ b: BlockInfo, pr: NSRange, rect r: NSRect, origin: NSPoint, width: CGFloat) {
         let tint = b.blockColor.map { NSColor(hex: $0) } ?? theme.accentColor
         let dark = theme.isDarkPage
-        if d == "accent" && b.kind == .heading {
-            let line = NSRect(x: origin.x, y: r.maxY - 2, width: min(width, 64), height: 3)
-            tint.setFill(); NSBezierPath(roundedRect: line, xRadius: 1.5, yRadius: 1.5).fill()
+        // Accent is a text treatment, not a block container.  Keep it consistent for
+        // headings, paragraphs, and list items: a short underline under the final line
+        // of the block.  The old paragraph path fell through to the default effect and
+        // painted a rounded fill/stroke around the whole paragraph.
+        if d == "accent" {
+            let contentRange = NSRange(
+                location: pr.location,
+                length: max(0, pr.length - (NSMaxRange(pr) > pr.location &&
+                    (textStorage?.string as NSString?)?.character(at: NSMaxRange(pr) - 1) == 10 ? 1 : 0))
+            )
+            let gr = glyphRange(forCharacterRange: contentRange, actualCharacterRange: nil)
+            if gr.length > 0 {
+                let lastGlyph = NSMaxRange(gr) - 1
+                let used = lineFragmentUsedRect(forGlyphAt: lastGlyph, effectiveRange: nil)
+                let x = origin.x + used.minX
+                let lineWidth = min(max(32, used.width), max(32, width - max(0, used.minX)))
+                let line = NSRect(x: x, y: r.maxY - 2, width: lineWidth, height: 3)
+                tint.setFill(); NSBezierPath(roundedRect: line, xRadius: 1.5, yRadius: 1.5).fill()
+            }
             return
         }
         // Line fragments carry paragraph spacing unevenly (none after the last paragraph), so the
@@ -218,11 +234,22 @@ public final class DraftLayoutManager: NSLayoutManager {
             (dark ? NSColor.white.withAlphaComponent(0.18) : theme.text.withAlphaComponent(solid ? 0.25 : 0.1)).setStroke()
             path.lineWidth = solid ? 1 : 0.5; path.stroke()
         case "glow":
-            NSGraphicsContext.saveGraphicsState()
-            if !theme.plainEffects { let sh = NSShadow(); sh.shadowColor = tint.withAlphaComponent(dark ? 0.7 : 0.45); sh.shadowBlurRadius = 10; sh.set() }
-            tint.withAlphaComponent(dark ? 0.16 : 0.07).setFill(); path.fill()
-            NSGraphicsContext.restoreGraphicsState()
-            tint.withAlphaComponent(0.6).setStroke(); path.lineWidth = 1; path.stroke()
+            // Glow is an edge treatment, not another outlined card. Use a nearly
+            // invisible source stroke and let the shadow provide the halo; drawing
+            // multiple visible strokes made the effect read as a pink rectangle.
+            if !theme.plainEffects {
+                NSGraphicsContext.saveGraphicsState()
+                let shadow = NSShadow()
+                shadow.shadowColor = tint.withAlphaComponent(dark ? 0.52 : 0.34)
+                shadow.shadowBlurRadius = 9
+                shadow.shadowOffset = .zero
+                shadow.set()
+                tint.withAlphaComponent(0.025).setStroke()
+                path.lineWidth = 1
+                path.stroke()
+                NSGraphicsContext.restoreGraphicsState()
+            }
+            // Keep the center transparent: Glow should read as light around the block.
         default: // accent
             tint.withAlphaComponent(dark ? 0.08 : 0.04).setFill(); path.fill()
             tint.setStroke(); path.lineWidth = 1.5; path.stroke()

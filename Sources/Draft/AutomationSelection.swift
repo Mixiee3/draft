@@ -31,7 +31,7 @@ extension Automation {
         }
         func post(_ type: NSEvent.EventType, _ pt: NSPoint, clicks: Int = 1, flags: NSEvent.ModifierFlags = []) {
             if let e = NSEvent.mouseEvent(with: type, location: pt, modifierFlags: flags, timestamp: ProcessInfo.processInfo.systemUptime, windowNumber: w.windowNumber,
-                                          context: nil, eventNumber: 0, clickCount: clicks, pressure: [.leftMouseUp, .rightMouseUp].contains(type) ? 0 : 1) { NSApp.postEvent(e, atStart: false) }
+                                          context: nil, eventNumber: 0, clickCount: clicks, pressure: [.leftMouseUp, .rightMouseUp].contains(type) ? 0 : 1) { w.sendEvent(e) }
         }
         func key(_ code: UInt16, _ chars: String, flags: NSEvent.ModifierFlags = []) {
             for t in [NSEvent.EventType.keyDown, .keyUp] {
@@ -44,14 +44,15 @@ extension Automation {
         func record(_ name: String) async {
             await wait(0.45)
             let tb = c.toolbar
-            guard tb.isVisible, let host = tb.superview else { r[name] = "hidden"; await shot(p + "sel-" + name, w, settle: 0); return }
-            let inside = host.visibleRect.insetBy(dx: -1, dy: -1).contains(tb.frame)
+            guard tb.isVisible, let host = tb.presentationView.superview else { r[name] = "hidden"; await shot(p + "sel-" + name, w, settle: 0); return }
+            let toolbarFrame = tb.presentationView.frame
+            let inside = host.visibleRect.insetBy(dx: -1, dy: -1).contains(toolbarFrame)
             let sel = c.textView.selectedRange()
             let gr = c.layout.glyphRange(forCharacterRange: sel, actualCharacterRange: nil)
             var covers = false
             c.layout.enumerateEnclosingRects(forGlyphRange: gr, withinSelectedGlyphRange: gr, in: c.container) { rr, _ in
                 let o = c.textView.textContainerOrigin
-                if c.textView.convert(rr.offsetBy(dx: o.x, dy: o.y), to: host).intersects(tb.frame) { covers = true }
+                if c.textView.convert(rr.offsetBy(dx: o.x, dy: o.y), to: host).intersects(toolbarFrame) { covers = true }
             }
             r[name] = "\(inside ? "inside" : "OUTSIDE") \(covers ? "COVERS-SELECTION" : "clear") mode=\(tb.modeName) items=\(tb.buttonLabels.count) w=\(Int(tb.frame.width))"
             await shot(p + "sel-" + name, w, settle: 0)

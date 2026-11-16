@@ -55,6 +55,26 @@ final class TextEffectTests: XCTestCase {
 }
 
 final class BlockEffectTests: XCTestCase {
+    func testRemovingBlockColorDoesNotLeaveAnImplicitBox() {
+        let view = DocumentEditorView(frame: NSRect(x: 0, y: 0, width: 900, height: 700))
+        let window = NSWindow(contentRect: view.frame, styleMask: [.titled], backing: .buffered, defer: false)
+        window.contentView = view
+        let c = view.controller
+        c.load(Node("doc", content: [Node("paragraph", attrs: ["id": "b_one"], content: [.text("A plain note")])]))
+        window.makeFirstResponder(c.textView)
+        c.setBlockColor("#a9dde8")
+        XCTAssertEqual(c.document().content?.first?.attrs?["blockColor"], .string("#a9dde8"))
+        XCTAssertNil(c.document().content?.first?.attrs?["decoration"])
+        c.setBlockColor(nil)
+        XCTAssertNil(c.document().content?.first?.attrs?["blockColor"])
+        XCTAssertNil(c.document().content?.first?.attrs?["decoration"])
+
+        // Older notes may already have the implicit "block" decoration.
+        c.load(Node("doc", content: [Node("paragraph", attrs: ["id": "b_one", "blockColor": "#a9dde8", "decoration": "block"], content: [.text("A plain note")])]))
+        c.setBlockColor(nil)
+        XCTAssertNil(c.document().content?.first?.attrs?["decoration"])
+    }
+
     func testBlockEffectsKeepContentIdsAndUndo() throws {
         let view = DocumentEditorView(frame: NSRect(x: 0, y: 0, width: 900, height: 700))
         let window = NSWindow(contentRect: view.frame, styleMask: [.titled], backing: .buffered, defer: false)

@@ -12,6 +12,7 @@ public final class EditorController: NSObject, NSTextStorageDelegate, NSTextView
     public weak var host: EditorHost?
     /// View that hosts floating overlays (selection toolbar, slash menu). Set by the paper view.
     public weak var overlayHost: NSView?
+    var onSelectionChange: (() -> Void)?
 
     public var theme = EditorTheme() {
         didSet { if theme != oldValue { layout.theme = theme; restyleAll() } }
@@ -350,6 +351,7 @@ public final class EditorController: NSObject, NSTextStorageDelegate, NSTextView
         mention.selectionChanged()
         if tableEditor.tableId != nil, textView.window?.firstResponder === textView { tableEditor.end() }
         if focusDimming { applyFocusDimming() }
+        onSelectionChange?()
         host?.editorStateDidChange()
     }
 
@@ -729,7 +731,14 @@ public final class EditorController: NSObject, NSTextStorageDelegate, NSTextView
 
     public func setAlign(_ a: String?) { mapBlocks { $0.with(align: .some(a == "left" ? nil : a)) } }
     public func setDecoration(_ d: String?) { mapBlocks { $0.with(decoration: .some($0.decoration == d ? nil : d)) } }
-    public func setBlockColor(_ c: String?) { mapBlocks { $0.with(blockColor: .some(c), decoration: .some($0.decoration ?? (c == nil ? nil : "block"))) } }
+    public func setBlockColor(_ c: String?) {
+        mapBlocks { block in
+            // A color already renders as a block fill. Do not store an implicit decoration that
+            // survives "Remove block color" as an unexplained empty rectangle.
+            let decoration = c == nil && block.decoration == "block" ? nil : block.decoration
+            return block.with(blockColor: .some(c), decoration: .some(decoration))
+        }
+    }
 
     func mapBlocks(_ f: (BlockInfo) -> BlockInfo) {
         undoGroup { for pr in selectedParagraphs() { let b = block(at: pr); if !b.kind.isAttachment || b.kind == .page { setBlock(pr, f(b)) } } }
@@ -995,7 +1004,10 @@ public final class EditorController: NSObject, NSTextStorageDelegate, NSTextView
         textView.window?.makeFirstResponder(textView)
     }
 
-    public func insertDivider() { insertAttachmentBlock(kind: .divider, node: Node("horizontalRule")) }
+    public func insertDivider(variant: String? = nil) {
+        let attrs: [String: JSONValue]? = variant.map { ["variant": .string($0)] }
+        insertAttachmentBlock(kind: .divider, node: Node("horizontalRule", attrs: attrs))
+    }
 
     public func insertImage(assetId: String, alt: String = "") {
         insertAttachmentBlock(kind: .image, node: Node("image", attrs: ["assetId": .string(assetId), "alt": .string(alt)]))

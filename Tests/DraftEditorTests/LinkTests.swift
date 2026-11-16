@@ -188,6 +188,7 @@ final class LinkTests: XCTestCase {
         let hexColor = c.storage.attribute(.foregroundColor, at: 11, effectiveRange: nil) as? NSColor
         XCTAssertEqual(tagColor, c.theme.tagColor("work"))
         XCTAssertEqual(hexColor, c.theme.text)
+        XCTAssertNil(c.storage.attribute(.backgroundColor, at: 1, effectiveRange: nil), "tags do not get hard rectangular fills")
     }
 
     func testSetTaskCheckedFromOutside() {

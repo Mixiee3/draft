@@ -53,6 +53,8 @@ public final class DocumentEditorView: NSView, NSTextViewDelegate {
     let ruleView = NSView()
     public var onTitleChange: ((String) -> Void)?
     let handle = BlockHandleView(frame: .zero)
+    let blockActions = BlockActionBar(frame: .zero)
+    public var blockActionsView: NSView { blockActions }
     public var handleView: NSView { handle }
     public var onLayout: (() -> Void)?
     public var onEditCover: (() -> Void)?
@@ -62,6 +64,8 @@ public final class DocumentEditorView: NSView, NSTextViewDelegate {
     public var topInset: CGFloat = 0 { didSet { needsLayout = true } }
     /// Room kept free on the right for an open panel; the page moves aside rather than under it.
     public var trailingInset: CGFloat = 0 { didSet { if oldValue != trailingInset { needsLayout = true } } }
+    private var lastTitleLayoutWidth: CGFloat = -1
+    private var lastTitleLayoutText = ""
 
     /// Slides the page aside for a side panel instead of jumping; the text reflows once, at the end width.
     public func setTrailingInset(_ inset: CGFloat, animated: Bool) {
@@ -102,6 +106,9 @@ public final class DocumentEditorView: NSView, NSTextViewDelegate {
         scrollView.autoresizingMask = []
         addSubview(scrollView)
         paper.owner = self
+        blockActions.owner = self
+        addSubview(blockActions)
+        controller.onSelectionChange = { [weak self] in self?.blockActions.update() }
 
         paperBackground.wantsLayer = true
         paperBackground.layer?.cornerRadius = 22
@@ -183,6 +190,8 @@ public final class DocumentEditorView: NSView, NSTextViewDelegate {
         pageColor = NSColor(hex: t.pageColor)
         relayout()
         titleView.needsDisplay = true
+        if controller.toolbar.isVisible { controller.toolbar.update() }
+        blockActions.update()
     }
 
     public var title: String {
@@ -212,6 +221,7 @@ public final class DocumentEditorView: NSView, NSTextViewDelegate {
     public override func mouseMoved(with event: NSEvent) {
         let p = paper.convert(event.locationInWindow, from: nil)
         updateHandle(at: p)
+        blockActions.update()
         coverControls.isHidden = coverImage == nil || !coverView.frame.contains(p)
     }
     @objc func editCover() { onEditCover?() }
@@ -227,7 +237,10 @@ public final class DocumentEditorView: NSView, NSTextViewDelegate {
         super.layout()
         // Text scrolls only below the host's top controls, never underneath them.
         scrollView.frame = NSRect(x: 0, y: 0, width: bounds.width, height: max(0, bounds.height - topInset))
+        let actionWidth: CGFloat = controller.isBlockMode ? 206 : 101
+        blockActions.frame = NSRect(x: ((bounds.width - actionWidth) / 2).rounded(), y: 18, width: actionWidth, height: 42)
         relayout()
+        blockActions.update()
     }
 
     /// Scrolling runs layout; re-assigning unchanged frames there dirtied the window's regions every frame.
@@ -261,8 +274,13 @@ public final class DocumentEditorView: NSView, NSTextViewDelegate {
             y += h + 36
         } else { y += 52 }
         let innerW = paperW - pad * 2
+        let titleNeedsLayout = titleView.frame.width != innerW || lastTitleLayoutWidth != innerW || lastTitleLayoutText != titleView.string
         if titleView.frame.width != innerW { titleView.frame.size.width = innerW }
-        titleView.layoutManager?.ensureLayout(for: titleView.textContainer!)
+        if titleNeedsLayout {
+            titleView.layoutManager?.ensureLayout(for: titleView.textContainer!)
+            lastTitleLayoutWidth = innerW
+            lastTitleLayoutText = titleView.string
+        }
         let titleH = max((titleView.layoutManager?.usedRect(for: titleView.textContainer!).height ?? 40), (titleView.font?.pointSize ?? 34) * 1.25)
         place(titleView, NSRect(x: paperX + pad, y: y, width: innerW, height: titleH))
         y += titleH + 16
@@ -275,14 +293,14 @@ public final class DocumentEditorView: NSView, NSTextViewDelegate {
         // The text view sizes itself; forcing a full layout here cost ~90 ms per height change in a 10k-block document.
         if tv.frame.height < 160 { tv.setFrameSize(NSSize(width: innerW, height: 160)) }
         // A short note still gets a whole page, down to just above the window edge.
-        let fill = scrollView.contentSize.height - 24
+        let fill = scrollView.contentSize.height - 84
         let paperBottom = max(tv.frame.maxY + 90, fill)
         paper.paperRect = NSRect(x: paperX, y: top, width: paperW, height: paperBottom - top)
         if paperBackground.frame != paper.paperRect {
             paperBackground.frame = paper.paperRect
             paperBackground.layer?.shadowPath = CGPath(roundedRect: paperBackground.bounds, cornerWidth: 22, cornerHeight: 22, transform: nil)
         }
-        let docH = paperBottom == fill ? scrollView.contentSize.height : max(paperBottom + 60, scrollView.contentSize.height)
+        let docH = paperBottom == fill ? scrollView.contentSize.height : max(paperBottom + 84, scrollView.contentSize.height)
         if paper.frame.size != NSSize(width: width, height: docH) { paper.frame = NSRect(x: 0, y: 0, width: width, height: docH) }
         if controller.imageBar.isVisible { controller.imageBar.update() }
         if controller.toolbar.isVisible { controller.toolbar.position() }

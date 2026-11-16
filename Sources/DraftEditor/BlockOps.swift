@@ -134,6 +134,7 @@ extension EditorController {
     public func selectBlocks(ids: [String]) {
         let ranges = ids.compactMap { paragraph(withId: $0) }
         guard let first = ranges.first, let last = ranges.last else { exitBlockMode(); return }
+        let previous = expectedBlockSelection
         var union = NSUnionRange(first, last)
         // Keep the final newline out so the selection reads as "these blocks".
         if union.length > 0, NSMaxRange(union) <= storage.length, NSMaxRange(union) > 0, ns.character(at: NSMaxRange(union) - 1) == 10 { union.length -= 1 }
@@ -141,7 +142,8 @@ extension EditorController {
         expectedBlockSelection = union
         textView.setSelectedRange(union)
         refreshSelectionStyle()
-        layout.invalidateDisplay(forCharacterRange: NSRange(location: 0, length: storage.length))
+        if let previous { layout.invalidateDisplay(forCharacterRange: previous) }
+        layout.invalidateDisplay(forCharacterRange: union)
         toolbar.update()
         host?.editorStateDidChange()
     }
@@ -156,11 +158,12 @@ extension EditorController {
     public func exitBlockMode(caretAtEnd: Bool = false) {
         guard isBlockMode else { return }
         let sel = textView.selectedRange()
+        let previous = expectedBlockSelection
         blockSelectionIds = []
         expectedBlockSelection = nil
         refreshSelectionStyle()
         textView.setSelectedRange(NSRange(location: caretAtEnd ? NSMaxRange(sel) : sel.location, length: 0))
-        layout.invalidateDisplay(forCharacterRange: NSRange(location: 0, length: storage.length))
+        if let previous { layout.invalidateDisplay(forCharacterRange: previous) }
         host?.editorStateDidChange()
     }
 
@@ -198,7 +201,7 @@ extension EditorController {
             blockSelectionIds = []
             expectedBlockSelection = nil
             refreshSelectionStyle()
-            layout.invalidateDisplay(forCharacterRange: NSRange(location: 0, length: storage.length))
+            layout.invalidateDisplay(forCharacterRange: e)
         }
     }
 }

@@ -178,7 +178,11 @@ public enum Styler {
                     let a = s.attributes(at: r.location, effectiveRange: nil)
                     guard a[.draftCode] == nil, a[.draftLink] == nil, a[.draftDocLink] == nil else { continue }
                     let c = theme.tagColor(t.name)
-                    s.addAttributes([.foregroundColor: c, .backgroundColor: c.withAlphaComponent(theme.isDarkPage ? 0.25 : 0.12)], range: r)
+                    // Tags are inline metadata, not chips. A background fill makes each
+                    // tag render as a hard rectangle and becomes especially distracting
+                    // when several tags sit on one line. Keep the semantic color only;
+                    // chips remain reserved for document links and dates above.
+                    s.addAttributes([.foregroundColor: c], range: r)
                 }
             }
             loc = NSMaxRange(pr)
