@@ -20,6 +20,8 @@ extension Automation {
         let filler = { (n: Int) in (1...n).map { "Line \($0) of filler text that runs underneath the floating glass so refraction is visible." }.joined(separator: "\n") }
         ed.controller.pastePlainForAutomation("## One clear heading\nA paragraph with room to think.\n" + filler(5) + "\nAnother paragraph for selection.\n" + filler(14))
         ed.controller.textView.setSelectedRange(NSRange(location: 0, length: 0))
+        // Typing hides the block bar until the pointer moves; simulate that move.
+        ed.mouseMoved(with: NSEvent.mouseEvent(with: .mouseMoved, location: NSPoint(x: 400, y: 300), modifierFlags: [], timestamp: 0, windowNumber: w.windowNumber, context: nil, eventNumber: 0, clickCount: 0, pressure: 0)!)
         ed.layoutSubtreeIfNeeded()
         await shot("block-actions-compact")
         func buttons(in v: NSView) -> [NSButton] {

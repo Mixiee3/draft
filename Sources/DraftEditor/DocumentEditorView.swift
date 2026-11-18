@@ -132,6 +132,10 @@ public final class DocumentEditorView: NSView, NSTextViewDelegate {
         scrollView.wantsLayer = true
         scrollView.layer?.mask = fade
         controller.onSelectionChange = { [weak self] in self?.blockActions.update() }
+        // The bar steps aside while typing (it floats over text) and returns on the next mouse move.
+        NotificationCenter.default.addObserver(forName: NSText.didChangeNotification, object: controller.textView, queue: .main) { [weak self] _ in
+            MainActor.assumeIsolated { self?.blockActions.typingStarted() }
+        }
 
         paperBackground.wantsLayer = true
         paperBackground.layer?.cornerRadius = 22
@@ -244,7 +248,7 @@ public final class DocumentEditorView: NSView, NSTextViewDelegate {
     public override func mouseMoved(with event: NSEvent) {
         let p = paper.convert(event.locationInWindow, from: nil)
         updateHandle(at: p)
-        blockActions.update()
+        blockActions.pointerMoved()
         coverControls.isHidden = coverImage == nil || !coverView.frame.contains(p)
     }
     @objc func editCover() { onEditCover?() }
@@ -273,10 +277,14 @@ public final class DocumentEditorView: NSView, NSTextViewDelegate {
         blockActions.update()
     }
 
-    func placeBlockActions() {
+    /// Centres the bar at the bottom of the editor; `animated` morphs it when it expands or collapses.
+    func placeBlockActions(animated: Bool = false) {
         let size = blockActions.fittingSize
         let r = NSRect(x: ((floating.bounds.width - size.width) / 2).rounded(), y: floating.bounds.height - size.height - 18, width: size.width, height: size.height)
-        if blockActions.frame != r { blockActions.frame = r }
+        guard blockActions.frame != r else { return }
+        if animated && ContextBarMotion.duration > 0 {
+            NSAnimationContext.runAnimationGroup { ContextBarMotion.configure($0); blockActions.animator().frame = r }
+        } else { blockActions.frame = r }
     }
 
     /// Scrolling runs layout; re-assigning unchanged frames there dirtied the window's regions every frame.

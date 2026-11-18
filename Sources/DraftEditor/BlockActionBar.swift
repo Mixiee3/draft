@@ -27,6 +27,8 @@ final class BlockActionBar: NSView {
     private var expanded = false
     private var shown = false
     private var darkPage: Bool?
+    /// Hidden while the user types; the next pointer move brings it back.
+    private var quiet = false
 
     override init(frame: NSRect) {
         super.init(frame: frame)
@@ -92,8 +94,11 @@ final class BlockActionBar: NSView {
         stack.addArrangedSubview(separator())
         stack.addArrangedSubview(button("ellipsis", label: "More block actions", action: #selector(more)))
         applyInk()
-        owner?.placeBlockActions()
+        owner?.placeBlockActions(animated: shown)
     }
+
+    func typingStarted() { if !quiet { quiet = true; update() } }
+    func pointerMoved() { if quiet { quiet = false }; update() }
 
     /// Page-matched ink: the window's appearance can be dark while the page is light.
     private func applyInk() {
@@ -110,7 +115,7 @@ final class BlockActionBar: NSView {
             applyInk()
         }
         let selectedText = c.textView.selectedRange().length > 0 && !c.isBlockMode
-        let visible = !selectedText && (window.firstResponder === c.textView || c.isBlockMode)
+        let visible = !selectedText && (c.isBlockMode || (window.firstResponder === c.textView && !quiet))
         if c.isBlockMode != expanded { rebuild(expanded: c.isBlockMode) }
         if visible != shown {
             shown = visible
@@ -142,6 +147,15 @@ final class BlockActionBar: NSView {
 
     @objc private func copyLink(_ sender: NSButton) {
         owner?.controller.copyLinkToBlock()
+        // Brief confirmation in place of the link icon.
+        let original = sender.image
+        sender.image = NSImage(systemSymbolName: "checkmark", accessibilityDescription: loc("Link copied"))?
+            .withSymbolConfiguration(.init(pointSize: 14, weight: .semibold))
+        sender.setAccessibilityLabel(loc("Link copied"))
+        DispatchQueue.main.asyncAfter(deadline: .now() + 1.2) { [weak sender] in
+            sender?.image = original
+            sender?.setAccessibilityLabel(loc("Copy link to block"))
+        }
         update()
     }
 

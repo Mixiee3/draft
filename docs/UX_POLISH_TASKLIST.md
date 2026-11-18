@@ -12,14 +12,18 @@ Evidence lives in `docs/screenshots/ux-review-0.11.7/` (`before/` = handoff stat
 - [x] Removed the toolbar frame hack. The toolbar was the glass view's content but was being given a host-coordinate origin. It now always sits at the glass origin, and callers and tests use `presentationView.frame`. The single-shape `NSGlassEffectContainerView` wrappers were removed too.
 - [~] Toolbar entrance and exit. The plate and controls now fade together (before, the plate appeared instantly and the icons faded in), and there is now an exit fade, which was missing. Not checked frame by frame or under rapid reselection.
 - [x] Block bar is centred at the bottom of the editor, sized to its buttons (it was a fixed width with oversized, clipped icons), has 14 pt symbols and a visible separator, and is native glass. Evidence: `before/block-bar-clipped-icons.png` vs `after/block-actions-selected*.png`, `after/block-actions-compact.png`.
-- [~] Block bar menus (Turn into, Style, More) open above the bar. Not clicked by hand.
+- [x] Block bar hands-on (real pointer and keyboard, dark page). Select block expands the bar. Turn into, Style and More all open above the bar and apply (Heading and Glow applied and survived a relaunch). Escape collapses the bar. Selecting text hides the bar and shows the selection toolbar.
+- [x] Block bar improvements from the hands-on pass, each checked by hand:
+  - the bar steps aside while you type and returns on the next mouse move
+  - Copy link shows a checkmark for 1.2 s
+  - expand and collapse animate the width. Not verified frame by frame: the expand already looked complete at about 60 ms.
 - [ ] Reduce Transparency and Increase Contrast captures for both bars.
 
 ## Document sidebar selector
 
 - [x] The selected capsule shows its icon. Before, the glass container composited the capsule over the icon (white on white, `before/rail-selected-icon-hidden.png`). The icon is now the glass's content (`after/outline-without-hashes.png`).
 - [x] The selection, not the hover, owns the glass. Hover used to move the capsule onto unselected tabs.
-- [~] Press-and-slide across the five tabs. The drag maps to five equal slots inside the 3 pt padding, and the tab changes only when the slot changes. Not yet tested by hand with a real pointer.
+- [x] Press-and-slide across the five tabs with a real pointer. Pressed on Outline, slid to Tasks while held (the capsule moved, the icon stayed visible), and released on Find (Find selected).
 
 ## Window chrome
 
@@ -45,5 +49,5 @@ Evidence lives in `docs/screenshots/ux-review-0.11.7/` (`before/` = handoff stat
 
 - [x] `swift build` and the full `swift test` suite pass after this pass.
 - [x] Light and dark screenshots of every changed glass surface (toolbar, block bar, rail).
-- [ ] Crash-recovery card on relaunch. Not reproduced in this pass (every automated run was clean). Still needs a check with a normal quit and relaunch.
+- [x] Crash-recovery card. It appears only after the process is killed (`pkill`/SIGTERM), which is how test builds were being stopped. A normal Quit followed by a relaunch shows no card, and the document state and edits are restored. This is expected recovery behaviour, not a crash.
 - [ ] Changelog and status page: only after hands-on interaction checks. No production or notarized release from this branch.
