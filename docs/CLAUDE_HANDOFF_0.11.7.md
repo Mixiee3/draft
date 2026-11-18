@@ -14,6 +14,33 @@ Audit everything added since the 0.11.5 baseline. Treat the current implementati
 
 This is the complete change inventory from `e8c5403..e9bf782`, not just the headline features.
 
+The exhaustive changed-path inventory is:
+
+| Path | What changed |
+|---|---|
+| `Release/notes/0.11.6.md` | Added the beta updater/install-test note from the intermediate installer checkpoint. |
+| `Release/notes/0.11.7.md` | Added the editor UX preview notes and non-production warning. |
+| `VERSION` | Changed from the 0.11.5 baseline to 0.11.7. |
+| `Sources/Draft/Automation.swift` | Registered the new `block-actions-shots` automation command. |
+| `Sources/Draft/AutomationPolish.swift` | Added block-action/light-dark/glass screenshot capture, runtime accessibility diagnostics, and JSON checks. |
+| `Sources/Draft/AutomationSelection.swift` | Sent synthetic mouse events directly to the target window and measured the toolbar through its presentation view. |
+| `Sources/Draft/DocumentScreen.swift` | Added separator-style submenu and six visual separator previews. |
+| `Sources/Draft/RailView.swift` | Made row icons optional; replaced the document-rail selector with native interactive glass, hover morphing, press-drag tab switching, adaptive tint, and an older-macOS fallback. |
+| `Sources/Draft/RootView.swift` | Raised the custom title-bar layer above standard traffic lights and forced traffic-light visibility/opacity. |
+| `Sources/DraftEditor/BlockActionBar.swift` | Added the new block-mode contextual bar, native glass composition, compact/expanded actions, styling menu, accessibility labels, tint, and motion. |
+| `Sources/DraftEditor/BlockOps.swift` | Narrowed block-selection redraw invalidation to previous/current ranges. |
+| `Sources/DraftEditor/ContextBarMotion.swift` | Added shared reduced-motion-aware animation timing and timing curve. |
+| `Sources/DraftEditor/DocumentEditorView.swift` | Added/owned/layouted block bar, selection callbacks, title-layout caching, theme updates, mouse updates, and paper-height adjustments. |
+| `Sources/DraftEditor/EditorController.swift` | Added selection callback, block-color cleanup, divider variant persistence, and related selection behavior. |
+| `Sources/DraftEditor/LayoutManager.swift` | Changed block-selection tint, generalized accent underline rendering, and removed the hard glow rectangle/outline. |
+| `Sources/DraftEditor/SelectionToolbar.swift` | Rebuilt selection toolbar glass/container hosting, presentation placement, diagnostics, adaptive tint/appearance, animation, layout, hover/pressed/focus handling, and accessibility. |
+| `Sources/DraftEditor/Styler.swift` | Removed hard rectangular backgrounds from inline tags while preserving semantic foreground color. |
+| `Tests/DraftEditorTests/LinkTests.swift` | Asserted tags have no background fill. |
+| `Tests/DraftEditorTests/TextEffectTests.swift` | Added regression coverage for block-color removal, implicit-decoration cleanup, persistence, undo, and rendering behavior. |
+| `docs/CRAFT_COMPARISON_PLAN.md` | Added the clean-room Craft comparison/research findings and prioritized plan. |
+| `docs/UX_POLISH_TASKLIST.md` | Added the implementation/validation checklist with done, in-progress, and unverified states. |
+| `docs/CLAUDE_HANDOFF_0.11.7.md` | Added this review handoff; it was expanded again in commit `c9e4c8a`. |
+
 ### Release/version bookkeeping
 
 - `628ab4a` added the 0.11.6 beta installer-test note and moved the version to 0.11.6.
@@ -73,6 +100,7 @@ This is the complete change inventory from `e8c5403..e9bf782`, not just the head
 - Added `docs/CRAFT_COMPARISON_PLAN.md` with clean-room behavior comparisons and explicit limits on reverse engineering.
 - Added preview notes in `Release/notes/0.11.7.md`.
 - Added test coverage for effects persistence/render/undo/selection retention, block-color removal, block-effect undo/content IDs, Spectrum animation/gradient behavior, direction/palette behavior, and link picker/accessibility/backspace/round-trip behavior.
+- The full test change is intentionally small but meaningful: the link suite now checks tag background absence, and the block-effect suite checks both newly-created and legacy implicit `decoration = "block"` records.
 
 ## Validation already performed
 
@@ -122,7 +150,7 @@ Claude should not preserve these changes merely because they are already impleme
 
 ## Suggested Claude review sequence
 
-1. Checkout `feature/editor-ux-smoothness` at `e9bf782` and run the full test suite.
+1. Checkout `feature/editor-ux-smoothness` at `c9e4c8a` and run the full test suite.
 2. Build a uniquely named test app; do not overwrite `/Users/danielpekarek/Applications/Draft.app`.
 3. Capture matched screenshots for light page, dark page, selected text, block mode, sidebar selector idle/hover/drag, and reduced-transparency/reduced-motion settings.
 4. Verify toolbar geometry and animation timing with repeated selection changes and window resizing.
