@@ -29,12 +29,19 @@ final class PaperView: NSView {
     weak var owner: DocumentEditorView?
     var paperRect: NSRect = .zero { didSet { if paperRect != oldValue { window?.invalidateCursorRects(for: self) } } }
     override var isFlipped: Bool { true }
-    // I-beam on the page (a click there edits); the backdrop around it keeps the arrow.
-    override func resetCursorRects() { addCursorRect(paperRect, cursor: .iBeam) }
+    /// Below this line the page is just background: the arrow cursor, and a click ends typing.
+    var editLimit: CGFloat = .greatestFiniteMagnitude { didSet { if editLimit != oldValue { window?.invalidateCursorRects(for: self) } } }
+    // I-beam on the text and a band under it (a click there edits); empty page further down and
+    // the backdrop around the page keep the arrow.
+    override func resetCursorRects() {
+        addCursorRect(NSRect(x: paperRect.minX, y: paperRect.minY, width: paperRect.width, height: max(0, min(paperRect.maxY, editLimit) - paperRect.minY)), cursor: .iBeam)
+    }
     override func mouseDown(with event: NSEvent) {
-        // Clicking empty paper below the text puts the caret at the end; the backdrop ends editing.
+        // A click just under the text puts the caret at the end; empty page below that, or the
+        // backdrop, ends typing so only the normal pointer remains.
         let p = convert(event.locationInWindow, from: nil)
-        guard let o = owner, paperRect.contains(p) else { window?.makeFirstResponder(nil); return }
+        guard let o = owner else { return }
+        guard paperRect.contains(p), p.y <= editLimit else { o.endEditing(); return }
         let tv = o.controller.textView
         window?.makeFirstResponder(tv)
         if p.y > tv.frame.maxY - 4 { tv.setSelectedRange(NSRange(location: (tv.string as NSString).length, length: 0)) }
@@ -245,6 +252,14 @@ public final class DocumentEditorView: NSView, NSTextViewDelegate {
 
     @objc func relayoutNote() { relayout() }
 
+    /// Leaves the text: no caret, no block selection, and the floating bars go away at once.
+    func endEditing() {
+        if controller.isBlockMode { controller.exitBlockMode() }
+        window?.makeFirstResponder(nil)
+        controller.toolbar.update()
+        blockActions.update()
+    }
+
     public override func mouseMoved(with event: NSEvent) {
         let p = paper.convert(event.locationInWindow, from: nil)
         updateHandle(at: p)
@@ -340,6 +355,7 @@ public final class DocumentEditorView: NSView, NSTextViewDelegate {
         let fill = scrollView.contentSize.height - 84
         let paperBottom = max(tv.frame.maxY + 90, fill)
         paper.paperRect = NSRect(x: paperX, y: top, width: paperW, height: paperBottom - top)
+        paper.editLimit = tv.frame.maxY + 24 // a short band under the text still means "type at the end"
         if paperBackground.frame != paper.paperRect {
             paperBackground.frame = paper.paperRect
             paperBackground.layer?.shadowPath = CGPath(roundedRect: paperBackground.bounds, cornerWidth: 22, cornerHeight: 22, transform: nil)

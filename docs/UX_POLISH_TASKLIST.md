@@ -41,6 +41,9 @@ Evidence lives in `docs/screenshots/ux-review-0.11.7/` (`before/` = handoff stat
 
 ## Interaction
 
+- [x] Clicking the background ends typing. Clicking empty page well below the text, or the backdrop, removes the caret, exits block selection and hides both floating bars at once. That area shows the normal arrow cursor. A 24 pt band under the text still puts the caret at the end. Checked by hand. The arrow cursor itself comes from the cursor rects and was not seen in screenshots.
+- [ ] A block menu was open at the window's bottom-left once after a relaunch. I couldn't reproduce it on the next launch. Watch for it.
+
 - [~] Selection toolbar and block bar share one motion curve and one glass look (`ContextBarMotion`, `ContextBarGlass`).
 - [ ] Preserve selection and focus when formatting menus open or close (hands-on).
 - [ ] Document and folder dragging, drop targets and undo in the library sidebar.
