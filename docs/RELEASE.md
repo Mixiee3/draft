@@ -55,7 +55,14 @@ when it carries the same Team ID as the app. An Apple Development identity works
 Without `NOTARY_PROFILE` the build is not notarized;
 the script says `NOT NOTARIZED` and writes `NOT-NOTARIZED.txt` so such a build is never mistaken for a release.
 
-## Current state (v0.11.5)
+## Current state (v0.11.7)
+
+0.11.7 (build 245, stable) is published as the `v0.11.7` release of `Mixiee3/draft` and listed in the signed
+`preview` feed, which now offers it to existing installs. Like 0.11.5 it is signed with the Apple Development
+identity and **not notarized**, so it runs on this Mac but is not a public download. The website
+(`Mixiee3/draft-site`, not deployed yet) still shows "Coming soon" on purpose until a Developer ID build exists.
+
+## Earlier state (v0.11.5)
 
 This Mac has only an Apple Development certificate, not Developer ID, and no notary credentials, so
 releases made here are signed with that identity and the hardened runtime, run on this Mac, and are **not notarized**. Notarization

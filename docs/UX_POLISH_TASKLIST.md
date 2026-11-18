@@ -53,4 +53,4 @@ Evidence lives in `docs/screenshots/ux-review-0.11.7/` (`before/` = handoff stat
 - [x] `swift build` and the full `swift test` suite pass after this pass.
 - [x] Light and dark screenshots of every changed glass surface (toolbar, block bar, rail).
 - [x] Crash-recovery card. It appears only after the process is killed (`pkill`/SIGTERM), which is how test builds were being stopped. A normal Quit followed by a relaunch shows no card, and the document state and edits are restored. This is expected recovery behaviour, not a crash.
-- [ ] Changelog and status page: only after hands-on interaction checks. No production or notarized release from this branch.
+- [x] 0.11.7 published to the in-app update feed (GitHub release `v0.11.7` and signed `feed.json`). The live feed lists build 245, and the hosted zip matches its SHA-256. It is signed with the Apple Development identity and not notarized, the same as 0.11.5. The website is deliberately not updated: it is not deployed and needs a notarized build first.
