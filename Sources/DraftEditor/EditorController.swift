@@ -12,6 +12,8 @@ public final class EditorController: NSObject, NSTextStorageDelegate, NSTextView
     public weak var host: EditorHost?
     /// View that hosts floating overlays (selection toolbar, slash menu). Set by the paper view.
     public weak var overlayHost: NSView?
+    /// Non-scrolling layer above the page for floating glass controls (selection toolbar, block bar).
+    public weak var floatingHost: NSView?
     var onSelectionChange: (() -> Void)?
 
     public var theme = EditorTheme() {

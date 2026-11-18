@@ -279,7 +279,6 @@ struct VaultCard: View {
 struct DocumentRail: View {
     @Environment(AppModel.self) var model
     @Environment(\.tokens) var t
-    @State private var hoveredTab: DocRailTab?
     @Namespace private var railGlass
     let docId: String
 
@@ -305,32 +304,18 @@ struct DocumentRail: View {
                     HStack(spacing: 2) {
                         ForEach([(DocRailTab.outline, "list.bullet", "Outline"), (.backlinks, "arrow.uturn.backward", "Backlinks"), (.tasks, "checkmark.circle", "Tasks"), (.attachments, "paperclip", "Attachments"), (.find, "doc.text.magnifyingglass", "Find in Page (⌘F)")], id: \.0) { tab, icon, label in
                             let on = model.docRailTab == tab
-                            let glassHere = (hoveredTab ?? model.docRailTab) == tab
                             Button { withAnimation(.smooth(duration: 0.2)) { model.docRailTab = tab } } label: {
+                                // The icon is the glass's content: a glass container composites its glass
+                                // above sibling views, so glass placed behind the icon covered it.
                                 Image(systemName: icon).font(.system(size: DS.body, weight: .medium))
                                     .frame(maxWidth: .infinity, minHeight: 26)
-                                    .background {
-                                        if glassHere {
-                                            Capsule(style: .continuous)
-                                                // Keep the live refraction, but
-                                                // provide a small adaptive tint
-                                                // so the selected symbol remains
-                                                // legible over the dark rail.
-                                                .fill(t.dark ? .white.opacity(0.10) : .white.opacity(0.62))
-                                                .glassEffect(.regular.interactive(), in: Capsule())
-                                                .glassEffectID("document-rail-selection", in: railGlass)
-                                        }
-                                    }
+                                    .glassEffect(on ? .regular.tint(t.dark ? .white.opacity(0.10) : .white.opacity(0.6)).interactive() : .identity, in: Capsule())
+                                    .glassEffectID(on ? "document-rail-selection" : "document-rail-\(tab)", in: railGlass)
                                     .contentShape(Capsule())
                             }
                             .buttonStyle(.plain)
                             .foregroundStyle(on ? (t.dark ? .white : t.text) : t.secondary)
                             .opacity(on ? 1 : 0.92)
-                            .onHover { inside in
-                                withAnimation(.smooth(duration: 0.2)) {
-                                    hoveredTab = inside ? tab : (hoveredTab == tab ? nil : hoveredTab)
-                                }
-                            }
                             .help(loc(label)).accessibilityLabel(loc(label)).accessibilityAddTraits(on ? .isSelected : [])
                         }
                     }
@@ -342,15 +327,12 @@ struct DocumentRail: View {
                     // Use a simultaneous gesture so the tab buttons retain their normal
                     // click/accessibility behavior while a press can still slide across
                     // the rail and hand off selection to the tab under the pointer.
+                    // The selection (not hover) owns the glass, so the capsule never sits on a tab
+                    // that isn't selected; the 3 pt padding is outside the five equal slots.
                     .simultaneousGesture(DragGesture(minimumDistance: 0).onChanged { value in
-                        let tabIndex = min(max(Int(value.location.x / max(proxy.size.width / 5, 1)), 0), 4)
-                        let tab = [DocRailTab.outline, .backlinks, .tasks, .attachments, .find][tabIndex]
-                        withAnimation(.smooth(duration: 0.16)) {
-                            hoveredTab = tab
-                            model.docRailTab = tab
-                        }
-                    }.onEnded { _ in
-                        withAnimation(.smooth(duration: 0.16)) { hoveredTab = nil }
+                        let slot = max((proxy.size.width - 6) / 5, 1)
+                        let tab = [DocRailTab.outline, .backlinks, .tasks, .attachments, .find][min(max(Int((value.location.x - 3) / slot), 0), 4)]
+                        if tab != model.docRailTab { withAnimation(.smooth(duration: 0.16)) { model.docRailTab = tab } }
                     })
                 }
                 .frame(height: 32)

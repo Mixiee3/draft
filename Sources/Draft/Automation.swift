@@ -33,6 +33,7 @@ enum Automation {
             case "screens-v04": await screensV04()
             case "polish": await polish()
             case "block-actions-shots": await blockActionsShots()
+            case "effects-shots": await effectsShots()
             case "structure-write": await structureWrite()
             case "structure-read": await structureRead()
             case "workflow-write": await workflowWrite()

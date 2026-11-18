@@ -162,12 +162,12 @@ final class EditorTests: XCTestCase {
         type("first line of the page")
         tv.setSelectedRange(NSRange(location: 0, length: 5))
         c.toolbar.update()
-        let above = c.toolbar.frame
+        let above = c.toolbar.presentationView.frame
         XCTAssertLessThan(above.maxY, c.toolbar.selectionRects()!.first.minY, "normally sits above the selection")
         // Scroll so the selected line sits right under the top controls.
         view.scrollView.contentView.scroll(to: NSPoint(x: 0, y: c.toolbar.selectionRects()!.first.minY - 30))
         c.toolbar.update()
-        let tb = c.toolbar.frame
+        let tb = c.toolbar.presentationView.frame
         let selTop = c.toolbar.selectionRects()!.first
         XCTAssertGreaterThan(tb.minY, selTop.minY, "near the top of the visible area the bar flips below")
         XCTAssertGreaterThanOrEqual(tb.minX, view.paper.visibleRect.minX)

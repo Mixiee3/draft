@@ -1,34 +1,49 @@
 # Draft UX polish checklist
 
-This is the working checklist for the Craft-inspired interaction and rendering pass. We are recreating behaviors with Draft's own code and keeping the existing tape/separator system.
+Working checklist for the 0.11.7 interaction and rendering pass. `[x]` only with screenshot or test evidence; `[~]` means implemented but not yet confirmed by hand; `[ ]` means not started.
 
-## In progress
+Evidence lives in `docs/screenshots/ux-review-0.11.7/` (`before/` = handoff state at `f5ab754`, `after/` = this pass). Screenshots come from `DRAFT_AUTOMATION=block-actions-shots` and `DRAFT_AUTOMATION=effects-shots`, run against a throwaway vault (`DRAFT_DATA_DIR`) in a uniquely identified bundle (`org.draftnotes.Draft.claudereview`). The installed Draft.app is never touched.
 
-- [~] Document-rail selector now follows a pointer drag across all five tabs; the gesture is simultaneous with button taps so press-drag handoff is preserved. Needs hands-on confirmation.
-- [~] Bottom block-action bar uses native glass content layering and adaptive tint; needs hands-on confirmation.
-- [~] Sidebar selector now uses the interactive regular glass variant; needs hands-on confirmation.
+## Liquid Glass surfaces (Claude review pass)
+
+- [x] Floating glass is hosted inside the editor, not the window content view. A non-scrolling `FloatingLayer` sits above the page. The selection toolbar and block bar live in it, so they are clipped to the editor. Evidence: before, the toolbar overlapped the sidebar and title (`before/toolbar-over-sidebar.png`); after, it stays inside the editor (`after/block-actions-text-selection*.png`).
+- [x] Glass refracts real page content. The top-edge scroll fade moved from a SwiftUI `.mask` on the whole editor to a `CAGradientLayer` mask on the scroll view only, so the floating glass is not composited in an offscreen pass. Evidence: text behind both bars is lensed at the rim in the light and dark shots.
+- [x] Selection toolbar: rounded, readable icons, page-matched appearance (light lens on light pages in dark chrome), shared `ContextBarGlass` tint (white 0.5 / black 0.3). It is not an opaque plate. Evidence: `after/block-actions-text-selection.png`, `-dark.png`, `outline-without-hashes.png` (apricot).
+- [x] Removed the toolbar frame hack. The toolbar was the glass view's content but was being given a host-coordinate origin. It now always sits at the glass origin, and callers and tests use `presentationView.frame`. The single-shape `NSGlassEffectContainerView` wrappers were removed too.
+- [~] Toolbar entrance and exit. The plate and controls now fade together (before, the plate appeared instantly and the icons faded in), and there is now an exit fade, which was missing. Not checked frame by frame or under rapid reselection.
+- [x] Block bar is centred at the bottom of the editor, sized to its buttons (it was a fixed width with oversized, clipped icons), has 14 pt symbols and a visible separator, and is native glass. Evidence: `before/block-bar-clipped-icons.png` vs `after/block-actions-selected*.png`, `after/block-actions-compact.png`.
+- [~] Block bar menus (Turn into, Style, More) open above the bar. Not clicked by hand.
+- [ ] Reduce Transparency and Increase Contrast captures for both bars.
+
+## Document sidebar selector
+
+- [x] The selected capsule shows its icon. Before, the glass container composited the capsule over the icon (white on white, `before/rail-selected-icon-hidden.png`). The icon is now the glass's content (`after/outline-without-hashes.png`).
+- [x] The selection, not the hover, owns the glass. Hover used to move the capsule onto unselected tabs.
+- [~] Press-and-slide across the five tabs. The drag maps to five equal slots inside the 3 pt padding, and the tab changes only when the slot changes. Not yet tested by hand with a real pointer.
+
+## Window chrome
+
+- [x] Reverted the traffic-light z-order hack (`zPosition` on AppKit's private title-bar container, forced alpha). Its cause, window-level glass, is gone. The traffic lights render normally in every after shot.
 
 ## Editor and rendering
 
-- [x] Stabilize inline tag styling so tags no longer receive unwanted rectangular background fills; document-link/date chips remain explicit.
-- [x] Keep separators as first-class blocks and make insertion discoverable from the document `+` menu with visible style previews.
-- [~] Verify headings, lists, checklists, callouts, links, code, highlights, and block decorations after edits and reloads. Accent now renders as a consistent underline for headings and body/list blocks; Glow now uses a transparent halo without a hard inner outline. Full visual coverage remains.
-- [~] Reduce unnecessary editor/layout work during typing, scrolling, and selection changes. Title layout now skips repeated `ensureLayout` calls when text and width are unchanged; broader profiling remains.
+- [x] Accent is an underline under the last line for headings, wrapped paragraphs and list items. Manual and Assistant paths both call `setDecoration`. Evidence: `after/effects-light.png`, `after/effects-dark-page.png`.
+- [x] Glow is an inner halo with a clear centre and no drawn outline. The old shadow came from a source at 2.5% alpha, so it barely showed. My first fix, an outer halo, was clipped by the text view's sides into a card (`before/glow-clipped-card.png`). Increase Contrast gets a plain tinted outline. Needs the user's sign-off on taste.
+- [x] Inline tags have no rectangular background fill (tests).
+- [x] Removing a block colour does not leave an implicit `block` decoration (tests). The Assistant's `block_color` edit uses the same `setBlockColor`.
+- [x] Separators can be inserted from the document `+` menu with style previews.
+- [~] Full visual coverage of checklists, callouts, links, code and highlights after edits and reloads.
+- [~] Title layout skips repeated `ensureLayout`. Broader profiling remains.
 
-## Interaction and UX
+## Interaction
 
-- [~] Make the contextual selection toolbar and block-action bar share one interaction model and motion curve. Both now use the shared ContextBarMotion curve; interaction-model consolidation remains.
-- [~] Add clear hover/pressed/focus states with keyboard and VoiceOver labels. Selection-toolbar hover, pressed, keyboard-focus, and labels are implemented; block-bar coverage still needs hands-on confirmation.
-- [ ] Preserve selection and focus when formatting menus open or close.
-- [ ] Verify document/folder dragging, drop targets, and undo behavior in the library sidebar.
+- [~] Selection toolbar and block bar share one motion curve and one glass look (`ContextBarMotion`, `ContextBarGlass`).
+- [ ] Preserve selection and focus when formatting menus open or close (hands-on).
+- [ ] Document and folder dragging, drop targets and undo in the library sidebar.
 
 ## Validation and release
 
-- [x] `swift build -q` and the full `swift test -q` suite pass, including `testToolbarFlipsBelowNearTopAndClamps`; all 157 DraftCore and 11 DraftAssistant tests pass.
-- [ ] Capture light/dark screenshots for every changed glass surface.
-- [~] Test bundle launches after the embedded framework is copied and the bundle is re-signed; ad-hoc signing is required for local test packaging. Stable app remains untouched.
-- [ ] Update the changelog/status page only after the visual and interaction checks pass.
-
-## Working checkpoint
-
-The current working tree is the fallback checkpoint for this pass. No installed/stable app bundle is modified; test builds are launched from `/tmp/Draft-LiquidGlass-Test.UxetX7.app`.
+- [x] `swift build` and the full `swift test` suite pass after this pass.
+- [x] Light and dark screenshots of every changed glass surface (toolbar, block bar, rail).
+- [ ] Crash-recovery card on relaunch. Not reproduced in this pass (every automated run was clean). Still needs a check with a normal quit and relaunch.
+- [ ] Changelog and status page: only after hands-on interaction checks. No production or notarized release from this branch.

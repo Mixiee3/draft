@@ -161,17 +161,8 @@ struct WindowChrome: NSViewRepresentable {
             let target = NSRect(x: 0, y: w.frame.height - h, width: w.frame.width, height: h)
             if container.frame != target { container.frame = target } // only when AppKit moved it, so the frame observer settles
             if bar.frame != container.bounds { bar.frame = container.bounds }
-            // The full-size content view is deliberately underneath the native title-bar
-            // controls. Without an explicit z position SwiftUI's tab strip can paint over the
-            // standard traffic lights, making them appear missing or dimmed.
-            container.wantsLayer = true
-            container.layer?.zPosition = 1000
-            bar.wantsLayer = true
-            bar.layer?.zPosition = 1001
             for (i, type) in [NSWindow.ButtonType.closeButton, .miniaturizeButton, .zoomButton].enumerated() {
                 guard let b = w.standardWindowButton(type) else { continue }
-                b.isHidden = false
-                b.alphaValue = 1
                 b.setFrameOrigin(NSPoint(x: 20 + CGFloat(i) * 20, y: ((h - b.frame.height) / 2).rounded()))
             }
         }

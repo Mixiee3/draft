@@ -41,6 +41,15 @@ final class PaperView: NSView {
     }
 }
 
+/// Non-scrolling, flipped layer over the page for floating controls; its empty areas pass clicks through.
+final class FloatingLayer: NSView {
+    override var isFlipped: Bool { true }
+    override func hitTest(_ point: NSPoint) -> NSView? {
+        let hit = super.hitTest(point)
+        return hit === self ? nil : hit
+    }
+}
+
 public final class DocumentEditorView: NSView, NSTextViewDelegate {
     public let controller = EditorController()
     public let scrollView = NSScrollView()
@@ -54,6 +63,12 @@ public final class DocumentEditorView: NSView, NSTextViewDelegate {
     public var onTitleChange: ((String) -> Void)?
     let handle = BlockHandleView(frame: .zero)
     let blockActions = BlockActionBar(frame: .zero)
+    let floating = FloatingLayer()
+    private let fade: CAGradientLayer = {
+        let l = CAGradientLayer()
+        l.colors = [NSColor.clear.cgColor, NSColor.black.cgColor, NSColor.black.cgColor] // the scroll view's layer is flipped: 0 is the top edge
+        return l
+    }()
     public var blockActionsView: NSView { blockActions }
     public var handleView: NSView { handle }
     public var onLayout: (() -> Void)?
@@ -106,8 +121,16 @@ public final class DocumentEditorView: NSView, NSTextViewDelegate {
         scrollView.autoresizingMask = []
         addSubview(scrollView)
         paper.owner = self
+        // Floating glass lives in this non-scrolling layer above the page, inside the editor, so it
+        // samples the page behind it and is clipped to the editor rather than the whole window.
+        addSubview(floating)
+        controller.floatingHost = floating
         blockActions.owner = self
-        addSubview(blockActions)
+        floating.addSubview(blockActions)
+        // Text fades as it scrolls under the top controls. Masking only the scroll view (not the whole
+        // editor, as a SwiftUI mask would) keeps the floating glass out of an offscreen pass.
+        scrollView.wantsLayer = true
+        scrollView.layer?.mask = fade
         controller.onSelectionChange = { [weak self] in self?.blockActions.update() }
 
         paperBackground.wantsLayer = true
@@ -237,10 +260,23 @@ public final class DocumentEditorView: NSView, NSTextViewDelegate {
         super.layout()
         // Text scrolls only below the host's top controls, never underneath them.
         scrollView.frame = NSRect(x: 0, y: 0, width: bounds.width, height: max(0, bounds.height - topInset))
-        let actionWidth: CGFloat = controller.isBlockMode ? 206 : 101
-        blockActions.frame = NSRect(x: ((bounds.width - actionWidth) / 2).rounded(), y: 18, width: actionWidth, height: 42)
+        if floating.frame != scrollView.frame { floating.frame = scrollView.frame }
+        let h = scrollView.frame.height
+        if fade.frame != scrollView.bounds || fade.locations?.count != 3 {
+            CATransaction.begin(); CATransaction.setDisableActions(true)
+            fade.frame = scrollView.bounds
+            fade.locations = [0, NSNumber(value: Double(min(1, 14 / max(h, 1)))), 1] // 14 pt fade at the top edge
+            CATransaction.commit()
+        }
+        placeBlockActions()
         relayout()
         blockActions.update()
+    }
+
+    func placeBlockActions() {
+        let size = blockActions.fittingSize
+        let r = NSRect(x: ((floating.bounds.width - size.width) / 2).rounded(), y: floating.bounds.height - size.height - 18, width: size.width, height: size.height)
+        if blockActions.frame != r { blockActions.frame = r }
     }
 
     /// Scrolling runs layout; re-assigning unchanged frames there dirtied the window's regions every frame.

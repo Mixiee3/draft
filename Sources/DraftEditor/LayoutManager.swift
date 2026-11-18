@@ -186,7 +186,7 @@ public final class DraftLayoutManager: NSLayoutManager {
         }
     }
 
-    /// Block effects. Plain fills and strokes only (no blur), so scrolling and typing stay cheap.
+    /// Block effects. Plain fills and strokes, except Glow's one shadow blur per glowing block.
     private func drawEffect(_ d: String, _ b: BlockInfo, pr: NSRange, rect r: NSRect, origin: NSPoint, width: CGFloat) {
         let tint = b.blockColor.map { NSColor(hex: $0) } ?? theme.accentColor
         let dark = theme.isDarkPage
@@ -234,22 +234,27 @@ public final class DraftLayoutManager: NSLayoutManager {
             (dark ? NSColor.white.withAlphaComponent(0.18) : theme.text.withAlphaComponent(solid ? 0.25 : 0.1)).setStroke()
             path.lineWidth = solid ? 1 : 0.5; path.stroke()
         case "glow":
-            // Glow is an edge treatment, not another outlined card. Use a nearly
-            // invisible source stroke and let the shadow provide the halo; drawing
-            // multiple visible strokes made the effect read as a pink rectangle.
-            if !theme.plainEffects {
+            // Light that glows inward from the block's edge and fades to a clear centre, with no
+            // drawn outline: clip to the block, then fill everything *outside* it with a shadow so
+            // only the blur spills in. (An outer halo is cut off by the text view's sides and read as
+            // a card; a shadow's strength follows its source's alpha, so the source must be opaque.)
+            // Increase Contrast gets a plain tinted outline instead of a blur.
+            if theme.plainEffects {
+                tint.withAlphaComponent(0.7).setStroke(); path.lineWidth = 1.5; path.stroke()
+            } else {
                 NSGraphicsContext.saveGraphicsState()
+                path.addClip()
+                let outside = NSBezierPath(rect: bg.insetBy(dx: -60, dy: -60))
+                outside.append(path)
+                outside.windingRule = .evenOdd
                 let shadow = NSShadow()
-                shadow.shadowColor = tint.withAlphaComponent(dark ? 0.52 : 0.34)
-                shadow.shadowBlurRadius = 9
+                shadow.shadowColor = tint.withAlphaComponent(dark ? 0.75 : 0.5)
+                shadow.shadowBlurRadius = 18
                 shadow.shadowOffset = .zero
                 shadow.set()
-                tint.withAlphaComponent(0.025).setStroke()
-                path.lineWidth = 1
-                path.stroke()
+                tint.setFill(); outside.fill()
                 NSGraphicsContext.restoreGraphicsState()
             }
-            // Keep the center transparent: Glow should read as light around the block.
         default: // accent
             tint.withAlphaComponent(dark ? 0.08 : 0.04).setFill(); path.fill()
             tint.setStroke(); path.lineWidth = 1.5; path.stroke()

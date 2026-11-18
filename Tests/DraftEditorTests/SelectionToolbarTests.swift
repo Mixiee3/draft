@@ -44,7 +44,7 @@ final class SelectionToolbarTests: XCTestCase {
     func testNarrowWindowWrapsInsteadOfOverflowing() {
         make(width: 420)
         c.toolbar.setMode(.effects)
-        let host = c.toolbar.superview!
+        let host = c.toolbar.presentationView.superview!
         XCTAssertLessThanOrEqual(c.toolbar.frame.width, max(300, host.visibleRect.width), "no wider than the editor")
         XCTAssertGreaterThan(c.toolbar.frame.height, 46, "two rows")
     }

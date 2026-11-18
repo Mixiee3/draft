@@ -58,39 +58,26 @@ public final class SelectionToolbar: NSView {
     let linkField = NSTextField()
     var hoverIndex: Int? = nil
     var pressedIndex: Int? = nil
-    /// The control itself lives inside native Liquid Glass on macOS 26 and later.
-    /// Older systems keep the previous vibrancy material.
+    /// The bar's material. The toolbar is the glass view's content, so the glass view is what gets
+    /// positioned in the host; native Liquid Glass on macOS 26+, the vibrancy material before that.
     let glass: NSView = {
         if #available(macOS 26.0, *) {
             let view = NSGlassEffectView()
-            // `.clear` is intended for content that already has a strong
-            // foreground/background separation.  A floating formatting bar
-            // sits over paper and scenic backdrops, so clear glass collapses
-            // into a gray, unreadable plate on light pages.  Regular is the
-            // system Liquid Glass surface with the live refraction pass.
             view.style = .regular
             view.cornerRadius = 23
-            if #available(macOS 27.0, *) { view.effectIsInteractive = true }
             return view
         }
         let view = NSVisualEffectView()
         view.material = .popover
         view.blendingMode = .withinWindow
         view.state = .active
+        view.wantsLayer = true
+        view.layer?.cornerRadius = 23
+        view.layer?.cornerCurve = .continuous
+        view.layer?.masksToBounds = true
         return view
     }()
-    /// Native glass gets its backdrop pass from a container.  Keeping the glass
-    /// inside an NSGlassEffectContainerView is important for AppKit to elevate
-    /// and process the effect as a live surface instead of a flattened overlay.
-    private let glassContainer: NSView = {
-        if #available(macOS 26.0, *) {
-            let view = NSGlassEffectContainerView()
-            view.spacing = 0
-            return view
-        }
-        return NSView()
-    }()
-    private let glassContainerContent = NSView()
+    /// The view placed in the host (the toolbar itself sits inside it at the origin).
     public var presentationView: NSView { glass }
     static let height: CGFloat = 46
     static let radius: CGFloat = 23
@@ -102,35 +89,20 @@ public final class SelectionToolbar: NSView {
         return false
     }
 
-    /// Runtime evidence for diagnosing Liquid Glass composition in automation
-    /// and on customer machines.
+    /// Runtime evidence for diagnosing Liquid Glass composition in automation.
     public var glassDiagnostic: String {
-        if #available(macOS 26.0, *), let native = glass as? NSGlassEffectView {
-            return "class=NSGlassEffectView style=\(String(describing: native.style)) tint=\(native.tintColor != nil) alpha=\(native.alphaValue) frame=\(native.frame) container=\(String(describing: Swift.type(of: glassContainer))) window=\(glass.window != nil)"
-        }
-        return "class=\(String(describing: Swift.type(of: glass))) native=false alpha=\(glass.alphaValue) frame=\(glass.frame) window=\(glass.window != nil)"
+        "class=\(String(describing: Swift.type(of: glass))) native=\(usesNativeGlass) alpha=\(glass.alphaValue) frame=\(glass.frame) host=\(String(describing: glass.superview.map { Swift.type(of: $0) })) window=\(glass.window != nil)"
     }
 
     init(controller: EditorController) {
         self.controller = controller
         super.init(frame: .zero)
-        // Keep the native glass path non-layer-backed. AppKit's Liquid Glass
-        // compositor needs the content view as a real descendant; putting a
-        // custom backing layer between it and the glass flattens the backdrop.
+        // The legacy material needs a drop shadow of its own; native glass draws its own edge and shadow.
         if !usesNativeGlass {
             wantsLayer = true
             layer?.cornerRadius = Self.radius
             layer?.cornerCurve = .continuous
-            layer?.shadowOpacity = 0.16
-            layer?.shadowRadius = 18
-            layer?.shadowOffset = CGSize(width: 0, height: -8)
             layer?.masksToBounds = false
-        }
-        if !usesNativeGlass {
-            glass.wantsLayer = true
-            glass.layer?.cornerRadius = Self.radius
-            glass.layer?.cornerCurve = .continuous
-            glass.layer?.masksToBounds = true
         }
         glass.isHidden = true
         isHidden = true
@@ -152,13 +124,6 @@ public final class SelectionToolbar: NSView {
         } else {
             glass.addSubview(self)
         }
-        if #available(macOS 26.0, *), let container = glassContainer as? NSGlassEffectContainerView {
-            container.contentView = glassContainerContent
-        } else {
-            glassContainer.addSubview(glassContainerContent)
-        }
-        glassContainerContent.addSubview(glass)
-        glassContainerContent.wantsLayer = false
     }
     required init?(coder: NSCoder) { fatalError() }
 
@@ -167,21 +132,10 @@ public final class SelectionToolbar: NSView {
     public override func acceptsFirstMouse(for event: NSEvent?) -> Bool { true }
 
     var dark: Bool { controller.theme.isDarkPage }
-    /// Glass must sit above the scrolling document, where AppKit can sample the actual window.
-    /// The editor still uses `overlayHost` for text geometry and other inline overlays.
-    var presentationHost: NSView? {
-        // SwiftUI's masked NSViewRepresentable is rendered into an off-screen
-        // layer.  A native glass view inside that layer cannot see the document
-        // pixels behind it, so put the glass overlay at the window content level
-        // where AppKit can perform the live backdrop/refraction pass.
-        if usesNativeGlass, let content = controller.textView.window?.contentView {
-            return content
-        }
-        // The legacy material is hosted in the paper's flipped coordinate space.
-        // Only native Liquid Glass needs to escape to the window content view for
-        // live backdrop sampling.
-        return controller.overlayHost
-    }
+    /// The editor's non-scrolling floating layer: glass there samples the page behind it and stays
+    /// clipped to the editor (never over the sidebar or the top controls). Bare controllers fall back
+    /// to the scrolling overlay host.
+    var presentationHost: NSView? { controller.floatingHost ?? controller.overlayHost }
 
     // MARK: Model
 
@@ -376,7 +330,7 @@ public final class SelectionToolbar: NSView {
         if !shouldShow {
             hide(); return
         }
-        if glassContainer.superview !== presentationHost { presentationHost?.addSubview(glassContainer) }
+        if glass.superview !== presentationHost { presentationHost?.addSubview(glass) }
         if !isVisible || mode != .main && (window?.firstResponder === controller.textView) && mode != .palette && mode != .effects && mode != .spectrum { mode = .main; linkField.isHidden = true }
         buildItems()
         position()
@@ -384,29 +338,31 @@ public final class SelectionToolbar: NSView {
             isVisible = true
             isHidden = false
             syncGlass()
-            if !(controller.host == nil) && !NSWorkspace.shared.accessibilityDisplayShouldReduceMotion && controller.theme.animateEffects {
-                // Keep the native material fully opaque so AppKit can perform its
-                // live refraction pass. Fading the NSGlassEffectView itself
-                // collapses the lens into a flat, unreadable gray plate.
-                alphaValue = 0
-                glass.alphaValue = 1
-                NSAnimationContext.runAnimationGroup { ctx in
-                    ContextBarMotion.configure(ctx)
-                    animator().alphaValue = 1
-                }
-            }
+            // Plate and controls fade in together, so the glass never shows up empty.
+            glass.alphaValue = animates ? 0 : 1
+            if animates { NSAnimationContext.runAnimationGroup { ContextBarMotion.configure($0); glass.animator().alphaValue = 1 } }
         } else {
             syncGlass()
             needsDisplay = true
         }
     }
 
+    private var animates: Bool {
+        controller.host != nil && !NSWorkspace.shared.accessibilityDisplayShouldReduceMotion && controller.theme.animateEffects
+    }
+
     func hide() {
         guard isVisible || !isHidden else { return }
         isVisible = false
-        isHidden = true
-        glass.isHidden = true
-        glassContainer.isHidden = true
+        if animates && !glass.isHidden {
+            NSAnimationContext.runAnimationGroup({ ContextBarMotion.configure($0); glass.animator().alphaValue = 0 }) { [weak self] in
+                guard let self, !self.isVisible else { return } // re-shown mid-fade
+                self.isHidden = true; self.glass.isHidden = true
+            }
+        } else {
+            isHidden = true
+            glass.isHidden = true
+        }
         mode = .main
         keyboardIndex = nil
         linkField.isHidden = true
@@ -439,32 +395,14 @@ public final class SelectionToolbar: NSView {
         guard let host = presentationHost, let (first, last) = selectionRects() else { return }
         let size = frame.size
         let visible = host.visibleRect
-        var y: CGFloat
-        // Selection geometry is expressed in the editor's visual top-down model;
-        // keep the toolbar above the selection by default and flip below only
-        // when it would collide with the visible top edge.
-        let topSafe = visible.minY + 8
-        var candidate = first.minY - size.height - 12
-        if candidate < topSafe { candidate = last.maxY + 12 }
+        let topSafe = visible.minY + 8 // the host already starts below the document controls
+        var y = first.minY - size.height - 12
+        if y < topSafe { y = last.maxY + 12 } // flip below the selection
+        if y + size.height > visible.maxY - 8 { y = max(topSafe, min(first.minY - size.height - 12, visible.maxY - size.height - 8)) } // never off the bottom
         var x = first.midX - size.width / 2
         if first.width < 4 { x = first.minX - size.width / 2 }
         x = min(max(x, visible.minX + 10), visible.maxX - size.width - 10)
-        if first.minY > visible.maxY {
-            // The selection is currently below the clipped viewport (for example
-            // while a scroll animation is settling). Keep the bar attached to the
-            // selection instead of clamping it to an unrelated viewport edge.
-            y = last.maxY + 12
-        } else {
-            y = min(max(candidate, topSafe), visible.maxY - size.height - 8)
-        }
-        let origin = NSPoint(x: x.rounded(), y: y.rounded())
-        // Keep the logical toolbar frame in the same coordinate space as the
-        // presentation view. Native glass is hosted separately so it can sample
-        // the window backdrop, but callers and geometry tests still need the
-        // toolbar's frame to describe its on-screen position.
-        frame = NSRect(origin: origin, size: size)
-        glassContainer.setFrameOrigin(origin)
-        glass.setFrameOrigin(.zero)
+        glass.setFrameOrigin(NSPoint(x: x.rounded(), y: y.rounded()))
     }
 
     // MARK: Drawing
@@ -472,44 +410,20 @@ public final class SelectionToolbar: NSView {
     public override func updateLayer() { super.updateLayer() }
 
     func syncGlass() {
-        glass.setFrameSize(frame.size)
-        glassContainer.setFrameSize(frame.size)
-        glassContainerContent.frame = glassContainer.bounds
-        glass.frame = glassContainerContent.bounds
         glass.isHidden = isHidden
-        glassContainer.isHidden = isHidden
-        // The app chrome can be dark while the document surface is light. Match
-        // the native glass to the document, otherwise AppKit renders a dark plate
-        // over a light page instead of the light lens used by Craft.
-        if !usesNativeGlass {
-            glass.appearance = NSAppearance(named: dark ? .darkAqua : .aqua)
-        } else {
-            // Native glass otherwise inherits the dark app chrome appearance,
-            // even when the document page is light.  That is the source of the
-            // white/washed-out symbols reported in the screenshots.
-            glass.appearance = NSAppearance(named: dark ? .darkAqua : .aqua)
-            if #available(macOS 26.0, *), let native = glass as? NSGlassEffectView {
-                native.alphaValue = 1
-                native.tintColor = dark
-                    ? NSColor.black.withAlphaComponent(0.18)
-                    : NSColor.white.withAlphaComponent(0.56)
-            }
-        }
+        ContextBarGlass.apply(to: glass, darkPage: dark)
     }
+    /// The toolbar always fills its glass; resizing the toolbar resizes the glass.
     public override func setFrameSize(_ s: NSSize) {
-        super.setFrameSize(s)
         if glass.frame.size != s { glass.setFrameSize(s) }
-        if glassContainer.frame.size != s { glassContainer.setFrameSize(s) }
+        super.setFrameSize(s)
+        if frame.origin != .zero { super.setFrameOrigin(.zero) }
     }
 
     public override func draw(_ dirtyRect: NSRect) {
-        // Native glass supplies its own tint, highlights and refraction. The legacy material
-        // needs a restrained tint and edge to keep the controls readable on older macOS.
-        layer?.backgroundColor = NSColor.clear.cgColor
-        layer?.shadowPath = CGPath(roundedRect: bounds, cornerWidth: Self.radius, cornerHeight: Self.radius, transform: nil)
-        let nativeGlass: Bool = {
-            self.usesNativeGlass
-        }()
+        // Native glass supplies its own tint, edge and refraction; the legacy material needs a
+        // restrained tint and rim to keep the controls readable on older macOS.
+        let nativeGlass = usesNativeGlass
         let lightInk = dark
         let fg = lightInk ? NSColor(white: 0.96, alpha: 1) : NSColor(white: 0.1, alpha: 1)
         linkField.textColor = fg

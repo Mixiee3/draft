@@ -23,12 +23,8 @@ struct DocumentScreen: View {
             EditorHostView(view: model.editor(for: docId))
                 .accessibilityLabel("Document")
                 .tourAnchor(.page)
-                // Text fades out as it scrolls under the top controls, like paper sliding away.
-                .mask(VStack(spacing: 0) {
-                    Color.clear.frame(height: 58)
-                    LinearGradient(colors: [.clear, .black], startPoint: .top, endPoint: .bottom).frame(height: 14)
-                    Color.black
-                })
+                // The fade under the top controls is drawn by the editor itself (a mask on its scroll
+                // view), so the editor's floating Liquid Glass is not rendered offscreen.
             if !model.focusMode { GeometryReader { g in topBar(tokens: tokens, darkPage: darkPage, narrow: g.size.width < 760) }.transition(.opacity) }
             if let p = model.panel { sidePanel(p) }
             if model.styleGallery {
