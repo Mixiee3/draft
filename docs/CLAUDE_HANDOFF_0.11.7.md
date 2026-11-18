@@ -10,6 +10,27 @@
 
 Audit everything added since the 0.11.5 baseline. Treat the current implementation as a review candidate, not as proven-good UI. Preserve the last known-good stable app and verify every visual claim at native resolution on light and dark pages.
 
+## Conversation-derived requirements and failure history
+
+These requirements came from the user’s repeated testing feedback in the working chat and must be treated as acceptance criteria, even when they are not represented by a single source file:
+
+- The app must use real macOS Liquid Glass behavior: visible translucency, backdrop sampling/refraction, and readable controls. A flat gray/white translucent rectangle, a fully opaque fake plate, or a surface that lets the underlying heading bleed through without legibility is a failure.
+- The user does **not** have Reduce Transparency enabled. Do not explain away a missing glass effect by assuming an accessibility setting; diagnose the composition, appearance, alpha, hosting level, and tint in code.
+- Light document pages can sit inside dark app chrome. Native glass must follow the page appearance rather than inheriting a dark window appearance and washing out the icons.
+- The text-selection toolbar must remain a rounded, centered floating bar with real controls, readable icons, and a visible entrance/exit animation. It must not appear as an empty transparent rectangle, jump to an unexplained location, or cover the selected text.
+- The bottom/center block-action bar must remain centered, keep its rounded rectangle silhouette, show its icons, and animate in/out. A previous test showed a broken transparent rectangle with missing buttons; this must be explicitly regression-tested.
+- The document-sidebar selector must be visible, interactive, and draggable across the five options (outline/backlinks/tasks/attachments/find). The user specifically wants press-and-slide handoff between options, not only separate clicks. The selected capsule must not collapse into a gray blur or lose its icon.
+- Traffic lights must remain the standard macOS close/minimize/zoom controls. A prior iteration caused them to be covered/dimmed; any z-order fix must be checked against normal title-bar behavior.
+- Accent styling must be consistent regardless of whether applied manually or by the Assistant: it should use the intended underline treatment, not an accidental rectangle around the text/block.
+- Glow must actually glow. It should be a readable halo with a transparent center and no hard inner outline/box. Check wrapped headings, paragraphs, lists, and dark/light pages.
+- Check every other text/block decoration for the same accidental rectangle, clipping, unreadability, or mismatch between manual formatting and Assistant-applied formatting.
+- The user expects screenshots whenever visual changes need confirmation. Capture the changed toolbar, selector, block bar, light/dark variants, and effect examples; do not rely on code inspection alone.
+- The user requested a running task list and wants it kept honest: mark items done only after hands-on evidence, and leave uncertain items visibly in progress.
+- The user explicitly wants the full week’s work handed to Claude for adversarial review. Claude is expected to reject poor implementation quality, rework architecture, or revert changes rather than preserving them for continuity.
+- The last known-good fallback is the state with working Liquid Glass UI and the formatting bar centered near the bottom. Keep that state recoverable while experimenting.
+- The app produced repeated crash/recovery notices during test launches. Distinguish a persisted recovery card from a fresh crash, inspect logs when it recurs, and do not ship until launch/relaunch stability is understood.
+- The user discussed a hosted updater and website text/download automation. No website repository was found alongside this Draft checkout; do not claim the site was updated. Treat the release/feed automation as a separate follow-up after visual review and signing/notarization checks.
+
 ## What changed
 
 This is the complete change inventory from `e8c5403..e9bf782`, not just the headline features.
