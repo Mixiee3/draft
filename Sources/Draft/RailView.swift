@@ -279,7 +279,6 @@ struct VaultCard: View {
 struct DocumentRail: View {
     @Environment(AppModel.self) var model
     @Environment(\.tokens) var t
-    @Namespace private var railGlass
     let docId: String
 
     var body: some View {
@@ -299,47 +298,9 @@ struct DocumentRail: View {
             }.padding(.horizontal, 14).padding(.bottom, 12)
 
             if #available(macOS 26.0, *) {
-            GlassEffectContainer(spacing: 3) {
-                GeometryReader { proxy in
-                    HStack(spacing: 2) {
-                        ForEach([(DocRailTab.outline, "list.bullet", "Outline"), (.backlinks, "arrow.uturn.backward", "Backlinks"), (.tasks, "checkmark.circle", "Tasks"), (.attachments, "paperclip", "Attachments"), (.find, "doc.text.magnifyingglass", "Find in Page (⌘F)")], id: \.0) { tab, icon, label in
-                            let on = model.docRailTab == tab
-                            Button { withAnimation(.smooth(duration: 0.2)) { model.docRailTab = tab } } label: {
-                                // The icon is the glass's content: a glass container composites its glass
-                                // above sibling views, so glass placed behind the icon covered it.
-                                Image(systemName: icon).font(.system(size: DS.body, weight: .medium))
-                                    .frame(maxWidth: .infinity, minHeight: 26)
-                                    .glassEffect(on ? .regular.tint(t.dark ? .white.opacity(0.10) : .white.opacity(0.6)).interactive() : .identity, in: Capsule())
-                                    .glassEffectID(on ? "document-rail-selection" : "document-rail-\(tab)", in: railGlass)
-                                    .contentShape(Capsule())
-                            }
-                            .buttonStyle(.plain)
-                            .foregroundStyle(on ? (t.dark ? .white : t.accent) : t.secondary)
-                            .opacity(on ? 1 : 0.92)
-                            .help(loc(label)).accessibilityLabel(loc(label)).accessibilityAddTraits(on ? .isSelected : [])
-                        }
-                    }
-                    .padding(3)
-                    .background(Capsule(style: .continuous).fill(t.dark ? Color.white.opacity(0.06) : Color.black.opacity(0.05))) // the track the selection slides along
-                    // SwiftUI hover tracking stops being reliable while the
-                    // mouse button is held. Tracking the whole rail lets users
-                    // press and slide across tabs, like Craft's liquid selector.
-                    .contentShape(Rectangle())
-                    // Use a simultaneous gesture so the tab buttons retain their normal
-                    // click/accessibility behavior while a press can still slide across
-                    // the rail and hand off selection to the tab under the pointer.
-                    // The selection (not hover) owns the glass, so the capsule never sits on a tab
-                    // that isn't selected; the 3 pt padding is outside the five equal slots.
-                    .simultaneousGesture(DragGesture(minimumDistance: 0).onChanged { value in
-                        let slot = max((proxy.size.width - 6) / 5, 1)
-                        let tab = [DocRailTab.outline, .backlinks, .tasks, .attachments, .find][min(max(Int((value.location.x - 3) / slot), 0), 4)]
-                        if tab != model.docRailTab { withAnimation(.smooth(duration: 0.16)) { model.docRailTab = tab } }
-                    })
-                }
-                .frame(height: 32)
-            }
-            .padding(.horizontal, 12).padding(.bottom, 12)
-            .accessibilityElement(children: .contain).accessibilityLabel("Document sidebar pane")
+                LiquidRailSelector()
+                    .padding(.horizontal, 12).padding(.bottom, 12)
+                    .accessibilityElement(children: .contain).accessibilityLabel("Document sidebar pane")
             } else {
                 HStack(spacing: 2) {
                     ForEach([(DocRailTab.outline, "list.bullet", "Outline"), (.backlinks, "arrow.uturn.backward", "Backlinks"), (.tasks, "checkmark.circle", "Tasks"), (.attachments, "paperclip", "Attachments"), (.find, "doc.text.magnifyingglass", "Find in Page (⌘F)")], id: \.0) { tab, icon, label in
@@ -580,5 +541,79 @@ struct SpaceSwitcher: View {
             Button("Create") { model.createSpace(name) }
             Button("Cancel", role: .cancel) {}
         } message: { Text("A Space has its own folders, documents, tags and tasks.") }
+    }
+}
+
+
+/// The document sidebar's five tabs with one Liquid Glass selection that flows between them: the
+/// edge in the direction of travel springs ahead and the other follows more softly, so the glass
+/// stretches toward the new tab and settles, as Apple's own tab selectors do. Press and slide across
+/// the tabs to switch; Reduce Motion moves it without the stretch.
+@available(macOS 26.0, *)
+private struct LiquidRailSelector: View {
+    @Environment(AppModel.self) var model
+    @Environment(\.tokens) var t
+    @Environment(\.accessibilityReduceMotion) var reduceMotion
+    static let tabs: [(DocRailTab, String, String)] = [(.outline, "list.bullet", "Outline"), (.backlinks, "arrow.uturn.backward", "Backlinks"), (.tasks, "checkmark.circle", "Tasks"), (.attachments, "paperclip", "Attachments"), (.find, "doc.text.magnifyingglass", "Find in Page (⌘F)")]
+    @State private var lead: CGFloat = 0
+    @State private var trail: CGFloat = 0
+    @State private var pressed = false
+
+    var body: some View {
+        GeometryReader { proxy in
+            let w = proxy.size.width
+            ZStack(alignment: .leading) {
+                Capsule(style: .continuous).fill(t.dark ? Color.white.opacity(0.06) : Color.black.opacity(0.05)) // the track
+                Color.clear
+                    .frame(width: max(0, trail - lead), height: 26)
+                    .glassEffect(.regular.tint(t.dark ? .white.opacity(0.12) : .white.opacity(0.65)).interactive(), in: Capsule(style: .continuous))
+                    .scaleEffect(x: pressed ? 1.05 : 1, y: pressed ? 1.1 : 1)
+                    .offset(x: lead)
+                HStack(spacing: 2) {
+                    ForEach(Self.tabs, id: \.0) { tab, icon, label in
+                        let on = model.docRailTab == tab
+                        Button { select(tab) } label: {
+                            Image(systemName: icon).font(.system(size: DS.body, weight: .medium))
+                                .frame(maxWidth: .infinity, minHeight: 26)
+                                .contentShape(Capsule())
+                        }
+                        .buttonStyle(.plain)
+                        .foregroundStyle(on ? (t.dark ? .white : t.accent) : t.secondary)
+                        .help(loc(label)).accessibilityLabel(loc(label)).accessibilityAddTraits(on ? .isSelected : [])
+                    }
+                }
+                .padding(3)
+            }
+            .contentShape(Rectangle())
+            // Press-and-slide: the tab under the pointer takes the selection while the button is held.
+            .simultaneousGesture(DragGesture(minimumDistance: 0)
+                .onChanged { v in
+                    if !pressed { withAnimation(.spring(response: 0.25, dampingFraction: 0.6)) { pressed = true } }
+                    let slot = max((w - 6) / 5, 1)
+                    select(Self.tabs[min(max(Int((v.location.x - 3) / slot), 0), 4)].0)
+                }
+                .onEnded { _ in withAnimation(.spring(response: 0.3, dampingFraction: 0.55)) { pressed = false } })
+            .onAppear { snap(w) }
+            .onChange(of: w) { snap(w) }
+            .onChange(of: model.docRailTab) { flow(w) }
+        }
+        .frame(height: 32)
+    }
+
+    private var index: Int { Self.tabs.firstIndex { $0.0 == model.docRailTab } ?? 0 }
+    /// Edges of tab `i` in the selector: five equal buttons, 2 pt apart, inside 3 pt padding.
+    private func edges(_ i: Int, _ w: CGFloat) -> (CGFloat, CGFloat) {
+        let bw = max(0, (w - 6 - 8) / 5), l = 3 + CGFloat(i) * (bw + 2)
+        return (l, l + bw)
+    }
+    private func select(_ tab: DocRailTab) { if tab != model.docRailTab { model.docRailTab = tab } }
+    private func snap(_ w: CGFloat) { (lead, trail) = edges(index, w) }
+    private func flow(_ w: CGFloat) {
+        let (l, r) = edges(index, w)
+        guard !reduceMotion else { withAnimation(.easeOut(duration: 0.15)) { lead = l; trail = r }; return }
+        let right = l > lead
+        let front = Animation.spring(response: 0.22, dampingFraction: 0.72), back = Animation.spring(response: 0.56, dampingFraction: 0.78)
+        withAnimation(right ? back : front) { lead = l }
+        withAnimation(right ? front : back) { trail = r }
     }
 }
