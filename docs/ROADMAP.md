@@ -18,7 +18,7 @@ migration that backs up first; unknown fields and block types are preserved.
 Legend: ✅ done · 🟡 partial · ⬜ not started
 
 ### Change log of this plan
-- **2026‑11‑24** — New plan after 0.11.8. Everything earlier is done, waiting for a person (VoiceOver, real keyboards and input methods, translations), or blocked outside the code (Developer ID notarization, Codex eligibility); those stay listed under *Manual checks carried forward*. Added v0.11 (shipped) and five milestones: v0.12 Liquid Glass everywhere, v0.13 Images & media (insertion, sizing, iPhone sketches as ink, scans, editing, galleries), v0.14 Capture anywhere, v0.15 Thinking tools, v0.16 Share what you write, then the v1.0 gate.
+- **2026‑11‑24** — New plan after 0.11.8. Everything earlier is done, waiting for a person (VoiceOver, real keyboards and input methods, translations), or blocked outside the code (Developer ID notarization, Codex eligibility); those stay listed under *Manual checks carried forward*. Added v0.11 (shipped) and five milestones: v0.12 Liquid Glass everywhere, v0.13 Images & media (insertion, sizing, iPhone sketches as ink, scans, editing, galleries, a sketch block and drawing on the MacBook trackpad), v0.14 Capture anywhere, v0.15 Thinking tools, v0.16 Share what you write, then the v1.0 gate.
 - **2026‑11‑15** — v0.11.5 published on the stable update channel. Fixed silent updater failures in protected install locations: request macOS authorization, verify again before replacement, restore/reopen the previous app on failure, and show a recovery message next launch. Added a drag-to-Applications DMG; the runtime is bundled. Automated updater checks pass. Real authorization and relaunch on another Mac remain a manual beta check.
 - **2026‑11‑13** — v0.9 Scale & Reach: long notes, separate search index, Czech and German, keyboard/IME matrix, table column reordering, performance budgets on every build, accessibility static audit, panel timing, display sizes. Six features done; keyboard/IME, accessibility and display scaling need a person for the last part (physical keyboards, VoiceOver, system Reduce Motion).
 - **2026‑11‑12 (late)** — v0.8 Trust & Recovery batch done: Vault Check with 19 problem kinds and severities; repairs with an exact preview, a backup and journal first, validation after, all-or-nothing and one Undo (also after relaunch); rebuild library from notes and rebuild index with a dry run; Version History with readable diffs and restore as one Undo step; attachment and backup browsers; migration validator with fixtures for every schema; startup recovery and Safe Mode. Found and fixed: prototype (schema 0) vaults could never migrate (two false differences in the dry run); a damaged search index was overwritten without a copy. `scripts/trust-test.sh` (41 checks) and `RecoveryPerfTests`.
@@ -639,7 +639,7 @@ native speaker.
 | 2 | Sensible default size: small images at their real size, large photos fit the page, retina images at point size | ⬜ | Rule tested with 1×, 2× and 12 MP images; no upscaling blur |
 | 3 | Drag-to-resize handles and alignment (left, centre, right, full width) with a live size readout | ⬜ | Snaps to S/M/L/Full; one Undo per drag; keyboard alternative in the image bar |
 | 4 | iPhone sketches as ink: the paper background is removed, the drawing is trimmed to its strokes, and the ink follows light and dark mode | ⬜ | A Continuity Camera sketch reads well on Paper, Night Ink and an image backdrop; the original is kept |
-| 5 | Vector sketches: strokes captured as vectors where available, so sketches stay sharp at any size and stay editable | ⬜ | Zoomed sketch stays crisp; strokes can be recoloured and erased in the sketch block (see v0.15) |
+| 5 | Vector sketches: strokes captured as vectors where available, so sketches stay sharp at any size and stay editable | ⬜ | Zoomed sketch stays crisp; strokes can be recoloured and erased in the sketch block (#13) |
 | 6 | Scan cleanup: document scans auto-cropped, straightened and contrast-boosted; multi-page scans become one PDF block with page thumbnails | ⬜ | Text recognition (on-device) makes scanned text searchable |
 | 7 | Crop, rotate, flip and simple adjustments (exposure, contrast, black & white) in a glass editor, non-destructive | ⬜ | Original asset untouched; edits stored as parameters; exports use the edited version |
 | 8 | Image galleries: several images side by side or in a grid block, rearranged by dragging | ⬜ | Grid reflows in narrow windows; each image keeps caption and alt text |
@@ -647,6 +647,8 @@ native speaker.
 | 10 | Live Text and on-device image description: select text in images, copy it, find it in search; suggested alt text | ⬜ | Suggestions are proposals, never applied silently; nothing leaves the Mac |
 | 11 | Image formats and size: HEIC, WebP, animated GIF, SVG; large images stored once, downscaled previews cached | ⬜ | A note with 200 photos opens within budget; vault check finds unused images (existing cleanup) |
 | 12 | Video and audio blocks: play inline, poster frame, voice memos recorded straight into a note | ⬜ | Recording needs the microphone prompt only when used; files saved in the vault |
+| 13 | Sketch block: pen, marker, highlighter, eraser, lasso, colours and undo; draw with the mouse, the trackpad or Apple Pencil through Sidecar; an iPhone sketch opens in it for editing | ⬜ | Strokes stored as vectors in the note, sharp at any size, ink follows light and dark; exported as an image; one Undo per stroke |
+| 14 | Draw on the MacBook trackpad: a drawing mode turns the trackpad into a small tablet — the trackpad's surface maps to the canvas, one finger draws, Force Touch pressure sets line weight, two fingers pan and pinch to zoom, Esc or a click outside leaves it | ⬜ | Strokes follow the finger with no cursor drift (absolute touch position, pointer hidden and held while drawing); works on built-in and Magic Trackpads; pressure off on trackpads without Force Touch; VoiceOver announces the mode |
 
 ## v0.14 — "Capture anywhere" (macOS)
 
@@ -673,7 +675,7 @@ native speaker.
 |---|---|---|---|
 | 1 | Math: inline `$…$` and block `$$…$$` formulas | ⬜ | Renders offline; edit in place; exports to HTML/PDF and stays `$$…$$` in Markdown (FEATURE_PARITY E10) |
 | 2 | Mermaid diagrams as a block | ⬜ | Bundled renderer, no network; live preview; PNG/SVG in exports (A6) |
-| 3 | Sketch block: draw with mouse, trackpad or an iPhone sketch, pen/marker/eraser, colours, lasso, editable later | ⬜ | Strokes stored as vectors in the note; exported as an image (A6) |
+| 3 | Handwriting to text: turn sketched handwriting into typed text, on-device | ⬜ | Proposed as a text block beside the sketch, never replacing it; works offline (builds on the v0.13 sketch block) |
 | 4 | Whiteboard page: an infinite canvas with notes, images, sketches and arrows | ⬜ | Pans and zooms smoothly with 500 items; content searchable |
 | 5 | Margin notes: private comments on a word or block | ⬜ | Shown in the margin and in a Comments pane; never exported unless asked (R3, local-only) |
 | 6 | Card sizes and previews for linked pages | ⬜ | Small/medium/large and image/text previews (P2) |
