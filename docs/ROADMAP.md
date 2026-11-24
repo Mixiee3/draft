@@ -18,6 +18,7 @@ migration that backs up first; unknown fields and block types are preserved.
 Legend: ✅ done · 🟡 partial · ⬜ not started
 
 ### Change log of this plan
+- **2026‑11‑24** — New plan after 0.11.8. Everything earlier is done, waiting for a person (VoiceOver, real keyboards and input methods, translations), or blocked outside the code (Developer ID notarization, Codex eligibility); those stay listed under *Manual checks carried forward*. Added v0.11 (shipped) and the next four milestones: v0.12 Liquid Glass everywhere, v0.13 Capture anywhere, v0.14 Thinking tools, v0.15 Share what you write, then the v1.0 gate.
 - **2026‑11‑15** — v0.11.5 published on the stable update channel. Fixed silent updater failures in protected install locations: request macOS authorization, verify again before replacement, restore/reopen the previous app on failure, and show a recovery message next launch. Added a drag-to-Applications DMG; the runtime is bundled. Automated updater checks pass. Real authorization and relaunch on another Mac remain a manual beta check.
 - **2026‑11‑13** — v0.9 Scale & Reach: long notes, separate search index, Czech and German, keyboard/IME matrix, table column reordering, performance budgets on every build, accessibility static audit, panel timing, display sizes. Six features done; keyboard/IME, accessibility and display scaling need a person for the last part (physical keyboards, VoiceOver, system Reduce Motion).
 - **2026‑11‑12 (late)** — v0.8 Trust & Recovery batch done: Vault Check with 19 problem kinds and severities; repairs with an exact preview, a backup and journal first, validation after, all-or-nothing and one Undo (also after relaunch); rebuild library from notes and rebuild index with a dry run; Version History with readable diffs and restore as one Undo step; attachment and backup browsers; migration validator with fixtures for every schema; startup recovery and Safe Mode. Found and fixed: prototype (schema 0) vaults could never migrate (two false differences in the dry run); a damaged search index was overwritten without a copy. `scripts/trust-test.sh` (41 checks) and `RecoveryPerfTests`.
@@ -598,6 +599,72 @@ Version History, Trust screens with keyboard focus, accessibility audit output.
 v0.9 screens; Full Keyboard Access with real Tab presses; typing with a physical QWERTZ/AZERTY/Dvorak
 keyboard and the real Japanese and Chinese input methods; reading the Czech and German text as a
 native speaker.
+
+## v0.11 — "Liquid Glass" (macOS) ✅ shipped
+
+**Theme.** The editor's floating controls and the window chrome move to macOS Liquid Glass, and updates install reliably. 0.11.5–0.11.8, published on the in-app update channel and draft-notes.github.io.
+
+| # | Feature | Status | Evidence |
+|---|---|---|---|
+| 1 | Recoverable updates and a DMG installer | ✅ | Authorization in protected locations, verify-before-replace, restore on failure (0.11.5) |
+| 2 | Glass selection toolbar and block bar inside the editor | ✅ | Real refraction of the page behind them; bars step aside while typing; `docs/screenshots/ux-review-0.11.7/` (0.11.7) |
+| 3 | Accent underline and Glow halo, same for manual and Assistant formatting | ✅ | `effects-shots`, light and dark (0.11.7) |
+| 4 | Click the page background to stop typing | ✅ | Checked by hand (0.11.7) |
+| 5 | Draft switches, glass top bar, liquid sidebar selector | ✅ | Checked by hand in light, dark and on an image backdrop (0.11.8) |
+
+## v0.12 — "Liquid Glass everywhere" (macOS)
+
+**Theme.** Finish the visual move: every surface that floats over the page or the backdrop is real Liquid Glass with one motion language, and it stays readable with Reduce Transparency, Increase Contrast and Reduce Motion.
+
+| # | Feature | Status | Done when |
+|---|---|---|---|
+| 1 | Side panels (Format, Style, Info, Share) as glass sheets that slide in over the backdrop | ⬜ | Panels sample the backdrop; page never re-wraps (existing `PanelLayoutTests`); light, dark, image backdrop captures |
+| 2 | Tab strip and Assistant button in glass; tabs morph when opened, closed and reordered | ⬜ | Tab switch p95 stays < 50 ms (`budgets.sh`); drag-reorder animates |
+| 3 | Slash menu, `[[` / `@` pickers and context menus restyled as glass popovers | ⬜ | Keyboard paths unchanged; selection kept; captures in both themes |
+| 4 | One motion system: shared springs for bars, panels, selector, switches, sheets | ⬜ | Every animation reads from one place; Reduce Motion turns all of them into fades (test) |
+| 5 | Accessibility fallbacks for glass | ⬜ | Reduce Transparency gives solid surfaces, Increase Contrast adds borders; captures with each setting on |
+| 6 | Glass block handle and drag preview (lift, drop indicator) | ⬜ | Drag a block in a 10,000-block note within budget; one Undo |
+
+## v0.13 — "Capture anywhere" (macOS)
+
+**Theme.** Getting a thought into Draft should take one keystroke from anywhere on the Mac, without opening the window first. All local: no account, no network.
+
+| # | Feature | Status | Done when |
+|---|---|---|---|
+| 1 | Quick Capture: a global shortcut opens a small glass capture window; append to today's note or a chosen note | ⬜ | Works with Draft in the background; text lands with one Undo; shortcut configurable |
+| 2 | Menu bar extra: today's tasks, recent notes, new note | ⬜ | Optional (off by default); keyboard reachable |
+| 3 | Share extension ("Send to Draft") from Safari, Mail, Finder and other apps: links, text, images, files | ⬜ | Shared items land as link cards, quotes or attachments in the chosen note |
+| 4 | Shortcuts / App Intents: create note, append to daily, add task, search, open note | ⬜ | Each intent runs from the Shortcuts app and Spotlight; tested with a throwaway vault |
+| 5 | Spotlight search of notes (Core Spotlight, on-device) | ⬜ | A note found in Spotlight opens at the matching block; index removed when turned off |
+| 6 | Desktop widgets: today's note, tasks due, a pinned note | ⬜ | Update within a minute of an edit; light and dark |
+
+## v0.14 — "Thinking tools" (macOS)
+
+**Theme.** Blocks for the kinds of thinking plain text can't hold, rendered offline and exported faithfully.
+
+| # | Feature | Status | Done when |
+|---|---|---|---|
+| 1 | Math: inline `$…$` and block `$$…$$` formulas | ⬜ | Renders offline; edit in place; exports to HTML/PDF and stays `$$…$$` in Markdown (FEATURE_PARITY E10) |
+| 2 | Mermaid diagrams as a block | ⬜ | Bundled renderer, no network; live preview; PNG/SVG in exports (A6) |
+| 3 | Sketch block: draw with mouse or trackpad, editable later | ⬜ | Strokes stored as vectors in the note; exported as an image (A6) |
+| 4 | Margin notes: private comments on a word or block | ⬜ | Shown in the margin and in a Comments pane; never exported unless asked (R3, local-only) |
+| 5 | Card sizes and previews for linked pages | ⬜ | Small/medium/large and image/text previews (P2) |
+| 6 | Assistant writing suggestions in the selection bar (local model first) | ⬜ | Rewrite/shorten/expand proposals go through the review sheet; nothing sent without opt-in (J3) |
+
+## v0.15 — "Share what you write" (macOS)
+
+**Theme.** Get work out of Draft the way people actually share it, still without an account or a Draft server.
+
+| # | Feature | Status | Done when |
+|---|---|---|---|
+| 1 | Static site export of a folder (with links, styles, search) | ⬜ | The export opens offline in a browser and on any static host (U1, static first) |
+| 2 | Share sheet and "Open in…" for notes as PDF, Markdown or HTML | ⬜ | Works from the Share panel and right-click (X7) |
+| 3 | Book-style PDF: several notes in order with a contents page | ⬜ | Page numbers, headings in the contents, styles kept |
+| 4 | Custom vault location with a safe move and undo | ⬜ | Move verified file by file; old folder kept until the new one opens (Y3) |
+| 5 | Sidebar customisation: reorder and hide sections, pin notes and folders | ⬜ | Persists per Space (Z6) |
+| 6 | Website follows releases: download page and changelog update when a release is published | ⬜ | A GitHub Action builds draft-site and deploys draft-notes.github.io; "Coming soon" kept for builds that aren't notarized if chosen |
+
+**Order.** v0.12 first (it finishes work already started and touches every screen the later features add to), then v0.13 (biggest everyday value), v0.14, v0.15. Notarization (v1.0 gate) can land at any point once a Developer ID certificate exists.
 
 ## Manual checks carried forward (need a person; not forgotten)
 
