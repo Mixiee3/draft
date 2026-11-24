@@ -266,7 +266,7 @@ struct StylePanel: View {
                 }
                 PanelSection(title: "Advanced") {
                     Toggle("Tint the app with document styles", isOn: Binding(get: { model.library.settings.useDocStyleForApp }, set: { v in model.setSettings { $0.useDocStyleForApp = v } }))
-                        .font(.system(size: DS.body)).toggleStyle(.switch).controlSize(.small)
+                        .font(.system(size: DS.body)).toggleStyle(.draftLabeled)
                     Button(model.library.settings.defaultStyleId == a.styleId ? "Default style for new documents ✓" : "Use “\(style.name)” for new documents") {
                         model.setSettings { $0.defaultStyleId = a.styleId }
                     }.buttonStyle(.link).font(.system(size: DS.footnote)).disabled(model.library.settings.defaultStyleId == a.styleId)
@@ -365,7 +365,7 @@ struct BackdropPicker: View {
             if b.kind != "none" {
                 Divider()
                 Text("EFFECTS").font(.system(size: DS.caption, weight: .semibold)).foregroundStyle(.secondary)
-                Toggle("Blur", isOn: Binding(get: { b.blur ?? false }, set: { v in var n = b; n.blur = v; set(n) })).toggleStyle(.switch).controlSize(.small)
+                Toggle("Blur", isOn: Binding(get: { b.blur ?? false }, set: { v in var n = b; n.blur = v; set(n) })).toggleStyle(.draftLabeled)
                 DraftSegmented("Effect", selection: Binding(get: { b.effect ?? "immersive" }, set: { v in var n = b; n.effect = v; set(n) }), options: [("immersive", "Immersive"), ("faded", "Faded")], stretch: true)
             }
         }
@@ -611,7 +611,7 @@ struct SharePanel: View {
                     HStack {
                         Text("Use document style").font(.system(size: DS.footnote)).foregroundStyle(t.secondary)
                         Spacer()
-                        Toggle("Use document style", isOn: $useStyle).toggleStyle(.switch).controlSize(.small).labelsHidden()
+                        Toggle("Use document style", isOn: $useStyle).toggleStyle(.draft).labelsHidden()
                             .accessibilityLabel("Use document style in PDF, HTML and image export")
                     }.padding(.horizontal, DS.s3).padding(.top, DS.s1)
                     exportRow("doc", "PDF…") { model.exportStyled(docId, as: "pdf", useStyle: useStyle) }

@@ -46,7 +46,7 @@ struct DocumentScreen: View {
         HStack(spacing: 8) {
             PillGroup(onBackdrop: true) { PillButton(symbol: "chevron.left", label: "Back", onBackdrop: true) { model.goBack() } }
             PillGroup(onBackdrop: true) {
-                DraftIconMenu(symbol: "plus", label: "Insert block", color: Color(hex: "#2a2622")) {
+                DraftIconMenu(symbol: "plus", label: "Insert block", color: PillGroup<EmptyView>.backdropInk) {
                     ForEach(["Insert", "Text", "Lists"], id: \.self) { g in
                         Section(g == "Insert" ? "Insert" : g) {
                             ForEach(EditorCommands.all.filter { $0.group == g && (g == "Insert" || ["block.code", "list.task", "block.quote"].contains($0.id)) }) { cmd in
@@ -165,13 +165,25 @@ struct Breadcrumb: View {
             }
         }
         .font(.system(size: DS.footnote, weight: .medium))
-        .foregroundStyle(t.pillText.opacity(0.85))
         .padding(.horizontal, DS.s3).frame(height: DS.controlSmall + 4)
-        .background(Capsule().fill(t.pill.opacity(0.88)))
-        .overlay(Capsule().strokeBorder(t.pillBorder, lineWidth: 0.5))
+        .modifier(BreadcrumbSurface())
         .padding(.leading, DS.s1)
         .accessibilityElement(children: .contain)
         .accessibilityLabel("Location")
+    }
+}
+
+/// The location chip sits on the backdrop next to the glass pills, so it is glass too (macOS 26+).
+private struct BreadcrumbSurface: ViewModifier {
+    @Environment(\.tokens) var t
+    func body(content: Content) -> some View {
+        if #available(macOS 26.0, *) {
+            content.foregroundStyle(.primary.opacity(0.85)).glassEffect(.regular, in: Capsule())
+        } else {
+            content.foregroundStyle(t.pillText.opacity(0.85))
+                .background(Capsule().fill(t.pill.opacity(0.88)))
+                .overlay(Capsule().strokeBorder(t.pillBorder, lineWidth: 0.5))
+        }
     }
 }
 

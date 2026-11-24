@@ -109,7 +109,7 @@ struct TextEffectEditor: View {
             }
             row("Animate") {
                 Toggle("Animate", isOn: Binding(get: { sp.speed != "still" }, set: { on in var n = sp; n.speed = on ? "slow" : "still"; apply(EffectSpec(n.value), live: false) }))
-                    .labelsHidden().toggleStyle(.switch).controlSize(.small)
+                    .labelsHidden().toggleStyle(.draft)
             }
             if sp.speed != "still" {
                 row("Speed") {

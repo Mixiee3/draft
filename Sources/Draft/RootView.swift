@@ -407,11 +407,25 @@ struct PillGroup<Content: View>: View {
     var onBackdrop = false
     @ViewBuilder var content: Content
     var body: some View {
-        HStack(spacing: 2) { content }
-            .padding(3)
-            .background(Capsule(style: .continuous).fill(onBackdrop ? Color.white.opacity(0.82) : t.pill))
-            .overlay(Capsule(style: .continuous).strokeBorder(onBackdrop ? Color.black.opacity(0.06) : t.pillBorder, lineWidth: 0.5))
-            .shadow(color: .black.opacity(onBackdrop ? 0.08 : 0), radius: 6, y: 2)
+        let row = HStack(spacing: 2) { content }.padding(3)
+        // Over the document backdrop the pills are Liquid Glass (macOS 26+): they sample whatever
+        // backdrop is behind them instead of being a fixed white plate that glared in dark mode.
+        if onBackdrop, #available(macOS 26.0, *) {
+            row.glassEffect(.regular.interactive(), in: Capsule(style: .continuous))
+        } else {
+            row
+                .background(Capsule(style: .continuous).fill(onBackdrop ? Color.white.opacity(0.82) : t.pill))
+                .overlay(Capsule(style: .continuous).strokeBorder(onBackdrop ? Color.black.opacity(0.06) : t.pillBorder, lineWidth: 0.5))
+                .shadow(color: .black.opacity(onBackdrop ? 0.08 : 0), radius: 6, y: 2)
+        }
+    }
+}
+
+extension PillGroup {
+    /// Ink for controls on backdrop pills: adaptive `.primary` on glass, the old dark ink on the white plate.
+    static var backdropInk: Color {
+        if #available(macOS 26.0, *) { return .primary }
+        return Color(hex: "#2a2622")
     }
 }
 
@@ -424,7 +438,7 @@ struct PillButton: View {
     var onBackdrop = false
     var action: () -> Void
     @State private var hover = false
-    var fg: Color { onBackdrop ? Color(hex: "#2a2622") : t.pillText }
+    var fg: Color { onBackdrop ? PillGroup<EmptyView>.backdropInk : t.pillText }
     var body: some View {
         Button(action: action) {
             HStack(spacing: 5) {

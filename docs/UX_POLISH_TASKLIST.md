@@ -19,6 +19,13 @@ Evidence lives in `docs/screenshots/ux-review-0.11.7/` (`before/` = handoff stat
   - expand and collapse animate the width. Not verified frame by frame: the expand already looked complete at about 60 ms.
 - [ ] Reduce Transparency and Increase Contrast captures for both bars.
 
+## Controls and chrome (0.11.8 pass)
+
+- [x] One Draft switch style (`DraftSwitchStyle` in `Components.swift`) replaces every tinted system switch: Settings rows, the sidebar list, the Style and Format panels, the effect editor and Find's Replace. It has a bright accent track, a white knob that stretches while pressed and a spring when it flips, and it respects Reduce Motion and the disabled state. VoiceOver uses the system toggle through `accessibilityRepresentation`. Checked by hand in light and dark (it flips on and off). The old "on" track was a dull navy in dark mode.
+- [x] The document top-bar pills (Back, Insert, daily-note controls, Share, Format/Style/Info) and the location chip are Liquid Glass on macOS 26, not a fixed white plate. Icons use adaptive `.primary`. Checked by hand on a dark page, a light page and the lagoon image backdrop. Before, there were light-grey plates in dark mode.
+- [x] Sidebar tab selector in light mode: a soft track behind the five tabs and an accent-coloured selected icon. Before, a white capsule sat on a near-white sidebar and was hard to see.
+- [ ] Not yet converted: the tab strip's Assistant button and the side panels' surfaces.
+
 ## Document sidebar selector
 
 - [x] The selected capsule shows its icon. Before, the glass container composited the capsule over the icon (white on white, `before/rail-selected-icon-hidden.png`). The icon is now the glass's content (`after/outline-without-hashes.png`).

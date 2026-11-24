@@ -169,7 +169,7 @@ struct SettingsSwitchRow: View {
     @Binding var isOn: Bool
     var body: some View {
         SettingsRow(title: title, detail: detail) {
-            Toggle(title, isOn: $isOn).labelsHidden().toggleStyle(.switch).controlSize(.small).tint(t.accent)
+            Toggle(title, isOn: $isOn).labelsHidden().toggleStyle(.draft)
         }
     }
 }
@@ -324,5 +324,62 @@ extension AnyTransition {
     /// Quick Open, the template picker and dialogs: a short fade with a slight lift, gone quickly.
     static var overlayPop: AnyTransition {
         Motion.systemReduce ? .opacity : .asymmetric(insertion: .opacity.combined(with: .scale(scale: 0.98, anchor: .top)), removal: .opacity)
+    }
+}
+
+/// Draft's switch: a bright accent track, a white knob that stretches while pressed, and a spring
+/// when it flips. Replaces the tinted system switch, whose "on" track turned a dull navy in dark mode.
+/// Accessibility is the system toggle's (via `accessibilityRepresentation`), so VoiceOver and
+/// Full Keyboard Access behave exactly as before.
+/// The label is drawn only for `.draftLabeled`: custom styles don't honour `labelsHidden()`, so the
+/// plain style always leaves the visible title to the row and keeps the label for VoiceOver only.
+struct DraftSwitchStyle: ToggleStyle {
+    var compact = false
+    var showsLabel = false
+    func makeBody(configuration: Configuration) -> some View { DraftSwitch(configuration: configuration, compact: compact, showsLabel: showsLabel) }
+}
+
+extension ToggleStyle where Self == DraftSwitchStyle {
+    static var draft: DraftSwitchStyle { DraftSwitchStyle() }
+    static var draftLabeled: DraftSwitchStyle { DraftSwitchStyle(showsLabel: true) }
+    static var draftCompactLabeled: DraftSwitchStyle { DraftSwitchStyle(compact: true, showsLabel: true) }
+}
+
+private struct DraftSwitch: View {
+    let configuration: ToggleStyleConfiguration
+    let compact: Bool
+    let showsLabel: Bool
+    @Environment(\.tokens) private var t
+    @Environment(\.isEnabled) private var enabled
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @State private var pressed = false
+
+    var body: some View {
+        let w: CGFloat = compact ? 30 : 38, h: CGFloat = compact ? 18 : 22, inset: CGFloat = 2
+        let knob = h - inset * 2
+        let on = configuration.isOn
+        HStack(spacing: 8) {
+            if showsLabel { configuration.label }
+            ZStack(alignment: on ? .trailing : .leading) {
+                Capsule(style: .continuous)
+                    .fill(on ? AnyShapeStyle(t.accent.gradient) : AnyShapeStyle(t.text.opacity(t.dark ? 0.2 : 0.13)))
+                    .overlay(Capsule(style: .continuous).strokeBorder(Color.black.opacity(on ? 0 : (t.dark ? 0.25 : 0.06)), lineWidth: 0.5))
+                Capsule(style: .continuous)
+                    .fill(Color.white)
+                    .frame(width: pressed ? knob + 5 : knob, height: knob)
+                    .shadow(color: .black.opacity(0.22), radius: 1.5, y: 1)
+                    .padding(inset)
+            }
+            .frame(width: w, height: h)
+            .contentShape(Capsule())
+            .onTapGesture { configuration.isOn.toggle() }
+            .simultaneousGesture(DragGesture(minimumDistance: 0)
+                .onChanged { _ in if !pressed { pressed = true } }
+                .onEnded { _ in pressed = false })
+            .animation(reduceMotion ? nil : .spring(response: 0.28, dampingFraction: 0.72), value: on)
+            .animation(reduceMotion ? nil : .easeOut(duration: 0.12), value: pressed)
+        }
+        .opacity(enabled ? 1 : 0.45)
+        .accessibilityRepresentation { Toggle(isOn: configuration.$isOn) { configuration.label } }
     }
 }

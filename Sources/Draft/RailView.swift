@@ -314,12 +314,13 @@ struct DocumentRail: View {
                                     .contentShape(Capsule())
                             }
                             .buttonStyle(.plain)
-                            .foregroundStyle(on ? (t.dark ? .white : t.text) : t.secondary)
+                            .foregroundStyle(on ? (t.dark ? .white : t.accent) : t.secondary)
                             .opacity(on ? 1 : 0.92)
                             .help(loc(label)).accessibilityLabel(loc(label)).accessibilityAddTraits(on ? .isSelected : [])
                         }
                     }
                     .padding(3)
+                    .background(Capsule(style: .continuous).fill(t.dark ? Color.white.opacity(0.06) : Color.black.opacity(0.05))) // the track the selection slides along
                     // SwiftUI hover tracking stops being reliable while the
                     // mouse button is held. Tracking the whole rail lets users
                     // press and slide across tabs, like Craft's liquid selector.
@@ -493,7 +494,7 @@ struct FindPane: View {
             HStack {
                 Text("Find").font(.system(size: DS.body, weight: .semibold)).foregroundStyle(t.text)
                 Spacer()
-                Toggle("Replace", isOn: $showReplace).toggleStyle(.switch).controlSize(.mini).font(.system(size: DS.footnote))
+                Toggle("Replace", isOn: $showReplace).toggleStyle(.draftCompactLabeled).font(.system(size: DS.footnote))
             }
             HStack(spacing: 6) {
                 Image(systemName: "magnifyingglass").foregroundStyle(t.secondary)

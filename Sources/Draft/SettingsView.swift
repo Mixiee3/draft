@@ -143,7 +143,7 @@ struct SettingsView: View {
                             }
                             Toggle("Show \(title)", isOn: Binding(get: { !model.library.settings.sidebarHidden.contains(key) },
                                                                 set: { on in model.setSettings { s in s.sidebarHidden.removeAll { $0 == key }; if !on { s.sidebarHidden.append(key) } } }))
-                                .toggleStyle(.switch).controlSize(.small).labelsHidden()
+                                .toggleStyle(.draft).labelsHidden()
                         }
                     }
                 }
