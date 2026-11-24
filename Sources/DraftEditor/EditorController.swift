@@ -1091,14 +1091,14 @@ public final class EditorController: NSObject, NSTextStorageDelegate, NSTextView
     /// Dropped or pasted Finder files: images become image blocks, everything else file blocks.
     public func insertFiles(_ urls: [URL]) -> Bool {
         var any = false
-        for url in urls {
+        undoGroup { for url in urls {
             let ext = url.pathExtension.lowercased()
             if ["png", "jpg", "jpeg", "gif", "heic", "webp", "tiff"].contains(ext), let data = try? Data(contentsOf: url), let id = host?.storeImage(data: data, ext: ext == "jpeg" ? "jpg" : ext) {
                 insertImage(assetId: id, alt: url.deletingPathExtension().lastPathComponent); any = true
             } else if let f = host?.storeFile(at: url) {
                 insertFile(assetId: f.assetId, name: f.name, size: f.size); any = true
             }
-        }
+        } } // several files dropped at once are one Undo step
         return any
     }
 

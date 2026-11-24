@@ -292,16 +292,22 @@ public final class DraftTextView: NSTextView {
         return super.preferredPasteboardType(from: availableTypes, restrictedToTypesFrom: allowedTypes)
     }
 
-    public override var acceptableDragTypes: [NSPasteboard.PasteboardType] { super.acceptableDragTypes + [.fileURL] }
+    public override var acceptableDragTypes: [NSPasteboard.PasteboardType] { super.acceptableDragTypes + [.fileURL, .png, .tiff] + Self.imagePasteboardTypes }
 
     public override func performDragOperation(_ sender: NSDraggingInfo) -> Bool {
-        if let c = controller, let urls = sender.draggingPasteboard.readObjects(forClasses: [NSURL.self], options: [.urlReadingFileURLsOnly: true]) as? [URL], !urls.isEmpty {
-            let p = convert(sender.draggingLocation, from: nil)
-            let idx = c.layout.characterIndex(for: NSPoint(x: p.x - textContainerOrigin.x, y: p.y - textContainerOrigin.y), in: c.container, fractionOfDistanceBetweenInsertionPoints: nil)
-            setSelectedRange(NSRange(location: idx, length: 0))
-            return c.insertFiles(urls)
-        }
-        return super.performDragOperation(sender)
+        // Drags that start in this editor (moving text or blocks) keep the text view's own handling.
+        guard let c = controller, (sender.draggingSource as? NSView) !== self else { return super.performDragOperation(sender) }
+        let pb = sender.draggingPasteboard
+        let urls = pb.readObjects(forClasses: [NSURL.self], options: [.urlReadingFileURLsOnly: true]) as? [URL] ?? []
+        // An image dragged from a browser or Photos carries image data, not a file: store it as a
+        // Draft image block too, instead of letting the text view drop a raw attachment.
+        let imageType = ([.png, .tiff] + Self.imagePasteboardTypes).first { pb.types?.contains($0) == true }
+        guard !urls.isEmpty || imageType != nil else { return super.performDragOperation(sender) }
+        let p = convert(sender.draggingLocation, from: nil)
+        let idx = c.layout.characterIndex(for: NSPoint(x: p.x - textContainerOrigin.x, y: p.y - textContainerOrigin.y), in: c.container, fractionOfDistanceBetweenInsertionPoints: nil)
+        setSelectedRange(NSRange(location: idx, length: 0))
+        if !urls.isEmpty { return c.insertFiles(urls) }
+        return readSelection(from: pb, type: imageType!)
     }
 
     public override func paste(_ sender: Any?) {
