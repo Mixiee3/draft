@@ -18,7 +18,7 @@ migration that backs up first; unknown fields and block types are preserved.
 Legend: ✅ done · 🟡 partial · ⬜ not started
 
 ### Change log of this plan
-- **2026‑11‑24** — New plan after 0.11.8. Everything earlier is done, waiting for a person (VoiceOver, real keyboards and input methods, translations), or blocked outside the code (Developer ID notarization, Codex eligibility); those stay listed under *Manual checks carried forward*. Added v0.11 (shipped) and the next four milestones: v0.12 Liquid Glass everywhere, v0.13 Capture anywhere, v0.14 Thinking tools, v0.15 Share what you write, then the v1.0 gate.
+- **2026‑11‑24** — New plan after 0.11.8. Everything earlier is done, waiting for a person (VoiceOver, real keyboards and input methods, translations), or blocked outside the code (Developer ID notarization, Codex eligibility); those stay listed under *Manual checks carried forward*. Added v0.11 (shipped) and five milestones: v0.12 Liquid Glass everywhere, v0.13 Images & media (insertion, sizing, iPhone sketches as ink, scans, editing, galleries), v0.14 Capture anywhere, v0.15 Thinking tools, v0.16 Share what you write, then the v1.0 gate.
 - **2026‑11‑15** — v0.11.5 published on the stable update channel. Fixed silent updater failures in protected install locations: request macOS authorization, verify again before replacement, restore/reopen the previous app on failure, and show a recovery message next launch. Added a drag-to-Applications DMG; the runtime is bundled. Automated updater checks pass. Real authorization and relaunch on another Mac remain a manual beta check.
 - **2026‑11‑13** — v0.9 Scale & Reach: long notes, separate search index, Czech and German, keyboard/IME matrix, table column reordering, performance budgets on every build, accessibility static audit, panel timing, display sizes. Six features done; keyboard/IME, accessibility and display scaling need a person for the last part (physical keyboards, VoiceOver, system Reduce Motion).
 - **2026‑11‑12 (late)** — v0.8 Trust & Recovery batch done: Vault Check with 19 problem kinds and severities; repairs with an exact preview, a backup and journal first, validation after, all-or-nothing and one Undo (also after relaunch); rebuild library from notes and rebuild index with a dry run; Version History with readable diffs and restore as one Undo step; attachment and backup browsers; migration validator with fixtures for every schema; startup recovery and Safe Mode. Found and fixed: prototype (schema 0) vaults could never migrate (two false differences in the dry run); a damaged search index was overwritten without a copy. `scripts/trust-test.sh` (41 checks) and `RecoveryPerfTests`.
@@ -618,27 +618,54 @@ native speaker.
 
 | # | Feature | Status | Done when |
 |---|---|---|---|
-| 1 | Side panels (Format, Style, Info, Share) as glass sheets that slide in over the backdrop | ⬜ | Panels sample the backdrop; page never re-wraps (existing `PanelLayoutTests`); light, dark, image backdrop captures |
+| 1 | Side panels (Format, Style, Info, Share) as glass sheets that slide in over the backdrop | ⬜ | Panels sample the backdrop; page never re-wraps (`PanelLayoutTests`); light, dark, image-backdrop captures |
 | 2 | Tab strip and Assistant button in glass; tabs morph when opened, closed and reordered | ⬜ | Tab switch p95 stays < 50 ms (`budgets.sh`); drag-reorder animates |
-| 3 | Slash menu, `[[` / `@` pickers and context menus restyled as glass popovers | ⬜ | Keyboard paths unchanged; selection kept; captures in both themes |
+| 3 | Slash menu, `[[` / `@` pickers and Quick Open as glass popovers | ⬜ | Keyboard paths unchanged; selection kept; captures in both themes |
 | 4 | One motion system: shared springs for bars, panels, selector, switches, sheets | ⬜ | Every animation reads from one place; Reduce Motion turns all of them into fades (test) |
 | 5 | Accessibility fallbacks for glass | ⬜ | Reduce Transparency gives solid surfaces, Increase Contrast adds borders; captures with each setting on |
-| 6 | Glass block handle and drag preview (lift, drop indicator) | ⬜ | Drag a block in a 10,000-block note within budget; one Undo |
+| 6 | Glass block handle and drag preview: the block lifts, others make room, a glowing drop line | ⬜ | Drag a block in a 10,000-block note within budget; one Undo |
+| 7 | Glass controls kit: segmented pickers, sliders, steppers and menus in the Draft style, used in every panel | ⬜ | No system-default control left in Style, Format, Info, Share and Settings |
+| 8 | Sidebar in glass over the window backdrop, with the liquid selector for Library / Document | ⬜ | Readable over every style; selector press-and-slide works |
+| 9 | Context-aware formatting bar: shows table, list, image or link tools for what is selected | ⬜ | Each kind of selection has its own row; keyboard ⌥F10 still reaches every item |
+| 10 | Haptics on Force Touch trackpads for snaps (selector landing, block drop, switch flip) | ⬜ | Off when the system setting is off |
 
-## v0.13 — "Capture anywhere" (macOS)
+## v0.13 — "Images & media" (macOS)
+
+**Theme.** Images, scans and sketches behave like first-class blocks: they land where you expect, at a sensible size, look right in light and dark, and can be adjusted without leaving the note.
+
+| # | Feature | Status | Done when |
+|---|---|---|---|
+| 1 | Predictable insertion: paste, drop, picker and iPhone capture all insert at the caret (or the drop line), never replacing the selection or jumping the page | ⬜ | Same result for every source; one Undo; the caret ends after the image; scroll position kept |
+| 2 | Sensible default size: small images at their real size, large photos fit the page, retina images at point size | ⬜ | Rule tested with 1×, 2× and 12 MP images; no upscaling blur |
+| 3 | Drag-to-resize handles and alignment (left, centre, right, full width) with a live size readout | ⬜ | Snaps to S/M/L/Full; one Undo per drag; keyboard alternative in the image bar |
+| 4 | iPhone sketches as ink: the paper background is removed, the drawing is trimmed to its strokes, and the ink follows light and dark mode | ⬜ | A Continuity Camera sketch reads well on Paper, Night Ink and an image backdrop; the original is kept |
+| 5 | Vector sketches: strokes captured as vectors where available, so sketches stay sharp at any size and stay editable | ⬜ | Zoomed sketch stays crisp; strokes can be recoloured and erased in the sketch block (see v0.15) |
+| 6 | Scan cleanup: document scans auto-cropped, straightened and contrast-boosted; multi-page scans become one PDF block with page thumbnails | ⬜ | Text recognition (on-device) makes scanned text searchable |
+| 7 | Crop, rotate, flip and simple adjustments (exposure, contrast, black & white) in a glass editor, non-destructive | ⬜ | Original asset untouched; edits stored as parameters; exports use the edited version |
+| 8 | Image galleries: several images side by side or in a grid block, rearranged by dragging | ⬜ | Grid reflows in narrow windows; each image keeps caption and alt text |
+| 9 | Quick Look and full-screen viewer with arrow keys through all images in the note | ⬜ | Space opens Quick Look; Esc closes; VoiceOver reads alt text |
+| 10 | Live Text and on-device image description: select text in images, copy it, find it in search; suggested alt text | ⬜ | Suggestions are proposals, never applied silently; nothing leaves the Mac |
+| 11 | Image formats and size: HEIC, WebP, animated GIF, SVG; large images stored once, downscaled previews cached | ⬜ | A note with 200 photos opens within budget; vault check finds unused images (existing cleanup) |
+| 12 | Video and audio blocks: play inline, poster frame, voice memos recorded straight into a note | ⬜ | Recording needs the microphone prompt only when used; files saved in the vault |
+
+## v0.14 — "Capture anywhere" (macOS)
 
 **Theme.** Getting a thought into Draft should take one keystroke from anywhere on the Mac, without opening the window first. All local: no account, no network.
 
 | # | Feature | Status | Done when |
 |---|---|---|---|
 | 1 | Quick Capture: a global shortcut opens a small glass capture window; append to today's note or a chosen note | ⬜ | Works with Draft in the background; text lands with one Undo; shortcut configurable |
-| 2 | Menu bar extra: today's tasks, recent notes, new note | ⬜ | Optional (off by default); keyboard reachable |
+| 2 | Menu bar extra: today's tasks, recent notes, new note, quick capture | ⬜ | Optional (off by default); keyboard reachable |
 | 3 | Share extension ("Send to Draft") from Safari, Mail, Finder and other apps: links, text, images, files | ⬜ | Shared items land as link cards, quotes or attachments in the chosen note |
 | 4 | Shortcuts / App Intents: create note, append to daily, add task, search, open note | ⬜ | Each intent runs from the Shortcuts app and Spotlight; tested with a throwaway vault |
 | 5 | Spotlight search of notes (Core Spotlight, on-device) | ⬜ | A note found in Spotlight opens at the matching block; index removed when turned off |
 | 6 | Desktop widgets: today's note, tasks due, a pinned note | ⬜ | Update within a minute of an edit; light and dark |
+| 7 | Screenshot to note: capture a screen region straight into the current note | ⬜ | Uses the system capture UI and its permission; lands as an image block |
+| 8 | Web clipping: a page's article text, title and link saved as a note (from the share extension) | ⬜ | Clean text without ads or scripts; original link kept |
+| 9 | Templates for capture: meeting, idea, reading note — chosen in the capture window | ⬜ | Uses the existing template system |
+| 10 | Dictation into Quick Capture with the on-device recognizer | ⬜ | Works offline; microphone prompt only when first used |
 
-## v0.14 — "Thinking tools" (macOS)
+## v0.15 — "Thinking tools" (macOS)
 
 **Theme.** Blocks for the kinds of thinking plain text can't hold, rendered offline and exported faithfully.
 
@@ -646,12 +673,18 @@ native speaker.
 |---|---|---|---|
 | 1 | Math: inline `$…$` and block `$$…$$` formulas | ⬜ | Renders offline; edit in place; exports to HTML/PDF and stays `$$…$$` in Markdown (FEATURE_PARITY E10) |
 | 2 | Mermaid diagrams as a block | ⬜ | Bundled renderer, no network; live preview; PNG/SVG in exports (A6) |
-| 3 | Sketch block: draw with mouse or trackpad, editable later | ⬜ | Strokes stored as vectors in the note; exported as an image (A6) |
-| 4 | Margin notes: private comments on a word or block | ⬜ | Shown in the margin and in a Comments pane; never exported unless asked (R3, local-only) |
-| 5 | Card sizes and previews for linked pages | ⬜ | Small/medium/large and image/text previews (P2) |
-| 6 | Assistant writing suggestions in the selection bar (local model first) | ⬜ | Rewrite/shorten/expand proposals go through the review sheet; nothing sent without opt-in (J3) |
+| 3 | Sketch block: draw with mouse, trackpad or an iPhone sketch, pen/marker/eraser, colours, lasso, editable later | ⬜ | Strokes stored as vectors in the note; exported as an image (A6) |
+| 4 | Whiteboard page: an infinite canvas with notes, images, sketches and arrows | ⬜ | Pans and zooms smoothly with 500 items; content searchable |
+| 5 | Margin notes: private comments on a word or block | ⬜ | Shown in the margin and in a Comments pane; never exported unless asked (R3, local-only) |
+| 6 | Card sizes and previews for linked pages | ⬜ | Small/medium/large and image/text previews (P2) |
+| 7 | Assistant writing suggestions in the selection bar (local model first) | ⬜ | Rewrite/shorten/expand proposals go through the review sheet; nothing sent without opt-in (J3) |
+| 8 | Graph view of links between notes | ⬜ | Opens a note on click; filters by tag and Space; 2,000 notes within budget |
+| 9 | Kanban and calendar views for collections, beside table and list | ⬜ | Drag between columns updates the field; one Undo |
+| 10 | Formulas in tables and collections (sum, average, count, dates) | ⬜ | Recalculates on edit; exported as values |
+| 11 | Code blocks with syntax highlighting, line numbers and copy | ⬜ | 20 common languages; colours follow the style |
+| 12 | Footnotes and a table of contents block | ⬜ | Numbered automatically; exported to HTML/PDF/Markdown |
 
-## v0.15 — "Share what you write" (macOS)
+## v0.16 — "Share what you write" (macOS)
 
 **Theme.** Get work out of Draft the way people actually share it, still without an account or a Draft server.
 
@@ -663,8 +696,12 @@ native speaker.
 | 4 | Custom vault location with a safe move and undo | ⬜ | Move verified file by file; old folder kept until the new one opens (Y3) |
 | 5 | Sidebar customisation: reorder and hide sections, pin notes and folders | ⬜ | Persists per Space (Z6) |
 | 6 | Website follows releases: download page and changelog update when a release is published | ⬜ | A GitHub Action builds draft-site and deploys draft-notes.github.io; "Coming soon" kept for builds that aren't notarized if chosen |
+| 7 | Import from Apple Notes, Notion, Obsidian and Bear exports with a preview | ⬜ | Images, links and tasks kept; duplicates flagged (existing import preview) |
+| 8 | Export to DOCX and EPUB | ⬜ | Headings, lists, images, tables kept; opens in Pages and Books |
+| 9 | Print layouts: margins, headers and footers, page breaks honoured | ⬜ | Matches the PDF export |
+| 10 | Encrypted notes and folders (password or Touch ID), still plain files when unlocked | ⬜ | Locked notes unreadable on disk; never in search or Spotlight while locked |
 
-**Order.** v0.12 first (it finishes work already started and touches every screen the later features add to), then v0.13 (biggest everyday value), v0.14, v0.15. Notarization (v1.0 gate) can land at any point once a Developer ID certificate exists.
+**Order.** v0.12 first (it finishes work already started and touches every screen later features build on), then v0.13 Images & media (the most visible everyday rough edge), v0.14, v0.15, v0.16. Notarization (v1.0 gate) can land at any point once a Developer ID certificate exists.
 
 ## Manual checks carried forward (need a person; not forgotten)
 
