@@ -562,13 +562,16 @@ private struct LiquidRailSelector: View {
     var body: some View {
         GeometryReader { proxy in
             let w = proxy.size.width
+            let blob = (w: max(0, trail - lead), x: lead)
             ZStack(alignment: .leading) {
-                Capsule(style: .continuous).fill(t.dark ? Color.white.opacity(0.06) : Color.black.opacity(0.05)) // the track
+                // The bar itself is a Liquid Glass capsule.
+                Color.clear.glassEffect(.regular.tint(t.dark ? .white.opacity(0.04) : .black.opacity(0.03)), in: Capsule(style: .continuous))
+                // At rest: a tinted glass pill behind the selected icon.
                 Color.clear
-                    .frame(width: max(0, trail - lead), height: 26)
-                    .glassEffect(.regular.tint(t.dark ? .white.opacity(0.12) : .white.opacity(0.65)).interactive(), in: Capsule(style: .continuous))
-                    .scaleEffect(x: pressed ? 1.05 : 1, y: pressed ? 1.1 : 1)
-                    .offset(x: lead)
+                    .frame(width: blob.w, height: 26)
+                    .glassEffect(.regular.tint(t.dark ? .white.opacity(0.16) : .white.opacity(0.7)), in: Capsule(style: .continuous))
+                    .offset(x: blob.x)
+                    .opacity(pressed ? 0 : 1)
                 HStack(spacing: 2) {
                     ForEach(Self.tabs, id: \.0) { tab, icon, label in
                         let on = model.docRailTab == tab
@@ -583,6 +586,14 @@ private struct LiquidRailSelector: View {
                     }
                 }
                 .padding(3)
+                // While pressed: a clear glass lens over the icons that bends and magnifies them as it flows.
+                Color.clear
+                    .frame(width: blob.w, height: 30)
+                    .glassEffect(.clear, in: Capsule(style: .continuous))
+                    .scaleEffect(x: 1.12, y: 1.18)
+                    .offset(x: blob.x)
+                    .opacity(pressed ? 1 : 0)
+                    .allowsHitTesting(false)
             }
             .contentShape(Rectangle())
             // Press-and-slide: the tab under the pointer takes the selection while the button is held.
@@ -617,3 +628,4 @@ private struct LiquidRailSelector: View {
         withAnimation(right ? front : back) { trail = r }
     }
 }
+
