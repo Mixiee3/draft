@@ -237,7 +237,9 @@ public enum HTMLExport {
             case "image":
                 var src = n.attrs?["src"]?.string ?? ""
                 if let a = n.attrs?["assetId"]?.string { assets.append(a); src = o.assetPath(a) }
-                let w = n.attrs?["width"]?.double.map { " style='width:\(Int($0 * 100))%'" } ?? ""
+                let side = n.attrs?["align"]?.string
+                let margins = side == "left" ? "margin-right:auto" : side == "right" ? "margin-left:auto" : "margin-left:auto;margin-right:auto"
+                let w = " style='\(n.attrs?["width"]?.double.map { "width:\(Int($0 * 100))%;" } ?? "")\(margins)'"
                 let cap = n.attrs?["caption"]?.string.flatMap { $0.isEmpty ? nil : "<figcaption>\(esc($0))</figcaption>" } ?? ""
                 return "<figure\(n.id.map { " id='\(attr($0))'" } ?? "")><img src='\(url(src))' alt='\(attr(n.attrs?["alt"]?.string ?? ""))'\(w)>\(cap)</figure>"
             case "file":

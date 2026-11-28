@@ -100,7 +100,7 @@ public enum Markdown {
                 let enc = src.addingPercentEncoding(withAllowedCharacters: .urlPathAllowed.union(.init(charactersIn: ":"))) ?? src
                 var lines = [indent + "![\(escape(n.attrs?["alt"]?.string ?? ""))](\(enc))"]
                 if let cap = n.attrs?["caption"]?.string, !cap.isEmpty { lines.append(indent + "*\(escape(cap))*") }
-                if n.attrs?["width"] != nil { lossy.insert("Image sizes are not representable in Markdown.") }
+                if n.attrs?["width"] != nil || n.attrs?["align"] != nil { lossy.insert("Image sizes are not representable in Markdown.") }
                 return lines
             case "file":
                 let name = n.attrs?["name"]?.string ?? "File"

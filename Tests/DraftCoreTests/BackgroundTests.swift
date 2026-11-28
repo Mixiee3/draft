@@ -237,3 +237,16 @@ final class EffectPresetTests: XCTestCase {
         XCTAssertEqual(EffectPresets.spectrum.count, Spectrum.palettes.count)
     }
 }
+
+final class ImageAlignExportTests: XCTestCase {
+    func testImageAlignmentAndWidthExport() {
+        var doc = DocFile.empty(id: "d_img", title: "Img", styleId: "paper")
+        doc.content = Node("doc", content: [
+            Node("image", attrs: ["id": "b_l", "src": "https://example.org/a.png", "width": 0.5, "align": "left"]),
+            Node("image", attrs: ["id": "b_c", "src": "https://example.org/b.png"]),
+        ])
+        let html = HTMLExport.render(doc, tokens: Styles.builtIn[0].tokens, HTMLExport.Options(useStyle: true, today: "2026-11-09")).html
+        XCTAssertTrue(html.contains("style='width:50%;margin-right:auto'"), "left-aligned half width")
+        XCTAssertTrue(html.contains("style='margin-left:auto;margin-right:auto'"), "centred by default")
+    }
+}

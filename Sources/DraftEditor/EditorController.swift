@@ -17,6 +17,8 @@ public final class EditorController: NSObject, NSTextStorageDelegate, NSTextView
     var onSelectionChange: (() -> Void)?
     /// The sketch editor sheet while it is open (kept alive here).
     var activeSketchEditor: AnyObject?
+    /// Quick Look for the note's images (kept for the panel's lifetime).
+    var imageViewer: AnyObject?
 
     public var theme = EditorTheme() {
         didSet { if theme != oldValue { layout.theme = theme; restyleAll() } }
@@ -1074,6 +1076,10 @@ public final class EditorController: NSObject, NSTextStorageDelegate, NSTextView
 
     public func setImageWidth(_ fraction: Double) {
         if let i = selectedImageIndex { updateAttachment(at: i) { $0[attr: "width"] = fraction >= 1 ? nil : .number(fraction) } }
+    }
+    /// Image alignment: "left", "right", or nil for centred.
+    public func setImageAlign(_ align: String?) {
+        if let i = selectedImageIndex { updateAttachment(at: i) { $0[attr: "align"] = align == "center" ? nil : align.map { .string($0) } } }
     }
     public func setImageCaption(_ text: String) {
         if let i = selectedImageIndex { updateAttachment(at: i) { $0[attr: "caption"] = text.isEmpty ? nil : .string(text) } }

@@ -143,10 +143,16 @@ final class ImageCell: BlockCell {
         let capped = min(h, 640)
         return NSSize(width: target * capped / h, height: capped)
     }
+    var align: String { node.attrs?["align"]?.string ?? "center" }
     func imageRect(in f: NSRect) -> NSRect {
         let s = imageSize(forWidth: f.width)
-        return NSRect(x: f.minX + (f.width - s.width) / 2, y: f.minY, width: s.width, height: s.height)
+        let x = align == "left" ? f.minX : align == "right" ? f.maxX - s.width : f.minX + (f.width - s.width) / 2
+        return NSRect(x: x, y: f.minY, width: s.width, height: s.height)
     }
+    /// The resize handle sits on the edge that moves: the left edge for right-aligned images.
+    func handleX(_ r: NSRect) -> CGFloat { align == "right" ? r.minX : r.maxX }
+    /// Widths a drag snaps to (fractions of the text width).
+    static let snaps: [CGFloat] = [0.25, 1.0 / 3, 0.5, 2.0 / 3, 0.75, 1]
     override func height(forWidth w: CGFloat) -> CGFloat { imageSize(forWidth: w).height + (caption.isEmpty ? 0 : Self.captionHeight) }
 
     override func draw(withFrame f: NSRect, in controlView: NSView?) {
@@ -177,7 +183,16 @@ final class ImageCell: BlockCell {
             ring.lineWidth = 2.5
             theme.accentColor.setStroke(); ring.stroke()
             theme.accentColor.setFill()
-            NSBezierPath(roundedRect: NSRect(x: r.maxX - 5, y: r.midY - 18, width: 4, height: 36), xRadius: 2, yRadius: 2).fill()
+            NSBezierPath(roundedRect: NSRect(x: handleX(r) - (align == "right" ? 1 : 5), y: r.midY - 18, width: 4, height: 36), xRadius: 2, yRadius: 2).fill()
+            if let live = liveWidth {
+                // Live readout while resizing: the share of the text width.
+                let label = "\(Int((live * 100).rounded())) %" as NSString
+                let attrs: [NSAttributedString.Key: Any] = [.font: NSFont.monospacedDigitSystemFont(ofSize: 12, weight: .semibold), .foregroundColor: NSColor.white]
+                let ts = label.size(withAttributes: attrs)
+                let pill = NSRect(x: r.midX - ts.width / 2 - 8, y: r.minY + 10, width: ts.width + 16, height: ts.height + 6)
+                theme.accentColor.setFill(); NSBezierPath(roundedRect: pill, xRadius: pill.height / 2, yRadius: pill.height / 2).fill()
+                label.draw(at: NSPoint(x: pill.minX + 8, y: pill.minY + 3), withAttributes: attrs)
+            }
         }
         if !caption.isEmpty {
             let ps = NSMutableParagraphStyle(); ps.alignment = .center; ps.lineBreakMode = .byTruncatingTail
@@ -190,7 +205,7 @@ final class ImageCell: BlockCell {
         guard let v = controlView else { return false }
         let p = v.convert(event.locationInWindow, from: nil)
         let r = imageRect(in: cellFrame)
-        return abs(p.x - r.maxX) < 9 && p.y > r.minY && p.y < r.maxY
+        return abs(p.x - handleX(r)) < 9 && p.y > r.minY && p.y < r.maxY
     }
 
     /// Drag the right edge to resize; the width is stored as a fraction of the text width.
@@ -201,7 +216,11 @@ final class ImageCell: BlockCell {
         while let ev = e {
             if ev.type == .leftMouseUp { break }
             let x = v.convert(ev.locationInWindow, from: nil).x
-            liveWidth = min(1, max(0.15, (x - center) * 2 / cellFrame.width))
+            let raw = align == "left" ? (x - cellFrame.minX) / cellFrame.width : align == "right" ? (cellFrame.maxX - x) / cellFrame.width : (x - center) * 2 / cellFrame.width
+            var frac = min(1, max(0.15, raw))
+            // Snap to common widths when close (hold Option for a free size).
+            if !ev.modifierFlags.contains(.option), let s = Self.snaps.min(by: { abs($0 - frac) < abs($1 - frac) }), abs(s - frac) < 0.025 { frac = s }
+            liveWidth = frac
             c.layout.invalidateLayout(forCharacterRange: NSRange(location: charIndex, length: 1), actualCharacterRange: nil)
             v.needsDisplay = true
             e = w.nextEvent(matching: [.leftMouseDragged, .leftMouseUp])

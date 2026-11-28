@@ -8,6 +8,11 @@ public final class ImageBar: NSView, NSTextFieldDelegate {
     public override func cursorUpdate(with event: NSEvent) { NSCursor.arrow.set() }
     unowned let controller: EditorController
     public let size = NSSegmentedControl(labels: ["S", "M", "L", "Full"], trackingMode: .selectOne, target: nil, action: nil)
+    let alignment = NSSegmentedControl()
+    let look = NSButton()
+    let sketch = NSButton()
+    /// Liquid Glass behind the controls on macOS 26; the layer-drawn plate before that.
+    private let glass: NSView? = { if #available(macOS 26.0, *) { let g = NSGlassEffectView(); g.cornerRadius = 16; return g }; return nil }()
     let caption = NSTextField()
     let alt = NSTextField()
     public private(set) var isVisible = false
@@ -37,20 +42,44 @@ public final class ImageBar: NSView, NSTextFieldDelegate {
             f.font = .systemFont(ofSize: 12.5)
             f.target = self; f.action = #selector(commit(_:))
         }
-        let stack = NSStackView(views: [size, caption, alt])
+        alignment.segmentCount = 3
+        for (i, (sym, label)) in [("text.alignleft", "Align left"), ("text.aligncenter", "Centre"), ("text.alignright", "Align right")].enumerated() {
+            alignment.setImage(NSImage(systemSymbolName: sym, accessibilityDescription: loc(label)), forSegment: i)
+            alignment.setToolTip(loc(label), forSegment: i)
+        }
+        alignment.trackingMode = .selectOne
+        alignment.segmentStyle = .rounded
+        alignment.target = self; alignment.action = #selector(alignChanged)
+        alignment.setAccessibilityLabel(loc("Image alignment"))
+        for (b, sym, label, sel) in [(look, "eye", "Quick Look (Space)", #selector(openQuickLook)), (sketch, "scribble.variable", "Edit sketch", #selector(editSketch))] {
+            b.image = NSImage(systemSymbolName: sym, accessibilityDescription: loc(label))
+            b.imagePosition = .imageOnly
+            b.bezelStyle = .rounded
+            b.toolTip = loc(label)
+            b.setAccessibilityLabel(loc(label))
+            b.target = self; b.action = sel
+        }
+        let stack = NSStackView(views: [size, alignment, look, sketch, caption, alt])
         stack.spacing = 8
         stack.edgeInsets = NSEdgeInsets(top: 8, left: 10, bottom: 8, right: 10)
         stack.translatesAutoresizingMaskIntoConstraints = false
-        caption.widthAnchor.constraint(greaterThanOrEqualToConstant: 150).isActive = true
-        alt.widthAnchor.constraint(greaterThanOrEqualToConstant: 150).isActive = true
-        addSubview(stack)
-        NSLayoutConstraint.activate([stack.leadingAnchor.constraint(equalTo: leadingAnchor), stack.trailingAnchor.constraint(equalTo: trailingAnchor),
-                                     stack.topAnchor.constraint(equalTo: topAnchor), stack.bottomAnchor.constraint(equalTo: bottomAnchor)])
+        caption.widthAnchor.constraint(greaterThanOrEqualToConstant: 110).isActive = true
+        alt.widthAnchor.constraint(greaterThanOrEqualToConstant: 110).isActive = true
+        let holder: NSView
+        if #available(macOS 26.0, *), let g = glass as? NSGlassEffectView {
+            g.contentView = stack
+            g.translatesAutoresizingMaskIntoConstraints = false
+            addSubview(g); holder = g
+            layer?.shadowOpacity = 0; layer?.borderWidth = 0
+        } else { addSubview(stack); holder = stack }
+        NSLayoutConstraint.activate([holder.leadingAnchor.constraint(equalTo: leadingAnchor), holder.trailingAnchor.constraint(equalTo: trailingAnchor),
+                                     holder.topAnchor.constraint(equalTo: topAnchor), holder.bottomAnchor.constraint(equalTo: bottomAnchor)])
     }
     required init?(coder: NSCoder) { fatalError() }
     public override var isFlipped: Bool { true }
 
     public override func updateLayer() {
+        guard glass == nil else { layer?.backgroundColor = .clear; return }
         let dark = controller.theme.isDarkPage
         layer?.backgroundColor = (dark ? NSColor(white: 0.16, alpha: 0.97) : NSColor(white: 0.995, alpha: 0.97)).cgColor
         layer?.borderColor = NSColor(white: dark ? 1 : 0, alpha: 0.1).cgColor
@@ -72,6 +101,8 @@ public final class ImageBar: NSView, NSTextFieldDelegate {
         if superview !== host { host.addSubview(self) }
         let w = a["width"]?.double ?? 1
         size.selectedSegment = Self.widths.firstIndex { abs($0 - w) < 0.02 } ?? -1
+        alignment.selectedSegment = ["left": 0, "right": 2][a["align"]?.string ?? ""] ?? 1
+        sketch.isHidden = a["sketch"] == nil
         if !editingHere {
             caption.stringValue = a["caption"]?.string ?? ""
             alt.stringValue = a["alt"]?.string ?? ""
@@ -83,7 +114,7 @@ public final class ImageBar: NSView, NSTextFieldDelegate {
         r = tv.convert(r.offsetBy(dx: tv.textContainerOrigin.x, dy: tv.textContainerOrigin.y), to: host)
         let img = cell.imageRect(in: r)
         let vis = host.visibleRect
-        let barW = min(560, vis.width - 20)
+        let barW = min(680, vis.width - 20)
         var y = img.minY - 44 - 8
         if y < vis.minY + 8 { y = img.minY + 8 }
         let x = min(max(img.midX - barW / 2, vis.minX + 10), vis.maxX - barW - 10)
@@ -98,6 +129,10 @@ public final class ImageBar: NSView, NSTextFieldDelegate {
         guard size.selectedSegment >= 0 else { return }
         controller.setImageWidth(Self.widths[size.selectedSegment])
     }
+
+    @objc func alignChanged() { controller.setImageAlign(["left", "center", "right"][max(0, alignment.selectedSegment)]) }
+    @objc func openQuickLook() { controller.quickLookSelectedImage() }
+    @objc func editSketch() { if let i = controller.selectedImageIndex { controller.editSketch(at: i) } }
 
     @objc func commit(_ sender: NSTextField) {
         if sender === caption { controller.setImageCaption(caption.stringValue) } else { controller.setImageAlt(alt.stringValue) }

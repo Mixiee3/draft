@@ -28,3 +28,24 @@ final class ImageInsertTests: XCTestCase {
         XCTAssertEqual(c.document().content?.first?.id, "b_p")
     }
 }
+
+final class ImageAlignTests: XCTestCase {
+    var kept: [BlockAttachment] = [] // a cell holds its attachment unretained
+
+    func testAlignmentMovesTheImage() {
+        let cell = ImageCell()
+        cell.cached = NSImage(size: NSSize(width: 1000, height: 500))
+        let frame = NSRect(x: 0, y: 0, width: 600, height: 300)
+        func rect(_ align: String?) -> NSRect {
+            var attrs: [String: JSONValue] = ["assetId": "x.png", "width": 0.5]
+            if let align { attrs["align"] = .string(align) }
+            let a = BlockAttachment(kind: .image, node: Node("image", attrs: attrs)); kept.append(a)
+            cell.attachment = a
+            return cell.imageRect(in: frame)
+        }
+        XCTAssertEqual(rect("left"), NSRect(x: 0, y: 0, width: 300, height: 150))
+        XCTAssertEqual(rect("right").minX, 300)
+        XCTAssertEqual(rect(nil).minX, 150, "centred by default")
+        XCTAssertEqual(cell.handleX(rect("right")), 300, "right-aligned images resize from their left edge")
+    }
+}

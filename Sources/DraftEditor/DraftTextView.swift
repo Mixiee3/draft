@@ -79,6 +79,9 @@ public final class DraftTextView: NSTextView {
     }
 
     public override func keyDown(with event: NSEvent) {
+        // Space on a selected image opens Quick Look instead of replacing the image with a space.
+        if let c = controller, event.charactersIgnoringModifiers == " ", event.modifierFlags.intersection([.command, .control, .option]).isEmpty,
+           c.selectedImageIndex != nil, selectedRange().length == 1 { c.quickLookSelectedImage(); return }
         // ⌥F10: move keyboard focus into the floating formatting bar.
         if event.keyCode == 109, event.modifierFlags.contains(.option), let c = controller, c.toolbar.isVisible {
             c.toolbar.focusForKeyboard(); return
