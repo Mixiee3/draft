@@ -15,6 +15,8 @@ public final class EditorController: NSObject, NSTextStorageDelegate, NSTextView
     /// Non-scrolling layer above the page for floating glass controls (selection toolbar, block bar).
     public weak var floatingHost: NSView?
     var onSelectionChange: (() -> Void)?
+    /// The sketch editor sheet while it is open (kept alive here).
+    var activeSketchEditor: AnyObject?
 
     public var theme = EditorTheme() {
         didSet { if theme != oldValue { layout.theme = theme; restyleAll() } }
@@ -1203,6 +1205,14 @@ public final class EditorController: NSObject, NSTextStorageDelegate, NSTextView
     func pasteImage(_ data: Data, ext: String) -> Bool {
         guard let id = host?.storeImage(data: data, ext: ext) else { return false }
         insertImage(assetId: id)
+        return true
+    }
+
+    /// An iPhone sketch: the ink is lifted off the paper and trimmed; the original picture is kept.
+    func pasteInk(_ data: Data) -> Bool {
+        guard let lifted = InkImage.lift(data), let original = host?.storeImage(data: data, ext: "png"),
+              let id = host?.storeImage(data: lifted, ext: "png") else { return pasteImage(data, ext: "png") }
+        insertAttachmentBlock(kind: .image, node: Node("image", attrs: ["assetId": .string(id), "original": .string(original), "ink": true, "alt": .string(loc("Sketch from iPhone"))]))
         return true
     }
 

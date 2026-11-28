@@ -109,6 +109,7 @@ public final class DraftTextView: NSTextView {
             c.toggleTask(at: NSRange(location: c.storage.length, length: 0)); return
         }
         if !event.modifierFlags.contains(.shift), c.openChip(at: idx, point: cp) { return }
+        if event.clickCount == 2, c.editSketch(at: idx) { return } // double-click a sketch to draw on it
         if event.modifierFlags.contains(.command), let (_, href) = c.linkRange(at: idx), let url = URL(string: href) {
             c.host?.open(url: url); return
         }
@@ -257,7 +258,9 @@ public final class DraftTextView: NSTextView {
         case EditorController.pasteboardType:
             if let d = pboard.data(forType: type) { return c.pasteFragment(d) }
         case .png:
-            if let d = pboard.data(forType: .png) { return c.pasteImage(d, ext: "png") }
+            // Continuity Camera hands over a sketch from the iPhone as a PNG on its own (Services)
+            // pasteboard; paste and drag use the general and drag pasteboards.
+            if let d = pboard.data(forType: .png) { return pboard.name != .general && pboard.name != .drag ? c.pasteInk(d) : c.pasteImage(d, ext: "png") }
         case .tiff:
             if let d = pboard.data(forType: .tiff), let rep = NSBitmapImageRep(data: d), let png = rep.representation(using: .png, properties: [:]) { return c.pasteImage(png, ext: "png") }
         case Self.pdfPasteboardType:

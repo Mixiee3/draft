@@ -71,6 +71,7 @@ public enum EditorCommands {
         EditorCommand("insert.page", "Page", "doc.text", group: "Insert", keywords: ["page", "subpage", "nested"], run: { $0.insertPage(presentation: "page") }),
         EditorCommand("insert.card", "Card", "rectangle.portrait.on.rectangle.portrait", group: "Insert", keywords: ["card", "page"], run: { $0.insertPage(presentation: "card") }),
         EditorCommand("insert.image", "Image", "photo", group: "Insert", keywords: ["image", "picture", "photo"], run: { $0.insertImageFromPicker() }),
+        EditorCommand("insert.sketch", "Sketch", "scribble.variable", group: "Insert", keywords: ["sketch", "draw", "drawing", "pen", "trackpad", "handwriting"], run: { $0.insertSketch() }),
         EditorCommand("insert.divider", "Separator", "minus", group: "Insert", keywords: ["divider", "separator", "line", "hr"], run: { $0.insertDivider() }),
         EditorCommand("insert.file", "File", "paperclip", group: "Insert", keywords: ["file", "attachment", "pdf", "document"], run: { $0.insertFileFromPicker() }),
         EditorCommand("insert.table", "Table", "tablecells", group: "Insert", keywords: ["table", "grid"], run: { $0.insertAttachmentBlock(kind: .table, node: Tables.make()) }),

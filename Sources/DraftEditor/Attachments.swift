@@ -123,6 +123,7 @@ final class DividerCell: BlockCell {
 
 final class ImageCell: BlockCell {
     var cached: NSImage?
+    private var darkInk: NSImage?
     /// Width fraction while the user drags the resize edge.
     var liveWidth: CGFloat?
     static let captionHeight: CGFloat = 28
@@ -156,10 +157,21 @@ final class ImageCell: BlockCell {
             return
         }
         let r = imageRect(in: f)
-        NSGraphicsContext.saveGraphicsState()
-        NSBezierPath(roundedRect: r, xRadius: 10, yRadius: 10).addClip()
-        img.draw(in: r, from: .zero, operation: .sourceOver, fraction: 1, respectFlipped: true, hints: nil)
-        NSGraphicsContext.restoreGraphicsState()
+        if let sketch = Sketch(node.attrs?["sketch"]) {
+            // Sketches are drawn from their vectors: sharp at any size, ink in the page's text colour.
+            SketchRenderer.draw(sketch, in: r, ink: theme.text)
+        } else {
+            // Lifted iPhone ink: lightened on dark pages so dark strokes stay readable.
+            var shown = img
+            if node.attrs?["ink"]?.bool == true, theme.isDarkPage {
+                if darkInk == nil { darkInk = InkImage.forDarkPage(img) }
+                shown = darkInk ?? img
+            }
+            NSGraphicsContext.saveGraphicsState()
+            NSBezierPath(roundedRect: r, xRadius: 10, yRadius: 10).addClip()
+            shown.draw(in: r, from: .zero, operation: .sourceOver, fraction: 1, respectFlipped: true, hints: nil)
+            NSGraphicsContext.restoreGraphicsState()
+        }
         if liveWidth != nil || controller?.isImageSelected(self) == true {
             let ring = NSBezierPath(roundedRect: r.insetBy(dx: -3, dy: -3), xRadius: 12, yRadius: 12)
             ring.lineWidth = 2.5
