@@ -41,6 +41,10 @@ final class SketchTests: XCTestCase {
         XCTAssertEqual(canvas.sketch.strokes.count, 2)
         canvas.redo()
         XCTAssertEqual(canvas.sketch.strokes.count, 1)
+        // A fast stroke has only its two end points; erasing its middle still removes it.
+        canvas.sketch = Sketch(strokes: [Sketch.Stroke(tool: "pen", color: "ink", width: 3, points: [100, 100, 0.5, 500, 100, 0.5])])
+        canvas.mouseDown(with: NSEvent.mouseEvent(with: .leftMouseDown, location: NSPoint(x: 300, y: 500 - 104), modifierFlags: [], timestamp: 0, windowNumber: 0, context: nil, eventNumber: 0, clickCount: 1, pressure: 1)!)
+        XCTAssertTrue(canvas.sketch.strokes.isEmpty, "erased between its points")
     }
 
     /// A 400×300 "photo" of white paper with a black line at the top-left and a red blob at the right.

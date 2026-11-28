@@ -629,17 +629,17 @@ native speaker.
 | 9 | Context-aware formatting bar: shows table, list, image or link tools for what is selected | ⬜ | Each kind of selection has its own row; keyboard ⌥F10 still reaches every item |
 | 10 | Haptics on Force Touch trackpads for snaps (selector landing, block drop, switch flip) | ⬜ | Off when the system setting is off |
 
-## v0.13 — "Images & media" (macOS)
+## v0.13 — "Images & media" (macOS) 🟡 in progress
 
 **Theme.** Images, scans and sketches behave like first-class blocks: they land where you expect, at a sensible size, look right in light and dark, and can be adjusted without leaving the note.
 
 | # | Feature | Status | Done when |
 |---|---|---|---|
-| 1 | Predictable insertion: paste, drop, picker and iPhone capture all insert at the caret (or the drop line), never replacing the selection or jumping the page | ⬜ | Same result for every source; one Undo; the caret ends after the image; scroll position kept |
+| 1 | Predictable insertion: paste, drop, picker and iPhone capture all insert at the caret (or the drop line), never replacing the selection or jumping the page | 🟡 drops from other apps now become image blocks and a multi-file drop is one Undo; drop-line placement still open | Same result for every source; one Undo; the caret ends after the image; scroll position kept |
 | 2 | Sensible default size: small images at their real size, large photos fit the page, retina images at point size | ⬜ | Rule tested with 1×, 2× and 12 MP images; no upscaling blur |
 | 3 | Drag-to-resize handles and alignment (left, centre, right, full width) with a live size readout | ⬜ | Snaps to S/M/L/Full; one Undo per drag; keyboard alternative in the image bar |
-| 4 | iPhone sketches as ink: the paper background is removed, the drawing is trimmed to its strokes, and the ink follows light and dark mode | ⬜ | A Continuity Camera sketch reads well on Paper, Night Ink and an image backdrop; the original is kept |
-| 5 | Vector sketches: strokes captured as vectors where available, so sketches stay sharp at any size and stay editable | ⬜ | Zoomed sketch stays crisp; strokes can be recoloured and erased in the sketch block (#13) |
+| 4 | iPhone sketches as ink: the paper background is removed, the drawing is trimmed to its strokes, and the ink follows light and dark mode | ✅ Continuity Camera sketches: paper removed, trimmed, original kept, ink lightened on dark pages (`SketchTests`) | A Continuity Camera sketch reads well on Paper, Night Ink and an image backdrop; the original is kept |
+| 5 | Vector sketches: strokes captured as vectors where available, so sketches stay sharp at any size and stay editable | 🟡 sketches drawn in Draft are vectors (sharp, recolourable ink); iPhone sketches arrive as pictures | Zoomed sketch stays crisp; strokes can be recoloured and erased in the sketch block (#13) |
 | 6 | Scan cleanup: document scans auto-cropped, straightened and contrast-boosted; multi-page scans become one PDF block with page thumbnails | ⬜ | Text recognition (on-device) makes scanned text searchable |
 | 7 | Crop, rotate, flip and simple adjustments (exposure, contrast, black & white) in a glass editor, non-destructive | ⬜ | Original asset untouched; edits stored as parameters; exports use the edited version |
 | 8 | Image galleries: several images side by side or in a grid block, rearranged by dragging | ⬜ | Grid reflows in narrow windows; each image keeps caption and alt text |
@@ -647,8 +647,8 @@ native speaker.
 | 10 | Live Text and on-device image description: select text in images, copy it, find it in search; suggested alt text | ⬜ | Suggestions are proposals, never applied silently; nothing leaves the Mac |
 | 11 | Image formats and size: HEIC, WebP, animated GIF, SVG; large images stored once, downscaled previews cached | ⬜ | A note with 200 photos opens within budget; vault check finds unused images (existing cleanup) |
 | 12 | Video and audio blocks: play inline, poster frame, voice memos recorded straight into a note | ⬜ | Recording needs the microphone prompt only when used; files saved in the vault |
-| 13 | Sketch block: pen, marker, highlighter, eraser, lasso, colours and undo; draw with the mouse, the trackpad or Apple Pencil through Sidecar; an iPhone sketch opens in it for editing | ⬜ | Strokes stored as vectors in the note, sharp at any size, ink follows light and dark; exported as an image; one Undo per stroke |
-| 14 | Draw on the MacBook trackpad: a drawing mode turns the trackpad into a small tablet — the trackpad's surface maps to the canvas, one finger draws, Force Touch pressure sets line weight, two fingers pan and pinch to zoom, Esc or a click outside leaves it | ⬜ | Strokes follow the finger with no cursor drift (absolute touch position, pointer hidden and held while drawing); works on built-in and Magic Trackpads; pressure off on trackpads without Force Touch; VoiceOver announces the mode |
+| 13 | Sketch block: pen, marker, highlighter, eraser, lasso, colours and undo; draw with the mouse, the trackpad or Apple Pencil through Sidecar; an iPhone sketch opens in it for editing | 🟡 built and checked by hand: Insert › Sketch, double-click to edit, pen/marker/highlighter/eraser, six colours, width, undo/redo, one Undo in the note (`SketchTests`). Still open: lasso, opening an iPhone sketch in it, Sidecar pencil not tried | Strokes stored as vectors in the note, sharp at any size, ink follows light and dark; exported as an image; one Undo per stroke |
+| 14 | Draw on the MacBook trackpad: a drawing mode turns the trackpad into a small tablet — the trackpad's surface maps to the canvas, one finger draws, Force Touch pressure sets line weight, two fingers pan and pinch to zoom, Esc or a click outside leaves it | 🟡 built: trackpad maps to the canvas, touch to aim and press to draw, Force Touch pressure, two fingers never draw, Esc leaves; turning it on and off checked, real finger drawing needs a person | Strokes follow the finger with no cursor drift (absolute touch position, pointer hidden and held while drawing); works on built-in and Magic Trackpads; pressure off on trackpads without Force Touch; VoiceOver announces the mode |
 
 ## v0.14 — "Capture anywhere" (macOS)
 

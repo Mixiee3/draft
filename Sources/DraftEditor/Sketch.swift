@@ -129,6 +129,9 @@ final class SketchCanvas: NSView {
     override func draw(_ dirtyRect: NSRect) {
         let r = drawRect
         page.setFill(); NSBezierPath(roundedRect: r, xRadius: 14, yRadius: 14).fill()
+        // A hairline edge so the page shows even when it matches the sheet (dark pages).
+        let edge = NSBezierPath(roundedRect: r.insetBy(dx: 0.5, dy: 0.5), xRadius: 14, yRadius: 14)
+        edge.lineWidth = 1; ink.withAlphaComponent(0.18).setStroke(); edge.stroke()
         if trackpadMode {
             // The trackpad's outline: the whole surface maps to this rectangle.
             let ring = NSBezierPath(roundedRect: r.insetBy(dx: 1.5, dy: 1.5), xRadius: 13, yRadius: 13)
@@ -179,9 +182,19 @@ final class SketchCanvas: NSView {
     }
     private func erase(at c: NSPoint) {
         let radius = max(8, width * 2.5)
-        let keep = sketch.strokes.filter { s in
-            !stride(from: 0, to: s.points.count, by: 3).contains { hypot(s.points[$0] - c.x, s.points[$0 + 1] - c.y) < radius }
+        // Distance to each segment, not just the recorded points: a fast stroke has few points.
+        func near(_ s: Sketch.Stroke) -> Bool {
+            let p = s.points, n = p.count / 3
+            if n == 1 { return hypot(p[0] - c.x, p[1] - c.y) < radius }
+            for i in 1..<n {
+                let ax = p[(i - 1) * 3], ay = p[(i - 1) * 3 + 1], bx = p[i * 3], by = p[i * 3 + 1]
+                let dx = bx - ax, dy = by - ay, len2 = dx * dx + dy * dy
+                let t = len2 > 0 ? min(1, max(0, ((c.x - ax) * dx + (c.y - ay) * dy) / len2)) : 0
+                if hypot(ax + t * dx - c.x, ay + t * dy - c.y) < radius { return true }
+            }
+            return false
         }
+        let keep = sketch.strokes.filter { !near($0) }
         guard keep.count != sketch.strokes.count else { return }
         history.append(sketch.strokes)
         sketch.strokes = keep
